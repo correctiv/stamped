@@ -1,0 +1,14 @@
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=t2048; t=1709631660; h=from; bh=uRFUPYnBH+fzHqIcBIwsDehNNS5stfaQIFJFa2dJlHI=; b=dSVI66YnROdRoj5UtTCLJUAp6Tk6DRW8lgOLlwzMtejEsIbQKZPqEhOUZlZfly9uSAuS2QoXNCyF9PUyPZ79xYgouVFPJB+jVDGW3IjIJUU+0ZqBcSTthsxfQWzqZ3rLiZ5DIrzZ1oKQ94d3jEM0PEudl+q3QUGrAWL++lKu+PSBv+F7B0+Qrx8blTrhxLtuNI1fVhMW9J9QxXXpN9atOjT9V0XWMQ0fXfP40S2HC8x8u5bps5e4wrMwqB0KRUzYIX7iLUj0/HyN93Kz6OvkuQBrSldDdaVpVIIgzISPfqHiKyKcM8TxFgtzfWTZfOTurGW/nFB9ndfgr6uVk1JR9A==
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Quarterly figures
+Date: Tue, 05 Mar 2024 09:40:00 +0000
+Message-ID: <fixture-01@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+The quarterly figures are attached.
+
+They are provisional until the audit closes.
+
+-- Ada

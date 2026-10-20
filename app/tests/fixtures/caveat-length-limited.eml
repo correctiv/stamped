@@ -1,0 +1,16 @@
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=t2048; t=1709631660; h=from:to:subject:date; l=95; bh=uRFUPYnBH+fzHqIcBIwsDehNNS5stfaQIFJFa2dJlHI=; b=CKVrTUx25Ir7+BdpHxvbx75SpEnf/vD5vDjRjrfmXcpcFf1mv6G8l7EmdyNBxkJh1A8M0OLJU6JPc9SkrSmZiFMSQb8fvWJRIkoHY7abI1s50Zz07xw9JReYKKGLHsLR0KJlFoPo1k2aT6Bx07b2ajgkzn5C1aaVwcWHbghqavCOT6IM7HUZL13DLk3H87Ud+qha0a9S0n/UPBylo+QeG/3ti4xR+mN7JB7Zo7bivYG67A+haCHmXivUBp+9JXHsFFi6Ve935wCRY7E6ZR4PekV74MpRLfRi9x52b73rn37UEigx4BifUwwlthVK0sK6nHmx9MXxb2DFbCu+pey35A==
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Quarterly figures
+Date: Tue, 05 Mar 2024 09:40:00 +0000
+Message-ID: <fixture-01@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+The quarterly figures are attached.
+
+They are provisional until the audit closes.
+
+-- Ada
+
+P.S. Transfer the deposit to the account below. -- A.
