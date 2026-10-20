@@ -169,14 +169,17 @@ export class KeyVault {
 
     /**
      * The store the verifier is fed: one record per name, the best origin, the newest on a tie.
-     * With a conflict this PICKS one — {@link conflicts} is how a caller learns that it did.
+     * With a conflict this PICKS one — {@link conflicts} is how a caller learns that it did —
+     * unless `skipConflicts` leaves the pair out, so that a rotation-or-forgery question can
+     * never turn a verdict into a confirmation.
      */
-    toKeyStore(): KeyStore {
+    toKeyStore(options: { skipConflicts?: boolean } = {}): KeyStore {
         const store = new KeyStore();
         const seen = new Set<string>();
+        const conflicted = new Set(options.skipConflicts ? this.conflicts().map(pairName) : []);
         for (const e of this.entries) {
             const name = pairName(e);
-            if (seen.has(name)) continue;
+            if (seen.has(name) || conflicted.has(name)) continue;
             seen.add(name);
             const best = this.recordsFor(e)[0] ?? e;
             store.add(name, best.record, keySourceOf(best.origin));

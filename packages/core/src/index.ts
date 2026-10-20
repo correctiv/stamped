@@ -88,6 +88,14 @@ export {
     type TxtResolver,
 } from './keylookup.ts';
 
+export {
+    type AutoFetchOptions,
+    type AutoFetchSummary,
+    describeAutoConsent,
+    fetchKeys,
+    type StoredKey,
+} from './autokeys.ts';
+
 export { type KeyRequest, requestTemplate } from './keytemplate.ts';
 
 export {
