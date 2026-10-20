@@ -44,6 +44,19 @@ export function fixture(name: string): Uint8Array {
     return new Uint8Array(readFileSync(join(repoRoot(), FIXTURE_REL, name)));
 }
 
+/** The PATH of a fixture, for the suites that hand a path to a reader instead of bytes. */
+export function fixturePath(...parts: string[]): string {
+    return join(repoRoot(), FIXTURE_REL, ...parts);
+}
+
+/**
+ * One archive fixture's path. Written by `tools/make-archive-fixtures.mjs`, which is a separate
+ * generator from the signing one — these carry no signature and are byte-stable across runs.
+ */
+export function archive(...parts: string[]): string {
+    return fixturePath('archives', ...parts);
+}
+
 /**
  * A store holding every published fixture key, as if the operator had supplied them all.
  *

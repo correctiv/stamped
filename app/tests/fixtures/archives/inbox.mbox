@@ -1,0 +1,74 @@
+From ada@example.com Tue Mar  5 09:41:00 2024
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Harbour contract
+Date: Tue, 05 Mar 2024 09:40:00 +0000
+Message-ID: <arch-01@example.com>
+
+The harbour contract is signed.
+
+The lighthouse survey follows next week.
+
+
+From ada@example.com Wed Mar  6 11:02:13 2024
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Quoting
+Date: Tue, 05 Mar 2024 09:40:00 +0000
+Message-ID: <arch-02@example.com>
+
+>From the harbourmaster, a note about the survey.
+
+>>From a previous mail, quoted:
+>> the tender closes on Friday
+
+Regards
+
+
+From - Thu Mar  7 08:15:00 2024
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Tender documents
+Date: Tue, 05 Mar 2024 09:40:00 +0000
+Message-ID: <arch-03@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="sep-42"
+
+This is a multi-part message in MIME format.
+--sep-42
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+The tender for the =C3=96resund crossing closes on Friday.
+
+--sep-42
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: base64
+
+PGh0bWw+PGhlYWQ+PHN0eWxlPnAgeyBjb2xvcjogc2NhcmxldCB9PC9zdHlsZT48L2hlYWQ+PGJvZHk+PHA+VGhlIHRlbmRlciBmb3IgdGhlIDxiPnBpZXJoZWFkPC9iPiBjbG9zZXMgb24gRnJpZGF5LjwvcD48L2JvZHk+PC9odG1sPg==
+
+--sep-42--
+
+
+From buero@example.com Fri Mar  8 16:30:45 2024
+From: =?utf-8?B?QsO8cm8gQmVybGlu?= <buero@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: =?utf-8?Q?Hafen=C3=BCberwachungs?= =?utf-8?Q?beh=C3=B6rde?=
+Date: Tue, 05 Mar 2024 09:40:00 +0000
+Message-ID: <arch-04@example.com>
+
+Die Unterlagen liegen bei.
+
+
+From ada@example.com Fri Mar  8 17:00:00 2024
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Harbour contract
+Date: Tue, 05 Mar 2024 09:40:00 +0000
+Message-ID: <arch-01@example.com>
+
+The harbour contract is signed.
+
+The lighthouse survey follows next week.
+
+
