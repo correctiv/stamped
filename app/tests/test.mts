@@ -5,6 +5,7 @@ import { run } from '@gjsify/unit';
 
 import classify from './unit/classify.test.ts';
 import keys from './unit/keys.test.ts';
+import keyvault from './unit/keyvault.test.ts';
 import verify from './unit/verify.test.ts';
 import report from './unit/report.test.ts';
 import fts5 from './unit/fts5.test.ts';
@@ -12,6 +13,7 @@ import fts5 from './unit/fts5.test.ts';
 run({
     classify,
     keys,
+    keyvault,
     verify,
     report,
     fts5,

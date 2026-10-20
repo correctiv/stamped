@@ -16,8 +16,11 @@ domain's servers, and if the body hash no longer matches, somebody changed it af
 Verifying it by hand is possible and nobody does it under deadline. The web services that do it
 for you want the message uploaded, which is not a thing one does with a leak.
 
-So Stamped is **local and offline**. It makes no network request: public keys come from a store
-you fill, because a DNS lookup would tell the signing domain which of its mail is being examined.
+So Stamped is **local and offline by default**. Public keys come from a store you fill
+(`stamped keys add`), because a DNS lookup would tell the signing domain which of its mail is
+being examined. `stamped keys fetch` can ask archive.prove.email or DNS for missing keys, but only
+after it has listed the exact domains and selectors and you have confirmed (`--yes` skips the
+question). Nothing else touches the network.
 
 ## The six answers
 

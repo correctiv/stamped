@@ -119,7 +119,7 @@ export function looksLikePem(text: string): boolean {
  * carried over, so the key's own base64 is the remainder of the string — which is why this
  * conversion needs no DER parser and stays in a package that may not have one.
  */
-const ED25519_SPKI_PREFIX = 'MCowBQYDK2VwAyEA';
+export const ED25519_SPKI_PREFIX = 'MCowBQYDK2VwAyEA';
 
 /**
  * Build a DKIM TXT record from a PEM public key.

@@ -46,6 +46,51 @@ export {
 } from './classify.ts';
 
 export {
+    decodeBase64,
+    type KeyAlgorithm,
+    type KeyMaterial,
+    parseKeyMaterial,
+    type ParsedKey,
+    type RevokedKey,
+    rsaModulusBits,
+} from './keymaterial.ts';
+
+export {
+    type AddOutcome,
+    KEY_ORIGINS,
+    type KeyOrigin,
+    type KeyPair,
+    keySourceOf,
+    KeyVault,
+    missingPairs,
+    type NewKey,
+    type PairCount,
+    pairName,
+    parsePairList,
+    type VaultEntry,
+} from './keyvault.ts';
+
+export {
+    consentCovers,
+    type ConsentText,
+    describeConsent,
+    type LookupChannel,
+    type LookupConsent,
+} from './keyconsent.ts';
+
+export {
+    ARCHIVE_ENDPOINT,
+    type FetchLike,
+    type FoundKey,
+    lookupArchive,
+    lookupDns,
+    type LookupResult,
+    type TxtResolver,
+} from './keylookup.ts';
+
+export { type KeyRequest, requestTemplate } from './keytemplate.ts';
+
+export {
     type KeyArgument,
     type KeyEntry,
     keyNameFor,

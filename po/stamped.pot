@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: https://github.com/correctiv/stamped/issues\n"
-"POT-Creation-Date: 2026-10-20 18:44+0200\n"
+"POT-Creation-Date: 2026-10-20 20:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,191 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: app/src/commands/keys.ts:39
+msgid ""
+"Every DKIM signature names a domain and a selector; the matching public key "
+"is what proves the signature. Without that key a message is “unverifiable”. "
+"Keys are public, but fetching them can reveal your interest, so Stamped asks "
+"first."
+msgstr ""
+
+#: app/src/commands/keys.ts:46
+msgid "Ways to get a missing key, safest first:"
+msgstr ""
+
+#: app/src/commands/keys.ts:47
+msgid ""
+"  1. Ask the provider for the old record: stamped keys template <domain> "
+"<selector>"
+msgstr ""
+
+#: app/src/commands/keys.ts:48
+msgid ""
+"  2. Paste it yourself:                   stamped keys add "
+"<selector>._domainkey.<domain> <key>"
+msgstr ""
+
+#: app/src/commands/keys.ts:49
+msgid "  3. archive.prove.email (third party):   stamped keys fetch --archive"
+msgstr ""
+
+#: app/src/commands/keys.ts:50
+msgid "  4. Live DNS (tells the domain):         stamped keys fetch --dns"
+msgstr ""
+
+#: app/src/commands/keys.ts:57
+msgid "Expected <selector>._domainkey.<domain>, got: {name}"
+msgstr ""
+
+#: app/src/commands/keys.ts:69
+msgid "  no key  {name}: {reason}"
+msgstr ""
+
+#: app/src/commands/keys.ts:76
+msgid "See which DKIM keys are needed and store them"
+msgstr ""
+
+#: app/src/commands/keys.ts:80
+msgid "The case folder holding keys.json"
+msgstr ""
+
+#: app/src/commands/keys.ts:88
+msgid "Pick a subcommand — try `stamped keys --help`."
+msgstr ""
+
+#: app/src/commands/keys.ts:102
+msgid "List stored keys, and with --pairs the ones still missing"
+msgstr ""
+
+#: app/src/commands/keys.ts:107
+msgid ""
+"A pair list (domain, selector[, mail count] per line) to check for missing "
+"keys"
+msgstr ""
+
+#: app/src/commands/keys.ts:111
+msgid "Print JSON"
+msgstr ""
+
+#: app/src/commands/keys.ts:122
+msgid "{count} key stored"
+msgid_plural "{count} keys stored"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/commands/keys.ts:134
+msgid ""
+"! {name} holds different keys — a key rotation, or a forgery. Compare them."
+msgstr ""
+
+#: app/src/commands/keys.ts:143
+msgid "No key is missing."
+msgstr ""
+
+#: app/src/commands/keys.ts:146
+msgid "{count} key is missing; messages signed with it stay unverifiable:"
+msgid_plural ""
+"{count} keys are missing; messages signed with them stay unverifiable:"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/commands/keys.ts:173
+msgid ""
+"Store a key you have: a PEM, a bare p= value, or a pasted DNS TXT record"
+msgstr ""
+
+#: app/src/commands/keys.ts:177
+msgid "<selector>._domainkey.<domain>"
+msgstr ""
+
+#: app/src/commands/keys.ts:182
+msgid "The key text, or a path to a file holding it"
+msgstr ""
+
+#: app/src/commands/keys.ts:192
+msgid ""
+"That record has an empty p=: the domain withdrew this key, so there is "
+"nothing to store."
+msgstr ""
+
+#: app/src/commands/keys.ts:205
+msgid "Stored {name}: {algorithm} {bits} bit."
+msgstr ""
+
+#: app/src/commands/keys.ts:214
+msgid ""
+"! The case already held a different key for this pair. Both are kept: this "
+"is either a key rotation or a forgery."
+msgstr ""
+
+#: app/src/commands/keys.ts:233
+msgid ""
+"Look up missing keys over the network, after you confirm exactly what is sent"
+msgstr ""
+
+#: app/src/commands/keys.ts:236
+msgid "A pair list (domain, selector per line)"
+msgstr ""
+
+#: app/src/commands/keys.ts:238
+msgid "One <selector>._domainkey.<domain>. Repeatable."
+msgstr ""
+
+#: app/src/commands/keys.ts:243
+msgid "Ask archive.prove.email (a third party; its keys are unsigned)"
+msgstr ""
+
+#: app/src/commands/keys.ts:248
+msgid "Query the public DNS (the domain’s operator can see it)"
+msgstr ""
+
+#: app/src/commands/keys.ts:253
+msgid "Skip the confirmation prompt"
+msgstr ""
+
+#: app/src/commands/keys.ts:261
+msgid ""
+"Choose where to look: --archive and/or --dns. Stamped never goes online "
+"unasked."
+msgstr ""
+
+#: app/src/commands/keys.ts:268
+msgid "Give --pairs or --name: which keys to look up."
+msgstr ""
+
+#: app/src/commands/keys.ts:273
+msgid "Every listed key is already stored."
+msgstr ""
+
+#: app/src/commands/keys.ts:284
+msgid "Skipped; nothing was sent."
+msgstr ""
+
+#: app/src/commands/keys.ts:303
+msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
+msgstr ""
+
+#: app/src/commands/keys.ts:308
+msgid " — DIFFERS from a stored key"
+msgstr ""
+
+#: app/src/commands/keys.ts:329
+msgid "Print a request you can send to the provider for the historical key"
+msgstr ""
+
+#: app/src/commands/keys.ts:333
+msgid "The signing domain"
+msgstr ""
+
+#: app/src/commands/keys.ts:338
+msgid "One or more selectors"
+msgstr ""
+
+#: app/src/commands/keys.ts:344
+msgid "When the messages were sent, e.g. \"March 2019\""
+msgstr ""
 
 #: app/src/commands/verify.ts:35
 msgid "Check the DKIM signatures of one message and report what they cover"
@@ -43,12 +228,16 @@ msgstr ""
 msgid "Cannot read {path}."
 msgstr ""
 
-#: app/src/index.ts:35
+#: app/src/index.ts:36
 msgid "stamped <command> [options]"
 msgstr ""
 
-#: app/src/index.ts:37
+#: app/src/index.ts:39
 msgid "Pick a command — try `stamped verify --help`."
+msgstr ""
+
+#: app/src/lib/consent.ts:16
+msgid "Send these lookups? [y/N] "
 msgstr ""
 
 #: app/src/lib/keys.ts:50
@@ -188,6 +377,91 @@ msgstr ""
 msgid "{limit} bytes of the body are signed, {unsigned} are not"
 msgstr ""
 
+#: app/src/lib/vault.ts:25
+msgid "Cannot use {path}: {reason}"
+msgstr ""
+
+#: packages/core/src/keyconsent.ts:36
+msgid "Look up {count} key in the public DNS?"
+msgid_plural "Look up {count} keys in the public DNS?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: packages/core/src/keyconsent.ts:43
+msgid ""
+"The query goes to the signing domain’s own name servers, so the domain’s "
+"operator — and anyone watching your resolver — can see which selector you "
+"asked for and when. That reveals interest in that domain."
+msgstr ""
+
+#: packages/core/src/keyconsent.ts:51
+msgid "Ask archive.prove.email for {count} key?"
+msgid_plural "Ask archive.prove.email for {count} keys?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: packages/core/src/keyconsent.ts:58
+msgid ""
+"The domain and selector are sent to archive.prove.email (a third-party "
+"service run by the Proof of Email project). It does not tell the signing "
+"domain, but it learns which domains you are examining."
+msgstr ""
+
+#: packages/core/src/keylookup.ts:48
+msgid "No consent for looking up {name}."
+msgstr ""
+
+#: packages/core/src/keylookup.ts:67
+msgid "archive.prove.email answered HTTP {status}."
+msgstr ""
+
+#: packages/core/src/keylookup.ts:105
+msgid "The archive holds no key for it."
+msgstr ""
+
+#: packages/core/src/keylookup.ts:129
+msgid "The record is empty: the key was withdrawn."
+msgstr ""
+
+#: packages/core/src/keylookup.ts:129
+msgid "No key record found."
+msgstr ""
+
+#: packages/core/src/keymaterial.ts:37
+msgid "The key is not valid base64."
+msgstr ""
+
+#: packages/core/src/keymaterial.ts:79
+msgid ""
+"That is not an RSA public key in SubjectPublicKeyInfo form (PEM header "
+"\"BEGIN PUBLIC KEY\")."
+msgstr ""
+
+#: packages/core/src/keymaterial.ts:137
+msgid "Unsupported DKIM record version \"{version}\"."
+msgstr ""
+
+#: packages/core/src/keymaterial.ts:140
+msgid "The record has no p= tag, so it holds no key."
+msgstr ""
+
+#: packages/core/src/keymaterial.ts:151
+msgid "An Ed25519 key must be exactly 32 bytes."
+msgstr ""
+
+#: packages/core/src/keymaterial.ts:155
+msgid "Unsupported key type \"{type}\"."
+msgstr ""
+
+#: packages/core/src/keymaterial.ts:173
+msgid "Nothing to read: the key text is empty."
+msgstr ""
+
+#: packages/core/src/keymaterial.ts:181
+msgid ""
+"That is neither a PEM public key, a DKIM TXT record nor a base64 p= value."
+msgstr ""
+
 #: packages/core/src/keys.ts:93
 msgid ""
 "--key needs <selector>._domainkey.<domain>=<record or file>, got: {argument}"
@@ -195,6 +469,62 @@ msgstr ""
 
 #: packages/core/src/keys.ts:141
 msgid "That PEM block holds no key data."
+msgstr ""
+
+#: packages/core/src/keytemplate.ts:20
+msgid "The messages in question were sent around {period}."
+msgstr ""
+
+#: packages/core/src/keytemplate.ts:23
+msgid "The messages in question were sent some time ago."
+msgstr ""
+
+#: packages/core/src/keytemplate.ts:25
+msgid "Subject: Request for historical DKIM public keys for {domain}"
+msgstr ""
+
+#: packages/core/src/keytemplate.ts:29
+msgid "Hello,"
+msgstr ""
+
+#: packages/core/src/keytemplate.ts:33
+msgid ""
+"I am verifying the authenticity of email messages that were signed with DKIM "
+"by {domain}. The signing keys have since been rotated or removed from the "
+"DNS, so I cannot check the signatures against the current records."
+msgstr ""
+
+#: packages/core/src/keytemplate.ts:38
+msgid ""
+"Could you send me the public key records (the DNS TXT values) that were "
+"published for these selectors:"
+msgstr ""
+
+#: packages/core/src/keytemplate.ts:45
+msgid ""
+"If a selector was never used or the key cannot be disclosed, a short note "
+"saying so helps just as much. Public keys are not secret, and I only need "
+"the TXT record text, ideally with the dates it was published and withdrawn."
+msgstr ""
+
+#: packages/core/src/keytemplate.ts:48
+msgid "Thank you,"
+msgstr ""
+
+#: packages/core/src/keyvault.ts:199
+msgid "The key store file is not valid JSON."
+msgstr ""
+
+#: packages/core/src/keyvault.ts:203
+msgid "The key store file has an unknown format."
+msgstr ""
+
+#: packages/core/src/keyvault.ts:218
+msgid "The key store file has a malformed entry for {name}."
+msgstr ""
+
+#: packages/core/src/keyvault.ts:279
+msgid "Pair list line {line}: expected domain and selector."
 msgstr ""
 
 #: packages/core/src/verdict.ts:204
