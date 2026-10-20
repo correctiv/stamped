@@ -1,0 +1,108 @@
+name: Release
+
+# A tag is a release: `git tag v0.1.0 && git push --tags` ships the `stamped` CLI as deb and rpm
+# (Linux), macos-app-zip (arm64, x64) and windows-dir-zip + msi, all attached to one GitHub
+# release. No AppImage: gjsify refuses it for a `kind: cli` project. Assembly is not host-bound
+# (gjsify ADR 0024 § A1), so one Linux job builds every platform; the Mach-O and PE payloads are
+# only RUN on their own OS. macOS and Windows output is unsigned; signing and notarisation attach
+# here once a Developer ID exists.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/fedora/fedora:44
+    permissions:
+      contents: write
+    steps:
+      - name: Install prerequisites
+        run: >
+          dnf install -y --setopt=install_weak_deps=False
+          git tar xz findutils gh
+          gjs libsoup3 json-glib gnutls libnghttp2
+          libgda libgda-sqlite
+          gettext glib2 msitools zip unzip
+
+      - uses: actions/checkout@v4
+
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Cache gjsify tarball store
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/gjsify/tarballs
+          key: gjsify-tarballs-${{ hashFiles('gjsify-lock.json') }}
+          restore-keys: gjsify-tarballs-
+
+      - name: Bootstrap the gjsify CLI
+        run: |
+          VERSION=$(node -p "require('./app/package.json').devDependencies['@gjsify/cli']")
+          npm install -g "@gjsify/cli@$VERSION"
+
+      - name: Install dependencies
+        run: gjsify install --immutable
+
+      # Both bundles up front: Linux ships the GJS one, macOS and Windows the Node one. The build
+      # also compiles the catalogues that `gjsify.ship.localeDir` points at.
+      - name: Build the bundles
+        run: cd app && gjsify run build:gjs && gjsify run build:node
+
+      - name: Ship Linux
+        run: cd app && gjsify ship linux --skip-build --target deb,rpm
+
+      # Naming the target installs the os/cpu-gated runtime packages a plain install skips.
+      - name: Ship macOS (arm64)
+        run: |
+          gjsify install --os darwin --cpu arm64 --immutable
+          cd app && gjsify ship darwin --arch arm64 --skip-build --target macos-app-zip
+
+      - name: Ship macOS (x64)
+        run: |
+          gjsify install --os darwin --cpu x64 --immutable
+          cd app && gjsify ship darwin --arch x64 --skip-build --target macos-app-zip
+
+      - name: Ship Windows (x64)
+        run: |
+          gjsify install --os win32 --cpu x64 --immutable
+          cd app && gjsify ship windows --arch x64 --skip-build --target windows-dir-zip,msi
+
+      # `ship` exits 0 after writing nothing when every target is filtered away: assert by name.
+      - name: Assert the artifacts arrived
+        working-directory: app/ship/out
+        run: |
+          set -eu
+          ls -la
+          version=$(node -p "require('$GITHUB_WORKSPACE/app/package.json').version")
+          for f in \
+            "stamped_${version}-1_all.deb" \
+            "stamped-${version}-1.noarch.rpm" \
+            "stamped-${version}-1.macos.arm64.zip" \
+            "stamped-${version}-1.macos.x86_64.zip" \
+            "stamped-${version}-1.windows.x64.zip" \
+            "stamped-${version}-1.x64.msi"; do
+            [ -s "$f" ] || { echo "::error::missing or empty artifact: $f"; exit 1; }
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: app/ship/out/*
+          compression-level: 0
+
+      # Only for a tag; a manual run exercises the chain without publishing.
+      - name: Create the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release create "$GITHUB_REF_NAME" app/ship/out/* --title "$GITHUB_REF_NAME" --generate-notes
