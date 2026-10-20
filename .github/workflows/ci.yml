@@ -21,11 +21,18 @@ jobs:
       # the capability it is there to measure. gettext is `msgfmt`, which `build` runs over `po/`
       # into `dist/locale`; the compile step only warns when it is missing, so a build without it
       # is silently English.
-      - name: Install system prerequisites (gjs + libgda + gettext)
+      #
+      # libsoup3 is NOT optional and NOT about the network. mailauth pulls gjsify's fetch stack in,
+      # so both bundles carry a TOP-LEVEL `import "gi://Soup?version=3.0"` — it resolves at module
+      # load, before a single test runs, whether or not anything ever makes a request (Stamped
+      # makes none). With `install_weak_deps=False` the `gjs` package does not drag it in, and the
+      # whole suite dies on `Typelib file for namespace 'Soup', version '3.0' not found`.
+      - name: Install system prerequisites (gjs + libgda + libsoup3 + gettext)
         run: >
           dnf install -y --setopt=install_weak_deps=False
           git tar xz findutils gjs
           libgda libgda-sqlite
+          libsoup3
           gettext
 
       - uses: actions/checkout@v4
