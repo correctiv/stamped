@@ -240,17 +240,34 @@ export function removeMessage(db: DatabaseSync, hash: string): void {
  * list the operator is going to read with their eyes, and it keeps both statements to the plain
  * SQL that gjsify's parser handles.
  *
- * `query` is a user's search string, not FTS5 syntax — see `toMatchExpression`.
+ * `query` is tried as FTS5 syntax first (phrases, `AND`/`OR`, `subject : …`); what FTS5 rejects —
+ * an address like `chef@firma.de`, a domain, `Re: Angebot` — is searched as literal terms instead
+ * (see {@link toLiteralTerms}), so a plain search never ends in a syntax error.
  */
+/** Every whitespace-separated word as a quoted FTS5 string: all must occur, none is syntax. */
+export function toLiteralTerms(query: string): string {
+    return query
+        .split(/\s+/)
+        .filter((term) => term !== '')
+        .map((term) => `"${term.replaceAll('"', '""')}"`)
+        .join(' ');
+}
+
 export function searchMessages(db: DatabaseSync, query: string, limit = 20): SearchHit[] {
     const match = query.trim();
     if (match === '') return [];
     // Interpolated, not bound: `LIMIT ?` is not accepted everywhere, and the value is an integer
     // this function clamps itself, so there is no string to inject.
     const capped = Math.max(1, Math.min(1000, Math.trunc(limit) || 1));
-    const hits = db
-        .prepare(`SELECT hash FROM messages_fts WHERE messages_fts MATCH ? ORDER BY rank LIMIT ${capped}`)
-        .all(match) as { hash?: string }[];
+    const statement = db.prepare(
+        `SELECT hash FROM messages_fts WHERE messages_fts MATCH ? ORDER BY rank LIMIT ${capped}`,
+    );
+    let hits: { hash?: string }[];
+    try {
+        hits = statement.all(match) as { hash?: string }[];
+    } catch {
+        hits = statement.all(toLiteralTerms(match)) as { hash?: string }[];
+    }
 
     const row = db.prepare(
         'SELECT hash, subject, sender, date, sent_at, verdict FROM messages WHERE hash = ?',

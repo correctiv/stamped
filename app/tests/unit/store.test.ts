@@ -292,6 +292,18 @@ export default async () => {
             });
         });
 
+        await it('searches what FTS5 cannot parse as literal words', async () => {
+            // An address, a domain and a reply subject are the first things typed into an
+            // archive search, and each is an FTS5 syntax error as written.
+            withIndex((db) => {
+                put(db, message('Re: Angebot', 'mail from chef@firma.de about the offer'), 'unsigned');
+                expect(searchMessages(db, 'chef@firma.de').length).toBe(1);
+                expect(searchMessages(db, 'firma.de').length).toBe(1);
+                expect(searchMessages(db, 'Re: Angebot').length).toBe(1);
+                expect(searchMessages(db, 'chef@other.de').length).toBe(0);
+            });
+        });
+
         await it('answers an empty query with nothing rather than everything', async () => {
             withIndex((db) => {
                 put(db, message('One', 'body'), 'unsigned');
