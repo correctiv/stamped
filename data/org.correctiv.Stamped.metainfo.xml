@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<component type="console-application">
+  <id>org.correctiv.Stamped</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>AGPL-3.0-or-later</project_license>
+  <name>Stamped</name>
+  <name xml:lang="de">Poststempel</name>
+  <summary>Verify and explore emails</summary>
+  <summary xml:lang="de">Mails prüfen und erkunden</summary>
+  <developer id="org.correctiv">
+    <name>CORRECTIV</name>
+  </developer>
+  <description>
+    <p>Stamped is for journalists working on leaked email archives. It verifies the DKIM signatures of a message and says what each signature actually covers: confirmed, confirmed with caveats, body altered, headers altered, unverifiable, or unsigned.</p>
+    <p xml:lang="de">Poststempel ist für Journalistinnen und Journalisten, die mit geleakten Mailarchiven arbeiten. Es prüft die DKIM-Signaturen einer Mail und sagt, was jede Signatur tatsächlich abdeckt: bestätigt, bestätigt mit Einschränkung, Text geändert, Kopfzeilen geändert, nicht prüfbar oder unsigniert.</p>
+    <p>It works offline: public keys come from a store you fill, so examining a message sends no lookup to the signing domain.</p>
+    <p xml:lang="de">Es arbeitet offline: Öffentliche Schlüssel stammen aus einem Lager, das du selbst füllst, daher erfährt die signierende Domain nichts von der Prüfung.</p>
+  </description>
+  <icon type="stock">org.correctiv.Stamped</icon>
+  <launchable type="desktop-id">org.correctiv.Stamped.desktop</launchable>
+  <provides>
+    <binary>stamped</binary>
+  </provides>
+  <url type="homepage">https://correctiv.github.io/stamped/</url>
+  <url type="vcs-browser">https://github.com/correctiv/stamped</url>
+  <url type="bugtracker">https://github.com/correctiv/stamped/issues</url>
+  <url type="contribute">https://github.com/correctiv/stamped</url>
+  <branding>
+    <color type="primary" scheme_preference="light">#f66151</color>
+    <color type="primary" scheme_preference="dark">#a51d2d</color>
+  </branding>
+  <content_rating type="oars-1.1"/>
+  <keywords>
+    <keyword>email</keyword>
+    <keyword>DKIM</keyword>
+    <keyword>journalism</keyword>
+    <keyword>verification</keyword>
+  </keywords>
+  <releases>
+    <release version="0.1.0" date="2026-10-20">
+      <description>
+        <p>First release: the stamped command line tool verifies DKIM signatures offline.</p>
+      </description>
+    </release>
+  </releases>
+</component>

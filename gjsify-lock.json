@@ -1,8 +1,9 @@
 {
   "lockfileVersion": 4,
   "requested": [
-    "yargs@^18.1.0",
     "@gjsify/cli@0.64.2",
+    "@gjsify/site@0.64.2",
+    "yargs@^18.1.0",
     "@gjsify/napi@0.64.2",
     "@gjsify/node-globals@0.64.2",
     "@gjsify/rolldown-native@0.64.2",
@@ -6441,6 +6442,24 @@
       "resolved": "https://registry.npmjs.org/@gjsify/semver/-/semver-0.64.2.tgz",
       "integrity": "sha512-57rCoSBUf2WfUXnKvC4yGqzm3BkLQT5lSeWySNURma21+23EuG51dNPNvU1sFSMjf2tafyPadXQwUFrDD3nzPw=="
     },
+    "node_modules/@gjsify/site": {
+      "version": "0.64.2",
+      "resolved": "https://registry.npmjs.org/@gjsify/site/-/site-0.64.2.tgz",
+      "integrity": "sha512-C7CRx2gER1DHzMZ5U0hx3zQ2L/o2gC24Pf3yrzLHNv6sqOnrXW0R2i/Zz9prAq2eEV2mNVe0tcSoAtYLJLiMMQ==",
+      "dependencies": {
+        "@gjsify/fs": "^0.64.2",
+        "@gjsify/os": "^0.64.2",
+        "@gjsify/url": "^0.64.2",
+        "@gjsify/path": "^0.64.2",
+        "@gjsify/crypto": "^0.64.2",
+        "@gjsify/module": "^0.64.2",
+        "@gjsify/console": "^0.64.2",
+        "@gjsify/process": "^0.64.2",
+        "fast-xml-parser": "^5.11.2",
+        "qrcode-generator": "^2.0.4",
+        "@girs/gdkpixbuf-2.0": "5.4.0"
+      }
+    },
     "node_modules/@gjsify/sqlite": {
       "version": "0.64.2",
       "resolved": "https://registry.npmjs.org/@gjsify/sqlite/-/sqlite-0.64.2.tgz",
@@ -11152,6 +11171,11 @@
       "version": "1.2.0",
       "resolved": "https://registry.npmjs.org/pvutils/-/pvutils-1.2.0.tgz",
       "integrity": "sha512-BbubeCEyTuQjVMakvJQ/Sxbc93F2pwmbsxONT/ZRrwU7Ua38d8unYTwXpTVLAKJ4BDuH9IGztCjQcd/N/39Dvg=="
+    },
+    "node_modules/qrcode-generator": {
+      "version": "2.0.4",
+      "resolved": "https://registry.npmjs.org/qrcode-generator/-/qrcode-generator-2.0.4.tgz",
+      "integrity": "sha512-mZSiP6RnbHl4xL2Ap5HfkjLnmxfKcPWpWe/c+5XxCuetEenqmNFf1FH/ftXPCtFG5/TDobjsjz6sSNL0Sr8Z9g=="
     },
     "node_modules/queue-microtask": {
       "version": "1.2.3",

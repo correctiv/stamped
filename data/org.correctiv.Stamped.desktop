@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Stamped
+Name[de]=Poststempel
+Comment=Verify and explore emails
+Comment[de]=Mails prüfen und erkunden
+Exec=stamped
+Icon=org.correctiv.Stamped
+Terminal=true
+Type=Application
+Categories=Office;Email;
+Keywords=email;DKIM;journalism;verify;
+StartupNotify=false

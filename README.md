@@ -94,7 +94,7 @@ changes together.
 
 ## Documentation
 
-- [docs/spikes.md](docs/spikes.md) — what was measured before it was decided: why mailauth and
+- [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md) — what was measured before it was decided: why mailauth and
   not an own verifier, how it is configured and why, FTS5 under gjsify.
 - [AGENTS.md](AGENTS.md) — conventions, for humans and AI agents both.
 

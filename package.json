@@ -20,5 +20,25 @@
     "fixtures": "node tools/make-fixtures.mjs",
     "i18n:extract": "./dev/i18n.sh extract",
     "i18n:compile": "./dev/i18n.sh compile"
+  },
+  "gjsify": {
+    "site": {
+      "metainfo": "data/org.correctiv.Stamped.metainfo.xml",
+      "base": "/stamped/",
+      "url": "https://correctiv.github.io/stamped/",
+      "languages": [
+        "en",
+        "de"
+      ],
+      "defaultLanguage": "en",
+      "repository": "correctiv/stamped",
+      "icon": "data/icons/hicolor/scalable/apps/org.correctiv.Stamped.svg",
+      "releaseAssets": true,
+      "pageTranslations": "site/po"
+    }
+  },
+  "devDependencies": {
+    "@gjsify/cli": "0.64.2",
+    "@gjsify/site": "0.64.2"
   }
 }

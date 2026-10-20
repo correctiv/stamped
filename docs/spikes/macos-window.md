@@ -1,5 +1,7 @@
 # macOS window spike: findings
 
+The original spike code lives in commit [2beecfe](https://github.com/correctiv/stamped/commit/2beecfe) (`spikes/macos-window/`), removed from the tree since.
+
 **Verdict: GO for macOS, with one open measurement (clean Mac without Homebrew).**
 
 ## What was built
