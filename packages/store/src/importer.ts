@@ -19,15 +19,13 @@
  * counted and reported instead.
  */
 
-import { readFileSync } from 'node:fs';
-
 import { classifyMessage, type KeyStore } from '@stamped/core';
 import { readSource, summarise, type MboxFlavour, type SourceMessage } from '@stamped/import';
 import { verifyMessage } from '@stamped/verify';
 
 import type { CasePaths } from './case.ts';
 import { indexMessage, isIndexed, openIndex } from './index-db.ts';
-import { appendLog, rawPath, store, type ImportLogEntry } from './raw.ts';
+import { appendLog, readRaw, store, type ImportLogEntry } from './raw.ts';
 
 /** How many log lines are held before they are written. See {@link appendLog}. */
 const LOG_BATCH = 256;
@@ -158,13 +156,4 @@ export async function importSources(
     }
 
     return { read, stored, duplicates, indexed, failed };
-}
-
-/** Read a message back out of the store. `undefined` when it cannot be read at all. */
-function readRaw(paths: CasePaths, hash: string): Uint8Array | undefined {
-    try {
-        return new Uint8Array(readFileSync(rawPath(paths, hash)));
-    } catch {
-        return undefined;
-    }
 }

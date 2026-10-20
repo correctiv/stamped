@@ -15,17 +15,33 @@
 export { casePaths, type CasePaths, CASE_VERSION, isCase, openCase } from './case.ts';
 export { importSources, type ImportOptions, type ImportProgress, type ImportResult } from './importer.ts';
 export {
+    type IndexedMessage,
     type IndexEntry,
     indexMessage,
     isIndexed,
+    type ListOptions,
+    listMessages,
     messageCount,
     openIndex,
+    readMessage,
     removeMessage,
     SCHEMA_VERSION,
     type SearchHit,
     searchMessages,
 } from './index-db.ts';
-export { appendLog, digest, type ImportLogEntry, rawPath, store, type StoreResult } from './raw.ts';
+export {
+    appendLog,
+    digest,
+    eachLogEntry,
+    type ImportLogEntry,
+    type LogSource,
+    logSources,
+    rawPath,
+    readRaw,
+    sourceHashes,
+    store,
+    type StoreResult,
+} from './raw.ts';
 export {
     missingKeyPairs,
     reverifyPairs,

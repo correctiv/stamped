@@ -19,7 +19,7 @@
 
 import { DatabaseSync } from 'node:sqlite';
 
-import { type MessageFinding, type Verdict, fmt, _ } from '@stamped/core';
+import { type Caveat, type MessageFinding, type Verdict, fmt, _ } from '@stamped/core';
 import type { MessageSummary } from '@stamped/import';
 
 import type { CasePaths } from './case.ts';
@@ -253,6 +253,22 @@ export function toLiteralTerms(query: string): string {
         .join(' ');
 }
 
+/** The columns {@link toHit} reads, so the two queries that produce hits cannot drift apart. */
+const HIT_COLUMNS = 'hash, subject, sender, date, sent_at, verdict';
+
+/** One row of `messages`, as a hit. The one place a column name becomes a field name. */
+function toHit(message: Record<string, unknown>): SearchHit {
+    return {
+        hash: String(message.hash),
+        subject: String(message.subject ?? ''),
+        from: String(message.sender ?? ''),
+        date: String(message.date ?? ''),
+        sentAt:
+            message.sent_at === null || message.sent_at === undefined ? undefined : Number(message.sent_at),
+        verdict: String(message.verdict) as Verdict,
+    };
+}
+
 export function searchMessages(db: DatabaseSync, query: string, limit = 20): SearchHit[] {
     const match = query.trim();
     if (match === '') return [];
@@ -269,25 +285,135 @@ export function searchMessages(db: DatabaseSync, query: string, limit = 20): Sea
         hits = statement.all(toLiteralTerms(match)) as { hash?: string }[];
     }
 
-    const row = db.prepare(
-        'SELECT hash, subject, sender, date, sent_at, verdict FROM messages WHERE hash = ?',
-    );
+    const row = db.prepare(`SELECT ${HIT_COLUMNS} FROM messages WHERE hash = ?`);
     const found: SearchHit[] = [];
     for (const hit of hits) {
         if (typeof hit.hash !== 'string') continue;
         const message = row.get(hit.hash) as Record<string, unknown> | undefined;
         if (!message) continue;
-        found.push({
-            hash: String(message.hash),
-            subject: String(message.subject ?? ''),
-            from: String(message.sender ?? ''),
-            date: String(message.date ?? ''),
-            sentAt:
-                message.sent_at === null || message.sent_at === undefined
-                    ? undefined
-                    : Number(message.sent_at),
-            verdict: String(message.verdict) as Verdict,
-        });
+        found.push(toHit(message));
     }
     return found;
+}
+
+/** How a list of messages is narrowed. Every field absent means "the whole case, newest first". */
+export interface ListOptions {
+    /** Only messages with this verdict. */
+    readonly verdict?: Verdict;
+    /** Only these hashes — what a folder filter is, see `sourceHashes` in `raw.ts`. */
+    readonly hashes?: ReadonlySet<string>;
+    readonly limit?: number;
+}
+
+/**
+ * The messages of a case, newest first, without a search term.
+ *
+ * The list a journalist sees before they have typed anything, so it is a separate function from
+ * {@link searchMessages} rather than that one with an empty query: the orders differ and neither
+ * is a degenerate case of the other. Search ranks by FTS5 relevance, where "newest" is
+ * meaningless; a browse list ranks by `sent_at`, and the messages whose `Date` could not be read
+ * sort LAST instead of to 1970 — a gap in the data must not look like a fact about the message
+ * (same rule as `parseDate`).
+ *
+ * `hashes` is filtered in TypeScript rather than as a `WHERE hash IN (…)`: a source of a hundred
+ * thousand messages would be a hundred thousand bind parameters, past SQLite's variable limit.
+ * The page is small, so the cost is reading rows until it is full.
+ */
+export function listMessages(db: DatabaseSync, options: ListOptions = {}): SearchHit[] {
+    const limit = Math.max(1, Math.min(1000, Math.trunc(options.limit ?? 200) || 1));
+    const hashes = options.hashes;
+    // Over-read when a hash filter applies: the rows it drops still have to come from somewhere,
+    // and reading the whole case to filter it would defeat the LIMIT on a large archive. A filter
+    // that is sparser than this cap shows a short page rather than a wrong one.
+    const scan = hashes ? Math.min(20_000, limit * 50) : limit;
+
+    const where = options.verdict ? 'WHERE verdict = ?' : '';
+    const rows = db
+        .prepare(
+            `SELECT ${HIT_COLUMNS} FROM messages ${where}
+             ORDER BY sent_at IS NULL, sent_at DESC, hash ASC LIMIT ${scan}`,
+        )
+        .all(...(options.verdict ? [options.verdict] : [])) as Record<string, unknown>[];
+
+    const found: SearchHit[] = [];
+    for (const row of rows) {
+        if (hashes && !hashes.has(String(row.hash))) continue;
+        found.push(toHit(row));
+        if (found.length >= limit) break;
+    }
+    return found;
+}
+
+/** Everything the index holds about one message — the detail pane's row, verdict and signatures. */
+export interface IndexedMessage {
+    readonly hash: string;
+    readonly bytes: number;
+    readonly messageId?: string;
+    readonly from: string;
+    readonly to: string;
+    readonly cc: string;
+    readonly subject: string;
+    readonly date: string;
+    readonly sentAt?: number;
+    readonly fromDomain?: string;
+    readonly verdict: Verdict;
+    /** The caveats of the signature the message verdict came from. */
+    readonly caveats: readonly Caveat[];
+}
+
+/**
+ * One message out of the index, or `undefined` when the index has no row for that hash.
+ *
+ * ONLY WHAT THE INDEX CONCLUDED, and the trust order in the package note applies without an
+ * exception here: this is a cache of a verification that ran at import time against the keys then
+ * available. A pane that shows the full evidence chain of each signature re-verifies the raw
+ * bytes (`readRaw` plus `@stamped/verify`) instead of reading it from here, because a key
+ * collected since would change the answer and this row would not know.
+ */
+export function readMessage(db: DatabaseSync, hash: string): IndexedMessage | undefined {
+    const row = db
+        .prepare(
+            `SELECT hash, message_id, sender, recipients, cc, subject, date, sent_at,
+                    from_domain, verdict, caveats, bytes
+             FROM messages WHERE hash = ?`,
+        )
+        .get(hash) as Record<string, unknown> | undefined;
+    if (!row) return undefined;
+
+    return {
+        hash: String(row.hash),
+        bytes: Number(row.bytes ?? 0),
+        messageId: optionalText(row.message_id),
+        from: String(row.sender ?? ''),
+        to: String(row.recipients ?? ''),
+        cc: String(row.cc ?? ''),
+        subject: String(row.subject ?? ''),
+        date: String(row.date ?? ''),
+        sentAt: row.sent_at === null || row.sent_at === undefined ? undefined : Number(row.sent_at),
+        fromDomain: optionalText(row.from_domain),
+        verdict: String(row.verdict) as Verdict,
+        caveats: parseCaveats(row.caveats),
+    };
+}
+
+/** A nullable TEXT column as `string | undefined`, never as the string `"null"`. */
+function optionalText(value: unknown): string | undefined {
+    return value === null || value === undefined ? undefined : String(value);
+}
+
+/**
+ * The `caveats` column back into a list.
+ *
+ * An unreadable column yields an empty list rather than throwing: the verdict is the finding and
+ * it is in its own column, so a detail pane must still open. The caveats are shown from the
+ * re-verification anyway — see {@link readMessage}.
+ */
+function parseCaveats(value: unknown): Caveat[] {
+    if (typeof value !== 'string') return [];
+    try {
+        const parsed = JSON.parse(value) as unknown;
+        return Array.isArray(parsed) ? (parsed.filter((item) => typeof item === 'string') as Caveat[]) : [];
+    } catch {
+        return [];
+    }
 }
