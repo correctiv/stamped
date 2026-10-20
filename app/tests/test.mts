@@ -3,6 +3,7 @@
 // test file.
 import { run } from '@gjsify/unit';
 
+import autokeys from './unit/autokeys.test.ts';
 import classify from './unit/classify.test.ts';
 import keys from './unit/keys.test.ts';
 import keyvault from './unit/keyvault.test.ts';
@@ -13,6 +14,7 @@ import importSuite from './unit/import.test.ts';
 import store from './unit/store.test.ts';
 
 run({
+    autokeys,
     classify,
     keys,
     keyvault,

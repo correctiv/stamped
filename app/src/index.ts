@@ -20,6 +20,7 @@ import { hideBin } from 'yargs/helpers';
 import { importCommand } from './commands/import.ts';
 import { keysCommand } from './commands/keys.ts';
 import { reportCommand } from './commands/report.ts';
+import { reverifyCommand } from './commands/reverify.ts';
 import { searchCommand } from './commands/search.ts';
 import { verifyCommand } from './commands/verify.ts';
 import { initI18n } from './lib/i18n.ts';
@@ -42,6 +43,7 @@ function parse(): Promise<unknown> {
             .command(importCommand())
             .command(searchCommand())
             .command(reportCommand())
+            .command(reverifyCommand())
             .demandCommand(1, _('Pick a command — try `stamped verify --help`.'))
             .strict()
             .version('0.1.0')

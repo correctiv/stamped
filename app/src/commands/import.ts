@@ -17,6 +17,7 @@ import type { MboxFlavour } from '@stamped/import';
 import { importSources, openCase } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
+import { fetchMissingAndReverify } from '../lib/autofetch.ts';
 import { keyStoreFrom } from '../lib/keys.ts';
 
 interface ImportArgs {
@@ -25,6 +26,8 @@ interface ImportArgs {
     key?: (string | number)[];
     flavour?: string;
     quiet?: boolean;
+    lookup?: boolean;
+    yes?: boolean;
 }
 
 /** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
@@ -56,6 +59,16 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                     describe: _('Which "From " quoting the mbox files use: mboxrd (the default) or mboxo'),
                     choices: ['mboxrd', 'mboxo'],
                     default: 'mboxrd',
+                })
+                .option('lookup', {
+                    describe: _('Look up missing keys after the import (asks first); --no-lookup skips it'),
+                    type: 'boolean',
+                    default: true,
+                })
+                .option('yes', {
+                    describe: _('Accept the key lookup without asking'),
+                    type: 'boolean',
+                    default: false,
                 })
                 .option('quiet', {
                     describe: _('Print only the summary, no progress'),
@@ -123,6 +136,10 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                 );
             }
             console.log(fmt(_('Case folder: {path}'), { path: paths.root }));
+
+            if (args.lookup !== false) {
+                await fetchMissingAndReverify(paths, { yes: args.yes === true });
+            }
         },
     };
 }
