@@ -1,0 +1,28 @@
+{
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "typescript/consistent-type-imports": "warn",
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-non-null-assertion": "off",
+    "unicorn/prefer-node-protocol": "error",
+    "eslint/no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_"
+      }
+    ]
+  },
+  "ignorePatterns": [
+    "**/node_modules",
+    "**/dist",
+    "**/lib",
+    "**/coverage",
+    "**/*.gjs.mjs",
+    "**/*.node.mjs"
+  ]
+}

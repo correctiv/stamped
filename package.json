@@ -1,0 +1,24 @@
+{
+  "name": "stamped",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "description": "Stamped — verify (DKIM) and explore email archives locally, for journalists. A TypeScript monorepo that runs on GJS via gjsify.",
+  "workspaces": [
+    "packages/*",
+    "app"
+  ],
+  "scripts": {
+    "check": "gjsify foreach -A check",
+    "build": "gjsify workspace stamped-cli build",
+    "start": "gjsify workspace stamped-cli start",
+    "test": "gjsify workspace stamped-cli test",
+    "lint": "gjsify workspace stamped-cli lint",
+    "format": "gjsify workspace stamped-cli format",
+    "format:check": "gjsify workspace stamped-cli format:check",
+    "fixtures": "node tools/make-fixtures.mjs",
+    "i18n:extract": "./dev/i18n.sh extract",
+    "i18n:compile": "./dev/i18n.sh compile"
+  }
+}
