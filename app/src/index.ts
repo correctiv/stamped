@@ -17,6 +17,7 @@ import { _ } from '@stamped/core';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
+import { keysCommand } from './commands/keys.ts';
 import { verifyCommand } from './commands/verify.ts';
 import { initI18n } from './lib/i18n.ts';
 
@@ -34,6 +35,7 @@ function parse(): Promise<unknown> {
             .scriptName('stamped')
             .usage(_('stamped <command> [options]'))
             .command(verifyCommand())
+            .command(keysCommand())
             .demandCommand(1, _('Pick a command — try `stamped verify --help`.'))
             .strict()
             .version('0.1.0')
