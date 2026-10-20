@@ -44,14 +44,16 @@
         "name": "CORRECTIV",
         "email": "info@correctiv.org"
       },
-      "summary": "Check email signatures",
+      "summary": "Verify and explore emails",
       "license": {
         "project": "AGPL-3.0-or-later"
       },
       "description": "Stamped verifies the DKIM signatures of email messages and says what each signature actually covers: confirmed, confirmed with caveats, body altered, headers altered, unverifiable, or unsigned. It works offline — public keys come from a store you fill, so examining a leaked message sends no lookup to the signing domain.",
       "homepageUrl": "https://github.com/correctiv/stamped",
       "bugtrackerUrl": "https://github.com/correctiv/stamped/issues",
-      "vcsBrowserUrl": "https://github.com/correctiv/stamped"
+      "vcsBrowserUrl": "https://github.com/correctiv/stamped",
+      "icon": "../data/icons/hicolor/scalable/apps/org.correctiv.Stamped.svg",
+      "maintainer": "CORRECTIV <info@correctiv.org>"
     },
     "excludeGlobals": [
       "document",
