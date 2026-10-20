@@ -1,0 +1,79 @@
+name: Deploy site
+
+# Builds the landing page (`gjsify site build`, generated from the AppStream metainfo and the
+# gjsify.site block in package.json) and publishes it to GitHub Pages at
+# https://correctiv.github.io/stamped/.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "data/**"
+      - "site/**"
+      - "gjsify-lock.json"
+      - ".github/workflows/deploy-site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # `gjsify site` runs on gjs, which ubuntu-latest lacks; same container as ci.yml.
+    container:
+      image: fedora:44
+    steps:
+      # The AVIF and WebP loaders read and resize screenshots; librsvg renders the icon.
+      - name: Install system prerequisites
+        run: >
+          dnf install -y --setopt=install_weak_deps=False
+          git tar xz findutils gjs json-glib libsoup3 gdk-pixbuf2 librsvg2 avif-pixbuf-loader webp-pixbuf-loader
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Cache gjsify tarball store
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/gjsify/tarballs
+          key: gjsify-tarballs-${{ hashFiles('gjsify-lock.json') }}
+          restore-keys: gjsify-tarballs-
+
+      - name: Bootstrap the gjsify CLI
+        run: |
+          VERSION=$(node -p "require('./package.json').devDependencies['@gjsify/cli']")
+          npm install -g "@gjsify/cli@$VERSION"
+
+      - name: Install dependencies
+        run: gjsify install --immutable
+
+      - name: Build the site
+        run: gjsify site build --out _site
+
+      - name: Keep .nojekyll
+        run: touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
