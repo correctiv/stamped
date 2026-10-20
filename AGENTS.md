@@ -60,7 +60,7 @@ replaced, `verifyMessage` is the only surface that changes.
 
 ## Why mailauth and not our own verifier
 
-Measured, not assumed (see [docs/spikes.md](docs/spikes.md)). RFC 6376 canonicalization —
+Measured, not assumed (see [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md)). RFC 6376 canonicalization —
 `relaxed` header unfolding, whitespace collapsing, the body's trailing-CRLF rules, `l=`
 truncation — is the hard part, and a from-scratch implementation is subtly wrong in a way that
 still returns `true` for the easy cases. mailauth (MIT) gets it right and exposes every
@@ -157,7 +157,7 @@ the first.
 - **No TypeScript parameter properties** (`constructor(private x: T)`). Node's
   `--experimental-strip-types` rejects them, which silently breaks the Node test run.
 - SQLite runs on **libgda** through gjsify's `node:sqlite` wrapper, not sqlite3. FTS5 is available
-  on both runtimes (measured, [docs/spikes.md](docs/spikes.md)).
+  on both runtimes (measured, [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md)).
 - Conventional commits (`feat(verify): …`, `fix(core): …`), imperative, subject ≤ 50 chars. Run
   `gjsify foreach -A check`, `format:check`, `lint` and the tests before committing. No
   `--no-verify`.
