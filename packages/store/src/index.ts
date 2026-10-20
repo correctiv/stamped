@@ -32,6 +32,13 @@ export {
 } from './index-db.ts';
 export { appendLog, digest, type ImportLogEntry, rawPath, store, type StoreResult } from './raw.ts';
 export {
+    missingKeyPairs,
+    reverifyPairs,
+    type ReverifyResult,
+    unappliedKeyPairs,
+    type VerdictChange,
+} from './reverify.ts';
+export {
     type CaseReport,
     caseReport,
     type KeyDemand,

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: https://github.com/correctiv/stamped/issues\n"
-"POT-Creation-Date: 2026-10-20 21:19+0200\n"
+"POT-Creation-Date: 2026-10-20 22:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,58 +18,67 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: app/src/commands/import.ts:34
+#: app/src/commands/import.ts:37
 msgid "Read mail archives into a case folder and index them"
 msgstr ""
 
-#: app/src/commands/import.ts:38
+#: app/src/commands/import.ts:41
 msgid "The case folder to import into. Created when it does not exist."
 msgstr ""
 
-#: app/src/commands/import.ts:43
+#: app/src/commands/import.ts:46
 msgid "An mbox file, a Maildir, a single .eml, or a directory of those"
 msgstr ""
 
-#: app/src/commands/import.ts:50
+#: app/src/commands/import.ts:53
 msgid ""
 "A public key to verify against: <selector>._domainkey.<domain>=<TXT record, "
 "or a path to a .pem or .txt file holding one>. Repeatable."
 msgstr ""
 
-#: app/src/commands/import.ts:56
+#: app/src/commands/import.ts:59
 msgid ""
 "Which \"From \" quoting the mbox files use: mboxrd (the default) or mboxo"
 msgstr ""
 
-#: app/src/commands/import.ts:61
+#: app/src/commands/import.ts:64
+msgid ""
+"Look up missing keys after the import (asks first); --no-lookup skips it"
+msgstr ""
+
+#: app/src/commands/import.ts:69
+msgid "Accept the key lookup without asking"
+msgstr ""
+
+#: app/src/commands/import.ts:74
 msgid "Print only the summary, no progress"
 msgstr ""
 
-#: app/src/commands/import.ts:67
+#: app/src/commands/import.ts:80
 msgid ""
 "Import one mbox, with no keys yet — run `stamped report` to see which are "
 "needed"
 msgstr ""
 
-#: app/src/commands/import.ts:85
+#: app/src/commands/import.ts:98
 msgid "{read} read, {stored} stored, {duplicates} duplicates"
 msgstr ""
 
-#: app/src/commands/import.ts:99
+#: app/src/commands/import.ts:112
 msgid "{read} message read."
 msgid_plural "{read} messages read."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/import.ts:104
+#: app/src/commands/import.ts:117
 msgid "{stored} newly stored, {duplicates} already in the case."
 msgstr ""
 
-#: app/src/commands/import.ts:109
+#: app/src/commands/import.ts:122
 msgid "{indexed} indexed."
 msgstr ""
 
-#: app/src/commands/import.ts:117
+#: app/src/commands/import.ts:130
 msgid ""
 "{failed} message could not be verified; it is stored but has no verdict."
 msgid_plural ""
@@ -77,11 +86,11 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/import.ts:125
+#: app/src/commands/import.ts:138
 msgid "Case folder: {path}"
 msgstr ""
 
-#: app/src/commands/keys.ts:39
+#: app/src/commands/keys.ts:41
 msgid ""
 "Every DKIM signature names a domain and a selector; the matching public key "
 "is what proves the signature. Without that key a message is “unverifiable”. "
@@ -89,179 +98,175 @@ msgid ""
 "first."
 msgstr ""
 
-#: app/src/commands/keys.ts:46
+#: app/src/commands/keys.ts:48
 msgid "Ways to get a missing key, safest first:"
 msgstr ""
 
-#: app/src/commands/keys.ts:47
+#: app/src/commands/keys.ts:49
 msgid ""
 "  1. Ask the provider for the old record: stamped keys template <domain> "
 "<selector>"
 msgstr ""
 
-#: app/src/commands/keys.ts:48
+#: app/src/commands/keys.ts:50
 msgid ""
 "  2. Paste it yourself:                   stamped keys add "
 "<selector>._domainkey.<domain> <key>"
 msgstr ""
 
-#: app/src/commands/keys.ts:49
+#: app/src/commands/keys.ts:51
 msgid "  3. archive.prove.email (third party):   stamped keys fetch --archive"
 msgstr ""
 
-#: app/src/commands/keys.ts:50
+#: app/src/commands/keys.ts:52
 msgid "  4. Live DNS (tells the domain):         stamped keys fetch --dns"
 msgstr ""
 
-#: app/src/commands/keys.ts:57
+#: app/src/commands/keys.ts:59
 msgid "Expected <selector>._domainkey.<domain>, got: {name}"
 msgstr ""
 
-#: app/src/commands/keys.ts:69
+#: app/src/commands/keys.ts:71 app/src/lib/autofetch.ts:124
 msgid "  no key  {name}: {reason}"
 msgstr ""
 
-#: app/src/commands/keys.ts:76
+#: app/src/commands/keys.ts:78
 msgid "See which DKIM keys are needed and store them"
 msgstr ""
 
-#: app/src/commands/keys.ts:80
+#: app/src/commands/keys.ts:82
 msgid "The case folder holding keys.json"
 msgstr ""
 
-#: app/src/commands/keys.ts:88
+#: app/src/commands/keys.ts:90
 msgid "Pick a subcommand — try `stamped keys --help`."
 msgstr ""
 
-#: app/src/commands/keys.ts:102
+#: app/src/commands/keys.ts:104
 msgid "List stored keys, and with --pairs the ones still missing"
 msgstr ""
 
-#: app/src/commands/keys.ts:107
+#: app/src/commands/keys.ts:109
 msgid ""
 "A pair list (domain, selector[, mail count] per line) to check for missing "
 "keys"
 msgstr ""
 
-#: app/src/commands/keys.ts:111
+#: app/src/commands/keys.ts:113
 msgid "Print JSON"
 msgstr ""
 
-#: app/src/commands/keys.ts:122
+#: app/src/commands/keys.ts:124
 msgid "{count} key stored"
 msgid_plural "{count} keys stored"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/keys.ts:134
+#: app/src/commands/keys.ts:136
 msgid ""
 "! {name} holds different keys — a key rotation, or a forgery. Compare them."
 msgstr ""
 
-#: app/src/commands/keys.ts:143
+#: app/src/commands/keys.ts:145
 msgid "No key is missing."
 msgstr ""
 
-#: app/src/commands/keys.ts:146
+#: app/src/commands/keys.ts:148
 msgid "{count} key is missing; messages signed with it stay unverifiable:"
 msgid_plural ""
 "{count} keys are missing; messages signed with them stay unverifiable:"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/keys.ts:173
+#: app/src/commands/keys.ts:175
 msgid ""
 "Store a key you have: a PEM, a bare p= value, or a pasted DNS TXT record"
 msgstr ""
 
-#: app/src/commands/keys.ts:177
+#: app/src/commands/keys.ts:179
 msgid "<selector>._domainkey.<domain>"
 msgstr ""
 
-#: app/src/commands/keys.ts:182
+#: app/src/commands/keys.ts:184
 msgid "The key text, or a path to a file holding it"
 msgstr ""
 
-#: app/src/commands/keys.ts:192
+#: app/src/commands/keys.ts:194
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
 msgstr ""
 
-#: app/src/commands/keys.ts:205
+#: app/src/commands/keys.ts:207
 msgid "Stored {name}: {algorithm} {bits} bit."
 msgstr ""
 
-#: app/src/commands/keys.ts:214
+#: app/src/commands/keys.ts:216
 msgid ""
 "! The case already held a different key for this pair. Both are kept: this "
 "is either a key rotation or a forgery."
 msgstr ""
 
-#: app/src/commands/keys.ts:233
+#: app/src/commands/keys.ts:235
 msgid ""
 "Look up missing keys over the network, after you confirm exactly what is sent"
 msgstr ""
 
-#: app/src/commands/keys.ts:236
+#: app/src/commands/keys.ts:238
 msgid "A pair list (domain, selector per line)"
 msgstr ""
 
-#: app/src/commands/keys.ts:238
+#: app/src/commands/keys.ts:240
 msgid "One <selector>._domainkey.<domain>. Repeatable."
 msgstr ""
 
-#: app/src/commands/keys.ts:243
+#: app/src/commands/keys.ts:245
 msgid "Ask archive.prove.email (a third party; its keys are unsigned)"
 msgstr ""
 
-#: app/src/commands/keys.ts:248
+#: app/src/commands/keys.ts:250
 msgid "Query the public DNS (the domain’s operator can see it)"
 msgstr ""
 
-#: app/src/commands/keys.ts:253
+#: app/src/commands/keys.ts:255
 msgid "Skip the confirmation prompt"
 msgstr ""
 
-#: app/src/commands/keys.ts:261
+#: app/src/commands/keys.ts:276
 msgid ""
 "Choose where to look: --archive and/or --dns. Stamped never goes online "
 "unasked."
 msgstr ""
 
-#: app/src/commands/keys.ts:268
-msgid "Give --pairs or --name: which keys to look up."
-msgstr ""
-
-#: app/src/commands/keys.ts:273
+#: app/src/commands/keys.ts:287
 msgid "Every listed key is already stored."
 msgstr ""
 
-#: app/src/commands/keys.ts:284
+#: app/src/commands/keys.ts:298 app/src/lib/autofetch.ts:110
 msgid "Skipped; nothing was sent."
 msgstr ""
 
-#: app/src/commands/keys.ts:303
+#: app/src/commands/keys.ts:317
 msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr ""
 
-#: app/src/commands/keys.ts:308
+#: app/src/commands/keys.ts:322 app/src/lib/autofetch.ts:119
 msgid " — DIFFERS from a stored key"
 msgstr ""
 
-#: app/src/commands/keys.ts:329
+#: app/src/commands/keys.ts:344
 msgid "Print a request you can send to the provider for the historical key"
 msgstr ""
 
-#: app/src/commands/keys.ts:333
+#: app/src/commands/keys.ts:348
 msgid "The signing domain"
 msgstr ""
 
-#: app/src/commands/keys.ts:338
+#: app/src/commands/keys.ts:353
 msgid "One or more selectors"
 msgstr ""
 
-#: app/src/commands/keys.ts:344
+#: app/src/commands/keys.ts:359
 msgid "When the messages were sent, e.g. \"March 2019\""
 msgstr ""
 
@@ -324,6 +329,18 @@ msgstr ""
 
 #: app/src/commands/report.ts:99
 msgid "selector._domainkey.domain"
+msgstr ""
+
+#: app/src/commands/reverify.ts:20
+msgid "Re-verify messages with the keys the case now holds (offline)"
+msgstr ""
+
+#: app/src/commands/reverify.ts:23
+msgid "The case folder"
+msgstr ""
+
+#: app/src/commands/reverify.ts:30
+msgid "No stored key applies to an unverified message."
 msgstr ""
 
 #: app/src/commands/search.ts:32
@@ -419,12 +436,42 @@ msgstr ""
 msgid "Cannot read {path}."
 msgstr ""
 
-#: app/src/index.ts:39
+#: app/src/index.ts:40
 msgid "stamped <command> [options]"
 msgstr ""
 
-#: app/src/index.ts:45
+#: app/src/index.ts:47
 msgid "Pick a command — try `stamped verify --help`."
+msgstr ""
+
+#: app/src/lib/autofetch.ts:38
+msgid "{count} message re-verified, {changed} verdict changed."
+msgid_plural "{count} messages re-verified, {changed} verdicts changed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/autofetch.ts:50
+msgid "! {name} holds different keys; its messages were left as they are."
+msgstr ""
+
+#: app/src/lib/autofetch.ts:57
+msgid "{failed} message could not be re-verified."
+msgid_plural "{failed} messages could not be re-verified."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/autofetch.ts:94
+msgid ""
+"{count} key is missing. No terminal and no --yes, so nothing was looked up; "
+"run `stamped keys fetch --case {path}`."
+msgid_plural ""
+"{count} keys are missing. No terminal and no --yes, so nothing was looked "
+"up; run `stamped keys fetch --case {path}`."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/autofetch.ts:116
+msgid "  stored  {name} via {origin}{flag}"
 msgstr ""
 
 #: app/src/lib/case.ts:18
@@ -572,6 +619,22 @@ msgstr ""
 msgid "Cannot use {path}: {reason}"
 msgstr ""
 
+#: packages/core/src/autokeys.ts:31
+msgid "The archive is asked first; the DNS only for the keys it does not have."
+msgstr ""
+
+#: packages/core/src/autokeys.ts:34
+msgid "Look up {count} missing key?"
+msgid_plural "Look up {count} missing keys?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: packages/core/src/autokeys.ts:39
+msgid "{name} — {count} message"
+msgid_plural "{name} — {count} messages"
+msgstr[0] ""
+msgstr[1] ""
+
 #: packages/core/src/keyconsent.ts:36
 msgid "Look up {count} key in the public DNS?"
 msgid_plural "Look up {count} keys in the public DNS?"
@@ -702,19 +765,19 @@ msgstr ""
 msgid "Thank you,"
 msgstr ""
 
-#: packages/core/src/keyvault.ts:199
+#: packages/core/src/keyvault.ts:202
 msgid "The key store file is not valid JSON."
 msgstr ""
 
-#: packages/core/src/keyvault.ts:203
+#: packages/core/src/keyvault.ts:206
 msgid "The key store file has an unknown format."
 msgstr ""
 
-#: packages/core/src/keyvault.ts:218
+#: packages/core/src/keyvault.ts:221
 msgid "The key store file has a malformed entry for {name}."
 msgstr ""
 
-#: packages/core/src/keyvault.ts:279
+#: packages/core/src/keyvault.ts:282
 msgid "Pair list line {line}: expected domain and selector."
 msgstr ""
 

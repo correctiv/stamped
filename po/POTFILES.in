@@ -1,9 +1,11 @@
 app/src/commands/import.ts
 app/src/commands/keys.ts
 app/src/commands/report.ts
+app/src/commands/reverify.ts
 app/src/commands/search.ts
 app/src/commands/verify.ts
 app/src/index.ts
+app/src/lib/autofetch.ts
 app/src/lib/case.ts
 app/src/lib/consent.ts
 app/src/lib/dns.ts
@@ -11,6 +13,7 @@ app/src/lib/i18n.ts
 app/src/lib/keys.ts
 app/src/lib/report.ts
 app/src/lib/vault.ts
+packages/core/src/autokeys.ts
 packages/core/src/classify.ts
 packages/core/src/i18n.ts
 packages/core/src/index.ts
@@ -35,6 +38,7 @@ packages/store/src/index-db.ts
 packages/store/src/index.ts
 packages/store/src/raw.ts
 packages/store/src/report.ts
+packages/store/src/reverify.ts
 packages/verify/src/evidence.ts
 packages/verify/src/index.ts
 packages/verify/src/mailauth.ts

@@ -26,6 +26,8 @@ import {
 } from '@stamped/core';
 import type { CommandModule } from 'yargs';
 
+import { fetchMissingAndReverify, reverifyApplicable } from '../lib/autofetch.ts';
+import { caseOrThrow } from '../lib/case.ts';
 import { askConsent } from '../lib/consent.ts';
 import { resolveTxt } from '../lib/dns.ts';
 import { loadVault, saveVault } from '../lib/vault.ts';
@@ -256,6 +258,19 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                 })
                 .epilog(explain()),
         handler: async (args) => {
+            const wantedNothing = !args.pairs && args.name.length === 0;
+            if (wantedNothing) {
+                // No pairs given: every key the case is missing, on one consent.
+                const channels: LookupChannel[] = [
+                    ...(args.archive ? (['archive.prove.email'] as const) : []),
+                    ...(args.dns ? (['dns'] as const) : []),
+                ];
+                await fetchMissingAndReverify(caseOrThrow(args.case), {
+                    yes: args.yes,
+                    ...(channels.length > 0 ? { channels } : {}),
+                });
+                return;
+            }
             if (!args.archive && !args.dns) {
                 throw new Error(
                     _('Choose where to look: --archive and/or --dns. Stamped never goes online unasked.'),
@@ -265,7 +280,6 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                 ...(args.pairs ? parsePairList(readText(args.pairs)) : []),
                 ...args.name.map((n) => splitName(String(n))),
             ];
-            if (wanted.length === 0) throw new Error(_('Give --pairs or --name: which keys to look up.'));
 
             const vault = loadVault(args.case);
             let todo: KeyPair[] = missingPairs(wanted, vault);
@@ -313,6 +327,7 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                 printResult(result, added);
                 todo = missingPairs(todo, vault);
             }
+            if (existsSync(args.case + '/case.json')) await reverifyApplicable(caseOrThrow(args.case));
         },
     };
 }
