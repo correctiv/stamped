@@ -79,6 +79,8 @@
   },
   "dependencies": {
     "@stamped/core": "*",
+    "@stamped/import": "*",
+    "@stamped/store": "*",
     "@stamped/verify": "*",
     "yargs": "^18.1.0"
   },
