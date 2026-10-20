@@ -12,6 +12,11 @@ on:
       - "site/**"
       - "gjsify-lock.json"
       - ".github/workflows/deploy-site.yml"
+  # The download buttons are read from the latest release at build time. A release created with
+  # GITHUB_TOKEN triggers no other workflow, so v0.1.0 went live with only a "source code" button.
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -25,6 +30,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     # `gjsify site` runs on gjs, which ubuntu-latest lacks; same container as ci.yml.
     container:
