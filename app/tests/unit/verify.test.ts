@@ -41,6 +41,8 @@ const EXPECTED: ReadonlyArray<{ file: string; verdict: Verdict; caveats: Caveat[
     // The message verdict is the STRONGEST of the two signatures; the per-signature findings are
     // asserted in their own test below.
     { file: 'multi-signature.eml', verdict: 'confirmed', caveats: [] },
+    { file: 'signer-not-author.eml', verdict: 'confirmed-with-caveats', caveats: ['signer-not-author'] },
+    { file: 'aligned-subdomain.eml', verdict: 'confirmed', caveats: [] },
 ];
 
 async function classify(file: string, keys = fixtureKeys()) {
@@ -160,6 +162,35 @@ export default async () => {
             expect(byDomain.get('lists.example.org')).toBe('body-altered');
             expect(byDomain.get('example.com')).toBe('confirmed');
             expect(finding.verdict).toBe('confirmed');
+        });
+    });
+
+    await describe('who signed, versus who wrote', async () => {
+        await it('names both domains and marks a foreign signer as not aligned', async () => {
+            const finding = await classify('signer-not-author.eml');
+            const evidence = finding.signatures[0].evidence;
+            expect(evidence.domain).toBe('other.example');
+            expect(evidence.authorDomain).toBe('example.com');
+            expect(evidence.aligned).toBe(false);
+            expect(evidence.signatureOk).toBe(true);
+        });
+
+        await it('aligns a subdomain signer with its parent (relaxed alignment)', async () => {
+            const evidence = (await classify('aligned-subdomain.eml')).signatures[0].evidence;
+            expect(evidence.domain).toBe('mail.example.com');
+            expect(evidence.authorDomain).toBe('example.com');
+            expect(evidence.aligned).toBe(true);
+        });
+
+        await it('does not let a verifying list signature confirm a broken author signature', async () => {
+            const finding = await classify('multi-signature-author-broken.eml');
+            const byDomain = new Map(
+                finding.signatures.map((signature) => [signature.evidence.domain, signature.verdict]),
+            );
+            expect(byDomain.get('example.com')).toBe('body-altered');
+            expect(byDomain.get('lists.example.org')).toBe('confirmed-with-caveats');
+            expect(finding.verdict).toBe('confirmed-with-caveats');
+            expect([...finding.caveats]).toStrictEqual(['signer-not-author']);
         });
     });
 

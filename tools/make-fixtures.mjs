@@ -207,6 +207,8 @@ const rsa2048 = makeKey({ selector: 't2048', domain: 'example.com', type: 'rsa',
 const rsa512 = makeKey({ selector: 't512', domain: 'example.com', type: 'rsa', bits: 512 });
 const ed25519 = makeKey({ selector: 'ted', domain: 'example.com', type: 'ed25519' });
 const list = makeKey({ selector: 'tlist', domain: 'lists.example.org', type: 'rsa', bits: 2048 });
+const other = makeKey({ selector: 'tother', domain: 'other.example', type: 'rsa', bits: 2048 });
+const sub = makeKey({ selector: 'tsub', domain: 'mail.example.com', type: 'rsa', bits: 2048 });
 // Published nowhere: a genuine signature whose key the operator does not have.
 const absent = makeKey({
     selector: 'tmissing',
@@ -406,5 +408,69 @@ write(
     });
     write('multi-signature.eml', `${listHeader}\r\n${authorSigned}`);
 }
+
+// ── who signed, versus who wrote ───────────────────────────────────────────────────────────
+
+// `From:` is example.com, but the only signature is d=other.example. The cryptography is flawless
+// and says nothing about the author: anybody can sign a forged From with a domain they own.
+write(
+    'signer-not-author.eml',
+    sign({
+        headers: headersFor({ subject: 'Quarterly figures' }),
+        body: BODY,
+        key: other.privateKey,
+        domain: other.domain,
+        selector: other.selector,
+        algorithm: 'rsa-sha256',
+        canonicalization: 'relaxed/relaxed',
+        signedHeaders: SIGNED,
+    }),
+);
+
+// The author's signature is over the original body; the list then added a footer and signed THAT.
+// The list signature verifies, the author's is body-altered: a message verdict of plain
+// `confirmed` here would let a list's signature vouch for the author.
+{
+    const delivered = `${BODY}\r\n--\r\nfigures@lists.example.org -- unsubscribe at lists.example.org\r\n`;
+    const authorHeader = (() => {
+        const signed = sign({
+            headers: headersFor({ subject: 'Quarterly figures' }),
+            body: BODY,
+            key: rsa2048.privateKey,
+            domain: rsa2048.domain,
+            selector: rsa2048.selector,
+            algorithm: 'rsa-sha256',
+            canonicalization: 'relaxed/relaxed',
+            signedHeaders: SIGNED,
+        });
+        return signed.slice(0, signed.indexOf('\r\n'));
+    })();
+    const listSigned = sign({
+        headers: headersFor({ subject: 'Quarterly figures' }),
+        body: delivered,
+        key: list.privateKey,
+        domain: list.domain,
+        selector: list.selector,
+        algorithm: 'rsa-sha256',
+        canonicalization: 'relaxed/relaxed',
+        signedHeaders: SIGNED,
+    });
+    write('multi-signature-author-broken.eml', `${authorHeader}\r\n${listSigned}`);
+}
+
+// A subdomain signing for its parent is the same operator: aligned under relaxed alignment.
+write(
+    'aligned-subdomain.eml',
+    sign({
+        headers: headersFor({ subject: 'Quarterly figures' }),
+        body: BODY,
+        key: sub.privateKey,
+        domain: sub.domain,
+        selector: sub.selector,
+        algorithm: 'rsa-sha256',
+        canonicalization: 'relaxed/relaxed',
+        signedHeaders: SIGNED,
+    }),
+);
 
 console.log(`keys:\n  ${keyDir}`);
