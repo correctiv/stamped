@@ -1,0 +1,41 @@
+/**
+ * `@stamped/store` — the case folder, and everything that may be said about it.
+ *
+ * The layering, from the bottom: `case.ts` knows where things go, `raw.ts` owns the evidence and
+ * the chain of custody, `index-db.ts` keeps a rebuildable cache of what the evidence says, and
+ * `report.ts` aggregates that cache. `importer.ts` is the only module that drives all of them,
+ * and the only one that needs a verifier.
+ *
+ * TRUST ORDER, repeated here because every consumer has to know it: `raw/` is the truth,
+ * `import-log.jsonl` is the provenance, `index.db` is a cache. Nothing outside this package may
+ * read a verdict out of the index and call it a verification — the index holds what a
+ * verification concluded, at the time it ran, against the keys that were then available.
+ */
+
+export { casePaths, type CasePaths, CASE_VERSION, isCase, openCase } from './case.ts';
+export {
+    importSources,
+    type ImportOptions,
+    type ImportProgress,
+    type ImportResult,
+} from './importer.ts';
+export {
+    type IndexEntry,
+    indexMessage,
+    isIndexed,
+    messageCount,
+    openIndex,
+    removeMessage,
+    SCHEMA_VERSION,
+    type SearchHit,
+    searchMessages,
+} from './index-db.ts';
+export { appendLog, digest, type ImportLogEntry, rawPath, store, type StoreResult } from './raw.ts';
+export {
+    type CaseReport,
+    caseReport,
+    type KeyDemand,
+    keyDemand,
+    type VerdictCount,
+    verdictCounts,
+} from './report.ts';
