@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Node-free gjsify toolchain (mirrors curlew's CI). Everything runs on the gjsify stack pinned in
+# app/package.json: `gjsify install --immutable` from gjsify-lock.json, the bundled `gjsify tsc`
+# type-check, `gjsify build` for the CLI bundle, and the test bundle under both gjs and node. Node
+# is present only to bootstrap the gjsify CLI — its published bin is Node, its work targets gjs.
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:44
+    steps:
+      # gjs runs the bundle. libgda-sqlite backs gjsify's `node:sqlite`, which is what the FTS5
+      # suite asserts against — without it that suite fails on the database handle rather than on
+      # the capability it is there to measure. gettext is `msgfmt`, which `build` runs over `po/`
+      # into `dist/locale`; the compile step only warns when it is missing, so a build without it
+      # is silently English.
+      - name: Install system prerequisites (gjs + libgda + gettext)
+        run: >
+          dnf install -y --setopt=install_weak_deps=False
+          git tar xz findutils gjs
+          libgda libgda-sqlite
+          gettext
+
+      - uses: actions/checkout@v4
+
+      # Node 24 to bootstrap + run the gjsify CLI. gjsify's native install-backend prebuilds
+      # target node 24 — Fedora's default node 22 loads a mismatched ABI and segfaults
+      # `gjsify install`.
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # Content-addressed tarball store: a warm cache lets `gjsify install --immutable` skip the
+      # download phase. Keyed on the lockfile.
+      - name: Cache gjsify tarball store
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/gjsify/tarballs
+          key: gjsify-tarballs-${{ hashFiles('gjsify-lock.json') }}
+          restore-keys: gjsify-tarballs-
+
+      # Bootstrap the gjsify CLI so `gjsify install` is runnable before node_modules exists. It
+      # must be the SAME version the deps pin — a global-CLI ↔ pinned-libs skew produces silently
+      # broken bundles. Read it out of app/package.json rather than repeating it here: hardcoded,
+      # it falls behind the moment the pin moves.
+      - name: Bootstrap the gjsify CLI
+        run: |
+          VERSION=$(node -p "require('./app/package.json').devDependencies['@gjsify/cli']")
+          echo "Bootstrapping @gjsify/cli@$VERSION (from app/package.json)"
+          npm install -g "@gjsify/cli@$VERSION"
+
+      - name: Install dependencies (gjsify install --immutable)
+        run: gjsify install --immutable
+
+      # -A includes `private: true` workspaces. Without it every packages/* is skipped and the
+      # type-check silently covers only the app.
+      - name: Type check (app + every package)
+        run: gjsify foreach -A check
+
+      - name: Format check
+        run: gjsify workspace stamped-cli format:check
+
+      - name: Lint
+        run: gjsify workspace stamped-cli lint
+
+      - name: Build the CLI bundle
+        run: gjsify workspace stamped-cli build
+
+      # Runs on gjs AND node. The limit is for a HANG rather than for slowness: the suite takes
+      # seconds, and a stuck async handler on GJS would otherwise run until GitHub's 6-hour
+      # cancel. Nothing here touches the network — every key comes from a fixture file.
+      - name: Tests (gjs + node)
+        timeout-minutes: 10
+        run: gjsify workspace stamped-cli test
+
+      # The fixtures are COMMITTED, and they are also generated — so the generator and the
+      # committed bytes can drift apart silently. This does not assert they are identical: the
+      # generator mints fresh keys on every run, so every signature legitimately differs. It
+      # asserts the generator still RUNS and still produces a tree the suite accepts, against a
+      # throwaway copy, leaving the committed fixtures untouched.
+      - name: Fixture generator still works
+        run: |
+          set -eu
+          mkdir -p /tmp/fixture-probe
+          cp -r app/tests/fixtures /tmp/fixture-probe/committed
+          node tools/make-fixtures.mjs
+          gjsify workspace stamped-cli test
+          rm -rf app/tests/fixtures
+          mv /tmp/fixture-probe/committed app/tests/fixtures
+
+      # The claim in README.md, checked end to end against the real bundle: a signed fixture plus
+      # its key must come back `confirmed`, and a tampered body must come back `body-altered`.
+      # The unit suite drives `verifyMessage` directly, which cannot see a frontend that parses
+      # `--key` wrongly or prints nothing — the exact defect the GJS main loop fixed.
+      - name: CLI smoke test (the bundle, not the library)
+        run: |
+          set -eu
+          KEY=app/tests/fixtures/keys/t2048._domainkey.example.com.pub.pem
+          OUT=$(LC_ALL=C LANGUAGE= gjsify run app/dist/stamped.gjs.mjs verify \
+            app/tests/fixtures/confirmed.eml \
+            --key "t2048._domainkey.example.com=$KEY" --json)
+          echo "$OUT"
+          echo "$OUT" | node -e '
+            let raw = "";
+            process.stdin.on("data", (c) => (raw += c));
+            process.stdin.on("end", () => {
+              const got = JSON.parse(raw.replace(/^\$ [^\n]*\n/, "")).verdict;
+              if (got !== "confirmed") {
+                console.error(`::error::expected confirmed, got ${got}`);
+                process.exit(1);
+              }
+            });
+          '
+          OUT=$(LC_ALL=C LANGUAGE= gjsify run app/dist/stamped.gjs.mjs verify \
+            app/tests/fixtures/body-altered.eml \
+            --key "t2048._domainkey.example.com=$KEY" --json)
+          echo "$OUT" | node -e '
+            let raw = "";
+            process.stdin.on("data", (c) => (raw += c));
+            process.stdin.on("end", () => {
+              const got = JSON.parse(raw.replace(/^\$ [^\n]*\n/, "")).verdict;
+              if (got !== "body-altered") {
+                console.error(`::error::expected body-altered, got ${got}`);
+                process.exit(1);
+              }
+            });
+          '
+
+      # A catalogue whose placeholders do not match its msgid surfaces as literal braces to the
+      # user rather than as a crash — the sort of defect nobody reports. `msgfmt --check` is what
+      # `dev/i18n.sh compile` runs; this makes it a gate instead of a warning, and the extract
+      # keeps `po/stamped.pot` honest about what is actually translatable.
+      - name: Catalogues compile and the POT is current
+        run: |
+          set -eu
+          ./dev/i18n.sh extract
+          ./dev/i18n.sh compile
+          git diff --stat -- po/ || true
