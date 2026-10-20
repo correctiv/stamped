@@ -8,22 +8,22 @@
  * whether the signature did. Somebody else with the same message and the same key must be able to
  * arrive at the same sentence, by hand if need be.
  *
- * Pure string assembly: no I/O, so the whole report is unit-testable from one evidence object.
+ * The facts themselves live in [`evidence.ts`](evidence.ts), shared with the window; this module
+ * is only the terminal's layout of them.
  */
 
 import {
     describeCaveat,
-    describeUnverifiableReason,
     describeVerdict,
     fmt,
-    type KeySource,
     type MessageFinding,
-    type SignatureEvidence,
     type SignatureFinding,
     _,
 } from '@stamped/core';
 
-/** How wide the label column is. Wide enough for the longest label below, plus a space. */
+import { caveatTexts, evidenceFields, signatureHeading } from './evidence.ts';
+
+/** How wide the label column is. Wide enough for the longest label in `evidenceFields`, plus a space. */
 const LABEL_WIDTH = 17;
 
 /** The whole report for one message: the verdict, then one block per signature. */
@@ -41,111 +41,16 @@ export function reportLines(finding: MessageFinding): string[] {
     return lines;
 }
 
-/**
- * One signature's block.
- *
- * Numbered even when there is only one, because "Signature 1 of 2" is the thing a reader must
- * not miss: signatures are evaluated individually, and a message whose author-domain signature
- * broke while a mailing list's still verifies is a FINDING. A single unnumbered block would let
- * the per-signature verdicts read as one.
- */
+/** One signature's block: the numbered heading, the fields in a column, then the caveats. */
 export function signatureLines(finding: SignatureFinding, position: number, total: number): string[] {
-    const evidence = finding.evidence;
-    const lines = [
-        fmt(_('Signature {position} of {total} — {verdict}'), {
-            position: String(position),
-            total: String(total),
-            verdict: finding.verdict,
-        }),
-        field(_('domain'), evidence.domain || _('(none)')),
-        field(_('author domain'), evidence.authorDomain || _('(unknown)')),
-        field(_('aligned'), evidence.aligned ? _('yes') : _('no')),
-        field(_('selector'), evidence.selector || _('(none)')),
-        field(_('algorithm'), evidence.algorithm || _('(none)')),
-        field(_('canonicalization'), evidence.canonicalization || _('(none)')),
-        field(_('key'), keyLine(evidence)),
-        field(_('signed headers'), evidence.signedHeaders.join(':') || _('(none)')),
-        field(_('body hash'), bodyHashLine(evidence)),
-        field(_('signature'), evidence.signatureOk ? _('verified') : _('not verified')),
-    ];
-
-    if (evidence.lengthLimit !== undefined) {
-        lines.push(field(_('l= limit'), lengthLimitLine(evidence)));
+    const lines = [signatureHeading(finding, position, total)];
+    for (const { label, value } of evidenceFields(finding)) {
+        lines.push(`  ${label.padEnd(LABEL_WIDTH)}${value}`);
     }
-    if (evidence.unverifiableBecause) {
-        lines.push(field(_('reason'), describeUnverifiableReason(evidence.unverifiableBecause)));
-    }
-    // The verifier's own wording, kept for the record: it is the one line that distinguishes two
-    // findings this tool maps onto the same reason, and a bug report without it is unactionable.
-    if (evidence.note) {
-        lines.push(field(_('verifier says'), evidence.note));
-    }
-    for (const caveat of finding.caveats) {
-        lines.push(fmt(_('  caveat: {text}'), { text: describeCaveat(caveat, evidence) }));
+    for (const { text } of caveatTexts(finding)) {
+        lines.push(fmt(_('  caveat: {text}'), { text }));
     }
     return lines;
-}
-
-/** `  label            value`, with the label padded into its column. */
-function field(label: string, value: string): string {
-    return `  ${label.padEnd(LABEL_WIDTH)}${value}`;
-}
-
-/** The key's size and provenance, or the fact that no key was ever fetched. */
-function keyLine(evidence: SignatureEvidence): string {
-    if (evidence.keySource === undefined) return _('none fetched');
-    const source = describeKeySource(evidence.keySource);
-    if (evidence.keyBits === undefined) {
-        // Ed25519 has no modulus, so a missing size is normal rather than missing information.
-        return source;
-    }
-    return fmt(_('{bits} bit, {source}'), { bits: String(evidence.keyBits), source });
-}
-
-/** Where a key came from, in the words the `archive-key` caveat uses. */
-function describeKeySource(source: KeySource): string {
-    switch (source) {
-        case 'dns':
-            return _('from the DNS');
-        case 'operator':
-            return _('supplied by you');
-        case 'archive':
-            return _('from the archive itself');
-    }
-}
-
-/**
- * The body hash line, with both hashes whenever they differ.
- *
- * Printing both is the point: `bh=` is what the signer committed to and the other is what this
- * message actually hashes to, so the two strings together are the evidence that the body changed.
- * One of them alone is a number nobody can check.
- */
-function bodyHashLine(evidence: SignatureEvidence): string {
-    if (evidence.bodyHashOk) {
-        return evidence.bodyHash
-            ? fmt(_('matches ({hash})'), { hash: evidence.bodyHash })
-            : _('matches');
-    }
-    if (evidence.bodyHash && evidence.bodyHashExpected) {
-        return fmt(_('differs — signed {expected}, message hashes to {actual}'), {
-            expected: evidence.bodyHashExpected,
-            actual: evidence.bodyHash,
-        });
-    }
-    return _('not checked');
-}
-
-/** How much of the body `l=` leaves out, in canonicalized bytes. */
-function lengthLimitLine(evidence: SignatureEvidence): string {
-    const limit = String(evidence.lengthLimit ?? 0);
-    if (evidence.unsignedBodyBytes === undefined) {
-        return fmt(_('{limit} bytes of the body are signed'), { limit });
-    }
-    return fmt(_('{limit} bytes of the body are signed, {unsigned} are not'), {
-        limit,
-        unsigned: String(evidence.unsignedBodyBytes),
-    });
 }
 
 /** The same finding as data, for `--json`. Keys are stable; new ones may be added. */
