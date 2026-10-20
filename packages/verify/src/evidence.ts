@@ -28,6 +28,8 @@ export type RawSignatureResult = DKIMResult;
 /** What the verifier knows that mailauth does not: where the key came from. */
 export interface EvidenceContext {
     readonly source?: KeySource;
+    /** The From domain, which mailauth reports once per message rather than per signature. */
+    readonly authorDomain?: string;
 }
 
 /** mailauth's key-error comments, from its `KEY_ERROR_COMMENTS` table, to Stamped's reasons. */
@@ -62,6 +64,12 @@ export function evidenceFrom(raw: RawSignatureResult, context: EvidenceContext =
         algorithm: raw.algo ?? '',
         canonicalization: raw.format ?? '',
         signedHeaders: signedHeadersOf(raw),
+        // mailauth's `status.aligned` is the signing domain when it shares the author's
+        // ORGANIZATIONAL domain (relaxed alignment, as DMARC defaults to), else false. Relaxed and
+        // not strict: `mail.example.com` signing for `example.com` is the same operator, and
+        // calling that a foreign signer would cry wolf on every mail system that signs from a
+        // subdomain. A different organization is exactly what must not align.
+        aligned: typeof status.aligned === 'string' && status.aligned.length > 0,
         // A PASS and a `bad signature` both mean the body hash matched — mailauth checks it
         // first and never reaches the key otherwise. Everything else means nothing was hashed
         // or the hashes differed, and neither is an intact body.
@@ -70,6 +78,7 @@ export function evidenceFrom(raw: RawSignatureResult, context: EvidenceContext =
     };
 
     if (typeof raw.modulusLength === 'number') evidence.keyBits = raw.modulusLength;
+    if (context.authorDomain) evidence.authorDomain = context.authorDomain;
     if (context.source) evidence.keySource = context.source;
     if (raw.rr) evidence.keyRecord = raw.rr;
     if (raw.bodyHash) evidence.bodyHash = raw.bodyHash;

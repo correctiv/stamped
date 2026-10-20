@@ -26,6 +26,8 @@ function good(overrides: Partial<SignatureEvidence> = {}): SignatureEvidence {
         signedHeaders: ['from', 'to', 'subject', 'date'],
         bodyHashOk: true,
         signatureOk: true,
+        authorDomain: 'example.com',
+        aligned: true,
         keyBits: 2048,
         keySource: 'operator',
         bodyHash: 'AAAAhashOfTheBodyAsItStands=',

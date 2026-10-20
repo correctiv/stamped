@@ -32,7 +32,19 @@ type DkimVerify = (
         rejectRsaSha1?: boolean;
         strict?: boolean;
     },
-) => Promise<{ results?: DKIMResult[] }>;
+) => Promise<{
+    results?: DKIMResult[];
+    headerFrom?: string[];
+    fromFields?: number;
+    fromSyntax?: 'valid' | 'lax' | 'invalid';
+}>;
+
+/** mailauth's Author Domain rules, as this module uses them. */
+type AuthorDomainOf = (
+    headerFrom: string[],
+    fromFields: number,
+    options: { fromSyntax?: 'valid' | 'lax' | 'invalid'; strict?: boolean },
+) => { authorDomain?: string };
 
 /**
  * mailauth, loaded once, lazily, and AFTER `self` exists.
@@ -51,15 +63,19 @@ type DkimVerify = (
  * so a bundle gets it without every consumer knowing about joi. Remove this block and make the
  * import static once that lands.
  */
-let mailauthPromise: Promise<DkimVerify> | undefined;
+let mailauthPromise: Promise<{ dkimVerify: DkimVerify; getAuthorDomain: AuthorDomainOf }> | undefined;
 
-function loadMailauth(): Promise<DkimVerify> {
+function loadMailauth(): Promise<{ dkimVerify: DkimVerify; getAuthorDomain: AuthorDomainOf }> {
     if (!mailauthPromise) {
         const host = globalThis as Record<string, unknown>;
         if (typeof host.self === 'undefined') host.self = globalThis;
-        mailauthPromise = import('mailauth/lib/dkim/verify').then(
-            (module) => (module as { dkimVerify: DkimVerify }).dkimVerify,
-        );
+        mailauthPromise = Promise.all([
+            import('mailauth/lib/dkim/verify'),
+            import('mailauth/lib/dmarc/author-domain'),
+        ]).then(([verify, author]) => ({
+            dkimVerify: (verify as { dkimVerify: DkimVerify }).dkimVerify,
+            getAuthorDomain: (author as { getAuthorDomain: AuthorDomainOf }).getAuthorDomain,
+        }));
     }
     return mailauthPromise;
 }
@@ -95,7 +111,7 @@ export async function verifyMessage(
     raw: string | Uint8Array,
     options: VerifyOptions,
 ): Promise<ReturnType<typeof evidenceFrom>[]> {
-    const dkimVerify = await loadMailauth();
+    const { dkimVerify, getAuthorDomain } = await loadMailauth();
 
     // Which names were answered from where, filled by the resolver below and read back per
     // signature. mailauth reports the key record it used but not its provenance — it has no
@@ -136,6 +152,13 @@ export async function verifyMessage(
         strict: false,
     });
 
+    // The same Author Domain rules mailauth aligned the signatures against, so the domain printed
+    // is the domain compared. Absent when the From field yields no single domain.
+    const author = getAuthorDomain(result.headerFrom ?? [], result.fromFields ?? 0, {
+        fromSyntax: result.fromSyntax,
+        strict: false,
+    });
+
     return (
         (result.results ?? [])
             // mailauth reports an UNSIGNED message as one synthetic result with `result: 'none'` and
@@ -146,6 +169,7 @@ export async function verifyMessage(
             .filter((signature) => signature.status.result !== 'none')
             .map((signature) =>
                 evidenceFrom(signature as RawSignatureResult, {
+                    authorDomain: author.authorDomain,
                     source: sources.get(keyNameFor(signature.signingDomain ?? '', signature.selector ?? '')),
                 }),
             )

@@ -2,9 +2,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: https://github.com/correctiv/stamped/issues\n"
-"POT-Creation-Date: 2026-10-20 18:06+0200\n"
+"POT-Creation-Date: 2026-10-20 18:44+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
-"Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/issues>\n"
+"Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
+"issues>\n"
 "Language-Team: German <https://github.com/correctiv/stamped/issues>\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
@@ -14,7 +15,8 @@ msgstr ""
 
 #: app/src/commands/verify.ts:35
 msgid "Check the DKIM signatures of one message and report what they cover"
-msgstr "Die DKIM-Signaturen einer Nachricht prüfen und berichten, was sie abdecken"
+msgstr ""
+"Die DKIM-Signaturen einer Nachricht prüfen und berichten, was sie abdecken"
 
 #: app/src/commands/verify.ts:39
 msgid "The message to check, as RFC 5322 bytes (.eml)"
@@ -25,9 +27,8 @@ msgid ""
 "A public key: <selector>._domainkey.<domain>=<TXT record, or a path to "
 "a .pem or .txt file holding one>. Repeatable."
 msgstr ""
-"Ein öffentlicher Schlüssel: <Selektor>._domainkey.<Domain>=<TXT-Eintrag "
-"oder Pfad zu einer .pem- oder .txt-Datei, die einen enthält>. "
-"Mehrfach möglich."
+"Ein öffentlicher Schlüssel: <Selektor>._domainkey.<Domain>=<TXT-Eintrag oder "
+"Pfad zu einer .pem- oder .txt-Datei, die einen enthält>. Mehrfach möglich."
 
 #: app/src/commands/verify.ts:51
 msgid "Print the finding and the full evidence as JSON"
@@ -41,131 +42,150 @@ msgstr "Eine Nachricht gegen einen Schlüssel prüfen, der lokal vorliegt"
 msgid "Cannot read {path}."
 msgstr "{path} kann nicht gelesen werden."
 
-#: app/src/index.ts:33
+#: app/src/index.ts:35
 msgid "stamped <command> [options]"
 msgstr "stamped <Befehl> [Optionen]"
 
-#: app/src/index.ts:35
+#: app/src/index.ts:37
 msgid "Pick a command — try `stamped verify --help`."
 msgstr "Bitte einen Befehl wählen — etwa `stamped verify --help`."
 
 #: app/src/lib/keys.ts:50
 msgid "{path} is neither a DKIM TXT record nor a PEM public key."
 msgstr ""
-"{path} ist weder ein DKIM-TXT-Eintrag noch ein öffentlicher Schlüssel im "
-"PEM-Format."
+"{path} ist weder ein DKIM-TXT-Eintrag noch ein öffentlicher Schlüssel im PEM-"
+"Format."
 
 #: app/src/lib/keys.ts:59
 msgid "Cannot read the key file {path}."
 msgstr "Die Schlüsseldatei {path} kann nicht gelesen werden."
 
-#: app/src/lib/report.ts:50
+#: app/src/lib/report.ts:55
 msgid "Signature {position} of {total} — {verdict}"
 msgstr "Signatur {position} von {total} — {verdict}"
 
-#: app/src/lib/report.ts:55
+#: app/src/lib/report.ts:60
 msgid "domain"
 msgstr "Domain"
 
-#: app/src/lib/report.ts:55 app/src/lib/report.ts:56 app/src/lib/report.ts:57
-#: app/src/lib/report.ts:58 app/src/lib/report.ts:60
+#: app/src/lib/report.ts:60 app/src/lib/report.ts:63 app/src/lib/report.ts:64
+#: app/src/lib/report.ts:65 app/src/lib/report.ts:67
 msgid "(none)"
 msgstr "(keine)"
 
-#: app/src/lib/report.ts:56
+#: app/src/lib/report.ts:61
+msgid "author domain"
+msgstr "Absenderdomain"
+
+#: app/src/lib/report.ts:61
+msgid "(unknown)"
+msgstr "(unbekannt)"
+
+#: app/src/lib/report.ts:62
+msgid "aligned"
+msgstr "übereinstimmend"
+
+#: app/src/lib/report.ts:62
+msgid "yes"
+msgstr "ja"
+
+#: app/src/lib/report.ts:62
+msgid "no"
+msgstr "nein"
+
+#: app/src/lib/report.ts:63
 msgid "selector"
 msgstr "Selektor"
 
-#: app/src/lib/report.ts:57
+#: app/src/lib/report.ts:64
 msgid "algorithm"
 msgstr "Algorithmus"
 
-#: app/src/lib/report.ts:58
+#: app/src/lib/report.ts:65
 msgid "canonicalization"
 msgstr "Kanonisierung"
 
-#: app/src/lib/report.ts:59
+#: app/src/lib/report.ts:66
 msgid "key"
 msgstr "Schlüssel"
 
-#: app/src/lib/report.ts:60
+#: app/src/lib/report.ts:67
 msgid "signed headers"
 msgstr "sign. Kopfzeilen"
 
-#: app/src/lib/report.ts:61
+#: app/src/lib/report.ts:68
 msgid "body hash"
 msgstr "Body-Hash"
 
-#: app/src/lib/report.ts:62
+#: app/src/lib/report.ts:69
 msgid "signature"
 msgstr "Signatur"
 
-#: app/src/lib/report.ts:62
+#: app/src/lib/report.ts:69
 msgid "verified"
 msgstr "verifiziert"
 
-#: app/src/lib/report.ts:62
+#: app/src/lib/report.ts:69
 msgid "not verified"
 msgstr "nicht verifiziert"
 
-#: app/src/lib/report.ts:66
+#: app/src/lib/report.ts:73
 msgid "l= limit"
 msgstr "l=-Grenze"
 
-#: app/src/lib/report.ts:69
+#: app/src/lib/report.ts:76
 msgid "reason"
 msgstr "Grund"
 
-#: app/src/lib/report.ts:74
+#: app/src/lib/report.ts:81
 msgid "verifier says"
 msgstr "Prüfer meldet"
 
-#: app/src/lib/report.ts:77
+#: app/src/lib/report.ts:84
 msgid "  caveat: {text}"
 msgstr "  Einschränkung: {text}"
 
-#: app/src/lib/report.ts:89
+#: app/src/lib/report.ts:96
 msgid "none fetched"
 msgstr "keiner abgerufen"
 
-#: app/src/lib/report.ts:95
+#: app/src/lib/report.ts:102
 msgid "{bits} bit, {source}"
 msgstr "{bits} Bit, {source}"
 
-#: app/src/lib/report.ts:102
+#: app/src/lib/report.ts:109
 msgid "from the DNS"
 msgstr "aus dem DNS"
 
-#: app/src/lib/report.ts:104
+#: app/src/lib/report.ts:111
 msgid "supplied by you"
 msgstr "von Ihnen bereitgestellt"
 
-#: app/src/lib/report.ts:106
+#: app/src/lib/report.ts:113
 msgid "from the archive itself"
 msgstr "aus dem Archiv selbst"
 
-#: app/src/lib/report.ts:120
+#: app/src/lib/report.ts:127
 msgid "matches ({hash})"
 msgstr "stimmt überein ({hash})"
 
-#: app/src/lib/report.ts:121
+#: app/src/lib/report.ts:128
 msgid "matches"
 msgstr "stimmt überein"
 
-#: app/src/lib/report.ts:124
+#: app/src/lib/report.ts:131
 msgid "differs — signed {expected}, message hashes to {actual}"
-msgstr ""
-"weicht ab — signiert wurde {expected}, die Nachricht ergibt {actual}"
+msgstr "weicht ab — signiert wurde {expected}, die Nachricht ergibt {actual}"
 
-#: app/src/lib/report.ts:129
+#: app/src/lib/report.ts:136
 msgid "not checked"
 msgstr "nicht geprüft"
 
-#: app/src/lib/report.ts:136
+#: app/src/lib/report.ts:143
 msgid "{limit} bytes of the body are signed"
 msgstr "{limit} Bytes des Nachrichtentextes sind signiert"
 
-#: app/src/lib/report.ts:138
+#: app/src/lib/report.ts:145
 msgid "{limit} bytes of the body are signed, {unsigned} are not"
 msgstr ""
 "{limit} Bytes des Nachrichtentextes sind signiert, {unsigned} sind es nicht"
@@ -181,13 +201,13 @@ msgstr ""
 msgid "That PEM block holds no key data."
 msgstr "Dieser PEM-Block enthält keine Schlüsseldaten."
 
-#: packages/core/src/verdict.ts:185
+#: packages/core/src/verdict.ts:204
 msgid "Confirmed: a valid signature covers this message as it stands."
 msgstr ""
-"Bestätigt: Eine gültige Signatur deckt diese Nachricht in ihrer "
-"vorliegenden Form ab."
+"Bestätigt: Eine gültige Signatur deckt diese Nachricht in ihrer vorliegenden "
+"Form ab."
 
-#: packages/core/src/verdict.ts:187
+#: packages/core/src/verdict.ts:206
 msgid ""
 "Confirmed with caveats: the signature is valid but covers less than it "
 "appears to."
@@ -195,40 +215,40 @@ msgstr ""
 "Bestätigt mit Einschränkungen: Die Signatur ist gültig, deckt aber weniger "
 "ab, als es scheint."
 
-#: packages/core/src/verdict.ts:189
+#: packages/core/src/verdict.ts:208
 msgid "Body altered: the body is not the body that was signed."
 msgstr ""
 "Nachrichtentext verändert: Der Text ist nicht der Text, der signiert wurde."
 
-#: packages/core/src/verdict.ts:191
+#: packages/core/src/verdict.ts:210
 msgid "Headers altered: a signed header field is not what was signed."
 msgstr ""
 "Kopfzeilen verändert: Eine signierte Kopfzeile ist nicht die, die signiert "
 "wurde."
 
-#: packages/core/src/verdict.ts:193
+#: packages/core/src/verdict.ts:212
 msgid "Unverifiable: a signature is present, but nothing here can check it."
 msgstr ""
 "Nicht prüfbar: Es liegt eine Signatur vor, aber hier ist nichts, womit sie "
 "geprüft werden könnte."
 
-#: packages/core/src/verdict.ts:195
+#: packages/core/src/verdict.ts:214
 msgid ""
 "Unsigned: no DKIM signature. This says nothing about the message either way."
 msgstr ""
 "Ohne Signatur: keine DKIM-Signatur. Das sagt über die Nachricht in keine "
 "Richtung etwas aus."
 
-#: packages/core/src/verdict.ts:203
+#: packages/core/src/verdict.ts:227
 msgid ""
 "Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
 "carry a valid signature (RFC 8301)."
 msgstr ""
 "Mit rsa-sha1 signiert. SHA-1-Kollisionen sind praktisch erzeugbar, deshalb "
-"kann auch ein gefälschter Nachrichtentext eine gültige Signatur tragen "
-"(RFC 8301)."
+"kann auch ein gefälschter Nachrichtentext eine gültige Signatur tragen (RFC "
+"8301)."
 
-#: packages/core/src/verdict.ts:205
+#: packages/core/src/verdict.ts:230
 msgid ""
 "The RSA key is shorter than 1024 bits and can be factored with ordinary "
 "resources."
@@ -236,7 +256,7 @@ msgstr ""
 "Der RSA-Schlüssel ist kürzer als 1024 Bit und lässt sich mit gewöhnlichen "
 "Mitteln faktorisieren."
 
-#: packages/core/src/verdict.ts:207
+#: packages/core/src/verdict.ts:233
 msgid ""
 "An l= tag limits the signature to the start of the body. Anything appended "
 "after that is unsigned."
@@ -244,26 +264,26 @@ msgstr ""
 "Ein l=-Tag begrenzt die Signatur auf den Anfang des Nachrichtentextes. Alles "
 "danach Angehängte ist nicht signiert."
 
-#: packages/core/src/verdict.ts:209
+#: packages/core/src/verdict.ts:236
 msgid ""
 "Subject is not signed: the subject line could have been changed or added."
 msgstr ""
 "Subject ist nicht signiert: Die Betreffzeile könnte geändert oder "
 "hinzugefügt worden sein."
 
-#: packages/core/src/verdict.ts:211
+#: packages/core/src/verdict.ts:238
 msgid "To is not signed: the recipient could have been changed or added."
 msgstr ""
 "To ist nicht signiert: Der Empfänger könnte geändert oder hinzugefügt worden "
 "sein."
 
-#: packages/core/src/verdict.ts:213
+#: packages/core/src/verdict.ts:240
 msgid "Date is not signed: the date could have been changed or added."
 msgstr ""
 "Date ist nicht signiert: Das Datum könnte geändert oder hinzugefügt worden "
 "sein."
 
-#: packages/core/src/verdict.ts:215
+#: packages/core/src/verdict.ts:243
 msgid ""
 "The public key came from the archive itself, so it proves consistency rather "
 "than authenticity."
@@ -271,19 +291,40 @@ msgstr ""
 "Der öffentliche Schlüssel stammt aus dem Archiv selbst und belegt damit "
 "Konsistenz, nicht Echtheit."
 
-#: packages/core/src/verdict.ts:223
+#: packages/core/src/verdict.ts:249
+msgid ""
+"The signature is from {signer}, but the message claims to be from {author}. "
+"It proves only that {signer} handled the message, not that {author} sent it."
+msgstr ""
+"Die Signatur stammt von {signer}, die Nachricht gibt sich aber als von "
+"{author} aus. Sie belegt nur, dass {signer} die Nachricht bearbeitet hat, "
+"nicht, dass {author} sie gesendet hat."
+
+#: packages/core/src/verdict.ts:251
+msgid "(unknown domain)"
+msgstr "(unbekannte Domain)"
+
+#: packages/core/src/verdict.ts:253
+msgid ""
+"The signing domain is not the From domain, so the signature does not vouch "
+"for the author."
+msgstr ""
+"Die Signatur-Domain ist nicht die Absenderdomain; die Signatur bürgt daher "
+"nicht für den Absender."
+
+#: packages/core/src/verdict.ts:261
 msgid "No public key for this selector and domain."
 msgstr "Kein öffentlicher Schlüssel für diesen Selektor und diese Domain."
 
-#: packages/core/src/verdict.ts:225
+#: packages/core/src/verdict.ts:263
 msgid "The public key record is unusable."
 msgstr "Der Eintrag des öffentlichen Schlüssels ist nicht verwendbar."
 
-#: packages/core/src/verdict.ts:227
+#: packages/core/src/verdict.ts:265
 msgid "The DKIM-Signature header does not parse."
 msgstr "Die Kopfzeile DKIM-Signature lässt sich nicht auswerten."
 
-#: packages/core/src/verdict.ts:229
+#: packages/core/src/verdict.ts:267
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
@@ -291,21 +332,20 @@ msgstr ""
 "Der Schlüsseleintrag erlaubt diese Signatur nicht (Hash-Algorithmus oder "
 "Dienstart)."
 
-#: packages/core/src/verdict.ts:231
+#: packages/core/src/verdict.ts:269
 msgid "The signature is expired or its timestamp lies in the future."
 msgstr ""
 "Die Signatur ist abgelaufen, oder ihr Zeitstempel liegt in der Zukunft."
 
-#: packages/core/src/verdict.ts:233
+#: packages/core/src/verdict.ts:271
 msgid "The key lookup failed and may succeed later."
-msgstr ""
-"Die Schlüsselabfrage ist fehlgeschlagen und könnte später gelingen."
+msgstr "Die Schlüsselabfrage ist fehlgeschlagen und könnte später gelingen."
 
-#: packages/core/src/verdict.ts:235
+#: packages/core/src/verdict.ts:273
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 "Der Signaturalgorithmus oder der Schlüsseltyp wird hier nicht unterstützt."
 
-#: packages/verify/src/mailauth.ts:120
+#: packages/verify/src/mailauth.ts:136
 msgid "no key in the store"
 msgstr "kein Schlüssel im Speicher"

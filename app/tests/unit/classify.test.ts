@@ -31,6 +31,8 @@ function good(overrides: Partial<SignatureEvidence> = {}): SignatureEvidence {
         signedHeaders: ['from', 'to', 'subject', 'date'],
         bodyHashOk: true,
         signatureOk: true,
+        authorDomain: 'example.com',
+        aligned: true,
         keyBits: 2048,
         keySource: 'operator',
         ...overrides,
@@ -189,6 +191,30 @@ export default async () => {
                 good({ bodyHashOk: false, signatureOk: false }),
             ]);
             expect(finding.verdict).toBe('body-altered');
+        });
+
+        await it('caveats a verified signature whose domain is not the author`s', async () => {
+            const finding = classifySignature(good({ domain: 'attacker.example', aligned: false }));
+            expect(finding.verdict).toBe('confirmed-with-caveats');
+            expect([...finding.caveats]).toStrictEqual(['signer-not-author']);
+        });
+
+        await it('lets an aligned signature win over a stronger-ranked foreign one', async () => {
+            const finding = classifyMessage([
+                good({ domain: 'lists.example.org', aligned: false }),
+                good({ algorithm: 'rsa-sha1' }),
+            ]);
+            expect(finding.verdict).toBe('confirmed-with-caveats');
+            expect([...finding.caveats]).toStrictEqual(['rsa-sha1']);
+        });
+
+        await it('never reports plain confirmed when only a foreign signature verifies', async () => {
+            const finding = classifyMessage([
+                good({ bodyHashOk: false, signatureOk: false }),
+                good({ domain: 'lists.example.org', aligned: false }),
+            ]);
+            expect(finding.verdict).toBe('confirmed-with-caveats');
+            expect([...finding.caveats]).toStrictEqual(['signer-not-author']);
         });
 
         await it('ranks the six verdicts in declaration order', async () => {

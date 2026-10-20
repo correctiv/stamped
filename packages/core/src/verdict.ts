@@ -13,7 +13,7 @@
  * output, JSON, later the UI) reads only what is declared here.
  */
 
-import { _ } from './i18n.ts';
+import { fmt, _ } from './i18n.ts';
 
 /**
  * The six verdicts, from the strongest claim to the weakest.
@@ -70,6 +70,12 @@ export const CAVEATS = [
      * authenticity: whoever could fabricate the message could fabricate the key with it.
      */
     'archive-key',
+    /**
+     * The signature verifies, but its `d=` is not the From domain. It proves that `d=` handled
+     * the message, not that the author's domain sent it: anyone can sign a forged `From:` with a
+     * domain they own, and the cryptography will be flawless.
+     */
+    'signer-not-author',
 ] as const;
 
 /** One reason a confirmation covers less than it appears to. */
@@ -112,6 +118,14 @@ export type KeySource =
 export interface SignatureEvidence {
     /** `d=` — the domain that claims to have signed. */
     readonly domain: string;
+    /** The domain of the `From:` address a reader sees. Absent when it cannot be determined. */
+    readonly authorDomain?: string;
+    /**
+     * Does `d=` align with the From domain, by DMARC's relaxed rule (same organizational
+     * domain)? Only an aligned signature says anything about who the AUTHOR is. False as well
+     * when there is no single author domain (several `From:` fields, an unparseable one).
+     */
+    readonly aligned: boolean;
     /** `s=` — which of that domain's keys. */
     readonly selector: string;
     /** `a=`, e.g. `rsa-sha256` or `ed25519-sha256`. */
@@ -153,10 +167,15 @@ export interface SignatureFinding {
 
 /** The verdict for a whole message, plus every signature that was looked at. */
 export interface MessageFinding {
-    /** The strongest verdict among the signatures — see {@link VERDICTS} on why "strongest". */
+    /**
+     * The strongest verdict among the signatures that speak for the AUTHOR domain — see
+     * {@link classifyMessage} (in `classify.ts`) for the rule and {@link VERDICTS} on "strongest".
+     */
     readonly verdict: Verdict;
     /** The caveats of the signature the message verdict came from, not of all of them. */
     readonly caveats: readonly Caveat[];
+    /** The signature the verdict and caveats came from. Absent for an unsigned message. */
+    readonly basis?: SignatureFinding;
     /** Every signature, each classified on its own. Empty for an unsigned message. */
     readonly signatures: readonly SignatureFinding[];
 }
@@ -196,8 +215,12 @@ export function describeVerdict(verdict: Verdict): string {
     }
 }
 
-/** One line for each caveat, naming what the confirmation does NOT cover. */
-export function describeCaveat(caveat: Caveat): string {
+/**
+ * One line for each caveat, naming what the confirmation does NOT cover.
+ *
+ * `evidence` lets `signer-not-author` name both domains; without it the sentence stays generic.
+ */
+export function describeCaveat(caveat: Caveat, evidence?: SignatureEvidence): string {
     switch (caveat) {
         case 'rsa-sha1':
             return _(
@@ -219,6 +242,15 @@ export function describeCaveat(caveat: Caveat): string {
             return _(
                 'The public key came from the archive itself, so it proves consistency rather than authenticity.',
             );
+        case 'signer-not-author':
+            return evidence
+                ? fmt(
+                      _(
+                          'The signature is from {signer}, but the message claims to be from {author}. It proves only that {signer} handled the message, not that {author} sent it.',
+                      ),
+                      { signer: evidence.domain, author: evidence.authorDomain ?? _('(unknown domain)') },
+                  )
+                : _('The signing domain is not the From domain, so the signature does not vouch for the author.');
     }
 }
 

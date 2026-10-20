@@ -29,6 +29,11 @@ const LABEL_WIDTH = 17;
 /** The whole report for one message: the verdict, then one block per signature. */
 export function reportLines(finding: MessageFinding): string[] {
     const lines = [describeVerdict(finding.verdict)];
+    // The message verdict cannot carry this caveat quietly: it is the one that decides whether
+    // the CEO's mail reads as the CEO's.
+    if (finding.basis && finding.caveats.includes('signer-not-author')) {
+        lines.push(describeCaveat('signer-not-author', finding.basis.evidence));
+    }
     for (const [index, signature] of finding.signatures.entries()) {
         lines.push('');
         lines.push(...signatureLines(signature, index + 1, finding.signatures.length));
@@ -53,6 +58,8 @@ export function signatureLines(finding: SignatureFinding, position: number, tota
             verdict: finding.verdict,
         }),
         field(_('domain'), evidence.domain || _('(none)')),
+        field(_('author domain'), evidence.authorDomain || _('(unknown)')),
+        field(_('aligned'), evidence.aligned ? _('yes') : _('no')),
         field(_('selector'), evidence.selector || _('(none)')),
         field(_('algorithm'), evidence.algorithm || _('(none)')),
         field(_('canonicalization'), evidence.canonicalization || _('(none)')),
@@ -74,7 +81,7 @@ export function signatureLines(finding: SignatureFinding, position: number, tota
         lines.push(field(_('verifier says'), evidence.note));
     }
     for (const caveat of finding.caveats) {
-        lines.push(fmt(_('  caveat: {text}'), { text: describeCaveat(caveat) }));
+        lines.push(fmt(_('  caveat: {text}'), { text: describeCaveat(caveat, evidence) }));
     }
     return lines;
 }

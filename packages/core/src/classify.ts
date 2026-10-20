@@ -90,6 +90,9 @@ export function caveatsFor(evidence: SignatureEvidence): Caveat[] {
 
     if (evidence.keySource === 'archive') caveats.push('archive-key');
 
+    // A valid signature from a domain other than the author's vouches for the signer only.
+    if (!evidence.aligned) caveats.push('signer-not-author');
+
     return caveats;
 }
 
@@ -109,9 +112,16 @@ export function hashAlgorithmOf(algorithm: string): string {
  *
  * A message may carry several signatures, and they are evaluated INDIVIDUALLY — a mailing list
  * adds its own, a forwarder re-signs, and the author domain's signature breaking while the
- * list's holds is a finding, not an inconvenience. The message verdict is the STRONGEST of them
- * (see {@link VERDICTS}): one signature that verifies is a confirmation, whatever else is
- * attached. The per-signature findings stay in `signatures` so the weaker ones are reportable.
+ * list's holds is a finding, not an inconvenience. The per-signature findings stay in
+ * `signatures` so the weaker ones are reportable.
+ *
+ * The message verdict is the strongest signature that speaks for the AUTHOR: one whose `d=`
+ * aligns with the From domain. A signature from anybody else verifies just as well and says
+ * nothing about who wrote the message — `From: ceo@example.com` signed by `d=attacker.example`
+ * is a flawless signature on a forgery. So the best-ranked ALIGNED signature wins when one
+ * verifies; only when none does is the best signature overall used, and that one carries
+ * `signer-not-author`. Consequence: a broken author signature next to a verifying list
+ * signature is never plain `confirmed`.
  *
  * No signature at all is `unsigned`, which is not a negative result. Most mail before ~2015 and
  * plenty since carries no DKIM; an archive full of unsigned mail is an ordinary archive.
@@ -121,12 +131,15 @@ export function classifyMessage(signatures: readonly SignatureEvidence[]): Messa
         return { verdict: 'unsigned', caveats: [], signatures: [] };
     }
     const findings = signatures.map(classifySignature);
-    const strongest = findings.reduce((best, finding) =>
+    const alignedVerified = findings.filter((f) => f.evidence.aligned && isConfirmed(f.verdict));
+    const pool = alignedVerified.length > 0 ? alignedVerified : findings;
+    const basis = pool.reduce((best, finding) =>
         verdictRank(finding.verdict) < verdictRank(best.verdict) ? finding : best,
     );
     return {
-        verdict: strongest.verdict,
-        caveats: strongest.caveats,
+        verdict: basis.verdict,
+        caveats: basis.caveats,
+        basis,
         signatures: findings,
     };
 }
