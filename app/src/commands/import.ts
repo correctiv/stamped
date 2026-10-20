@@ -1,0 +1,128 @@
+/**
+ * `stamped import <case> <source…>` — an archive becomes a case folder.
+ *
+ * The command owns no rules: it turns arguments into a {@link KeyStore} and a list of paths,
+ * hands them to `@stamped/store`, and prints the counts that come back. Everything about mbox
+ * quirks, hashing, the import log and the index lives in the packages, because the planned
+ * desktop frontend imports the same archives and must not re-derive any of it.
+ *
+ * WHY THE COUNTS ARE PRINTED AND NOT JUST "done": an import that read 40,000 messages and stored
+ * 12,000 has told the operator something important — the archive is three-quarters duplicates, or
+ * three-quarters of it failed to split. Those two look identical from a progress bar and are
+ * distinguishable from the numbers.
+ */
+
+import { fmt, _, _n } from '@stamped/core';
+import type { MboxFlavour } from '@stamped/import';
+import { importSources, openCase } from '@stamped/store';
+import type { CommandModule } from 'yargs';
+
+import { keyStoreFrom } from '../lib/keys.ts';
+
+interface ImportArgs {
+    case: string;
+    source: (string | number)[];
+    key?: (string | number)[];
+    flavour?: string;
+    quiet?: boolean;
+}
+
+/** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
+export function importCommand(): CommandModule<unknown, ImportArgs> {
+    return {
+        command: 'import <case> <source..>',
+        describe: _('Read mail archives into a case folder and index them'),
+        builder: (yargs) =>
+            yargs
+                .positional('case', {
+                    describe: _('The case folder to import into. Created when it does not exist.'),
+                    type: 'string',
+                    demandOption: true,
+                })
+                .positional('source', {
+                    describe: _('An mbox file, a Maildir, a single .eml, or a directory of those'),
+                    type: 'string',
+                    array: true,
+                    demandOption: true,
+                })
+                .option('key', {
+                    describe: _(
+                        'A public key to verify against: <selector>._domainkey.<domain>=<TXT record, or a path to a .pem or .txt file holding one>. Repeatable.',
+                    ),
+                    type: 'array',
+                    default: [] as string[],
+                })
+                .option('flavour', {
+                    describe: _('Which "From " quoting the mbox files use: mboxrd (the default) or mboxo'),
+                    choices: ['mboxrd', 'mboxo'],
+                    default: 'mboxrd',
+                })
+                .option('quiet', {
+                    describe: _('Print only the summary, no progress'),
+                    type: 'boolean',
+                    default: false,
+                })
+                .example(
+                    'stamped import ./case ~/archive/inbox.mbox',
+                    _('Import one mbox, with no keys yet — run `stamped report` to see which are needed'),
+                ),
+        handler: async (args) => {
+            const paths = openCase(args.case);
+            const keys = keyStoreFrom((args.key ?? []).map(String));
+            const sources = args.source.map(String);
+
+            const result = await importSources(paths, sources, {
+                keys,
+                flavour: args.flavour as MboxFlavour,
+                // Overwritten in place rather than scrolled: an import of a large archive would
+                // otherwise bury its own summary under tens of thousands of lines. Only when
+                // stdout is a terminal — a redirected log gets the summary and nothing else.
+                onProgress:
+                    args.quiet || !process.stdout.isTTY
+                        ? undefined
+                        : (progress) => {
+                              process.stdout.write(
+                                  `\r${fmt(_('{read} read, {stored} stored, {duplicates} duplicates'), {
+                                      read: String(progress.read),
+                                      stored: String(progress.stored),
+                                      duplicates: String(progress.duplicates),
+                                  })}   `,
+                              );
+                          },
+            });
+            if (!args.quiet && process.stdout.isTTY) process.stdout.write('\n');
+
+            // Inflected on the messages, and the number of sources left out: a sentence carrying
+            // two counts can only agree with one of them, and the other count is the argument
+            // list the operator just typed.
+            console.log(
+                fmt(_n('{read} message read.', '{read} messages read.', result.read), {
+                    read: String(result.read),
+                }),
+            );
+            console.log(
+                fmt(_('{stored} newly stored, {duplicates} already in the case.'), {
+                    stored: String(result.stored),
+                    duplicates: String(result.duplicates),
+                }),
+            );
+            console.log(fmt(_('{indexed} indexed.'), { indexed: String(result.indexed) }));
+            if (result.failed > 0) {
+                // Never silent. These messages ARE in the raw store and in the log — only their
+                // verdict is missing — and an operator who does not know they exist would read
+                // the report as covering the whole archive.
+                console.log(
+                    fmt(
+                        _n(
+                            '{failed} message could not be verified; it is stored but has no verdict.',
+                            '{failed} messages could not be verified; they are stored but have no verdict.',
+                            result.failed,
+                        ),
+                        { failed: String(result.failed) },
+                    ),
+                );
+            }
+            console.log(fmt(_('Case folder: {path}'), { path: paths.root }));
+        },
+    };
+}

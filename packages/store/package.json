@@ -1,0 +1,22 @@
+{
+  "name": "@stamped/store",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "description": "The case folder: a byte-exact content-addressed store of the messages as they arrived, the import log that says where each came from, and the SQLite/FTS5 index over them. The store is the truth; the index is a cache that can be rebuilt from it.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "gjsify tsc --noEmit"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@stamped/core": "*",
+    "@stamped/import": "*",
+    "@stamped/verify": "*"
+  }
+}

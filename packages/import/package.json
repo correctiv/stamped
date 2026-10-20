@@ -1,0 +1,20 @@
+{
+  "name": "@stamped/import",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "description": "Reading an archive: splitting mbox and Maildir into single messages without holding the archive in memory, and decoding one message far enough to index it. The parsing is pure; only the source walker touches a filesystem.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "gjsify tsc --noEmit"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@stamped/core": "*"
+  }
+}
