@@ -1,0 +1,312 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the stamped package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: stamped\n"
+"Report-Msgid-Bugs-To: https://github.com/correctiv/stamped/issues\n"
+"POT-Creation-Date: 2026-10-20 18:44+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: app/src/commands/verify.ts:35
+msgid "Check the DKIM signatures of one message and report what they cover"
+msgstr ""
+
+#: app/src/commands/verify.ts:39
+msgid "The message to check, as RFC 5322 bytes (.eml)"
+msgstr ""
+
+#: app/src/commands/verify.ts:45
+msgid ""
+"A public key: <selector>._domainkey.<domain>=<TXT record, or a path to "
+"a .pem or .txt file holding one>. Repeatable."
+msgstr ""
+
+#: app/src/commands/verify.ts:51
+msgid "Print the finding and the full evidence as JSON"
+msgstr ""
+
+#: app/src/commands/verify.ts:57
+msgid "Check one message against a key you have on disk"
+msgstr ""
+
+#: app/src/commands/verify.ts:83
+msgid "Cannot read {path}."
+msgstr ""
+
+#: app/src/index.ts:35
+msgid "stamped <command> [options]"
+msgstr ""
+
+#: app/src/index.ts:37
+msgid "Pick a command — try `stamped verify --help`."
+msgstr ""
+
+#: app/src/lib/keys.ts:50
+msgid "{path} is neither a DKIM TXT record nor a PEM public key."
+msgstr ""
+
+#: app/src/lib/keys.ts:59
+msgid "Cannot read the key file {path}."
+msgstr ""
+
+#: app/src/lib/report.ts:55
+msgid "Signature {position} of {total} — {verdict}"
+msgstr ""
+
+#: app/src/lib/report.ts:60
+msgid "domain"
+msgstr ""
+
+#: app/src/lib/report.ts:60 app/src/lib/report.ts:63 app/src/lib/report.ts:64
+#: app/src/lib/report.ts:65 app/src/lib/report.ts:67
+msgid "(none)"
+msgstr ""
+
+#: app/src/lib/report.ts:61
+msgid "author domain"
+msgstr ""
+
+#: app/src/lib/report.ts:61
+msgid "(unknown)"
+msgstr ""
+
+#: app/src/lib/report.ts:62
+msgid "aligned"
+msgstr ""
+
+#: app/src/lib/report.ts:62
+msgid "yes"
+msgstr ""
+
+#: app/src/lib/report.ts:62
+msgid "no"
+msgstr ""
+
+#: app/src/lib/report.ts:63
+msgid "selector"
+msgstr ""
+
+#: app/src/lib/report.ts:64
+msgid "algorithm"
+msgstr ""
+
+#: app/src/lib/report.ts:65
+msgid "canonicalization"
+msgstr ""
+
+#: app/src/lib/report.ts:66
+msgid "key"
+msgstr ""
+
+#: app/src/lib/report.ts:67
+msgid "signed headers"
+msgstr ""
+
+#: app/src/lib/report.ts:68
+msgid "body hash"
+msgstr ""
+
+#: app/src/lib/report.ts:69
+msgid "signature"
+msgstr ""
+
+#: app/src/lib/report.ts:69
+msgid "verified"
+msgstr ""
+
+#: app/src/lib/report.ts:69
+msgid "not verified"
+msgstr ""
+
+#: app/src/lib/report.ts:73
+msgid "l= limit"
+msgstr ""
+
+#: app/src/lib/report.ts:76
+msgid "reason"
+msgstr ""
+
+#: app/src/lib/report.ts:81
+msgid "verifier says"
+msgstr ""
+
+#: app/src/lib/report.ts:84
+msgid "  caveat: {text}"
+msgstr ""
+
+#: app/src/lib/report.ts:96
+msgid "none fetched"
+msgstr ""
+
+#: app/src/lib/report.ts:102
+msgid "{bits} bit, {source}"
+msgstr ""
+
+#: app/src/lib/report.ts:109
+msgid "from the DNS"
+msgstr ""
+
+#: app/src/lib/report.ts:111
+msgid "supplied by you"
+msgstr ""
+
+#: app/src/lib/report.ts:113
+msgid "from the archive itself"
+msgstr ""
+
+#: app/src/lib/report.ts:127
+msgid "matches ({hash})"
+msgstr ""
+
+#: app/src/lib/report.ts:128
+msgid "matches"
+msgstr ""
+
+#: app/src/lib/report.ts:131
+msgid "differs — signed {expected}, message hashes to {actual}"
+msgstr ""
+
+#: app/src/lib/report.ts:136
+msgid "not checked"
+msgstr ""
+
+#: app/src/lib/report.ts:143
+msgid "{limit} bytes of the body are signed"
+msgstr ""
+
+#: app/src/lib/report.ts:145
+msgid "{limit} bytes of the body are signed, {unsigned} are not"
+msgstr ""
+
+#: packages/core/src/keys.ts:93
+msgid ""
+"--key needs <selector>._domainkey.<domain>=<record or file>, got: {argument}"
+msgstr ""
+
+#: packages/core/src/keys.ts:141
+msgid "That PEM block holds no key data."
+msgstr ""
+
+#: packages/core/src/verdict.ts:204
+msgid "Confirmed: a valid signature covers this message as it stands."
+msgstr ""
+
+#: packages/core/src/verdict.ts:206
+msgid ""
+"Confirmed with caveats: the signature is valid but covers less than it "
+"appears to."
+msgstr ""
+
+#: packages/core/src/verdict.ts:208
+msgid "Body altered: the body is not the body that was signed."
+msgstr ""
+
+#: packages/core/src/verdict.ts:210
+msgid "Headers altered: a signed header field is not what was signed."
+msgstr ""
+
+#: packages/core/src/verdict.ts:212
+msgid "Unverifiable: a signature is present, but nothing here can check it."
+msgstr ""
+
+#: packages/core/src/verdict.ts:214
+msgid ""
+"Unsigned: no DKIM signature. This says nothing about the message either way."
+msgstr ""
+
+#: packages/core/src/verdict.ts:227
+msgid ""
+"Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
+"carry a valid signature (RFC 8301)."
+msgstr ""
+
+#: packages/core/src/verdict.ts:230
+msgid ""
+"The RSA key is shorter than 1024 bits and can be factored with ordinary "
+"resources."
+msgstr ""
+
+#: packages/core/src/verdict.ts:233
+msgid ""
+"An l= tag limits the signature to the start of the body. Anything appended "
+"after that is unsigned."
+msgstr ""
+
+#: packages/core/src/verdict.ts:236
+msgid ""
+"Subject is not signed: the subject line could have been changed or added."
+msgstr ""
+
+#: packages/core/src/verdict.ts:238
+msgid "To is not signed: the recipient could have been changed or added."
+msgstr ""
+
+#: packages/core/src/verdict.ts:240
+msgid "Date is not signed: the date could have been changed or added."
+msgstr ""
+
+#: packages/core/src/verdict.ts:243
+msgid ""
+"The public key came from the archive itself, so it proves consistency rather "
+"than authenticity."
+msgstr ""
+
+#: packages/core/src/verdict.ts:249
+msgid ""
+"The signature is from {signer}, but the message claims to be from {author}. "
+"It proves only that {signer} handled the message, not that {author} sent it."
+msgstr ""
+
+#: packages/core/src/verdict.ts:251
+msgid "(unknown domain)"
+msgstr ""
+
+#: packages/core/src/verdict.ts:253
+msgid ""
+"The signing domain is not the From domain, so the signature does not vouch "
+"for the author."
+msgstr ""
+
+#: packages/core/src/verdict.ts:261
+msgid "No public key for this selector and domain."
+msgstr ""
+
+#: packages/core/src/verdict.ts:263
+msgid "The public key record is unusable."
+msgstr ""
+
+#: packages/core/src/verdict.ts:265
+msgid "The DKIM-Signature header does not parse."
+msgstr ""
+
+#: packages/core/src/verdict.ts:267
+msgid ""
+"The key record does not allow this signature (hash algorithm or service "
+"type)."
+msgstr ""
+
+#: packages/core/src/verdict.ts:269
+msgid "The signature is expired or its timestamp lies in the future."
+msgstr ""
+
+#: packages/core/src/verdict.ts:271
+msgid "The key lookup failed and may succeed later."
+msgstr ""
+
+#: packages/core/src/verdict.ts:273
+msgid "The signature algorithm or key type is not supported here."
+msgstr ""
+
+#: packages/verify/src/mailauth.ts:136
+msgid "no key in the store"
+msgstr ""

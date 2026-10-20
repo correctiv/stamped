@@ -1,0 +1,21 @@
+{
+  "name": "@stamped/verify",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "description": "DKIM verification: mailauth driven offline through a key store, its per-signature result normalised into the facts @stamped/core classifies. The only layer that knows mailauth exists.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "gjsify tsc --noEmit"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@stamped/core": "*",
+    "mailauth": "8.0.1"
+  }
+}

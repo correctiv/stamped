@@ -1,0 +1,14 @@
+DKIM-Signature: v=1; a=ed25519-sha256; c=simple/simple; d=example.com; s=ted; t=1709631660; h=From:To:Subject:Date; bh=uRFUPYnBH+fzHqIcBIwsDehNNS5stfaQIFJFa2dJlHI=; b=j0XKTqqUb5WrcowEReGBHxflcADVGaEppw6y3Ay0WvAp66p4xRdc4UPR3sSL6rtzFYjjp6CNRINmyLgNH/6pAw==
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Quarterly figures
+Date: Tue, 05 Mar 2024 09:40:00 +0000
+Message-ID: <fixture-01@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+The quarterly figures are attached.
+
+They are provisional until the audit closes.
+
+-- Ada

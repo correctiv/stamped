@@ -1,0 +1,101 @@
+{
+  "name": "stamped-cli",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "description": "Stamped app: the `stamped` binary — the CLI over the @stamped/* packages, bundled to a single .gjs.mjs and run on GJS via gjsify.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "gjsify tsc --noEmit",
+    "format": "gjsify format --write .",
+    "format:check": "gjsify format --check .",
+    "lint": "gjsify lint .",
+    "lint:fix": "gjsify lint --fix .",
+    "build": "gjsify run build:gjs",
+    "build:gjs": "node scripts/build-bundle.mjs gjs",
+    "build:node": "node scripts/build-bundle.mjs node",
+    "start": "gjsify run dist/stamped.gjs.mjs",
+    "dev": "gjsify run build:gjs && gjsify run start",
+    "fixtures": "node ../tools/make-fixtures.mjs",
+    "test": "LC_ALL=C LANGUAGE= gjsify test"
+  },
+  "gjsify": {
+    "ship": {
+      "appId": "org.correctiv.Stamped",
+      "binaryName": "stamped",
+      "kind": "cli",
+      "name": "Stamped",
+      "localeDir": "dist/locale",
+      "bundle": {
+        "linux": "dist/stamped.gjs.mjs",
+        "darwin": "dist/stamped.node.mjs",
+        "win32": "dist/stamped.node.mjs"
+      },
+      "app": {
+        "darwin": "node",
+        "win32": "node"
+      },
+      "developer": {
+        "id": "org.correctiv",
+        "name": "CORRECTIV",
+        "email": "info@correctiv.org"
+      },
+      "summary": "Check email signatures",
+      "license": {
+        "project": "AGPL-3.0-or-later"
+      },
+      "description": "Stamped verifies the DKIM signatures of email messages and says what each signature actually covers: confirmed, confirmed with caveats, body altered, headers altered, unverifiable, or unsigned. It works offline — public keys come from a store you fill, so examining a leaked message sends no lookup to the signing domain.",
+      "homepageUrl": "https://github.com/correctiv/stamped",
+      "bugtrackerUrl": "https://github.com/correctiv/stamped/issues",
+      "vcsBrowserUrl": "https://github.com/correctiv/stamped"
+    },
+    "excludeGlobals": [
+      "document",
+      "HTMLElement",
+      "location",
+      "Image",
+      "HTMLCanvasElement",
+      "HTMLImageElement",
+      "FontFace",
+      "matchMedia",
+      "MutationObserver",
+      "ResizeObserver",
+      "IntersectionObserver"
+    ],
+    "test": {
+      "entry": "tests/test.mts",
+      "outdir": "dist",
+      "runtimes": [
+        "gjs",
+        "node"
+      ]
+    }
+  },
+  "dependencies": {
+    "@stamped/core": "*",
+    "@stamped/verify": "*",
+    "yargs": "^18.1.0"
+  },
+  "devDependencies": {
+    "@gjsify/cli": "0.64.2",
+    "@gjsify/napi": "0.64.2",
+    "@gjsify/node-globals": "0.64.2",
+    "@gjsify/rolldown-native": "0.64.2",
+    "@gjsify/runtime": "0.64.2",
+    "@gjsify/sqlite": "0.64.2",
+    "@gjsify/unit": "0.64.2",
+    "@girs/gjs": "^4.1.0",
+    "@girs/glib-2.0": "^4.1.0",
+    "@girs/gobject-2.0": "^4.1.0",
+    "@girs/gio-2.0": "^4.1.0",
+    "@types/node": "^26.1.2",
+    "@types/yargs": "^17.0.35",
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.71.0",
+    "typescript": "^6.0.3"
+  }
+}

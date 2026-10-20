@@ -1,0 +1,18 @@
+// Test entry: aggregates every *.test.ts suite (each a default-exported async fn) and runs them
+// under @gjsify/unit, on GJS and Node both (`gjsify test`). Keep this list in sync when adding a
+// test file.
+import { run } from '@gjsify/unit';
+
+import classify from './unit/classify.test.ts';
+import keys from './unit/keys.test.ts';
+import verify from './unit/verify.test.ts';
+import report from './unit/report.test.ts';
+import fts5 from './unit/fts5.test.ts';
+
+run({
+    classify,
+    keys,
+    verify,
+    report,
+    fts5,
+});

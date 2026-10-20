@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# gjsify
+.gjsify/
+ship/
+
+# npm is not the package manager here — `gjsify install` is (see AGENTS.md).
+package-lock.json
+
+# ─── Case data — NEVER commit ─────────────────────────────────────────────
+# Stamped exists to work on leaked mail. A single committed message can burn a
+# source, so the repo holds NOTHING but synthetic fixtures that this repo's own
+# generator produced (tools/make-fixtures.mjs). Defence in depth only: the real
+# guarantee is that nothing is ever WRITTEN here — case folders live outside the
+# repo, under $XDG_DATA_HOME/stamped/ or wherever the operator points them.
+#
+# The two exceptions are the fixture trees, which are generated, reviewed and
+# committed on purpose.
+*.eml
+*.mbox
+*.pst
+*.msg
+!app/tests/fixtures/**/*.eml
+cases/
+stamped-data/
+
+# Private keys. The fixture keys are generated and MUST stay out of git even
+# though they sign nothing real — a committed private key is a bad habit that
+# outlives the fixture it was made for. Only the public halves are committed.
+*.key
+*.pem
+!app/tests/fixtures/keys/*.pub.pem
+
+# Index / derived state
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-*
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+*.log
