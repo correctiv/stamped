@@ -19,7 +19,14 @@
 
 import { describe, expect, it } from '@gjsify/unit';
 import { classifyMessage, describeVerdict, VERDICTS, type SignatureEvidence } from '@stamped/core';
-import type { CaseReport, KeyDemand, LogSource, SearchHit, IndexedMessage } from '@stamped/store';
+import type {
+    CaseReport,
+    ImportResult,
+    KeyDemand,
+    LogSource,
+    SearchHit,
+    IndexedMessage,
+} from '@stamped/store';
 
 import { channelLabel, consentDialog, LOOKUP_CHANNELS } from '../../src/gui/view/consent.ts';
 import { caveatsHeading, signatureCards, verdictCard } from '../../src/gui/view/evidence.ts';
@@ -718,8 +725,24 @@ export default async () => {
     });
 
     await describe('what an import run reports', async () => {
+        /** An import result, for the summary that reads it. The folder fields default to none. */
+        const imported = (over: Partial<ImportResult> = {}): ImportResult => ({
+            read: 0,
+            stored: 0,
+            duplicates: 0,
+            indexed: 0,
+            failed: 0,
+            mailboxes: 0,
+            files: 0,
+            skipped: 0,
+            failures: [],
+            ...over,
+        });
+
         await it('reports the counts without netting the duplicates off', async () => {
-            const line = importSummary({ read: 7, stored: 4, duplicates: 2, indexed: 4, failed: 1 });
+            const line = importSummary(
+                imported({ read: 7, stored: 4, duplicates: 2, indexed: 4, failed: 1 }),
+            );
             expect(line.includes('4')).toBe(true);
             expect(line.includes('2')).toBe(true);
             // The failures ARE in the case and have no verdict: a summary that dropped them
@@ -729,13 +752,17 @@ export default async () => {
         });
 
         await it('leaves out the clauses with nothing to report', async () => {
-            const line = importSummary({ read: 4, stored: 4, duplicates: 0, indexed: 4, failed: 0 });
+            const line = importSummary(
+                imported({ read: 4, stored: 4, duplicates: 0, indexed: 4, failed: 0 }),
+            );
             expect(line.includes('already in the case')).toBe(false);
             expect(line.includes('no verdict')).toBe(false);
         });
 
         await it('says an empty archive was empty instead of claiming a success', async () => {
-            const line = importSummary({ read: 0, stored: 0, duplicates: 0, indexed: 0, failed: 0 });
+            const line = importSummary(
+                imported({ read: 0, stored: 0, duplicates: 0, indexed: 0, failed: 0 }),
+            );
             expect(line.includes('Nothing imported')).toBe(true);
         });
     });

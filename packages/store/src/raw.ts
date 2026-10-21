@@ -113,6 +113,14 @@ export interface ImportLogEntry {
     readonly at: string;
     /** `true` when the store already held these bytes — the message is in the case twice. */
     readonly duplicate: boolean;
+    /**
+     * The mailbox the message came out of, when the archive was a folder of mailboxes.
+     *
+     * Absent for a plain import: the file the message was read from is the whole of its
+     * provenance then, and a field that is always there and always empty is worse than one that
+     * is only there when it says something.
+     */
+    readonly mailbox?: string;
 }
 
 /**
@@ -197,6 +205,7 @@ export function eachLogEntry(paths: CasePaths, visit: (entry: ImportLogEntry) =>
             bytes: Number(entry.bytes ?? 0),
             at: String(entry.at ?? ''),
             duplicate: entry.duplicate === true,
+            ...(typeof entry.mailbox === 'string' && entry.mailbox !== '' ? { mailbox: entry.mailbox } : {}),
         });
     }
 }

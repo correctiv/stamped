@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 13:45+0200\n"
+"POT-Creation-Date: 2026-10-21 17:11+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -13,11 +13,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: app/src/commands/import.ts:40
+#: app/src/commands/import.ts:51
 msgid "Read mail archives into a case folder and index them"
 msgstr "Mail-Archive in einen Fallordner einlesen und indizieren"
 
-#: app/src/commands/import.ts:45
+#: app/src/commands/import.ts:56
 msgid ""
 "The case folder (created when it does not exist), then the sources: an mbox "
 "file, a Maildir, a single .eml, or a directory of those. With --case, only "
@@ -27,11 +27,23 @@ msgstr ""
 "Datei, ein Maildir, eine einzelne .eml oder ein Ordner davon. Mit --case nur "
 "die Quellen."
 
-#: app/src/commands/import.ts:51
+#: app/src/commands/import.ts:62
 msgid "The case folder to import into, instead of the first argument"
 msgstr "Der Fallordner, in den importiert wird, statt des ersten Arguments"
 
-#: app/src/commands/import.ts:56
+#: app/src/commands/import.ts:67
+msgid ""
+"Read the source as a folder tree of mailboxes: every folder that holds mail "
+"files is one mailbox, named after the folder. A folder that holds .mbox "
+"files is read that way anyway; --no-folders reads it as a plain folder of "
+"files."
+msgstr ""
+"Die Quelle als Ordnerbaum von Postfächern lesen: jeder Ordner mit "
+"Mail-Dateien ist ein Postfach und heißt wie der Ordner. Ein Ordner mit "
+".mbox-Dateien wird ohnehin so gelesen; --no-folders liest ihn als "
+"einfachen Ordner von Dateien."
+
+#: app/src/commands/import.ts:73
 msgid ""
 "A public key to verify against: <selector>._domainkey.<domain>=<TXT record, "
 "or a path to a .pem or .txt file holding one>. Repeatable."
@@ -40,25 +52,25 @@ msgstr ""
 "<Domain>=<TXT-Eintrag oder Pfad zu einer .pem- oder .txt-Datei, die einen "
 "enthält>. Mehrfach möglich."
 
-#: app/src/commands/import.ts:62
+#: app/src/commands/import.ts:79
 msgid ""
 "Which \"From \" quoting the mbox files use: mboxrd (the default) or mboxo"
 msgstr ""
 "Welche \"From \"-Maskierung die mbox-Dateien verwenden: mboxrd (Vorgabe) "
 "oder mboxo"
 
-#: app/src/commands/import.ts:67
+#: app/src/commands/import.ts:84
 msgid ""
 "Look up missing keys after the import (asks first); --no-lookup skips it"
 msgstr ""
 "Fehlende Schlüssel nach dem Import abfragen (mit Rückfrage); --no-lookup "
 "überspringt das"
 
-#: app/src/commands/import.ts:72
+#: app/src/commands/import.ts:89
 msgid "Accept the key lookup without asking"
 msgstr "Die Schlüsselabfrage ohne Rückfrage annehmen"
 
-#: app/src/commands/import.ts:78
+#: app/src/commands/import.ts:95
 msgid ""
 "Machine-readable progress: jsonl prints one JSON object per indexed batch on "
 "stdout, then a final one"
@@ -66,11 +78,11 @@ msgstr ""
 "Maschinenlesbarer Fortschritt: jsonl gibt pro indiziertem Stapel ein JSON-"
 "Objekt auf stdout aus, danach ein abschließendes"
 
-#: app/src/commands/import.ts:83
+#: app/src/commands/import.ts:100
 msgid "Print only the summary, no progress"
 msgstr "Nur die Zusammenfassung ausgeben, keinen Fortschritt"
 
-#: app/src/commands/import.ts:89
+#: app/src/commands/import.ts:106
 msgid ""
 "Import one mbox, with no keys yet — run `stamped report` to see which are "
 "needed"
@@ -78,29 +90,37 @@ msgstr ""
 "Eine mbox importieren, noch ohne Schlüssel — `stamped report` zeigt, welche "
 "fehlen"
 
-#: app/src/commands/import.ts:95
+#: app/src/commands/import.ts:110
+msgid ""
+"Import a folder of mailboxes: one folder per account, each holding its mbox "
+"parts"
+msgstr ""
+"Einen Ordner von Postfächern importieren: ein Ordner je Konto, jeder mit "
+"seinen mbox-Teilen"
+
+#: app/src/commands/import.ts:116
 msgid "No source given. Use `stamped import <case> <source…>`."
 msgstr "Keine Quelle angegeben. Nutze `stamped import <Fall> <Quelle…>`."
 
-#: app/src/commands/import.ts:130
+#: app/src/commands/import.ts:146
 msgid "{read} read, {stored} stored, {duplicates} duplicates"
 msgstr "{read} gelesen, {stored} gespeichert, {duplicates} Duplikate"
 
-#: app/src/commands/import.ts:158
+#: app/src/commands/import.ts:174
 msgid "{read} message read."
 msgid_plural "{read} messages read."
 msgstr[0] "{read} Nachricht gelesen."
 msgstr[1] "{read} Nachrichten gelesen."
 
-#: app/src/commands/import.ts:163
+#: app/src/commands/import.ts:179
 msgid "{stored} newly stored, {duplicates} already in the case."
 msgstr "{stored} neu gespeichert, {duplicates} schon im Fall."
 
-#: app/src/commands/import.ts:168
+#: app/src/commands/import.ts:184
 msgid "{indexed} indexed."
 msgstr "{indexed} indiziert."
 
-#: app/src/commands/import.ts:176
+#: app/src/commands/import.ts:192
 msgid ""
 "{failed} message could not be verified; it is stored but has no verdict."
 msgid_plural ""
@@ -112,7 +132,7 @@ msgstr[1] ""
 "{failed} Nachrichten konnten nicht geprüft werden; sie sind gespeichert, "
 "haben aber keinen Befund."
 
-#: app/src/commands/import.ts:184
+#: app/src/commands/import.ts:200
 msgid "Case folder: {path}"
 msgstr "Fallordner: {path}"
 
@@ -526,7 +546,8 @@ msgstr "Befund und vollständige Belegkette als JSON ausgeben"
 msgid "Check one message against a key you have on disk"
 msgstr "Eine Nachricht gegen einen Schlüssel prüfen, der lokal vorliegt"
 
-#: app/src/commands/verify.ts:83 packages/import/src/source.ts:181
+#: app/src/commands/verify.ts:83 packages/import/src/folder.ts:120
+#: packages/import/src/folder.ts:128 packages/import/src/source.ts:222
 msgid "Cannot read {path}."
 msgstr "{path} kann nicht gelesen werden."
 
@@ -854,17 +875,21 @@ msgstr ""
 "Einschränkungen), {altered} verändert, {unverifiable} ohne Befund mangels "
 "Schlüssel, {unsigned} nie signiert."
 
-#: app/src/gui/view/overview.ts:143
+#: app/src/gui/view/overview.ts:144
 msgid "{messages} message has no verdict yet."
 msgid_plural "{messages} messages have no verdict yet."
 msgstr[0] "{messages} Nachricht hat noch keinen Befund."
 msgstr[1] "{messages} Nachrichten haben noch keinen Befund."
 
-#: app/src/gui/view/overview.ts:148
+#: app/src/gui/view/overview.ts:152
 msgid "Collect the {pairs} signing key it needs in the Keys view."
 msgid_plural "Collect the {pairs} signing keys they need in the Keys view."
-msgstr[0] "Holen Sie den benötigten Signaturschlüssel ({pairs}) in der Ansicht „Schlüssel“."
-msgstr[1] "Holen Sie die {pairs} benötigten Signaturschlüssel in der Ansicht „Schlüssel“."
+msgstr[0] ""
+"Holen Sie den benötigten Signaturschlüssel ({pairs}) in der Ansicht "
+"„Schlüssel“."
+msgstr[1] ""
+"Holen Sie die {pairs} benötigten Signaturschlüssel in der Ansicht "
+"„Schlüssel“."
 
 #: app/src/gui/view/sources.ts:76
 msgid "All archives"
@@ -1334,6 +1359,26 @@ msgid "{limit} bytes of the body are signed, {unsigned} are not"
 msgstr ""
 "{limit} Bytes des Nachrichtentextes sind signiert, {unsigned} sind es nicht"
 
+#: app/src/lib/import-summary.ts:24
+msgid "{mailboxes} mailbox, {files} files read."
+msgid_plural "{mailboxes} mailboxes, {files} files read."
+msgstr[0] "{mailboxes} Postfach, {files} Dateien gelesen."
+msgstr[1] "{mailboxes} Postfächer, {files} Dateien gelesen."
+
+#: app/src/lib/import-summary.ts:35
+msgid "{count} file was not mail and was left alone."
+msgid_plural "{count} files were not mail and were left alone."
+msgstr[0] "{count} Datei war keine Mail und blieb unberührt."
+msgstr[1] "{count} Dateien waren keine Mail und blieben unberührt."
+
+#: app/src/lib/import-summary.ts:61
+msgid "{count} file could not be read; the import is incomplete."
+msgid_plural "{count} files could not be read; the import is incomplete."
+msgstr[0] ""
+"{count} Datei konnte nicht gelesen werden; der Import ist unvollständig."
+msgstr[1] ""
+"{count} Dateien konnten nicht gelesen werden; der Import ist unvollständig."
+
 #: app/src/lib/keys.ts:50
 msgid "{path} is neither a DKIM TXT record nor a PEM public key."
 msgstr ""
@@ -1708,21 +1753,33 @@ msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 "Der Signaturalgorithmus oder der Schlüsseltyp wird hier nicht unterstützt."
 
+#: packages/import/src/folder.ts:124 packages/store/src/importer.ts:356
+msgid "{path} is not a folder."
+msgstr "{path} ist kein Ordner."
+
 #: packages/store/src/case.ts:82
 msgid "The case folder {path} was written by a newer version of Stamped."
 msgstr ""
 "Der Fallordner {path} wurde von einer neueren Version von Stamped "
 "geschrieben."
 
+#: packages/store/src/importer.ts:276
+msgid "{path} holds no messages."
+msgstr "{path} enthält keine Nachrichten."
+
+#: packages/store/src/importer.ts:368
+msgid "{path} holds no mail files."
+msgstr "{path} enthält keine Mail-Dateien."
+
 #: packages/store/src/index-db.ts:78
 msgid "Cannot open the index of the case folder {path}."
 msgstr "Der Index des Fallordners {path} kann nicht geöffnet werden."
 
-#: packages/store/src/raw.ts:97
+#: packages/store/src/raw.ts:93
 msgid "Cannot write into the case folder {path} ({code})."
 msgstr "In den Fallordner {path} kann nicht geschrieben werden ({code})."
 
-#: packages/store/src/raw.ts:99
+#: packages/store/src/raw.ts:95
 msgid "unknown error"
 msgstr "unbekannter Fehler"
 

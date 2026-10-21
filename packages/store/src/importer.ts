@@ -17,10 +17,25 @@
  * thousand messages and some of them are damaged; an import that aborts on the first one leaves
  * a journalist with a partial case folder and no sign of where it stopped. The failure is
  * counted and reported instead.
+ *
+ * THE SAME RULE, ONE LEVEL UP, FOR A FOLDER. A leaked archive is a tree of mailboxes, and one
+ * damaged file in it must not cost the other thousand — so in folder mode the failure is
+ * collected PER FILE and the import goes on. The difference from the plain mode is deliberate:
+ * a mistyped source is a typo and stops everything, while a file inside a tree that is being
+ * imported anyway is one damaged file among many.
  */
 
-import { classifyMessage, type KeyStore } from '@stamped/core';
-import { readSource, summarise, type MboxFlavour, type SourceMessage } from '@stamped/import';
+import { statSync } from 'node:fs';
+
+import { classifyMessage, fmt, type KeyStore, _ } from '@stamped/core';
+import {
+    planFolder,
+    readMboxFile,
+    readSource,
+    summarise,
+    type MboxFlavour,
+    type SourceMessage,
+} from '@stamped/import';
 import { verifyMessage } from '@stamped/verify';
 
 import type { CasePaths } from './case.ts';
@@ -47,6 +62,18 @@ const LOG_BATCH = 256;
  */
 const INDEX_BATCH = 500;
 
+/**
+ * How a source is read.
+ *
+ * - `sources` — each source as it is: an mbox, a Maildir, a message, a folder of those. What
+ *   the window imports, and what the CLI does for anything that is not a folder of mailboxes.
+ * - `folders` — the source is a folder tree: every folder that holds mail is one mailbox, named
+ *   after the folder. Only the CLI does this, and only when it is asked to.
+ * - `auto` — a folder that holds `.mbox` files is read as a folder tree, everything else as it
+ *   is. The CLI's default.
+ */
+export type ImportMode = 'sources' | 'folders' | 'auto';
+
 /** How an import is driven. */
 export interface ImportOptions {
     /** The keys each message is verified against. An empty store yields `unverifiable`. */
@@ -57,6 +84,8 @@ export interface ImportOptions {
     readonly onProgress?: (progress: ImportProgress) => void;
     /** Called once per committed index batch. For machine-readable progress. */
     readonly onBatch?: (progress: ImportProgress) => void;
+    /** How a source is read. `sources` unless the caller says otherwise. */
+    readonly mode?: ImportMode;
 }
 
 /** Where an import has got to. */
@@ -70,6 +99,16 @@ export interface ImportProgress {
     readonly total: number;
     /** Of {@link total}, how many are processed. */
     readonly done: number;
+    /** The mailbox being imported, when the layout names one. */
+    readonly mailbox?: string;
+}
+
+/** A file that could not be read. The import went on without it. */
+export interface ImportFailure {
+    /** The file. */
+    readonly path: string;
+    /** Why it could not be read. */
+    readonly reason: string;
 }
 
 /** What one import run did. */
@@ -84,6 +123,40 @@ export interface ImportResult {
     readonly indexed: number;
     /** Messages whose verification threw. They are stored and logged, but have no verdict. */
     readonly failed: number;
+    /** The mailboxes a folder tree held. 0 when the sources were not a folder tree. */
+    readonly mailboxes: number;
+    /** The mail files that were read. One per source in the plain mode. */
+    readonly files: number;
+    /** The files that were left alone because they are not mail. */
+    readonly skipped: number;
+    /** The files that could not be read. The import went on without them. */
+    readonly failures: readonly ImportFailure[];
+}
+
+/** One thing to read: a file, a folder, a Maildir — or one part of a mailbox. */
+interface Part {
+    readonly path: string;
+    /** `source` is read as the general reader reads it; the others know what they are. */
+    readonly kind: 'source' | 'mbox' | 'eml' | 'maildir';
+}
+
+/** One mailbox, or one plain source: what a single run of the importer reads. */
+interface Unit {
+    /** The mailbox the messages belong to, when the layout names one. */
+    readonly mailbox?: string;
+    /** The files to read, in order. */
+    readonly parts: readonly Part[];
+    /** Collect a read failure instead of letting it end the import. */
+    readonly collect: boolean;
+}
+
+/** What one source turned out to be. */
+interface SourcePlan {
+    readonly units: readonly Unit[];
+    readonly mailboxes: number;
+    readonly skipped: number;
+    /** The folders of the tree that could not be read at all. */
+    readonly failures: readonly ImportFailure[];
 }
 
 /**
@@ -106,8 +179,12 @@ export async function importSources(
     let failed = 0;
     let total = 0;
     let done = 0;
+    let files = 0;
+    let mailboxes = 0;
+    let skipped = 0;
     let pending: ImportLogEntry[] = [];
     const madeDirs = new Set<string>();
+    const failures: ImportFailure[] = [];
     // One scan instead of a query per message. A hash added during this run goes in too, so a
     // message met twice is verified once.
     const known = indexedHashes(db);
@@ -116,21 +193,38 @@ export async function importSources(
         appendLog(paths, pending);
         pending = [];
     };
-    const snapshot = (): ImportProgress => ({ read, stored, duplicates, indexed, failed, total, done });
+    const snapshot = (mailbox?: string): ImportProgress => ({
+        read,
+        stored,
+        duplicates,
+        indexed,
+        failed,
+        total,
+        done,
+        ...(mailbox === undefined ? {} : { mailbox }),
+    });
 
     try {
         for (const source of sources) {
-            // Collected rather than verified inside the callback: `readSource` is synchronous —
-            // it has to be, GJS has no always-on event loop to pump a stream with — while
-            // `verifyMessage` is not. Buffering the whole archive would defeat the streaming, so
-            // each message is stored and logged in the callback (both synchronous) and only its
-            // HASH is carried out to be verified afterwards. That keeps the memory ceiling at one
-            // message plus a list of hashes.
-            const fresh: { hash: string; bytes: number }[] = [];
+            const plan = planSource(source, options.mode ?? 'sources');
+            mailboxes += plan.mailboxes;
+            skipped += plan.skipped;
+            failures.push(...plan.failures);
 
-            readSource(
-                source,
-                (message: SourceMessage) => {
+            for (const unit of plan.units) {
+                // Collected rather than verified inside the callback: `readSource` is synchronous —
+                // it has to be, GJS has no always-on event loop to pump a stream with — while
+                // `verifyMessage` is not. Buffering the whole archive would defeat the streaming,
+                // so each message is stored and logged in the callback (both synchronous) and
+                // only its HASH is carried out to be verified afterwards. That keeps the memory
+                // ceiling at one message plus a list of hashes.
+                const fresh: { hash: string; bytes: number }[] = [];
+
+                // The reader hands every message over here, and this is where a message is
+                // stored and logged. The same function for a plain source and for a part of a
+                // mailbox: the difference between them is the name the mailbox goes by, not what
+                // happens to the message.
+                const emit = (message: SourceMessage): void => {
                     read++;
                     const result = store(paths, message.raw, madeDirs);
                     if (result.stored) stored++;
@@ -144,6 +238,7 @@ export async function importSources(
                         bytes: message.raw.length,
                         at: new Date().toISOString(),
                         duplicate: !result.stored,
+                        ...(message.mailbox === undefined ? {} : { mailbox: message.mailbox }),
                     });
                     if (pending.length >= LOG_BATCH) flush();
 
@@ -152,60 +247,162 @@ export async function importSources(
                     if (known.has(result.hash)) return;
                     known.add(result.hash);
                     fresh.push({ hash: result.hash, bytes: message.raw.length });
-                },
-                { flavour: options.flavour },
-            );
-            flush();
+                };
 
-            total = fresh.length;
-            done = 0;
-            let inBatch = 0;
-            try {
-                for (const entry of fresh) {
-                    if (inBatch === 0) beginBatch(db);
-                    const raw = readRaw(paths, entry.hash);
-                    if (!raw) {
-                        failed++;
-                    } else {
-                        try {
-                            const finding = classifyMessage(await verifyMessage(raw, { keys: options.keys }));
-                            const sm = summarise(raw);
-                            // `fresh`: not in the index (checked via `known`), so no removal scan.
-                            indexMessage(
-                                db,
-                                { hash: entry.hash, bytes: entry.bytes, summary: sm, finding },
-                                { fresh: true },
-                            );
-                            indexed++;
-                        } catch {
-                            // Stored and logged already, so the evidence is safe; only the verdict
-                            // is missing. Reported as a count rather than swallowed.
+                const readOptions = {
+                    flavour: options.flavour,
+                    ...(unit.mailbox === undefined ? {} : { mailbox: unit.mailbox }),
+                };
+
+                for (const part of unit.parts) {
+                    let found = 0;
+                    try {
+                        found =
+                            part.kind === 'mbox'
+                                ? readMboxFile(part.path, emit, readOptions)
+                                : readSource(part.path, emit, readOptions);
+                    } catch (error) {
+                        // A file that cannot be read is a failure OF THAT FILE, and the rest of
+                        // the tree still gets imported. The one exception is a mistyped source in
+                        // the plain mode, where there is no "the rest" to go on to.
+                        if (!unit.collect) throw error;
+                        failures.push({ path: part.path, reason: reasonOf(error) });
+                        continue;
+                    }
+                    files++;
+                    if (part.kind === 'mbox' && found === 0) {
+                        // A part of a mailbox that holds no message is a damaged archive, not an
+                        // empty mailbox. It is reported, because an archive that silently loses
+                        // a part is an archive whose report covers less than it claims.
+                        failures.push({
+                            path: part.path,
+                            reason: fmt(_('{path} holds no messages.'), { path: part.path }),
+                        });
+                    }
+                }
+                flush();
+
+                total = fresh.length;
+                done = 0;
+                let inBatch = 0;
+                try {
+                    for (const entry of fresh) {
+                        if (inBatch === 0) beginBatch(db);
+                        const raw = readRaw(paths, entry.hash);
+                        if (!raw) {
                             failed++;
+                        } else {
+                            try {
+                                const finding = classifyMessage(
+                                    await verifyMessage(raw, { keys: options.keys }),
+                                );
+                                const sm = summarise(raw);
+                                // `fresh`: not in the index (checked via `known`), so no removal scan.
+                                indexMessage(
+                                    db,
+                                    { hash: entry.hash, bytes: entry.bytes, summary: sm, finding },
+                                    { fresh: true },
+                                );
+                                indexed++;
+                            } catch {
+                                // Stored and logged already, so the evidence is safe; only the verdict
+                                // is missing. Reported as a count rather than swallowed.
+                                failed++;
+                            }
+                        }
+                        done++;
+                        inBatch++;
+                        options.onProgress?.(snapshot(unit.mailbox));
+                        if (inBatch >= INDEX_BATCH) {
+                            commitBatch(db);
+                            inBatch = 0;
+                            options.onBatch?.(snapshot(unit.mailbox));
                         }
                     }
-                    done++;
-                    inBatch++;
-                    options.onProgress?.(snapshot());
-                    if (inBatch >= INDEX_BATCH) {
+                    if (inBatch > 0) {
                         commitBatch(db);
-                        inBatch = 0;
-                        options.onBatch?.(snapshot());
+                        options.onBatch?.(snapshot(unit.mailbox));
                     }
+                } catch (error) {
+                    rollbackBatch(db);
+                    throw error;
                 }
-                if (inBatch > 0) {
-                    commitBatch(db);
-                    options.onBatch?.(snapshot());
-                }
-            } catch (error) {
-                rollbackBatch(db);
-                throw error;
+                await settleSiblings(db, paths, options.keys);
             }
-            await settleSiblings(db, paths, options.keys);
         }
     } finally {
         flush();
         db.close();
     }
 
-    return { read, stored, duplicates, indexed, failed };
+    return { read, stored, duplicates, indexed, failed, mailboxes, files, skipped, failures };
+}
+
+/**
+ * What one source turned out to be: a folder tree of mailboxes, or a plain source.
+ *
+ * The plain mode reads a source as it is and lets a broken one end the import — a mistyped path
+ * is a typo, and half a case folder with no sign of where it stopped is worse than an error.
+ * The folder mode collects the failures instead, because a tree of a thousand mailboxes with one
+ * damaged file in it is the normal case for a leak.
+ */
+function planSource(source: string, mode: ImportMode): SourcePlan {
+    const plain: SourcePlan = {
+        units: [{ parts: [{ path: source, kind: 'source' }], collect: false }],
+        mailboxes: 0,
+        skipped: 0,
+        failures: [],
+    };
+    if (mode === 'sources') return plain;
+
+    if (!isDirectory(source)) {
+        if (mode === 'folders') {
+            throw new Error(fmt(_('{path} is not a folder.'), { path: source }));
+        }
+        return plain;
+    }
+
+    const plan = planFolder(source);
+    const hasMailbox = plan.mailboxes.length > 0;
+    const hasMbox = plan.mailboxes.some((mailbox) => mailbox.parts.some((part) => part.kind === 'mbox'));
+    if (!hasMailbox) {
+        if (mode === 'folders') {
+            throw new Error(fmt(_('{path} holds no mail files.'), { path: source }));
+        }
+        return plain;
+    }
+    // In the automatic mode a folder of loose `.eml` files is still a folder of messages, and is
+    // read as one — the tree of mailboxes is for a tree of mbox PARTS.
+    if (mode === 'auto' && !hasMbox) return plain;
+
+    // A folder that could not be listed is a failure, not a file that was left alone: the import
+    // cannot say what is in it, and the report covers less than the archive.
+    const failures = plan.skipped
+        .filter((file) => file.reason === 'unreadable')
+        .map((file) => ({ path: file.path, reason: fmt(_('Cannot read {path}.'), { path: file.path }) }));
+
+    return {
+        units: plan.mailboxes.map((mailbox) => ({
+            mailbox: mailbox.name,
+            parts: mailbox.parts.map((part) => ({ path: part.path, kind: part.kind })),
+            collect: true,
+        })),
+        mailboxes: plan.mailboxes.length,
+        skipped: plan.skipped.length - failures.length,
+        failures,
+    };
+}
+
+/** Is this path a folder? A path that cannot be read is not one — and the reader will say so. */
+function isDirectory(path: string): boolean {
+    try {
+        return statSync(path).isDirectory();
+    } catch {
+        return false;
+    }
+}
+
+/** The message of a failure, without the stack. */
+function reasonOf(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }

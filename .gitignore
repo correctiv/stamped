@@ -20,6 +20,11 @@ package-lock.json
 #
 # The two exceptions are the fixture trees, which are generated, reviewed and
 # committed on purpose.
+#
+# A LEAKED ARCHIVE IS A FOLDER, and the tree is read from wherever the operator
+# points Stamped at it. The mail in it is covered by the rules below; the rest
+# of it — a README, a licence, a spreadsheet — is not mail and must not end up
+# here either, so a case folder's own bookkeeping is refused as well.
 *.eml
 *.mbox
 *.pst
@@ -28,6 +33,8 @@ package-lock.json
 !app/tests/fixtures/archives/**/*.mbox
 cases/
 stamped-data/
+import-log.jsonl
+case.json
 
 # Private keys. The fixture keys are generated and MUST stay out of git even
 # though they sign nothing real — a committed private key is a bad habit that

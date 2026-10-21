@@ -10,17 +10,27 @@
  * 12,000 has told the operator something important — the archive is three-quarters duplicates, or
  * three-quarters of it failed to split. Those two look identical from a progress bar and are
  * distinguishable from the numbers.
+ *
+ * A FOLDER OF MAILBOXES IS A SOURCE TOO. A leaked archive arrives as a tree: one folder per
+ * account, each holding its mailbox in pieces. `--folders` says that is what the source is, and
+ * without it a folder that holds `.mbox` files is read that way anyway — because the layout
+ * says what the files are, and the operator should not have to walk the tree with a shell to
+ * find out. A folder import names every mailbox after the folder it came from, and it does not
+ * stop at the first damaged file: the failures are collected, listed at the end, and the run
+ * ends with a non-zero exit code so that a script cannot read a partial import as a clean one.
  */
 
 import { fmt, _, _n } from '@stamped/core';
 import type { MboxFlavour } from '@stamped/import';
-import { type ImportProgress, importSources, openCase } from '@stamped/store';
+import { type ImportMode, type ImportProgress, importSources, openCase } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { fetchMissingAndReverify } from '../lib/autofetch.ts';
 import { caseRoot } from '../lib/case.ts';
 import { durationLine } from '../lib/duration.ts';
+import { failureHeadline, failureLines, folderSummary } from '../lib/import-summary.ts';
 import { keyStoreFrom } from '../lib/keys.ts';
+import { progressLine } from '../lib/progress.ts';
 
 interface ImportArgs {
     case?: string;
@@ -31,6 +41,7 @@ interface ImportArgs {
     progress?: string;
     lookup?: boolean;
     yes?: boolean;
+    folders?: boolean;
 }
 
 /** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
@@ -50,6 +61,12 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                 .option('case', {
                     describe: _('The case folder to import into, instead of the first argument'),
                     type: 'string',
+                })
+                .option('folders', {
+                    describe: _(
+                        'Read the source as a folder tree of mailboxes: every folder that holds mail files is one mailbox, named after the folder. A folder that holds .mbox files is read that way anyway; --no-folders reads it as a plain folder of files.',
+                    ),
+                    type: 'boolean',
                 })
                 .option('key', {
                     describe: _(
@@ -87,6 +104,10 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                 .example(
                     'stamped import ./case ~/archive/inbox.mbox',
                     _('Import one mbox, with no keys yet — run `stamped report` to see which are needed'),
+                )
+                .example(
+                    'stamped import --case ./case ~/leak',
+                    _('Import a folder of mailboxes: one folder per account, each holding its mbox parts'),
                 ),
         handler: async (args) => {
             const startedAt = Date.now();
@@ -97,27 +118,22 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
             const paths = openCase(root);
             const keys = keyStoreFrom((args.key ?? []).map(String));
 
+            // `--folders` says the source IS a tree of mailboxes; `--no-folders` says it is not;
+            // without either, a folder that holds .mbox files is read as a tree and everything
+            // else as it is.
+            const mode: ImportMode =
+                args.folders === true ? 'folders' : args.folders === false ? 'sources' : 'auto';
+
             const jsonl = args.progress === 'jsonl';
             const emit = (progress: ImportProgress, final: boolean): void => {
                 const seconds = Math.max((Date.now() - startedAt) / 1000, 0.001);
-                const rate = progress.done / seconds;
-                const remaining = Math.max(progress.total - progress.done, 0);
-                process.stdout.write(
-                    `${JSON.stringify({
-                        done: progress.done,
-                        total: progress.total,
-                        rate: Math.round(rate * 10) / 10,
-                        eta: final || rate === 0 ? 0 : Math.round(remaining / rate),
-                        errors: progress.failed,
-                        duplicates: progress.duplicates,
-                        final,
-                    })}\n`,
-                );
+                process.stdout.write(`${JSON.stringify(progressLine(progress, final, seconds))}\n`);
             };
 
             const result = await importSources(paths, sources, {
                 keys,
                 flavour: args.flavour as MboxFlavour,
+                mode,
                 onBatch: jsonl ? (progress) => emit(progress, false) : undefined,
                 // Overwritten in place rather than scrolled: an import of a large archive would
                 // otherwise bury its own summary under tens of thousands of lines. Only when
@@ -183,10 +199,24 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
             }
             console.log(fmt(_('Case folder: {path}'), { path: paths.root }));
 
+            // What the tree held: how many mailboxes, how many files, and how many files were
+            // not mail. The last number is the one that says whether the operator pointed Stamped
+            // at the right folder.
+            for (const line of folderSummary(result)) console.log(line);
+
+            // The files that could not be read, one per line, on stderr — they are errors and
+            // not counts, and they are the reason the run ends with a non-zero exit code.
+            for (const line of failureLines(result)) console.error(line);
+
             if (args.lookup !== false) {
                 await fetchMissingAndReverify(paths, { yes: args.yes === true });
             }
             console.log(durationLine(startedAt));
+
+            // Thrown LAST, so that everything the run had to say is said first. An import that
+            // could not read every file is a partial import, and a script that reads the exit
+            // code must not read it as a clean run.
+            if (result.failures.length > 0) throw new Error(failureHeadline(result));
         },
     };
 }
