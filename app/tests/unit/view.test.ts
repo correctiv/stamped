@@ -44,6 +44,7 @@ import { escapeLine, escapeMarkup, noHyphens, plainText } from '../../src/gui/vi
 import { emptyList, headerFields, messageRow, rawHeaders } from '../../src/gui/view/message.ts';
 import {
     overviewHeadline,
+    overviewInsights,
     overviewNextStep,
     overviewStats,
     verdictShares,
@@ -794,6 +795,37 @@ export default async () => {
             expect(altered?.count).toBe('0');
             expect(altered?.share).toBe(0);
             expect(shares.find((share) => share.verdict === 'confirmed')?.share).toBe(0.75);
+        });
+
+        await it('says on every line what the verdict means, from @stamped/core', async () => {
+            // A counted badge a reader has to look up reads as pass/fail. The sentence travels
+            // with the number, and it is core's sentence, never a paraphrase of it.
+            for (const share of verdictShares(counted({ confirmed: 3 }).verdicts)) {
+                expect(share.sentence).toBe(escapeLine(describeVerdict(share.verdict)));
+                expect(share.sentence.length > 0).toBe(true);
+            }
+        });
+
+        await it('sums the reasons messages have no verdict, with the reading rule attached', async () => {
+            const base = counted({ unverifiable: 3 });
+            const insights = overviewInsights({
+                ...base,
+                reasons: [
+                    { reason: 'no-key', messages: 3 },
+                    { reason: 'key-mismatch', messages: 1 },
+                ],
+            });
+            const group = insights.find((insight) => insight.title.includes('no verdict'));
+            expect(group?.rows.length).toBe(2);
+            expect(group?.rows[0].label.includes('No public key')).toBe(true);
+            expect(group?.rows[0].value).toBe('3 messages');
+            // Summed reasons are not summed findings of tampering.
+            expect((group?.description ?? '').includes('not evidence of tampering')).toBe(true);
+        });
+
+        await it('says nothing about reasons when every message has a verdict', async () => {
+            const insights = overviewInsights(counted({ confirmed: 5 }));
+            expect(insights.some((insight) => insight.title.includes('no verdict'))).toBe(false);
         });
 
         await it('does not divide by an empty case', async () => {

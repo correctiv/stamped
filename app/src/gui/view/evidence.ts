@@ -14,6 +14,7 @@
 import {
     describeCaveat,
     describeVerdict,
+    explainMessage,
     fmt,
     _,
     _n,
@@ -53,11 +54,16 @@ export interface VerdictCard {
     readonly note?: string;
     /** `2 signatures examined`, or the sentence for an unsigned message. */
     readonly summary: string;
+    /** Why the verdict is what it is, in one sentence; absent when there is nothing to explain. */
+    readonly why?: string;
+    /** The facts behind `why`, for an expander. */
+    readonly whyDetails: readonly FactRow[];
 }
 
 export function verdictCard(finding: MessageFinding): VerdictCard {
     const look = verdictLook(finding.verdict);
     const count = finding.signatures.length;
+    const why = explainMessage(finding);
     const note =
         finding.basis && finding.caveats.includes('signer-not-author')
             ? escapeLine(describeCaveat('signer-not-author', finding.basis.evidence))
@@ -69,6 +75,11 @@ export function verdictCard(finding: MessageFinding): VerdictCard {
         icon: look.icon,
         sentence: escapeLine(describeVerdict(finding.verdict)),
         ...(note !== undefined ? { note } : {}),
+        ...(why ? { why: escapeLine(why.sentence) } : {}),
+        whyDetails: (why?.details ?? []).map((d) => ({
+            label: escapeLine(d.label),
+            value: escapeLine(d.value),
+        })),
         summary: escapeLine(
             count === 0
                 ? _('No DKIM signature was found in this message.')

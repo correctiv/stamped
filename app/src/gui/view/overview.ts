@@ -10,7 +10,7 @@
  * rows would turn that finding into silence.
  */
 
-import { VERDICTS, fmt, _, _n, type Verdict } from '@stamped/core';
+import { VERDICTS, describeUnverifiableReason, fmt, _, _n, type Verdict } from '@stamped/core';
 import type { CaseReport, VerdictCount } from '@stamped/store';
 
 import { formatBytes, groupDigits } from './format.ts';
@@ -27,6 +27,14 @@ export interface OverviewStat {
 export interface VerdictShare {
     readonly verdict: Verdict;
     readonly label: string;
+    /**
+     * `describeVerdict`, escaped: the line under the label that says what the verdict means.
+     *
+     * Shown as the row's subtitle rather than behind the `?` alone: a counted badge a reader has
+     * to look up is a badge that gets read as pass/fail, which is the collapse the six verdicts
+     * exist to prevent. The `?` still carries the longer paragraph.
+     */
+    readonly sentence: string;
     readonly count: string;
     /** 0 … 1, for an `Adw.Bin` width or a `Gtk.LevelBar`. Zero when the case is empty. */
     readonly share: number;
@@ -89,6 +97,7 @@ export function verdictShares(counts: readonly VerdictCount[]): VerdictShare[] {
         return {
             verdict,
             label: escapeLine(look.label),
+            sentence: escapeLine(look.sentence),
             count: escapeLine(groupDigits(messages)),
             share: total === 0 ? 0 : messages / total,
             cssClass: look.cssClass,
@@ -156,4 +165,98 @@ export function overviewNextStep(report: CaseReport): string | undefined {
         { pairs: groupDigits(pairs) },
     );
     return escapeLine(`${waiting} ${collect}`);
+}
+
+/** The before/now, confirmation-share and missing-key lines of the overview. */
+export interface OverviewInsight {
+    readonly title: string;
+    /** The group's own sentence of context, when the rows alone could be misread. */
+    readonly description?: string;
+    readonly rows: readonly OverviewStat[];
+}
+
+/**
+ * Why messages here have no verdict, what changed since first indexing, how much signed mail is
+ * confirmed, and which keys are missing most. Rows are omitted when there is nothing honest to
+ * say (no history, no signed mail, nothing unverifiable).
+ */
+export function overviewInsights(report: CaseReport): OverviewInsight[] {
+    const insights: OverviewInsight[] = [];
+    if (report.reasons.length > 0) {
+        insights.push({
+            title: escapeLine(_('Why messages have no verdict')),
+            // The one sentence a reader must not miss about this group: summed reasons are not
+            // summed findings of tampering, and a case summary that reads otherwise would spike
+            // a true story.
+            description: escapeLine(
+                _('No verdict is possible for these messages. This is not evidence of tampering.'),
+            ),
+            rows: report.reasons.map((reason) => ({
+                label: escapeLine(describeUnverifiableReason(reason.reason)),
+                value: escapeLine(
+                    fmt(_n('{n} message', '{n} messages', reason.messages), {
+                        n: groupDigits(reason.messages),
+                    }),
+                ),
+            })),
+        });
+    }
+    if (report.before) {
+        const rows: OverviewStat[] = [];
+        for (const now of report.verdicts) {
+            const was = report.before.find((b) => b.verdict === now.verdict)?.messages ?? 0;
+            if (was === 0 && now.messages === 0) continue;
+            rows.push({
+                label: escapeLine(verdictLook(now.verdict).label),
+                value: escapeLine(
+                    fmt(_('{was} before, {now} now'), {
+                        was: groupDigits(was),
+                        now: groupDigits(now.messages),
+                    }),
+                ),
+            });
+        }
+        if (rows.length > 0) insights.push({ title: escapeLine(_('Before and now')), rows });
+    }
+    const { signed, clean, withCaveats } = report.confirmation;
+    if (signed > 0) {
+        const pct = (n: number) => `${Math.round((n / signed) * 100)}%`;
+        insights.push({
+            title: escapeLine(_('Signed mail confirmed')),
+            rows: [
+                {
+                    label: escapeLine(_('Including caveats')),
+                    value: escapeLine(
+                        fmt(_('{n} of {signed} ({pct})'), {
+                            n: groupDigits(clean + withCaveats),
+                            signed: groupDigits(signed),
+                            pct: pct(clean + withCaveats),
+                        }),
+                    ),
+                },
+                {
+                    label: escapeLine(_('Without caveats')),
+                    value: escapeLine(
+                        fmt(_('{n} of {signed} ({pct})'), {
+                            n: groupDigits(clean),
+                            signed: groupDigits(signed),
+                            pct: pct(clean),
+                        }),
+                    ),
+                },
+            ],
+        });
+    }
+    if (report.missing.length > 0) {
+        insights.push({
+            title: escapeLine(_('Most missing keys')),
+            rows: report.missing.map((m) => ({
+                label: escapeLine(`${m.selector}._domainkey.${m.domain}`),
+                value: escapeLine(
+                    fmt(_n('{n} message', '{n} messages', m.messages), { n: groupDigits(m.messages) }),
+                ),
+            })),
+        });
+    }
+    return insights;
 }

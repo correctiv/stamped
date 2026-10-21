@@ -74,7 +74,13 @@ import {
 } from './view/keys.ts';
 import { escapeLine, noHyphens, plainText } from './view/markup.ts';
 import { emptyList, headerFields, messageRows, rawHeaders, type HeaderField } from './view/message.ts';
-import { overviewHeadline, overviewNextStep, overviewStats, verdictShares } from './view/overview.ts';
+import {
+    overviewHeadline,
+    overviewInsights,
+    overviewNextStep,
+    overviewStats,
+    verdictShares,
+} from './view/overview.ts';
 import { allSources, baseName, shortPath, sourceRows } from './view/sources.ts';
 import { explainVerdict, filterSummary, verdictFilters } from './view/verdict.ts';
 
@@ -583,6 +589,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
         body.append(wrapLabel(card.sentence));
         if (card.note !== undefined) body.append(wrapLabel(card.note, 'warning'));
+        if (card.why !== undefined) {
+            body.append(wrapLabel(card.why));
+            const details = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 });
+            for (const fact of card.whyDetails) {
+                details.append(wrapLabel(`${fact.label}: ${fact.value}`, 'caption', 'monospace'));
+            }
+            const expander = new Gtk.Expander({ label: _('Details') });
+            expander.set_child(details);
+            body.append(expander);
+        }
         body.append(wrapLabel(card.summary, 'dimmed', 'caption'));
         return frame;
     }
@@ -1009,7 +1025,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
             ),
         });
         for (const share of verdictShares(report.verdicts)) {
-            const row = new Adw.ActionRow({ title: share.label });
+            // Subtitle AND `?`: the sentence says what the line means, the popover says what to do
+            // with it. Escaped like everything else — `describeVerdict` is translated text.
+            const row = new Adw.ActionRow({ title: share.label, subtitle: share.sentence });
             const icon = new Gtk.Image({ iconName: share.icon });
             icon.add_css_class(share.cssClass);
             row.add_prefix(icon);
@@ -1027,6 +1045,20 @@ export class StampedWindow extends Adw.ApplicationWindow {
             verdicts.add(row);
         }
         this._overviewBody.append(verdicts);
+
+        for (const insight of overviewInsights(report)) {
+            const group = new Adw.PreferencesGroup({
+                title: insight.title,
+                ...(insight.description !== undefined ? { description: insight.description } : {}),
+            });
+            for (const stat of insight.rows) {
+                const row = new Adw.ActionRow({ title: stat.label, subtitle: stat.value });
+                row.add_css_class('property');
+                row.set_subtitle_selectable(true);
+                group.add(row);
+            }
+            this._overviewBody.append(group);
+        }
     }
 
     /**
