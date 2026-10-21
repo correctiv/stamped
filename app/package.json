@@ -55,7 +55,11 @@
       "vcsBrowserUrl": "https://github.com/correctiv/stamped",
       "icon": "../data/icons/hicolor/scalable/apps/org.correctiv.Stamped.svg",
       "maintainer": "CORRECTIV <info@correctiv.org>",
-      "categories": ["Office", "Email", "Security"],
+      "categories": [
+        "Office",
+        "Email",
+        "Security"
+      ],
       "screenshots": [
         {
           "url": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/01-message.png",
@@ -129,6 +133,15 @@
     "@types/yargs": "^17.0.35",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "@gjsify/node-gi": "0.64.2"
+  },
+  "optionalDependencies": {
+    "@gjsify/gtk-runtime-darwin-arm64": "0.64.2",
+    "@gjsify/gtk-runtime-darwin-x64": "0.64.2",
+    "@gjsify/gtk-runtime-win32-x64": "0.64.2",
+    "@gjsify/node-runtime-darwin-arm64": "0.64.2",
+    "@gjsify/node-runtime-darwin-x64": "0.64.2",
+    "@gjsify/node-runtime-win32-x64": "0.64.2"
   }
 }
