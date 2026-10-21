@@ -15,10 +15,11 @@ import { describeVerdict, fmt, _, _n } from '@stamped/core';
 import { caseReport, openIndex } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
-import { caseOrThrow } from '../lib/case.ts';
+import { caseOrThrow, caseRoot } from '../lib/case.ts';
 
 interface ReportArgs {
-    case: string;
+    case?: string;
+    folder?: string;
     keys?: number;
     json?: boolean;
 }
@@ -26,15 +27,12 @@ interface ReportArgs {
 /** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
 export function reportCommand(): CommandModule<unknown, ReportArgs> {
     return {
-        command: 'report <case>',
+        command: 'report [folder]',
         describe: _('Summarise a case folder: verdicts, and which keys would answer the most mail'),
         builder: (yargs) =>
             yargs
-                .positional('case', {
-                    describe: _('The case folder to report on'),
-                    type: 'string',
-                    demandOption: true,
-                })
+                .positional('folder', { describe: _('The case folder to report on'), type: 'string' })
+                .option('case', { describe: _('The case folder to report on'), type: 'string' })
                 .option('keys', {
                     describe: _('How many (domain, selector) pairs to list'),
                     type: 'number',
@@ -50,7 +48,7 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     _('See how much of the case is still unverifiable, and which key would change that'),
                 ),
         handler: (args) => {
-            const paths = caseOrThrow(args.case);
+            const paths = caseOrThrow(caseRoot('report', args.case, [args.folder]).root);
             const db = openIndex(paths);
             try {
                 const report = caseReport(db, args.keys ?? 20);
@@ -89,6 +87,15 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     if (count.messages > 0) console.log(`            ${describeVerdict(count.verdict)}`);
                 }
 
+                const caveats = report.caveats.filter((c) => c.messages > 0);
+                if (caveats.length > 0) {
+                    console.log('');
+                    console.log(_('Caveats on confirmed messages'));
+                    for (const c of caveats) {
+                        console.log(`  ${String(c.messages).padStart(8)}  ${c.caveat}`);
+                    }
+                }
+
                 console.log('');
                 if (report.keys.length === 0) {
                     console.log(_('No DKIM signatures in this case, so no keys are needed.'));
@@ -96,11 +103,11 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                 }
                 console.log(_('Keys, by how much mail depends on them'));
                 console.log(
-                    `  ${_('messages').padStart(8)}  ${_('unverifiable').padStart(12)}  ${_('confirmed').padStart(9)}  ${_('selector._domainkey.domain')}`,
+                    `  ${_('messages').padStart(8)}  ${_('unverifiable').padStart(12)}  ${_('confirmed').padStart(9)}  ${_('w/ caveats').padStart(10)}  ${_('selector._domainkey.domain')}`,
                 );
                 for (const key of report.keys) {
                     console.log(
-                        `  ${String(key.messages).padStart(8)}  ${String(key.unverifiable).padStart(12)}  ${String(key.confirmed).padStart(9)}  ${key.selector}._domainkey.${key.domain}`,
+                        `  ${String(key.messages).padStart(8)}  ${String(key.unverifiable).padStart(12)}  ${String(key.confirmed).padStart(9)}  ${String(key.withCaveats).padStart(10)}  ${key.selector}._domainkey.${key.domain}`,
                     );
                 }
             } finally {

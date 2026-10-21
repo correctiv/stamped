@@ -7,6 +7,7 @@ import {
     fetchKeys,
     fmt,
     pairName,
+    type KeyOrigin,
     type LookupChannel,
     _,
     _n,
@@ -28,7 +29,47 @@ export const DEFAULT_CHANNELS: readonly LookupChannel[] = ['archive.prove.email'
 
 export interface AutoOptions {
     readonly yes: boolean;
+    /** One line per key stored or not found, instead of only the summary. */
+    readonly verbose?: boolean;
     readonly channels?: readonly LookupChannel[];
+}
+
+export interface FetchTally {
+    readonly archive: number;
+    readonly dns: number;
+    readonly notFound: number;
+    readonly conflicts: number;
+}
+
+/** Count what a lookup stored, per channel, plus what it did not find. */
+export function tallyFetch(
+    stored: readonly { readonly origin: KeyOrigin; readonly conflict: boolean }[],
+    notFound: number,
+): FetchTally {
+    return {
+        archive: stored.filter((s) => s.origin === 'archive.prove.email').length,
+        dns: stored.filter((s) => s.origin === 'dns').length,
+        notFound,
+        conflicts: stored.filter((s) => s.conflict).length,
+    };
+}
+
+export function tallyLines(tally: FetchTally): string[] {
+    const lines = [
+        fmt(_('{count} keys stored from archive.prove.email'), { count: tally.archive }),
+        fmt(_('{count} keys stored from the DNS'), { count: tally.dns }),
+        fmt(_('{count} keys not found'), { count: tally.notFound }),
+    ];
+    if (tally.conflicts > 0) {
+        lines.push(
+            fmt(_('{count} differ from a key already stored — compare them'), { count: tally.conflicts }),
+        );
+    }
+    return lines;
+}
+
+export function printTally(tally: FetchTally): void {
+    for (const line of tallyLines(tally)) console.log(`  ${line}`);
 }
 
 function printReverify(result: ReverifyResult): void {
@@ -111,17 +152,22 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
         return;
     }
     if (summary.stored.length > 0) saveVault(paths.root, vault);
-    for (const s of summary.stored) {
-        console.log(
-            fmt(_('  stored  {name} via {origin}{flag}'), {
-                name: pairName(s.pair),
-                origin: s.origin,
-                flag: s.conflict ? _(' — DIFFERS from a stored key') : '',
-            }),
-        );
+    if (options.verbose) {
+        for (const s of summary.stored) {
+            console.log(
+                fmt(_('  stored  {name} via {origin}{flag}'), {
+                    name: pairName(s.pair),
+                    origin: s.origin,
+                    flag: s.conflict ? _(' — DIFFERS from a stored key') : '',
+                }),
+            );
+        }
+        for (const miss of summary.misses) {
+            console.log(
+                fmt(_('  no key  {name}: {reason}'), { name: pairName(miss.pair), reason: miss.reason }),
+            );
+        }
     }
-    for (const miss of summary.misses) {
-        console.log(fmt(_('  no key  {name}: {reason}'), { name: pairName(miss.pair), reason: miss.reason }));
-    }
+    printTally(tallyFetch(summary.stored, summary.misses.length));
     await reverifyApplicable(paths);
 }

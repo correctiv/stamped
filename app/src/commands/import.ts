@@ -18,11 +18,13 @@ import { importSources, openCase } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { fetchMissingAndReverify } from '../lib/autofetch.ts';
+import { caseRoot } from '../lib/case.ts';
+import { durationLine } from '../lib/duration.ts';
 import { keyStoreFrom } from '../lib/keys.ts';
 
 interface ImportArgs {
-    case: string;
-    source: (string | number)[];
+    case?: string;
+    paths?: (string | number)[];
     key?: (string | number)[];
     flavour?: string;
     quiet?: boolean;
@@ -33,20 +35,20 @@ interface ImportArgs {
 /** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
 export function importCommand(): CommandModule<unknown, ImportArgs> {
     return {
-        command: 'import <case> <source..>',
+        command: 'import [paths..]',
         describe: _('Read mail archives into a case folder and index them'),
         builder: (yargs) =>
             yargs
-                .positional('case', {
-                    describe: _('The case folder to import into. Created when it does not exist.'),
-                    type: 'string',
-                    demandOption: true,
-                })
-                .positional('source', {
-                    describe: _('An mbox file, a Maildir, a single .eml, or a directory of those'),
+                .positional('paths', {
+                    describe: _(
+                        'The case folder (created when it does not exist), then the sources: an mbox file, a Maildir, a single .eml, or a directory of those. With --case, only the sources.',
+                    ),
                     type: 'string',
                     array: true,
-                    demandOption: true,
+                })
+                .option('case', {
+                    describe: _('The case folder to import into, instead of the first argument'),
+                    type: 'string',
                 })
                 .option('key', {
                     describe: _(
@@ -80,9 +82,13 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                     _('Import one mbox, with no keys yet — run `stamped report` to see which are needed'),
                 ),
         handler: async (args) => {
-            const paths = openCase(args.case);
+            const startedAt = Date.now();
+            const { root, rest: sources } = caseRoot('import', args.case, args.paths ?? []);
+            if (sources.length === 0) {
+                throw new Error(_('No source given. Use `stamped import <case> <source…>`.'));
+            }
+            const paths = openCase(root);
             const keys = keyStoreFrom((args.key ?? []).map(String));
-            const sources = args.source.map(String);
 
             const result = await importSources(paths, sources, {
                 keys,
@@ -140,6 +146,7 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
             if (args.lookup !== false) {
                 await fetchMissingAndReverify(paths, { yes: args.yes === true });
             }
+            console.log(durationLine(startedAt));
         },
     };
 }

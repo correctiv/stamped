@@ -16,24 +16,40 @@ import {
     missingPairs,
     pairName,
     parseKeyMaterial,
-    parsePairList,
     requestTemplate,
     type KeyPair,
+    type KeyOrigin,
     type LookupChannel,
+    type PairCount,
     type LookupResult,
     _,
     _n,
 } from '@stamped/core';
+import { missingKeyPairs, openIndex } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
-import { fetchMissingAndReverify, reverifyApplicable } from '../lib/autofetch.ts';
-import { caseOrThrow } from '../lib/case.ts';
+import {
+    fetchMissingAndReverify,
+    printTally,
+    reverifyApplicable,
+    tallyFetch,
+    type FetchTally,
+} from '../lib/autofetch.ts';
+import { caseOrThrow, caseRoot } from '../lib/case.ts';
 import { askConsent } from '../lib/consent.ts';
 import { resolveTxt } from '../lib/dns.ts';
+import { durationLine } from '../lib/duration.ts';
+import { readPairFile } from '../lib/pairs.ts';
 import { loadVault, saveVault } from '../lib/vault.ts';
 
 interface CaseArgs {
-    case: string;
+    case?: string;
+    folder?: string;
+}
+
+/** The case folder of a `keys` subcommand: `--case`, or the optional positional, or `.stamped`. */
+function caseDir(command: string, args: CaseArgs): string {
+    return caseRoot(`keys ${command}`, args.case, [args.folder], '.stamped').root;
 }
 
 const WHY = () =>
@@ -79,9 +95,8 @@ export function keysCommand(): CommandModule<unknown, CaseArgs> {
         builder: (yargs) =>
             yargs
                 .option('case', {
-                    describe: _('The case folder holding keys.json'),
+                    describe: _('The case folder holding keys.json (default: .stamped)'),
                     type: 'string',
-                    default: '.stamped',
                 })
                 .command(listCommand())
                 .command(addCommand())
@@ -100,20 +115,35 @@ interface ListArgs extends CaseArgs {
 
 function listCommand(): CommandModule<CaseArgs, ListArgs> {
     return {
-        command: 'list',
+        command: 'list [folder]',
         describe: _('List stored keys, and with --pairs the ones still missing'),
         builder: (yargs) =>
             yargs
+                .positional('folder', { describe: _('The case folder'), type: 'string' })
                 .option('pairs', {
                     describe: _(
-                        'A pair list (domain, selector[, mail count] per line) to check for missing keys',
+                        'Check for missing keys: a pair list file (domain, selector[, mail count] per line), or no value for the case’s own missing pairs',
                     ),
                     type: 'string',
                 })
                 .option('json', { describe: _('Print JSON'), type: 'boolean', default: false }),
         handler: (args) => {
-            const vault = loadVault(args.case);
-            const missing = args.pairs ? missingPairs(parsePairList(readText(args.pairs)), vault) : [];
+            const dir = caseDir('list', args);
+            const vault = loadVault(dir);
+            const wantsPairs = args.pairs !== undefined;
+            let missing: PairCount[] = [];
+            if (wantsPairs) {
+                if (args.pairs === '') {
+                    const db = openIndex(caseOrThrow(dir));
+                    try {
+                        missing = missingKeyPairs(db, vault);
+                    } finally {
+                        db.close();
+                    }
+                } else {
+                    missing = missingPairs(readPairFile(args.pairs ?? ''), vault);
+                }
+            }
             if (args.json) {
                 console.log(
                     JSON.stringify({ keys: vault.all(), missing, conflicts: vault.conflicts() }, null, 2),
@@ -138,7 +168,7 @@ function listCommand(): CommandModule<CaseArgs, ListArgs> {
                     }),
                 );
             }
-            if (args.pairs) {
+            if (wantsPairs) {
                 console.log('');
                 console.log(
                     missing.length === 0
@@ -171,7 +201,7 @@ interface AddArgs extends CaseArgs {
 
 function addCommand(): CommandModule<CaseArgs, AddArgs> {
     return {
-        command: 'add <name> <key>',
+        command: 'add <name> <key> [folder]',
         describe: _('Store a key you have: a PEM, a bare p= value, or a pasted DNS TXT record'),
         builder: (yargs) =>
             yargs
@@ -184,7 +214,8 @@ function addCommand(): CommandModule<CaseArgs, AddArgs> {
                     describe: _('The key text, or a path to a file holding it'),
                     type: 'string',
                     demandOption: true,
-                }),
+                })
+                .positional('folder', { describe: _('The case folder'), type: 'string' }),
         handler: (args) => {
             const pair = splitName(args.name);
             const key = parseKeyMaterial(readText(args.key));
@@ -195,14 +226,15 @@ function addCommand(): CommandModule<CaseArgs, AddArgs> {
                     ),
                 );
             }
-            const vault = loadVault(args.case);
+            const dir = caseDir('add', args);
+            const vault = loadVault(dir);
             const outcome = vault.add({
                 ...pair,
                 key,
                 origin: 'operator',
                 fetchedAt: new Date().toISOString(),
             });
-            saveVault(args.case, vault);
+            saveVault(dir, vault);
             console.log(
                 fmt(_('Stored {name}: {algorithm} {bits} bit.'), {
                     name: args.name,
@@ -227,14 +259,16 @@ interface FetchArgs extends CaseArgs {
     archive: boolean;
     dns: boolean;
     yes: boolean;
+    verbose: boolean;
 }
 
 function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
     return {
-        command: 'fetch',
+        command: 'fetch [folder]',
         describe: _('Look up missing keys over the network, after you confirm exactly what is sent'),
         builder: (yargs) =>
             yargs
+                .positional('folder', { describe: _('The case folder'), type: 'string' })
                 .option('pairs', { describe: _('A pair list (domain, selector per line)'), type: 'string' })
                 .option('name', {
                     describe: _('One <selector>._domainkey.<domain>. Repeatable.'),
@@ -256,8 +290,15 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                     type: 'boolean',
                     default: false,
                 })
+                .option('verbose', {
+                    describe: _('Print one line per key stored or not found'),
+                    type: 'boolean',
+                    default: false,
+                })
                 .epilog(explain()),
         handler: async (args) => {
+            const startedAt = Date.now();
+            const dir = caseDir('fetch', args);
             const wantedNothing = !args.pairs && args.name.length === 0;
             if (wantedNothing) {
                 // No pairs given: every key the case is missing, on one consent.
@@ -265,10 +306,12 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                     ...(args.archive ? (['archive.prove.email'] as const) : []),
                     ...(args.dns ? (['dns'] as const) : []),
                 ];
-                await fetchMissingAndReverify(caseOrThrow(args.case), {
+                await fetchMissingAndReverify(caseOrThrow(dir), {
                     yes: args.yes,
+                    verbose: args.verbose,
                     ...(channels.length > 0 ? { channels } : {}),
                 });
+                console.log(durationLine(startedAt));
                 return;
             }
             if (!args.archive && !args.dns) {
@@ -277,11 +320,13 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                 );
             }
             const wanted: KeyPair[] = [
-                ...(args.pairs ? parsePairList(readText(args.pairs)) : []),
+                ...(args.pairs ? readPairFile(args.pairs) : []),
                 ...args.name.map((n) => splitName(String(n))),
             ];
 
-            const vault = loadVault(args.case);
+            const vault = loadVault(dir);
+            const stored: { origin: KeyOrigin; conflict: boolean }[] = [];
+            let notFound = 0;
             let todo: KeyPair[] = missingPairs(wanted, vault);
             if (todo.length === 0) {
                 console.log(_('Every listed key is already stored.'));
@@ -304,6 +349,7 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                         : await lookupArchive(consent, todo, (url) => fetch(url));
                 const now = new Date().toISOString();
                 const added: string[] = [];
+                notFound += result.misses.length;
                 for (const f of result.found) {
                     const outcome = vault.add({
                         ...f.pair,
@@ -313,6 +359,7 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                         ...(f.seenFrom ? { seenFrom: f.seenFrom } : {}),
                         ...(f.seenTo ? { seenTo: f.seenTo } : {}),
                     });
+                    stored.push({ origin: f.origin, conflict: outcome.status === 'conflict' });
                     added.push(
                         fmt(_('  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}'), {
                             name: pairName(f.pair),
@@ -323,11 +370,15 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                         }),
                     );
                 }
-                saveVault(args.case, vault);
-                printResult(result, added);
+                saveVault(dir, vault);
+                if (args.verbose) printResult(result, added);
                 todo = missingPairs(todo, vault);
             }
-            if (existsSync(args.case + '/case.json')) await reverifyApplicable(caseOrThrow(args.case));
+            // A pair the archive missed but the DNS found is not "not found": count what is still open.
+            const tally: FetchTally = tallyFetch(stored, todo.length);
+            printTally(tally);
+            if (existsSync(dir + '/case.json')) await reverifyApplicable(caseOrThrow(dir));
+            console.log(durationLine(startedAt));
         },
     };
 }
