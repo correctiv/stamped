@@ -116,6 +116,9 @@ function report(overrides: Partial<CaseReport> = {}): CaseReport {
         verdicts: VERDICTS.map((verdict) => ({ verdict, messages: 0 })),
         caveats: [],
         keys: [],
+        confirmation: { signed: 0, clean: 0, withCaveats: 0 },
+        missing: [],
+        reasons: [],
         ...overrides,
     };
 }
@@ -128,7 +131,21 @@ function counted(
     const verdicts = VERDICTS.map((verdict) => ({ verdict, messages: counts[verdict] ?? 0 }));
     let messages = 0;
     for (const count of verdicts) messages += count.messages;
-    return { messages, bytes: messages * 1000, verdicts, caveats: [], keys };
+    const signed = messages - (counts.unsigned ?? 0);
+    return {
+        messages,
+        bytes: messages * 1000,
+        verdicts,
+        caveats: [],
+        keys,
+        confirmation: {
+            signed,
+            clean: counts.confirmed ?? 0,
+            withCaveats: counts['confirmed-with-caveats'] ?? 0,
+        },
+        missing: [],
+        reasons: [],
+    };
 }
 
 export default async () => {
