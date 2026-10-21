@@ -93,6 +93,15 @@ export interface VerifyOptions {
      * domain that somebody is reading its mail.
      */
     readonly fallbackResolver?: DNSResolver;
+    /**
+     * Key names (`<selector>._domainkey.<domain>`) whose key is known to have confirmed other
+     * messages of the same case. A header failure under such a key is much more likely an edit
+     * than a wrong key, so the `key-newer-than-message` caveat must not soften it.
+     *
+     * Only a caller that classifies a whole case can know this. A single-message `stamped
+     * verify` has no siblings and leaves it unset, which keeps the caveat.
+     */
+    readonly confirmedPairs?: ReadonlySet<string>;
 }
 
 /** One verified signature: the facts, with the key's provenance already attached. */
@@ -178,8 +187,10 @@ export async function verifyMessage(
             // classify the absence of a signature as a broken one.
             .filter((signature) => signature.status.result !== 'none')
             .map((signature) => {
-                const key = sources.get(keyNameFor(signature.signingDomain ?? '', signature.selector ?? ''));
+                const name = keyNameFor(signature.signingDomain ?? '', signature.selector ?? '');
+                const key = sources.get(name);
                 return evidenceFrom(signature as RawSignatureResult, {
+                    keyConfirmsOthers: options.confirmedPairs?.has(name) ?? false,
                     authorDomain: author.authorDomain,
                     source: key?.source,
                     keySince: key?.since,

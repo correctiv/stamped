@@ -34,6 +34,8 @@ export interface EvidenceContext {
     readonly keySince?: string;
     /** The message's `Date:` header as ISO, if present and parseable. */
     readonly messageDate?: string;
+    /** This key verified other messages of the same pair; see `VerifyOptions.confirmedPairs`. */
+    readonly keyConfirmsOthers?: boolean;
 }
 
 /** mailauth's key-error comments, from its `KEY_ERROR_COMMENTS` table, to Stamped's reasons. */
@@ -86,6 +88,7 @@ export function evidenceFrom(raw: RawSignatureResult, context: EvidenceContext =
     if (context.source) evidence.keySource = context.source;
     if (context.keySince) evidence.keySince = context.keySince;
     if (context.messageDate) evidence.messageDate = context.messageDate;
+    if (context.keyConfirmsOthers) evidence.keyConfirmsOthers = true;
     if (raw.rr) {
         evidence.keyRecord = raw.rr;
         evidence.keyAlgorithm = keyAlgorithmOf(raw.rr);
