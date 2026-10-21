@@ -12,7 +12,7 @@ import GObject from '@girs/gobject-2.0';
 import Gtk from '@girs/gtk-4.0';
 
 import Template, { GTypeName, InternalChildren, type Children } from './help-button.blp';
-import { plainText } from './view/markup.ts';
+import { noHyphens, plainText } from './view/markup.ts';
 
 // oxlint-disable-next-line no-unsafe-declaration-merging -- intentional: GJS installs the internal children (ADR 0088)
 export interface StampedHelpButton extends Children {}
@@ -28,7 +28,10 @@ export class StampedHelpButton extends Gtk.MenuButton {
     }
 
     setMarkup(markup: string): void {
-        this._text.set_label(markup);
+        // `noHyphens` on the label, not on the stored markup: `explainKey`'s paragraph names the
+        // DNS record (`t2048._domainkey.example.com`), and this label is the widest wrapping text
+        // in the app — the one place Pango was caught hyphenating a domain.
+        this._text.set_label(noHyphens(markup));
         // A tooltip parses no markup, so the entities have to come back out — `plainText` owns
         // that reversal, rather than this widget growing its own divergent copy of it.
         this.set_tooltip_text(markup === '' ? null : plainText(markup));

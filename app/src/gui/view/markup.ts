@@ -28,6 +28,22 @@ export function escapeLine(text: string): string {
 }
 
 /**
+ * The same text, with Pango's automatic hyphenation switched off.
+ *
+ * A screenshot caught it: a key row wrapped `example.com` as `example.c-om`, and a reader has no
+ * way to tell a hyphen Pango inserted from one that is part of the domain. For a tool whose whole
+ * subject is which domain signed a message, a domain that cannot be read off the screen correctly
+ * is a wrong answer — the same for an address, a selector and a Message-ID.
+ *
+ * Applied at the WIDGET, never inside a view model: the view models' strings are also fed to
+ * plain-text widgets through {@link plainText}, which would render the span tag literally. Pango
+ * 1.44 and newer honour `insert_hyphens`; an older one ignores the attribute rather than failing.
+ */
+export function noHyphens(markup: string): string {
+    return `<span insert_hyphens="false">${markup}</span>`;
+}
+
+/**
  * The exact inverse of {@link escapeMarkup}, for the widgets that take NO markup.
  *
  * Not every label parses markup, and the ones that do not are not interchangeable with the ones
