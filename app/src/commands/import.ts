@@ -14,7 +14,7 @@
 
 import { fmt, _, _n } from '@stamped/core';
 import type { MboxFlavour } from '@stamped/import';
-import { importSources, openCase } from '@stamped/store';
+import { type ImportProgress, importSources, openCase } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { fetchMissingAndReverify } from '../lib/autofetch.ts';
@@ -28,6 +28,7 @@ interface ImportArgs {
     key?: (string | number)[];
     flavour?: string;
     quiet?: boolean;
+    progress?: string;
     lookup?: boolean;
     yes?: boolean;
 }
@@ -72,6 +73,12 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                     type: 'boolean',
                     default: false,
                 })
+                .option('progress', {
+                    describe: _(
+                        'Machine-readable progress: jsonl prints one JSON object per indexed batch on stdout, then a final one',
+                    ),
+                    choices: ['jsonl'],
+                })
                 .option('quiet', {
                     describe: _('Print only the summary, no progress'),
                     type: 'boolean',
@@ -90,9 +97,28 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
             const paths = openCase(root);
             const keys = keyStoreFrom((args.key ?? []).map(String));
 
+            const jsonl = args.progress === 'jsonl';
+            const emit = (progress: ImportProgress, final: boolean): void => {
+                const seconds = Math.max((Date.now() - startedAt) / 1000, 0.001);
+                const rate = progress.done / seconds;
+                const remaining = Math.max(progress.total - progress.done, 0);
+                process.stdout.write(
+                    `${JSON.stringify({
+                        done: progress.done,
+                        total: progress.total,
+                        rate: Math.round(rate * 10) / 10,
+                        eta: final || rate === 0 ? 0 : Math.round(remaining / rate),
+                        errors: progress.failed,
+                        duplicates: progress.duplicates,
+                        final,
+                    })}\n`,
+                );
+            };
+
             const result = await importSources(paths, sources, {
                 keys,
                 flavour: args.flavour as MboxFlavour,
+                onBatch: jsonl ? (progress) => emit(progress, false) : undefined,
                 // Overwritten in place rather than scrolled: an import of a large archive would
                 // otherwise bury its own summary under tens of thousands of lines. Only when
                 // stdout is a terminal — a redirected log gets the summary and nothing else.
@@ -110,6 +136,20 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                           },
             });
             if (!args.quiet && process.stdout.isTTY) process.stdout.write('\n');
+            if (jsonl) {
+                emit(
+                    {
+                        read: result.read,
+                        stored: result.stored,
+                        duplicates: result.duplicates,
+                        indexed: result.indexed,
+                        failed: result.failed,
+                        total: result.indexed + result.failed,
+                        done: result.indexed + result.failed,
+                    },
+                    true,
+                );
+            }
 
             // Inflected on the messages, and the number of sources left out: a sentence carrying
             // two counts can only agree with one of them, and the other count is the argument
