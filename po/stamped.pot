@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 08:16+0200\n"
+"POT-Creation-Date: 2026-10-21 09:12+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -156,7 +156,7 @@ msgstr ""
 msgid "Print JSON"
 msgstr ""
 
-#: app/src/commands/keys.ts:124 app/src/gui/view/keys.ts:187
+#: app/src/commands/keys.ts:124 app/src/gui/view/keys.ts:218
 msgid "{count} key stored"
 msgid_plural "{count} keys stored"
 msgstr[0] ""
@@ -303,7 +303,7 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:84 app/src/gui/window.ts:910
+#: app/src/commands/report.ts:84 app/src/gui/window.ts:952
 #: app/src/gui/window.blp:158
 msgid "Verdicts"
 msgstr ""
@@ -540,47 +540,61 @@ msgid_plural "{count} could not be verified and have no verdict"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:84
+#: app/src/gui/view/keys.ts:105
+msgid "{count} message waiting"
+msgid_plural "{count} messages waiting"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:109
+msgid "Key stored"
+msgstr ""
+
+#: app/src/gui/view/keys.ts:109
+msgid "Nothing waiting"
+msgstr ""
+
+#: app/src/gui/view/keys.ts:115
 msgid "{messages} message signed with it"
 msgid_plural "{messages} messages signed with it"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:89
+#: app/src/gui/view/keys.ts:120
 msgid "{signed}; the key is in this case’s store."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:90
+#: app/src/gui/view/keys.ts:121
 msgid "{signed}; none of them are waiting for this key."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:93
+#: app/src/gui/view/keys.ts:124
 msgid "{count} has no verdict without it"
 msgid_plural "{count} have no verdict without it"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:109
+#: app/src/gui/view/keys.ts:140
 msgid "No signatures in this case, so no keys are needed."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:112
+#: app/src/gui/view/keys.ts:143
 msgid "Every signature in this case has the key it needs."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:118
+#: app/src/gui/view/keys.ts:149
 msgid "{missing} of {total} signing key is missing."
 msgid_plural "{missing} of {total} signing keys are missing."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:126
+#: app/src/gui/view/keys.ts:157
 msgid "{waiting} message has no verdict without a key."
 msgid_plural "{waiting} messages have no verdict without a key."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:149
+#: app/src/gui/view/keys.ts:180
 msgid ""
 "A DKIM public key, published by the signing domain as the DNS TXT record "
 "{name}. Anyone may read it — it is the public half, and it only ever lets "
@@ -591,21 +605,21 @@ msgid ""
 "under examination — and where it came from is part of the verdict."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:194
+#: app/src/gui/view/keys.ts:225
 msgid "{count} had no published record"
 msgid_plural "{count} had no published record"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:199
+#: app/src/gui/view/keys.ts:230
 msgid "nothing was found"
 msgstr ""
 
-#: app/src/gui/view/keys.ts:200
+#: app/src/gui/view/keys.ts:231
 msgid "Lookup done: {results}."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:205
+#: app/src/gui/view/keys.ts:236
 msgid ""
 "{count} key differs from one this case already held — check which is the "
 "real one."
@@ -615,13 +629,13 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:230
+#: app/src/gui/view/keys.ts:261
 msgid "{count} message re-verified; its verdict is unchanged."
 msgid_plural "{count} messages re-verified; no verdict changed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:239
+#: app/src/gui/view/keys.ts:270
 msgid "{count} verdict changed."
 msgid_plural "{count} verdicts changed."
 msgstr[0] ""
@@ -733,23 +747,23 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/sources.ts:55
+#: app/src/gui/view/sources.ts:76
 msgid "All archives"
 msgstr ""
 
-#: app/src/gui/view/sources.ts:57
+#: app/src/gui/view/sources.ts:78
 msgid "{count} archive imported"
 msgid_plural "{count} archives imported"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/sources.ts:89
+#: app/src/gui/view/sources.ts:116
 msgid "{count} message"
 msgid_plural "{count} messages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/sources.ts:95
+#: app/src/gui/view/sources.ts:122
 msgid "{read}, one of them already in the case"
 msgid_plural "{read}, {duplicates} of them already in the case"
 msgstr[0] ""
@@ -779,51 +793,51 @@ msgstr ""
 msgid "Unsigned"
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:121
+#: app/src/gui/view/verdict.ts:128
 msgid ""
 "A signature from the sender’s own domain verified against a key you trust, "
 "and it covers the fields that matter. The message is byte for byte what was "
 "signed."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:125
+#: app/src/gui/view/verdict.ts:132
 msgid ""
 "The cryptography checked out, but something limits what that proves — a weak "
 "algorithm, an unsigned Subject, or a key that came from the archive itself. "
 "Read the caveats before you quote the message."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:129
+#: app/src/gui/view/verdict.ts:136
 msgid ""
 "The signature is intact and the body does not match the hash it committed "
 "to. Somebody changed the text after it was signed. This is a finding, not a "
 "failure of the check."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:133
+#: app/src/gui/view/verdict.ts:140
 msgid ""
 "The body is as signed, but one of the signed header fields is not. A changed "
 "Subject, From or Date — which can matter more than the body does."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:137
+#: app/src/gui/view/verdict.ts:144
 msgid ""
 "A signature is present and nothing here could check it, almost always "
 "because the public key is missing. This says nothing against the message: "
 "fetch the key and it will get a verdict."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:141
+#: app/src/gui/view/verdict.ts:148
 msgid ""
 "The message carries no DKIM signature at all. Most mail before the mid-2010s "
 "does not. It is neither evidence for nor against authenticity."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:175
+#: app/src/gui/view/verdict.ts:182
 msgid "All messages"
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:197
+#: app/src/gui/view/verdict.ts:204
 msgid "{shown} of {total} shown"
 msgstr ""
 
@@ -839,124 +853,128 @@ msgstr ""
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
-#: app/src/gui/window.ts:475
+#: app/src/gui/window.ts:477
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 
-#: app/src/gui/window.ts:536 app/src/gui/window.blp:264
+#: app/src/gui/window.ts:543 app/src/gui/window.blp:264
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:555
+#: app/src/gui/window.ts:562
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:564
+#: app/src/gui/window.ts:571
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:580
+#: app/src/gui/window.ts:587
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:618
+#: app/src/gui/window.ts:627
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:620
+#: app/src/gui/window.ts:629
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:622
+#: app/src/gui/window.ts:631
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:654
+#: app/src/gui/window.ts:663
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:666
+#: app/src/gui/window.ts:675
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:687
-msgid "Copy a request to send to the signing domain’s operator"
-msgstr ""
-
-#: app/src/gui/window.ts:692
-msgid "Request copied. Paste it into a mail to the operator."
-msgstr ""
-
-#: app/src/gui/window.ts:696
+#: app/src/gui/window.ts:713
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:737
+#: app/src/gui/window.ts:722
+msgid "Copy Request…"
+msgstr ""
+
+#: app/src/gui/window.ts:723
+msgid "Copy a request to send to the signing domain’s operator"
+msgstr ""
+
+#: app/src/gui/window.ts:727
+msgid "Request copied. Paste it into a mail to the operator."
+msgstr ""
+
+#: app/src/gui/window.ts:772
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:759
+#: app/src/gui/window.ts:794
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:761
+#: app/src/gui/window.ts:796
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:780 app/src/gui/window.ts:969
+#: app/src/gui/window.ts:815 app/src/gui/window.ts:1011
 msgid "Cancel"
 msgstr ""
 
-#: app/src/gui/window.ts:781
+#: app/src/gui/window.ts:816
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:900
+#: app/src/gui/window.ts:942
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:912
+#: app/src/gui/window.ts:954
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:945
+#: app/src/gui/window.ts:987
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:961
+#: app/src/gui/window.ts:1003
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:964
+#: app/src/gui/window.ts:1006
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:968
+#: app/src/gui/window.ts:1010
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:996
+#: app/src/gui/window.ts:1038
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:996
+#: app/src/gui/window.ts:1038
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:1032
+#: app/src/gui/window.ts:1074
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:1032
+#: app/src/gui/window.ts:1074
 msgid "Close"
 msgstr ""
 
