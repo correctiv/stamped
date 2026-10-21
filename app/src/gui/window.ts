@@ -289,6 +289,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
         });
 
         if (caseRoot !== undefined) this.openAtStart(caseRoot);
+
+        // The one screenshot hook. `dev/screenshots.sh` needs a named view to come up on its own:
+        // the alternative is clicking the view switcher at hard-coded coordinates, which silently
+        // produces a picture of the wrong page when the header bar shifts by a few pixels.
+        const view = GLib.getenv('STAMPED_SHOT_VIEW');
+        if (view !== null) this._contentStack.set_visible_child_name(view);
     }
 
     /**

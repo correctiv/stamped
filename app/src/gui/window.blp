@@ -9,7 +9,11 @@ using Adw 1;
 // <ada@example.com> would render as a row with no sender. Every string set from TypeScript comes
 // out of `view/markup.ts` already escaped; nothing here may bypass that.
 template $StampedWindow: Adw.ApplicationWindow {
-  default-width: 1200;
+  // 1000x700 is Flathub's ceiling for a store screenshot, and the three-pane layout has to fit
+  // inside it — the first thing a user sees must be the layout the app is for, not its collapsed
+  // fallback. That is why the first breakpoint sits at 900 and not at the roomier 1100 the spike
+  // used: at 1100 the default window would already open collapsed.
+  default-width: 1000;
   default-height: 700;
   width-request: 360;
   height-request: 360;
@@ -18,7 +22,7 @@ template $StampedWindow: Adw.ApplicationWindow {
   // Laptop width: the case sidebar becomes an overlay the toggle pulls in, so the message list
   // and the verification keep their full width — the two panes a reader works in.
   Adw.Breakpoint {
-    condition ("max-width: 1100px")
+    condition ("max-width: 900px")
 
     setters {
       outerSplit.collapsed: true;
