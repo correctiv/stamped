@@ -1058,6 +1058,46 @@ export default async () => {
             });
         });
 
+        await it('reports the sqlite error behind a failed index write', async () => {
+            // Every message is stored and logged before it reaches the index, so an index error
+            // costs the verdict, not the evidence. But a count alone cannot say WHAT went
+            // wrong — a failure that shows up only as a number is not debuggable — so each one
+            // carries the sqlite reason, and as its location the hash of the message it
+            // happened on: an index error has no file, the hash is the nearest thing to one.
+            await withCase(async (paths) => {
+                const db = openIndex(paths);
+                try {
+                    // `prepare`, not `exec`: the trigger body holds a `;` of its own, and the
+                    // wrapper's `exec` splits statements on every `;` it sees — a trigger would
+                    // arrive in pieces ("incomplete input"). One statement is one parse.
+                    db.prepare(`CREATE TRIGGER boom BEFORE INSERT ON messages
+                        BEGIN
+                            SELECT RAISE(ABORT, 'boom from test trigger');
+                        END`).run();
+                } finally {
+                    db.close();
+                }
+                const result = await importSources(paths, [archive('inbox.mbox')], {
+                    keys: fixtureKeys(),
+                });
+                expect(result.failed > 0).toBe(true);
+                expect(result.indexed).toBe(0);
+                // The log says which hashes were stored — and those are the ones the index
+                // write failed for.
+                const log = readFileSync(paths.log, 'utf8')
+                    .trim()
+                    .split('\n')
+                    .map((line) => JSON.parse(line) as ImportLogEntry);
+                const booms = result.failures.filter((failure) =>
+                    failure.reason.includes('boom from test trigger'),
+                );
+                expect(booms.length).toBe(4);
+                expect(booms.map((failure) => failure.path).sort()).toStrictEqual(
+                    [...new Set(log.map((entry) => entry.hash))].sort(),
+                );
+            });
+        });
+
         await it('reports each committed batch through onBatch', async () => {
             await withCase(async (paths) => {
                 const seen: { done: number; total: number }[] = [];
