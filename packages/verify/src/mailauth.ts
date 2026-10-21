@@ -121,6 +121,11 @@ export async function verifyMessage(
     raw: string | Uint8Array,
     options: VerifyOptions,
 ): Promise<ReturnType<typeof evidenceFrom>[]> {
+    // No DKIM-Signature in the header block: mailauth would answer with its one synthetic `none`
+    // result, which is filtered out below anyway. Skipping the call is the same answer without
+    // ~16 ms of parsing and canonicalisation per message — most of an archive is unsigned.
+    if (!hasSignatureHeader(raw)) return [];
+
     const { dkimVerify, getAuthorDomain } = await loadMailauth();
 
     // Which names were answered from where, filled by the resolver below and read back per
@@ -198,6 +203,25 @@ export async function verifyMessage(
                 });
             })
     );
+}
+
+/** Whether the header block (never the body) has a `DKIM-Signature` field. */
+function hasSignatureHeader(raw: string | Uint8Array): boolean {
+    let head: string;
+    if (typeof raw === 'string') {
+        const end = raw.search(/\r?\n\r?\n/);
+        head = end === -1 ? raw : raw.slice(0, end);
+    } else {
+        // Header names are ASCII, so a byte-wise Latin-1 view is enough and avoids decoding the body.
+        let text = '';
+        for (let i = 0; i < raw.length; i++) {
+            text += String.fromCharCode(raw[i] as number);
+            if (i > 3 && raw[i] === 10 && (raw[i - 1] === 10 || (raw[i - 1] === 13 && raw[i - 2] === 10)))
+                break;
+        }
+        head = text;
+    }
+    return /^dkim-signature[ \t]*:/im.test(head);
 }
 
 /** The `Date:` header as ISO, read from the header block alone; undefined if absent or unparseable. */
