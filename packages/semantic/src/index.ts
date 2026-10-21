@@ -2,9 +2,10 @@
  * @stamped/semantic — public API
  */
 
-export type { Embedder } from './embedder.ts';
+export type { EmbedDocument, Embedder } from './embedder.ts';
 export { checkVector, normalize } from './embedder.ts';
 export { documentText } from './prepare.ts';
+export { documentPrompt, queryPrompt, truncateVector } from './prompts.ts';
 export type { VectorDbOptions, VectorSearchHit } from './vector-db.ts';
 export {
     openVectorDb,

@@ -25,6 +25,7 @@ import {
     putVectors,
     searchVectors,
 } from '@stamped/semantic';
+import type { EmbedDocument } from '@stamped/semantic';
 
 /**
  * A deterministic fake embedder: every character of the text adds to one bucket, so two texts
@@ -50,8 +51,8 @@ function fakeEmbedder(dimensions = 32) {
         async embedQuery(text: string): Promise<Float32Array> {
             return embed(text);
         },
-        async embedDocuments(texts: string[]): Promise<Float32Array[]> {
-            return texts.map(embed);
+        async embedDocuments(documents: readonly EmbedDocument[]): Promise<Float32Array[]> {
+            return documents.map((doc) => embed(documentText(doc.subject, doc.body)));
         },
     };
 }
@@ -84,7 +85,10 @@ export default async () => {
             await it('embeds a query and a document into the same space', async () => {
                 const embedder = fakeEmbedder(16);
                 const query = await embedder.embedQuery('the harbour contract');
-                const documents = await embedder.embedDocuments(['the harbour contract', 'lighthouse']);
+                const documents = await embedder.embedDocuments([
+                    { body: 'the harbour contract' },
+                    { body: 'lighthouse' },
+                ]);
                 expect(query.length).toBe(16);
                 expect(documents.length).toBe(2);
                 expect(documents[0].length).toBe(16);

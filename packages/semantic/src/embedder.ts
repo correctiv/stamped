@@ -8,11 +8,20 @@
  * storage or fusion. This step ships the seam only — no llama dependency.
  */
 
+/**
+ * A message as the embedder sees it. Subject and body stay apart because a model may weigh
+ * them differently — EmbeddingGemma 2 was trained with the title as its own prompt field.
+ */
+export interface EmbedDocument {
+    subject?: string;
+    body: string;
+}
+
 export interface Embedder {
     readonly modelId: string;
     readonly dimensions: number;
     embedQuery(text: string): Promise<Float32Array>;
-    embedDocuments(texts: string[]): Promise<Float32Array[]>;
+    embedDocuments(documents: readonly EmbedDocument[]): Promise<Float32Array[]>;
 }
 
 /**
