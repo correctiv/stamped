@@ -148,6 +148,26 @@ export default async () => {
             }
         });
 
+        await it('gives two folders of the same name two different mailboxes', async () => {
+            const root = mkdtempSync(join(tmpdir(), 'stamped-collision-'));
+            try {
+                mkdirSync(join(root, 'ada@example.com'));
+                writeFileSync(join(root, 'ada@example.com', 'part-01.mbox'), part('One'));
+                mkdirSync(join(root, 'work', 'ada@example.com'), { recursive: true });
+                writeFileSync(join(root, 'work', 'ada@example.com', 'part-01.mbox'), part('Two'));
+                const plan = planFolder(root);
+                // Two folders, one name. The second gets a number, so a mailbox in the log never
+                // means two things — and the number is the same on every run, because the
+                // folders are walked in a fixed order.
+                expect(plan.mailboxes.map((mailbox) => mailbox.name)).toStrictEqual([
+                    'ada@example.com',
+                    'ada@example.com (2)',
+                ]);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
         await it('leaves the files that are not mail alone, and says which they were', async () => {
             const plan = planFolder(archive('leak'));
             const skipped = plan.skipped.map((file) => basename(file.path)).sort();
@@ -402,6 +422,44 @@ export default async () => {
                 1,
             );
             expect('mailbox' in line).toBe(false);
+        });
+
+        await it('names the mailbox in EVERY line of a folder import', async () => {
+            await withCase(async (paths) => {
+                const seen: (string | undefined)[] = [];
+                const imported = await importSources(paths, [archive('leak')], {
+                    keys: fixtureKeys(),
+                    mode: 'folders',
+                    onBatch: (progress) => seen.push(progress.mailbox),
+                });
+                // Every mailbox of the tree is in the stream — the broken one among them, whose
+                // part holds no message. A mailbox missing from the stream cannot be told apart
+                // from one that was never reached.
+                expect(seen).toStrictEqual([
+                    'ada@example.com',
+                    'broken@example.org',
+                    'grace@example.net',
+                ]);
+                // And the closing line, which is about the whole run, names the mailbox the run
+                // ended in — that is where a watcher looking for the stall looks.
+                expect(imported.lastMailbox).toBe('grace@example.net');
+                const final = progressLine(
+                    {
+                        read: imported.read,
+                        stored: imported.stored,
+                        duplicates: imported.duplicates,
+                        indexed: imported.indexed,
+                        failed: imported.failed,
+                        total: imported.indexed,
+                        done: imported.indexed,
+                        mailbox: imported.lastMailbox,
+                    },
+                    true,
+                    1,
+                );
+                expect(final.mailbox).toBe('grace@example.net');
+                expect(final.final).toBe(true);
+            });
         });
     });
 

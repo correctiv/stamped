@@ -9,7 +9,8 @@
  * THE MAILBOX IS IN THE LINE, because a folder of mailboxes is imported one mailbox after the
  * other, and a progress stream that does not say which mailbox it is talking about cannot tell
  * a journalist that the import has reached the interesting one — or that it is still stuck in the
- * first.
+ * first. Every line of a folder import names its mailbox, the closing one included: it names the
+ * mailbox the run ended in, which is where a watcher looking for the stall looks.
  */
 
 import type { ImportProgress } from '@stamped/store';

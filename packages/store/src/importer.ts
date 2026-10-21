@@ -125,6 +125,13 @@ export interface ImportResult {
     readonly failed: number;
     /** The mailboxes a folder tree held. 0 when the sources were not a folder tree. */
     readonly mailboxes: number;
+    /**
+     * The mailbox the run ended in — the last one it read.
+     *
+     * The closing progress line is about the whole run, and the run has no single mailbox; this
+     * is the one the import finished in, so the line can still say where it stopped.
+     */
+    readonly lastMailbox?: string;
     /** The mail files that were read. One per source in the plain mode. */
     readonly files: number;
     /** The files that were left alone because they are not mail. */
@@ -182,6 +189,7 @@ export async function importSources(
     let files = 0;
     let mailboxes = 0;
     let skipped = 0;
+    let lastMailbox: string | undefined;
     let pending: ImportLogEntry[] = [];
     const madeDirs = new Set<string>();
     const failures: ImportFailure[] = [];
@@ -212,6 +220,7 @@ export async function importSources(
             failures.push(...plan.failures);
 
             for (const unit of plan.units) {
+                if (unit.mailbox !== undefined) lastMailbox = unit.mailbox;
                 // Collected rather than verified inside the callback: `readSource` is synchronous —
                 // it has to be, GJS has no always-on event loop to pump a stream with — while
                 // `verifyMessage` is not. Buffering the whole archive would defeat the streaming,
@@ -219,6 +228,10 @@ export async function importSources(
                 // only its HASH is carried out to be verified afterwards. That keeps the memory
                 // ceiling at one message plus a list of hashes.
                 const fresh: { hash: string; bytes: number }[] = [];
+                // Whether the last failure was a WRITE rather than a read. A full disk or a
+                // read-only case folder is not one damaged file among many — it ends the import
+                // with the message that says what to do about it.
+                let writeFailed = false;
 
                 // The reader hands every message over here, and this is where a message is
                 // stored and logged. The same function for a plain source and for a part of a
@@ -226,7 +239,13 @@ export async function importSources(
                 // happens to the message.
                 const emit = (message: SourceMessage): void => {
                     read++;
-                    const result = store(paths, message.raw, madeDirs);
+                    let result: ReturnType<typeof store>;
+                    try {
+                        result = store(paths, message.raw, madeDirs);
+                    } catch (error) {
+                        writeFailed = true;
+                        throw error;
+                    }
                     if (result.stored) stored++;
                     else duplicates++;
 
@@ -256,6 +275,7 @@ export async function importSources(
 
                 for (const part of unit.parts) {
                     let found = 0;
+                    writeFailed = false;
                     try {
                         found =
                             part.kind === 'mbox'
@@ -263,9 +283,11 @@ export async function importSources(
                                 : readSource(part.path, emit, readOptions);
                     } catch (error) {
                         // A file that cannot be read is a failure OF THAT FILE, and the rest of
-                        // the tree still gets imported. The one exception is a mistyped source in
-                        // the plain mode, where there is no "the rest" to go on to.
-                        if (!unit.collect) throw error;
+                        // the tree still gets imported. The two exceptions are a mistyped source
+                        // in the plain mode, where there is no "the rest" to go on to, and a
+                        // write that failed — the case folder not being writable is not one
+                        // damaged file among many.
+                        if (writeFailed || !unit.collect) throw error;
                         failures.push({ path: part.path, reason: reasonOf(error) });
                         continue;
                     }
@@ -319,10 +341,11 @@ export async function importSources(
                             options.onBatch?.(snapshot(unit.mailbox));
                         }
                     }
-                    if (inBatch > 0) {
-                        commitBatch(db);
-                        options.onBatch?.(snapshot(unit.mailbox));
-                    }
+                    if (inBatch > 0) commitBatch(db);
+                    // One line per mailbox, ALWAYS — also for a mailbox that held no message at
+                    // all. A progress stream that skips the empty ones cannot say that a
+                    // mailbox was empty, and "no line" reads like "not reached yet".
+                    options.onBatch?.(snapshot(unit.mailbox));
                 } catch (error) {
                     rollbackBatch(db);
                     throw error;
@@ -335,7 +358,18 @@ export async function importSources(
         db.close();
     }
 
-    return { read, stored, duplicates, indexed, failed, mailboxes, files, skipped, failures };
+    return {
+        read,
+        stored,
+        duplicates,
+        indexed,
+        failed,
+        mailboxes,
+        ...(lastMailbox === undefined ? {} : { lastMailbox }),
+        files,
+        skipped,
+        failures,
+    };
 }
 
 /**
