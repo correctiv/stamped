@@ -136,6 +136,21 @@ Gio._promisify(Gtk.FileLauncher.prototype, 'launch', 'launch_finish');
 Gio._promisify(Gio.DataInputStream.prototype, 'read_line_async', 'read_line_finish');
 Gio._promisify(Gio.Subprocess.prototype, 'wait_check_async', 'wait_check_finish');
 
+/** Settles on the next idle turn: lets the window repaint inside a long async loop. */
+function nextTurn(): Promise<void> {
+    return new Promise((resolve) => {
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            resolve();
+            return GLib.SOURCE_REMOVE;
+        });
+    });
+}
+
+/** A live run, as the banner counts it: `running` and not orphaned. */
+function isRunning(status: ReturnType<typeof importStatusOf>): boolean {
+    return status?.state === 'running' && importBannerView(status)?.cancellable === true;
+}
+
 /**
  * How long the search entry waits before it queries.
  *
@@ -335,6 +350,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** The pending people-search debounce, and the idle source filling the address table. */
     private peopleTimer = 0;
     private backfillSource = 0;
+    /** The idle source stepping through {@link refresh}, and whether a key lookup is running. */
+    private refreshSource = 0;
+    private lookupBusy = false;
 
     static {
         GObject.registerClass({ GTypeName, Template, InternalChildren }, this);
@@ -406,6 +424,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.peopleTimer = 0;
             if (this.backfillSource !== 0) GLib.source_remove(this.backfillSource);
             this.backfillSource = 0;
+            if (this.refreshSource !== 0) GLib.source_remove(this.refreshSource);
+            this.refreshSource = 0;
             this.stopImportPoll();
             if (this.session) closeSession(this.session);
             this.session = undefined;
@@ -553,19 +573,48 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.refresh();
     }
 
-    /** Everything that depends on the case. One report query feeds all three panes. */
+    /**
+     * Everything that depends on the case. One report query feeds all three panes.
+     *
+     * One step per idle turn, so the main loop repaints and handles input between the queries:
+     * on a slow disk each is a synchronous round trip to the database thread, and all of them in
+     * one turn is what the shell reports as "not responding".
+     */
     private refresh(): void {
         const session = this.session;
         if (!session) return;
-        const report = reportOf(session);
-        this.total = report.messages;
-        this.fillSidebar(session, report);
-        this.fillList();
-        this.fillKeys(session, report);
-        this.fillOverview(report);
-        this.fillPeople();
-        this.fillTimeline();
-        this.startBackfill(session);
+        if (this.refreshSource !== 0) GLib.source_remove(this.refreshSource);
+        let report: CaseReport | undefined;
+        const steps: (() => void)[] = [
+            () => {
+                report = reportOf(session);
+                this.total = report.messages;
+            },
+            () => this.fillSidebar(session, report!),
+            () => this.fillList(),
+            () => this.fillKeys(session, report!),
+            () => this.fillOverview(report!),
+            () => this.fillPeople(),
+            () => this.fillTimeline(),
+            () => this.startBackfill(session),
+        ];
+        let next = 0;
+        this.refreshSource = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            if (this.session !== session) {
+                this.refreshSource = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            try {
+                steps[next++]!();
+            } catch (error) {
+                this.refreshSource = 0;
+                void this.fail(error);
+                return GLib.SOURCE_REMOVE;
+            }
+            if (next < steps.length) return GLib.SOURCE_CONTINUE;
+            this.refreshSource = 0;
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     /**
@@ -577,8 +626,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private startBackfill(session: CaseSession): void {
         if (this.backfillSource !== 0) GLib.source_remove(this.backfillSource);
         this.backfillSource = 0;
+        // An import writes this case: stepping the backfill beside it only makes both slower.
+        // The run's end refreshes the window, and the refresh starts the backfill again.
+        if (isRunning(importStatusOf(session))) return;
         if (peopleComplete(session)) return;
         this.backfillSource = GLib.idle_add(GLib.PRIORITY_LOW, () => {
+            if (this.importWasRunning) {
+                this.backfillSource = 0;
+                return false;
+            }
             let done = true;
             try {
                 done = backfillStep(session);
@@ -1343,7 +1399,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         try {
             const pair = { domain: row.domain, selector: row.selector };
             const outcome = addKey(session, pair, text);
-            const applied = await applyKeys(session, [pair]);
+            const applied = await applyKeys(session, [pair], nextTurn);
             // A conflict means the case held a DIFFERENT key for this selector, so its toast is
             // sticky: that is a finding to read, not a confirmation to watch go by.
             showToast(escapeLine(outcome.message) + this.appliedSentence(applied), outcome.conflict ? 0 : 5);
@@ -1415,9 +1471,13 @@ export class StampedWindow extends Adw.ApplicationWindow {
         dialog.set_close_response('cancel');
 
         if ((await dialog.choose(this, null)) !== 'go') return;
+        if (this.lookupBusy) return;
+        this.lookupBusy = true;
+        this._keysBody.set_sensitive(false);
+        showToast(_('Looking up keys…'), 3);
         try {
             const outcome = await runLookup(session, text.channel, text.pairs);
-            const applied = await applyKeys(session, outcome.pairs);
+            const applied = await applyKeys(session, outcome.pairs, nextTurn);
             showToast(
                 lookupSummary(outcome.stored, outcome.missed, outcome.conflicts) +
                     this.appliedSentence(applied),
@@ -1426,6 +1486,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.refresh();
         } catch (error) {
             await this.fail(error);
+        } finally {
+            this.lookupBusy = false;
+            this._keysBody.set_sensitive(true);
         }
     }
 
@@ -1614,7 +1677,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this._importBanner.set_title(view.title);
             this._importBanner.set_button_label(view.cancellable && own ? _('Cancel') : '');
         }
-        const running = status?.state === 'running' && view?.cancellable === true;
+        const running = isRunning(status);
         if (this.importWasRunning && !running && status !== undefined) {
             dropFilterCaches(session);
             this.refresh();

@@ -540,9 +540,10 @@ function addedMessage(status: 'added' | 'unchanged' | 'conflict'): string {
 export async function applyKeys(
     session: CaseSession,
     pairs: readonly KeyPair[],
+    yieldTurn?: () => Promise<void>,
 ): Promise<ReverifyResult | undefined> {
     if (pairs.length === 0) return undefined;
-    return reverifyPairs(session.paths, pairs, session.vault);
+    return reverifyPairs(session.paths, pairs, session.vault, yieldTurn);
 }
 
 /** What one lookup run did, counted for the toast that follows it. */

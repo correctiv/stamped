@@ -73,11 +73,17 @@ export interface ReverifyResult {
     readonly skippedConflicts: readonly KeyPair[];
 }
 
-/** Re-verify exactly the messages that carry a signature from one of `pairs`. */
+/**
+ * Re-verify exactly the messages that carry a signature from one of `pairs`.
+ *
+ * `yieldTurn` is awaited before each message: a caller with a main loop to keep alive (the
+ * window) hands in a promise that settles on an idle turn, because a microtask never repaints.
+ */
 export async function reverifyPairs(
     paths: CasePaths,
     pairs: readonly KeyPair[],
     vault: KeyVault,
+    yieldTurn?: () => Promise<void>,
 ): Promise<ReverifyResult> {
     const conflicted = new Set(vault.conflicts().map(pairName));
     const skippedConflicts = pairs.filter((pair) => conflicted.has(pairName(pair)));
@@ -101,6 +107,7 @@ export async function reverifyPairs(
         const changed: VerdictChange[] = [];
         let failed = 0;
         for (const hash of [...affected].sort()) {
+            await yieldTurn?.();
             try {
                 const raw = new Uint8Array(readFileSync(rawPath(paths, hash)));
                 const finding = classifyMessage(await verifyMessage(raw, { keys }));
@@ -115,7 +122,7 @@ export async function reverifyPairs(
                 failed++;
             }
         }
-        await settleSiblings(db, paths, keys);
+        await settleSiblings(db, paths, keys, yieldTurn);
         return { checked: affected.size - failed, changed, failed, skippedConflicts };
     } finally {
         db.close();
