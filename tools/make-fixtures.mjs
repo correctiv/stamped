@@ -218,6 +218,17 @@ const absent = makeKey({
     publish: false,
 });
 
+// Signed with a 1024-bit key; the key published under the same name is a DIFFERENT 2048-bit key
+// (a rotated selector). A signature of 128 bytes cannot come from a 256-byte modulus.
+const rotatedOld = makeKey({
+    selector: 'trotated',
+    domain: 'example.com',
+    type: 'rsa',
+    bits: 1024,
+    publish: false,
+});
+makeKey({ selector: 'trotated', domain: 'example.com', type: 'rsa', bits: 2048 });
+
 console.log('fixtures:');
 
 // ── confirmed ───────────────────────────────────────────────────────────────────────────────
@@ -352,6 +363,22 @@ write(
         canonicalization: 'relaxed/relaxed',
         signedHeaders: SIGNED,
     }).replace('Subject: Quarterly figures', 'Subject: Quarterly figures (final, approved)'),
+);
+
+// The body hash matches and the header signature fails, but only because the key in the store is
+// not the one that signed: the verdict must be `unverifiable`, never `headers-altered`.
+write(
+    'unverifiable-key-mismatch.eml',
+    sign({
+        headers: headersFor({ subject: 'Quarterly figures' }),
+        body: BODY,
+        key: rotatedOld.privateKey,
+        domain: rotatedOld.domain,
+        selector: rotatedOld.selector,
+        algorithm: 'rsa-sha256',
+        canonicalization: 'relaxed/relaxed',
+        signedHeaders: SIGNED,
+    }),
 );
 
 // ── nothing to check against ────────────────────────────────────────────────────────────────

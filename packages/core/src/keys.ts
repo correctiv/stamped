@@ -22,6 +22,8 @@ export interface KeyEntry {
     readonly record: string;
     /** Where it came from — the `archive-key` caveat is this field and nothing else. */
     readonly source: KeySource;
+    /** ISO time the key was first seen or obtained, when known. */
+    readonly since?: string;
 }
 
 /**
@@ -41,8 +43,8 @@ export class KeyStore {
      * meant to beat whatever a key file or the archive supplied, and the call order is what
      * expresses that.
      */
-    add(name: string, record: string, source: KeySource): void {
-        this.entries.set(normaliseKeyName(name), { record, source });
+    add(name: string, record: string, source: KeySource, since?: string): void {
+        this.entries.set(normaliseKeyName(name), { record, source, ...(since ? { since } : {}) });
     }
 
     /** The entry for a name, or `undefined` — which is `no-key`, not an error. */

@@ -25,6 +25,7 @@ import { verifyMessage } from '@stamped/verify';
 
 import type { CasePaths } from './case.ts';
 import { indexMessage, isIndexed, openIndex } from './index-db.ts';
+import { settleSiblings } from './siblings.ts';
 import { appendLog, readRaw, store, type ImportLogEntry } from './raw.ts';
 
 /** How many log lines are held before they are written. See {@link appendLog}. */
@@ -149,6 +150,7 @@ export async function importSources(
                 }
                 options.onProgress?.({ read, stored, duplicates });
             }
+            await settleSiblings(db, paths, options.keys);
         }
     } finally {
         flush();

@@ -76,6 +76,11 @@ export const CAVEATS = [
      * domain they own, and the cryptography will be flawless.
      */
     'signer-not-author',
+    /**
+     * Only on `headers-altered`: the key was first seen after the message's Date, so the selector
+     * may have been rotated and the failure may be a wrong key rather than an edit.
+     */
+    'key-newer-than-message',
 ] as const;
 
 /** One reason a confirmation covers less than it appears to. */
@@ -95,6 +100,12 @@ export type UnverifiableReason =
     | 'expired'
     /** The lookup failed in a way that may succeed later (a DNS error, with `--dns`). */
     | 'lookup-failed'
+    /**
+     * The key cannot have produced this signature: its size or type differs from the signature's
+     * (a 1024-bit signature against a 2048-bit key, ed25519 against rsa). The selector was
+     * probably rotated; this is a wrong key, never an edit.
+     */
+    | 'key-mismatch'
     /** Verification itself could not run — the algorithm or key type is not supported here. */
     | 'unsupported';
 
@@ -142,6 +153,19 @@ export interface SignatureEvidence {
     readonly keyBits?: number;
     /** Where the key came from. Absent when no key was fetched at all. */
     readonly keySource?: KeySource;
+    /** `a=`'s key type against the key record's `k=`; absent when no key was fetched. */
+    readonly keyAlgorithm?: 'rsa' | 'ed25519';
+    /** Length of the decoded `b=` in bits (bytes × 8). Absent when the signature has no `b=`. */
+    readonly signatureBits?: number;
+    /** ISO time the key was first seen (archive first-seen) or obtained (fetched), if known. */
+    readonly keySince?: string;
+    /** ISO time of the message's `Date:` header, if it parses. */
+    readonly messageDate?: string;
+    /**
+     * True when this key verifies other messages of the same pair, which makes a wrong key
+     * unlikely. Set by a caller that has seen more than one message; absent otherwise.
+     */
+    readonly keyConfirmsOthers?: boolean;
     /** The key record as it was read, for the record. */
     readonly keyRecord?: string;
     /** The body hash Stamped computed (base64). */
@@ -242,6 +266,10 @@ export function describeCaveat(caveat: Caveat, evidence?: SignatureEvidence): st
             return _(
                 'The public key came from the archive itself, so it proves consistency rather than authenticity.',
             );
+        case 'key-newer-than-message':
+            return _(
+                'The key was first seen after this message was sent. The selector may have been rotated, so this failure may come from a wrong key rather than an edit.',
+            );
         case 'signer-not-author':
             return evidence
                 ? fmt(
@@ -271,6 +299,10 @@ export function describeUnverifiableReason(reason: UnverifiableReason): string {
             return _('The signature is expired or its timestamp lies in the future.');
         case 'lookup-failed':
             return _('The key lookup failed and may succeed later.');
+        case 'key-mismatch':
+            return _(
+                'The key does not match the signature (different size or type), so it cannot have produced it. The selector was probably rotated.',
+            );
         case 'unsupported':
             return _('The signature algorithm or key type is not supported here.');
     }

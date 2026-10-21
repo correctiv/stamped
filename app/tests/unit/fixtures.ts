@@ -62,15 +62,15 @@ export function archive(...parts: string[]): string {
  *
  * `'operator'` and not `'archive'`: the `archive-key` caveat would then be on every fixture and
  * the caveat assertions would stop saying anything. One suite covers the archive provenance on
- * its own.
+ * its own. `since` is when the keys were first seen, for the key-newer-than-message caveat.
  */
-export function fixtureKeys(source: 'operator' | 'archive' = 'operator'): KeyStore {
+export function fixtureKeys(source: 'operator' | 'archive' = 'operator', since?: string): KeyStore {
     const dir = join(repoRoot(), FIXTURE_REL, 'keys');
     const keys = new KeyStore();
     for (const file of readdirSync(dir).sort()) {
         if (!file.endsWith('.pub.pem')) continue;
         const name = file.slice(0, -'.pub.pem'.length);
-        keys.add(name, recordFromPem(readFileSync(join(dir, file), 'utf8')), source);
+        keys.add(name, recordFromPem(readFileSync(join(dir, file), 'utf8')), source, since);
     }
     return keys;
 }

@@ -184,7 +184,7 @@ export class KeyVault {
             if (seen.has(name) || conflicted.has(name)) continue;
             seen.add(name);
             const best = this.recordsFor(e)[0] ?? e;
-            store.add(name, best.record, keySourceOf(best.origin));
+            store.add(name, best.record, keySourceOf(best.origin), best.seenFrom ?? best.fetchedAt);
         }
         return store;
     }

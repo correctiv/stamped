@@ -26,6 +26,7 @@ import { verifyMessage } from '@stamped/verify';
 
 import type { CasePaths } from './case.ts';
 import { indexMessage, openIndex } from './index-db.ts';
+import { settleSiblings } from './siblings.ts';
 import { rawPath } from './raw.ts';
 
 /** Pairs with `no-key` signatures, and how many distinct messages each affects, most first. */
@@ -114,6 +115,7 @@ export async function reverifyPairs(
                 failed++;
             }
         }
+        await settleSiblings(db, paths, keys);
         return { checked: affected.size - failed, changed, failed, skippedConflicts };
     } finally {
         db.close();

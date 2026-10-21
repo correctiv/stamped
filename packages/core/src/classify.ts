@@ -54,7 +54,19 @@ export function classifySignature(evidence: SignatureEvidence): SignatureFinding
         return { verdict: 'body-altered', caveats: [], evidence };
     }
     if (!evidence.signatureOk) {
-        return { verdict: 'headers-altered', caveats: [], evidence };
+        // A key that cannot have produced the signature says nothing about the headers.
+        if (keyCannotHaveSigned(evidence)) {
+            return {
+                verdict: 'unverifiable',
+                caveats: [],
+                evidence: { ...evidence, unverifiableBecause: 'key-mismatch' },
+            };
+        }
+        return {
+            verdict: 'headers-altered',
+            caveats: keyPostdatesMessage(evidence) ? ['key-newer-than-message'] : [],
+            evidence,
+        };
     }
     const caveats = caveatsFor(evidence);
     return {
@@ -62,6 +74,34 @@ export function classifySignature(evidence: SignatureEvidence): SignatureFinding
         caveats,
         evidence,
     };
+}
+
+/**
+ * Is it certain that the key did not make this signature?
+ *
+ * Deterministic, from sizes and types alone: an RSA signature is exactly as long as the modulus,
+ * and an ed25519 key cannot sign an `rsa-` signature. Missing facts never answer yes.
+ */
+export function keyCannotHaveSigned(evidence: SignatureEvidence): boolean {
+    const type = evidence.algorithm.split('-')[0]?.toLowerCase();
+    if (evidence.keyAlgorithm !== undefined && (type === 'rsa' || type === 'ed25519')) {
+        if (type !== evidence.keyAlgorithm) return true;
+    }
+    return (
+        type === 'rsa' &&
+        evidence.keyBits !== undefined &&
+        evidence.signatureBits !== undefined &&
+        evidence.signatureBits !== Math.ceil(evidence.keyBits / 8) * 8
+    );
+}
+
+/** Was the key first seen after the message was sent, without another mail vouching for it? */
+function keyPostdatesMessage(evidence: SignatureEvidence): boolean {
+    if (evidence.keyConfirmsOthers) return false;
+    if (evidence.keySince === undefined || evidence.messageDate === undefined) return false;
+    const since = Date.parse(evidence.keySince);
+    const sent = Date.parse(evidence.messageDate);
+    return !Number.isNaN(since) && !Number.isNaN(sent) && since > sent;
 }
 
 /**

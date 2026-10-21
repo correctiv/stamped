@@ -37,6 +37,7 @@ const EXPECTED: ReadonlyArray<{ file: string; verdict: Verdict; caveats: Caveat[
     { file: 'body-altered.eml', verdict: 'body-altered', caveats: [] },
     { file: 'headers-altered.eml', verdict: 'headers-altered', caveats: [] },
     { file: 'unverifiable-no-key.eml', verdict: 'unverifiable', caveats: [] },
+    { file: 'unverifiable-key-mismatch.eml', verdict: 'unverifiable', caveats: [] },
     { file: 'unsigned.eml', verdict: 'unsigned', caveats: [] },
     // The message verdict is the STRONGEST of the two signatures; the per-signature findings are
     // asserted in their own test below.
@@ -191,6 +192,26 @@ export default async () => {
             expect(byDomain.get('lists.example.org')).toBe('confirmed-with-caveats');
             expect(finding.verdict).toBe('confirmed-with-caveats');
             expect([...finding.caveats]).toStrictEqual(['signer-not-author']);
+        });
+    });
+
+    await describe('a wrong key is not tampering', async () => {
+        await it('reports a key of another size as key-mismatch', async () => {
+            const [signature] = (await classify('unverifiable-key-mismatch.eml')).signatures;
+            expect(signature.verdict).toBe('unverifiable');
+            expect(signature.evidence.unverifiableBecause).toBe('key-mismatch');
+        });
+
+        await it('flags a failing header signature whose key postdates the message', async () => {
+            const keys = new KeyStore();
+            const source = fixtureKeys();
+            for (const name of source.names()) {
+                const entry = source.lookup(name);
+                if (entry) keys.add(name, entry.record, entry.source, '2025-01-01T00:00:00.000Z');
+            }
+            const finding = await classify('headers-altered.eml', keys);
+            expect(finding.verdict).toBe('headers-altered');
+            expect([...finding.caveats]).toStrictEqual(['key-newer-than-message']);
         });
     });
 

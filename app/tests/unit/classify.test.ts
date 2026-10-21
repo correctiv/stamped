@@ -78,6 +78,41 @@ export default async () => {
         });
     });
 
+    await describe('a key that cannot have signed', async () => {
+        await it('calls a size mismatch unverifiable, not headers-altered', async () => {
+            const finding = classifySignature(
+                good({ signatureOk: false, keyBits: 2048, signatureBits: 1024 }),
+            );
+            expect(finding.verdict).toBe('unverifiable');
+            expect(finding.evidence.unverifiableBecause).toBe('key-mismatch');
+        });
+
+        await it('calls an algorithm mismatch unverifiable', async () => {
+            const finding = classifySignature(good({ signatureOk: false, keyAlgorithm: 'ed25519' }));
+            expect(finding.verdict).toBe('unverifiable');
+        });
+
+        await it('keeps headers-altered when the sizes agree', async () => {
+            const finding = classifySignature(
+                good({ signatureOk: false, keyBits: 2048, signatureBits: 2048 }),
+            );
+            expect(finding.verdict).toBe('headers-altered');
+            expect(finding.caveats.length).toBe(0);
+        });
+
+        await it('adds key-newer-than-message when the key postdates the message', async () => {
+            const newer = good({
+                signatureOk: false,
+                keySince: '2025-01-01T00:00:00Z',
+                messageDate: '2024-03-05T09:40:00Z',
+            });
+            expect([...classifySignature(newer).caveats]).toStrictEqual(['key-newer-than-message']);
+            expect(classifySignature(newer).verdict).toBe('headers-altered');
+            expect(classifySignature({ ...newer, keyConfirmsOthers: true }).caveats.length).toBe(0);
+            expect(classifySignature({ ...newer, keySince: '2023-01-01T00:00:00Z' }).caveats.length).toBe(0);
+        });
+    });
+
     await describe('caveats', async () => {
         await it('catches rsa-sha1 from the a= tag alone', async () => {
             expect(caveatsFor(good({ algorithm: 'rsa-sha1' }))).toStrictEqual(['rsa-sha1']);

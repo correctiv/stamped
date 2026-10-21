@@ -90,7 +90,7 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                 const caveats = report.caveats.filter((c) => c.messages > 0);
                 if (caveats.length > 0) {
                     console.log('');
-                    console.log(_('Caveats on confirmed messages'));
+                    console.log(_('Caveats'));
                     for (const c of caveats) {
                         console.log(`  ${String(c.messages).padStart(8)}  ${c.caveat}`);
                     }
