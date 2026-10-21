@@ -7,6 +7,7 @@ import autokeys from './unit/autokeys.test.ts';
 import cli from './unit/cli.test.ts';
 import classify from './unit/classify.test.ts';
 import folder from './unit/folder.test.ts';
+import explain from './unit/explain.test.ts';
 import keys from './unit/keys.test.ts';
 import keyvault from './unit/keyvault.test.ts';
 import verify from './unit/verify.test.ts';
@@ -15,12 +16,15 @@ import fts5 from './unit/fts5.test.ts';
 import importSuite from './unit/import.test.ts';
 import store from './unit/store.test.ts';
 import view from './unit/view.test.ts';
+import semantic from './unit/semantic.test.ts';
+import llamaPrompts from './unit/llama-prompts.test.ts';
 
 run({
     autokeys,
     cli,
     classify,
     folder,
+    explain,
     keys,
     keyvault,
     verify,
@@ -29,4 +33,6 @@ run({
     import: importSuite,
     store,
     view,
+    semantic,
+    llamaPrompts,
 });

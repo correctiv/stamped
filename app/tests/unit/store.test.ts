@@ -21,6 +21,7 @@ import { describe, expect, it } from '@gjsify/unit';
 import { CAVEATS, type MessageFinding, type Verdict, VERDICTS } from '@stamped/core';
 import { decodeLatin1, encodeLatin1, summarise } from '@stamped/import';
 import {
+    alterationCounts,
     appendLog,
     browseMessages,
     caseReport,
@@ -39,6 +40,7 @@ import {
     keyDemand,
     listMessages,
     logSources,
+    mailboxHashes,
     messageCount,
     openCase,
     openIndex,
@@ -48,9 +50,12 @@ import {
     removeMessage,
     searchHits,
     searchMessages,
+    signatureHashes,
+    signingDomains,
     sourceHashes,
     store,
     verdictCounts,
+    verdictHashes,
 } from '@stamped/store';
 
 import { archive, fixtureKeys, fixturePath } from './fixtures.ts';
@@ -141,6 +146,33 @@ function put(
         finding: finding(verdict, signatures),
     });
     return hash;
+}
+
+/**
+ * Put a message in the index with a signature that has NO key — the `no-key` reason as the
+ * index stores it, on the signature row rather than on the message.
+ */
+function putNoKey(db: DatabaseSync, raw: Uint8Array, selector = 'tmissing'): string {
+    const hash = digest(raw);
+    const base = finding('unverifiable', [{ domain: 'example.com', selector }]);
+    indexMessage(db, {
+        hash,
+        bytes: raw.length,
+        summary: summarise(raw),
+        finding: {
+            ...base,
+            signatures: base.signatures.map((signature) => ({
+                ...signature,
+                evidence: { ...signature.evidence, unverifiableBecause: 'no-key' },
+            })),
+        },
+    });
+    return hash;
+}
+
+/** A hash set as the sorted list a `toStrictEqual` can hold on to. */
+function sorted(hashes: Set<string>): string[] {
+    return [...hashes].sort();
 }
 
 export default async () => {
@@ -673,6 +705,191 @@ export default async () => {
                 expect(report.bytes).toBe(early.length + late.length + undated.length);
                 expect(report.earliest).toBe(Date.UTC(2024, 2, 5, 9, 40, 0));
                 expect(report.latest).toBe(Date.UTC(2024, 2, 8, 16, 30, 45));
+            });
+        });
+
+        await it('always reports both alterations, so an empty case says zero rather than nothing', async () => {
+            // The measured zero is a finding: "we looked for tampering and found none" is a
+            // sentence a case summary has to be able to print, and a missing row is silence.
+            withIndex((db) => {
+                const report = caseReport(db);
+                expect(report.alterations.map((count) => count.verdict)).toStrictEqual([
+                    'body-altered',
+                    'headers-altered',
+                ]);
+                expect(report.alterations.every((count) => count.messages === 0)).toBe(true);
+                expect(report.alterations.every((count) => count.reasons.length === 0)).toBe(true);
+                expect(report.domains).toStrictEqual([]);
+            });
+        });
+
+        await it('ranks the signing domains by how many distinct messages they signed', async () => {
+            // DISTINCT messages, like the key table: a mailing list that re-signs every resend
+            // must not climb this list on duplicates rather than on mail.
+            withIndex((db) => {
+                put(db, message('One', 'body one'), 'confirmed', [
+                    { domain: 'lists.example.org', selector: 'relay' },
+                ]);
+                put(db, message('Two', 'body two'), 'confirmed', [
+                    { domain: 'example.com', selector: 'sel' },
+                    { domain: 'example.com', selector: 'sel-backup' },
+                ]);
+                put(db, message('Three', 'body three'), 'confirmed', [
+                    { domain: 'example.com', selector: 'sel' },
+                ]);
+                const domains = signingDomains(db);
+                expect(domains).toStrictEqual([
+                    { domain: 'example.com', messages: 2 },
+                    { domain: 'lists.example.org', messages: 1 },
+                ]);
+                expect(caseReport(db).domains).toStrictEqual(domains);
+            });
+        });
+
+        await it('sums each alteration over the signatures that carried it', async () => {
+            // A forwarder's intact signature is not the reason a body was altered: listing its
+            // key under the sum would point the reader at the wrong signer.
+            withIndex((db) => {
+                const author = { domain: 'example.com', selector: 'author' };
+                const relay = { domain: 'lists.example.org', selector: 'relay' };
+                put(db, message('One', 'body one'), 'body-altered', [author]);
+                put(db, message('Two', 'body two'), 'body-altered', [author, relay]);
+                const mixed = message('Three', 'body three');
+                const authorFinding = finding('body-altered', [author]);
+                const relayFinding = finding('confirmed', [relay]);
+                indexMessage(db, {
+                    hash: digest(mixed),
+                    bytes: mixed.length,
+                    summary: summarise(mixed),
+                    finding: {
+                        verdict: 'body-altered',
+                        caveats: [],
+                        signatures: [...authorFinding.signatures, ...relayFinding.signatures],
+                    },
+                });
+                const [body] = alterationCounts(db);
+                expect(body?.messages).toBe(3);
+                expect(body?.reasons).toStrictEqual([
+                    { ...author, messages: 3 },
+                    { ...relay, messages: 1 },
+                ]);
+                expect(body?.possiblyWrongKey).toBe(0);
+            });
+        });
+
+        await it('counts the alterations a newer key would explain just as well', async () => {
+            // The number that keeps a sum from being read as an accusation: a key first seen
+            // after the message explains the failure as well as a header change would.
+            withIndex((db) => {
+                const sig = [{ domain: 'example.com', selector: 'sel' }];
+                const raw = message('Rotated', 'body rotated');
+                indexMessage(db, {
+                    hash: digest(raw),
+                    bytes: raw.length,
+                    summary: summarise(raw),
+                    finding: { ...finding('headers-altered', sig), caveats: ['key-newer-than-message'] },
+                });
+                put(db, message('Plain', 'body plain'), 'headers-altered', sig);
+                const [, headers] = alterationCounts(db);
+                expect(headers?.messages).toBe(2);
+                expect(headers?.possiblyWrongKey).toBe(1);
+                expect(headers?.reasons).toStrictEqual([
+                    { domain: 'example.com', selector: 'sel', messages: 2 },
+                ]);
+            });
+        });
+
+        await it('breaks a folder import down by mailbox, most mail first', async () => {
+            await withCase(async (paths) => {
+                await importSources(paths, [archive('leak')], { keys: fixtureKeys(), mode: 'folders' });
+                const db = openIndex(paths);
+                try {
+                    const report = caseReport(db, { paths });
+                    expect(report.mailboxes?.map((entry) => entry.mailbox)).toStrictEqual([
+                        'ada@example.com',
+                        'grace@example.net',
+                    ]);
+                    const ada = report.mailboxes?.[0];
+                    expect(ada?.messages).toBe(3);
+                    // The same six verdicts as the case itself, zeroes included.
+                    expect(ada?.verdicts.map((count) => count.verdict)).toStrictEqual([...VERDICTS]);
+                    expect(ada?.verdicts.find((count) => count.verdict === 'unsigned')?.messages).toBe(3);
+                    expect(report.mailboxes?.[1]?.messages).toBe(1);
+                    // The broken part yielded no message, so its mailbox has no row: a zero row
+                    // beside rows of thousands would read as an empty mailbox rather than as a
+                    // file we could not read.
+                    expect(report.mailboxes?.some((entry) => entry.mailbox.includes('broken'))).toBe(false);
+                } finally {
+                    db.close();
+                }
+            });
+        });
+
+        await it('has no mailbox breakdown for a plain import, however the folder is named', async () => {
+            // The provenance of a plain import is its SOURCE FILE, which has a section of its
+            // own. An absent breakdown and an empty one are different facts, and only the first
+            // one is true here.
+            await withCase(async (paths) => {
+                await importSources(paths, [archive('inbox.mbox')], { keys: fixtureKeys() });
+                const db = openIndex(paths);
+                try {
+                    expect(caseReport(db, { paths }).mailboxes).toBe(undefined);
+                    // The hashes ARE all in the log — under the empty name, which is no name.
+                    expect([...mailboxHashes(paths).keys()]).toStrictEqual(['']);
+                } finally {
+                    db.close();
+                }
+            });
+        });
+    });
+
+    await describe('a scope over the index', async () => {
+        await it('narrows to several verdicts at once, and drops a name the schema does not know', async () => {
+            withIndex((db) => {
+                const one = put(db, message('One', 'body one'), 'confirmed');
+                const two = put(db, message('Two', 'body two'), 'confirmed-with-caveats');
+                put(db, message('Three', 'body three'), 'unsigned');
+                expect(sorted(verdictHashes(db, ['confirmed', 'confirmed-with-caveats']))).toStrictEqual(
+                    [one, two].sort(),
+                );
+                // A name the schema has no column value for is dropped, not bound: it would
+                // silently match nothing, and the caller would read that as an empty verdict.
+                expect(sorted(verdictHashes(db, ['body-altered']))).toStrictEqual([]);
+                expect(sorted(verdictHashes(db, ['nonsense' as Verdict]))).toStrictEqual([]);
+                expect(sorted(verdictHashes(db, [])).length).toBe(0);
+            });
+        });
+
+        await it('finds the messages a signature names, by domain, selector or reason', async () => {
+            withIndex((db) => {
+                const missing = putNoKey(db, message('Missing', 'body missing'));
+                const signed = put(db, message('Signed', 'body signed'), 'confirmed', [
+                    { domain: 'Example.COM', selector: 'Sel' },
+                ]);
+                const third = put(db, message('Other', 'body other'), 'confirmed', [
+                    { domain: 'other.example.net', selector: 'sel' },
+                ]);
+                // A domain is a name, not a byte string: `Example.COM` and `example.com` are it.
+                // Both the waiting and the confirmed message carry it.
+                expect(sorted(signatureHashes(db, { domain: 'example.com' }))).toStrictEqual(
+                    [missing, signed].sort(),
+                );
+                expect(sorted(signatureHashes(db, { domain: 'EXAMPLE.com' }))).toStrictEqual(
+                    [missing, signed].sort(),
+                );
+                expect(sorted(signatureHashes(db, { domain: 'example.com', selector: 'sel' }))).toStrictEqual(
+                    [signed],
+                );
+                expect(sorted(signatureHashes(db, {}))).toStrictEqual([missing, signed, third].sort());
+                // The three questions a tap asks of the key work list: everything waiting on
+                // this selector, everything it already signed, everything with no verdict.
+                expect(sorted(signatureHashes(db, { reason: 'no-key' }))).toStrictEqual([missing]);
+                expect(sorted(signatureHashes(db, { messageVerdict: 'unverifiable' }))).toStrictEqual([
+                    missing,
+                ]);
+                expect(
+                    sorted(signatureHashes(db, { domain: 'example.com', messageVerdict: 'confirmed' })),
+                ).toStrictEqual([signed]);
             });
         });
     });

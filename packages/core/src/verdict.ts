@@ -109,6 +109,33 @@ export type UnverifiableReason =
     /** Verification itself could not run — the algorithm or key type is not supported here. */
     | 'unsupported';
 
+/**
+ * Every reason a present signature could not be checked, in the order they are reported.
+ *
+ * A reason read out of STORED data must be matched against this list first: an index written by
+ * another version can hold a value the running code has no sentence for, and `switch` branches
+ * that fall through render an identifier where a reader expects an explanation.
+ */
+export const UNVERIFIABLE_REASONS: readonly UnverifiableReason[] = [
+    'no-key',
+    'bad-key',
+    'malformed-signature',
+    'key-rejects-signature',
+    'expired',
+    'lookup-failed',
+    'key-mismatch',
+    'unsupported',
+];
+
+/** What a mail export commonly does to a body, and a retry can undo. */
+export type ExportArtefact =
+    /** Lines starting with `.` were doubled (SMTP dot-stuffing, RFC 5321 § 4.5.2). */
+    | 'dot-stuffing'
+    /** Line endings were converted (LF instead of CRLF). */
+    | 'line-endings'
+    /** Both. */
+    | 'dot-stuffing-and-line-endings';
+
 /** Where a public key came from, which is the whole of the `archive-key` caveat. */
 export type KeySource =
     /** Resolved from the public DNS. Only with `--dns`; Stamped is offline by default. */
@@ -176,6 +203,13 @@ export interface SignatureEvidence {
     readonly lengthLimit?: number;
     /** How many canonicalized body bytes `l=` leaves unsigned. */
     readonly unsignedBodyBytes?: number;
+    /**
+     * Set when a retry on a body-hash mismatch matched after undoing an export artefact. An
+     * explanation only: `bodyHashOk` stays false and the verdict stays `body-altered`.
+     */
+    readonly exportArtefact?: ExportArtefact;
+    /** True when the retry was run (and, without `exportArtefact`, found nothing). */
+    readonly exportRetried?: boolean;
     /** Set when, and only when, the verdict is `unverifiable`. */
     readonly unverifiableBecause?: UnverifiableReason;
     /** The verifier's own words, kept verbatim for diagnostics. Never shown as the verdict. */

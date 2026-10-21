@@ -19,7 +19,7 @@
 
 import { DatabaseSync } from 'node:sqlite';
 
-import { type Caveat, type MessageFinding, type Verdict, fmt, _ } from '@stamped/core';
+import { type Caveat, type MessageFinding, type Verdict, VERDICTS, fmt, _ } from '@stamped/core';
 import type { MessageSummary } from '@stamped/import';
 
 import type { CasePaths } from './case.ts';
@@ -88,8 +88,21 @@ export function openIndex(paths: CasePaths): DatabaseSync {
         }
     }
     if (schemaVersion(db) !== SCHEMA_VERSION) createSchema(db);
+    // Both are in-place additions to an index the journalist already has: a column whose absence
+    // would mean no history, and the indexes of a case older than they were written.
+    addFirstVerdictColumn(db);
     ensureIndexes(db);
     return db;
+}
+
+/**
+ * Older indexes lack `first_verdict`. Added in place instead of bumping the schema (which would
+ * drop the cache): those rows stay NULL, and the report reads NULL as "no history".
+ */
+function addFirstVerdictColumn(db: DatabaseSync): void {
+    const columns = db.prepare('PRAGMA table_info(messages)').all() as { name?: string }[];
+    if (columns.some((column) => column.name === 'first_verdict')) return;
+    db.exec('ALTER TABLE messages ADD COLUMN first_verdict TEXT');
 }
 
 /** Open a transaction. Pair with {@link commitBatch}; the importer commits every few hundred. */
@@ -158,6 +171,7 @@ function createSchema(db: DatabaseSync): void {
             refs TEXT NOT NULL,
             from_domain TEXT,
             verdict TEXT NOT NULL,
+            first_verdict TEXT,
             caveats TEXT NOT NULL,
             bytes INTEGER NOT NULL
         );
@@ -262,14 +276,23 @@ export function messageCount(db: DatabaseSync): number {
 export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fresh?: boolean } = {}): void {
     // `fresh`: the caller knows the hash is not indexed. The delete from the FTS table is a full
     // scan (`hash` is UNINDEXED), so for a new message it is pure cost.
-    if (!options.fresh) removeMessage(db, entry.hash);
+    // The verdict at the first indexing is kept across re-indexing: it is the "before" of the
+    // before/now table in the report. A legacy row (NULL) stays NULL.
+    let firstVerdict: string | null = entry.finding.verdict;
+    if (!options.fresh) {
+        const previous = db.prepare('SELECT first_verdict FROM messages WHERE hash = ?').get(entry.hash) as
+            | { first_verdict?: string | null }
+            | undefined;
+        if (previous) firstVerdict = previous.first_verdict ?? null;
+        removeMessage(db, entry.hash);
+    }
     const summary = entry.summary;
 
     db.prepare(
         `INSERT INTO messages (
             hash, message_id, sender, recipients, cc, subject, date, sent_at,
-            in_reply_to, refs, from_domain, verdict, caveats, bytes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            in_reply_to, refs, from_domain, verdict, first_verdict, caveats, bytes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
         entry.hash,
         summary.messageId ?? null,
@@ -283,6 +306,7 @@ export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fre
         summary.references,
         summary.fromDomain ?? null,
         entry.finding.verdict,
+        firstVerdict,
         JSON.stringify(entry.finding.caveats),
         entry.bytes,
     );
@@ -523,6 +547,79 @@ function beganHere(db: DatabaseSync): boolean {
     } catch {
         return false;
     }
+}
+
+/**
+ * The messages carrying one of these verdicts, as a set a scope can be built from.
+ *
+ * The set form of the `verdict` column filter: a tap on an overview number narrows the list to
+ * several verdicts at once ("the two confirmation verdicts"), which the `verdict = ?` form of
+ * {@link countMessages} cannot express. Unknown verdict names are dropped rather than bound —
+ * a name the schema has no column value for would silently match nothing anyway, and dropping
+ * keeps the caller from building a filter out of a typo.
+ */
+export function verdictHashes(db: DatabaseSync, verdicts: readonly Verdict[]): Set<string> {
+    const known = new Set<string>(VERDICTS);
+    const wanted = verdicts.filter((verdict) => known.has(verdict));
+    if (wanted.length === 0) return new Set();
+    const placeholders = wanted.map(() => '?').join(', ');
+    const rows = db
+        .prepare(`SELECT hash FROM messages WHERE verdict IN (${placeholders})`)
+        .all(...wanted) as { hash?: unknown }[];
+    const hashes = new Set<string>();
+    for (const row of rows) if (typeof row.hash === 'string') hashes.add(row.hash);
+    return hashes;
+}
+
+/** What a signature filter asks for. Every field is an `AND`; nothing set means "every signature". */
+export interface SignatureQuery {
+    /** `d=`, matched case-insensitively — a domain is a name, not a byte string. */
+    readonly domain?: string;
+    /** `s=`, matched case-insensitively. */
+    readonly selector?: string;
+    /** The `reason` column — `no-key` for a missing selector, one of the unverifiable reasons. */
+    readonly reason?: string;
+    /** Only signatures of messages whose own verdict is this one. */
+    readonly messageVerdict?: Verdict;
+}
+
+/**
+ * The messages carrying a matching signature, as a set a scope can be built from.
+ *
+ * THE SIGNATURE'S PROPERTIES, not the message's: "everything signed by example.com", "the
+ * messages waiting on this selector" and "the messages with no verdict because of this reason"
+ * are all questions about a `signatures` row, and only the last one additionally needs the
+ * message's verdict. Counted over DISTINCT hashes so a message signed twice by the same pair
+ * still appears once in the list it filters.
+ */
+export function signatureHashes(db: DatabaseSync, query: SignatureQuery): Set<string> {
+    const clauses: string[] = [];
+    const params: string[] = [];
+    if (query.domain !== undefined && query.domain !== '') {
+        clauses.push('lower(s.domain) = lower(?)');
+        params.push(query.domain);
+    }
+    if (query.selector !== undefined && query.selector !== '') {
+        clauses.push('lower(s.selector) = lower(?)');
+        params.push(query.selector);
+    }
+    if (query.reason !== undefined && query.reason !== '') {
+        clauses.push('s.reason = ?');
+        params.push(query.reason);
+    }
+    const verdict = query.messageVerdict;
+    if (verdict !== undefined) {
+        clauses.push('m.verdict = ?');
+        params.push(verdict);
+    }
+    const join = verdict !== undefined ? 'JOIN messages m ON m.hash = s.hash' : '';
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+    const rows = db
+        .prepare(`SELECT DISTINCT s.hash AS hash FROM signatures s ${join} ${where}`)
+        .all(...params) as { hash?: unknown }[];
+    const hashes = new Set<string>();
+    for (const row of rows) if (typeof row.hash === 'string') hashes.add(row.hash);
+    return hashes;
 }
 
 /** How a page of the message list is narrowed. Every field absent means "the whole case". */

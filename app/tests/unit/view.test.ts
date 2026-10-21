@@ -18,12 +18,20 @@
  */
 
 import { describe, expect, it } from '@gjsify/unit';
-import { classifyMessage, describeVerdict, VERDICTS, type SignatureEvidence } from '@stamped/core';
+import {
+    classifyMessage,
+    describeVerdict,
+    VERDICTS,
+    type SignatureEvidence,
+    type Verdict,
+} from '@stamped/core';
 import type {
+    AlterationCount,
     CaseReport,
     ImportResult,
     KeyDemand,
     LogSource,
+    MailboxReport,
     SearchHit,
     IndexedMessage,
 } from '@stamped/store';
@@ -43,9 +51,12 @@ import {
 import { escapeLine, escapeMarkup, noHyphens, plainText } from '../../src/gui/view/markup.ts';
 import { emptyList, headerFields, messageRow, rawHeaders } from '../../src/gui/view/message.ts';
 import {
+    filterBannerText,
     overviewHeadline,
+    overviewInsights,
     overviewNextStep,
     overviewStats,
+    tappedFilter,
     verdictShares,
 } from '../../src/gui/view/overview.ts';
 import { allSources, baseName, shortPath, sourceRows } from '../../src/gui/view/sources.ts';
@@ -116,6 +127,11 @@ function report(overrides: Partial<CaseReport> = {}): CaseReport {
         verdicts: VERDICTS.map((verdict) => ({ verdict, messages: 0 })),
         caveats: [],
         keys: [],
+        confirmation: { signed: 0, clean: 0, withCaveats: 0 },
+        missing: [],
+        reasons: [],
+        domains: [],
+        alterations: [],
         ...overrides,
     };
 }
@@ -128,7 +144,41 @@ function counted(
     const verdicts = VERDICTS.map((verdict) => ({ verdict, messages: counts[verdict] ?? 0 }));
     let messages = 0;
     for (const count of verdicts) messages += count.messages;
-    return { messages, bytes: messages * 1000, verdicts, caveats: [], keys };
+    const signed = messages - (counts.unsigned ?? 0);
+    return {
+        messages,
+        bytes: messages * 1000,
+        verdicts,
+        caveats: [],
+        keys,
+        confirmation: {
+            signed,
+            clean: counts.confirmed ?? 0,
+            withCaveats: counts['confirmed-with-caveats'] ?? 0,
+        },
+        missing: [],
+        reasons: [],
+        domains: [],
+        alterations: [],
+    };
+}
+
+/** One mailbox of a folder import, with the six verdicts behind it. */
+function mailbox(
+    name: string,
+    messages: number,
+    counts: Partial<Record<Verdict, number>> = {},
+): MailboxReport {
+    return {
+        mailbox: name,
+        messages,
+        verdicts: VERDICTS.map((verdict) => ({ verdict, messages: counts[verdict] ?? 0 })),
+    };
+}
+
+/** One kind of alteration, as the report sums it. */
+function altered(over: Partial<AlterationCount> = {}): AlterationCount {
+    return { verdict: 'body-altered', messages: 0, possiblyWrongKey: 0, reasons: [], ...over };
 }
 
 export default async () => {
@@ -779,6 +829,37 @@ export default async () => {
             expect(shares.find((share) => share.verdict === 'confirmed')?.share).toBe(0.75);
         });
 
+        await it('says on every line what the verdict means, from @stamped/core', async () => {
+            // A counted badge a reader has to look up reads as pass/fail. The sentence travels
+            // with the number, and it is core's sentence, never a paraphrase of it.
+            for (const share of verdictShares(counted({ confirmed: 3 }).verdicts)) {
+                expect(share.sentence).toBe(escapeLine(describeVerdict(share.verdict)));
+                expect(share.sentence.length > 0).toBe(true);
+            }
+        });
+
+        await it('sums the reasons messages have no verdict, with the reading rule attached', async () => {
+            const base = counted({ unverifiable: 3 });
+            const insights = overviewInsights({
+                ...base,
+                reasons: [
+                    { reason: 'no-key', messages: 3 },
+                    { reason: 'key-mismatch', messages: 1 },
+                ],
+            });
+            const group = insights.find((insight) => insight.title.includes('no verdict'));
+            expect(group?.rows.length).toBe(2);
+            expect(group?.rows[0].label.includes('No public key')).toBe(true);
+            expect(group?.rows[0].value).toBe('3 messages');
+            // Summed reasons are not summed findings of tampering.
+            expect((group?.description ?? '').includes('not evidence of tampering')).toBe(true);
+        });
+
+        await it('says nothing about reasons when every message has a verdict', async () => {
+            const insights = overviewInsights(counted({ confirmed: 5 }));
+            expect(insights.some((insight) => insight.title.includes('no verdict'))).toBe(false);
+        });
+
         await it('does not divide by an empty case', async () => {
             expect(verdictShares(report().verdicts).every((share) => share.share === 0)).toBe(true);
             expect(overviewHeadline(report()).includes('empty')).toBe(true);
@@ -833,6 +914,230 @@ export default async () => {
             );
             expect(next?.includes('389')).toBe(true);
             expect(next?.includes('2')).toBe(true);
+        });
+
+        await it('offers each mailbox with everything in it, and one line per verdict', async () => {
+            const insights = overviewInsights({
+                ...counted({ unsigned: 4 }),
+                mailboxes: [
+                    mailbox('ada@example.com', 3, { unsigned: 3 }),
+                    mailbox('grace@example.net', 1, { unsigned: 1 }),
+                ],
+            });
+            const group = insights[0];
+            expect(group?.title).toBe('Mailboxes');
+            expect(group?.rows.length).toBe(2);
+            const ada = group?.rows[0];
+            expect(ada?.filter).toStrictEqual({ scope: { kind: 'mailbox', mailbox: 'ada@example.com' } });
+            // An expander: "everything" first, then the same six verdicts the case reports.
+            expect(ada?.rows?.length).toBe(VERDICTS.length + 1);
+            expect(ada?.rows?.[0]?.label).toBe('All 3 messages of ada@example.com');
+            expect(ada?.rows?.[1]?.filter).toStrictEqual({
+                scope: { kind: 'mailbox', mailbox: 'ada@example.com' },
+                verdict: 'confirmed',
+            });
+            // Zeroes included: the mailbox's five zero verdicts are as measured as the one with
+            // mail in it.
+            expect(ada?.rows?.slice(1).map((row) => row.value)).toStrictEqual([
+                '0 messages',
+                '0 messages',
+                '0 messages',
+                '0 messages',
+                '0 messages',
+                '3 messages',
+            ]);
+            expect(group?.rows[1]?.value).toBe('1 message');
+        });
+
+        await it('has no mailbox group for a case imported as files', async () => {
+            // The index knows no mailbox of a plain import, so there is no breakdown to show —
+            // and an empty group would read as "these mailboxes held nothing".
+            const insights = overviewInsights(counted({ unsigned: 4 }));
+            expect(insights.some((insight) => insight.title === 'Mailboxes')).toBe(false);
+            expect(insights.some((insight) => insight.title === 'Top signing domains')).toBe(false);
+        });
+
+        await it('sums the alterations, with the keys and the newer-key count beside them', async () => {
+            const insights = overviewInsights({
+                ...counted({ confirmed: 10, 'body-altered': 2, 'headers-altered': 3 }),
+                alterations: [
+                    altered({
+                        messages: 2,
+                        reasons: [{ domain: 'example.com', selector: 'author', messages: 2 }],
+                    }),
+                    altered({ verdict: 'headers-altered', messages: 3, possiblyWrongKey: 1 }),
+                ],
+            });
+            const group = insights.find((insight) => insight.title === 'Altered messages');
+            expect(group?.rows.map((row) => row.label)).toStrictEqual([
+                'Body altered',
+                'author._domainkey.example.com',
+                'Headers altered',
+                'Equally explained by a newer key',
+            ]);
+            expect(group?.rows[0]?.filter).toStrictEqual({ verdict: 'body-altered' });
+            expect(group?.rows[1]?.filter).toStrictEqual({
+                scope: { kind: 'key', domain: 'example.com', selector: 'author' },
+                verdict: 'body-altered',
+            });
+            // The count that bounds the accusation is a SUBSET of the row above it, not a set of
+            // messages of its own — so it is the one row here with no tap.
+            expect(group?.rows[3]?.value).toBe('1 message');
+            expect(group?.rows[3]?.filter).toBe(undefined);
+            expect((group?.description ?? '').includes('1 of these failures')).toBe(true);
+        });
+
+        await it('says nothing about alterations when nothing was altered', async () => {
+            // The six verdicts above already carry the measured zero; a second group of zeroes
+            // would say the same thing by having been built.
+            const insights = overviewInsights({
+                ...counted({ confirmed: 5 }),
+                alterations: [altered(), altered({ verdict: 'headers-altered' })],
+            });
+            expect(insights.some((insight) => insight.title === 'Altered messages')).toBe(false);
+        });
+
+        await it('ranks the signing domains, and a tap on one narrows the list to it', async () => {
+            const insights = overviewInsights({
+                ...counted({ confirmed: 20 }),
+                domains: [
+                    { domain: 'example.com', messages: 12 },
+                    { domain: 'lists.example.org', messages: 8 },
+                ],
+            });
+            const group = insights.find((insight) => insight.title === 'Top signing domains');
+            expect(group?.rows.length).toBe(2);
+            expect(group?.rows[0]?.value).toBe('12 messages');
+            expect(group?.rows[0]?.filter).toStrictEqual({
+                scope: { kind: 'signer', domain: 'example.com' },
+            });
+            expect(group?.rows[1]?.value).toBe('8 messages');
+        });
+
+        await it('makes every counted number a filter over the set it counted', async () => {
+            const insights = overviewInsights({
+                ...counted({
+                    confirmed: 4,
+                    'confirmed-with-caveats': 2,
+                    unverifiable: 3,
+                    'headers-altered': 1,
+                }),
+                reasons: [{ reason: 'no-key', messages: 3 }],
+                before: VERDICTS.map((verdict) => ({ verdict, messages: 0 })),
+                missing: [{ domain: 'example.com', selector: 'gone', messages: 3 }],
+                alterations: [altered({ verdict: 'headers-altered', messages: 1 })],
+            });
+            const group = (needle: string) => insights.find((insight) => insight.title.includes(needle));
+            expect(group('no verdict')?.rows[0]?.filter).toStrictEqual({
+                scope: { kind: 'reason', reason: 'no-key' },
+            });
+            // The NOW half of a before/now pair: the comparison is not a set of messages.
+            expect(
+                group('Before and now')?.rows.find((row) => row.label === 'Headers altered')?.filter,
+            ).toStrictEqual({ verdict: 'headers-altered' });
+            // Two verdicts count as one scope, because the verdict axis of the sidebar is single.
+            expect(group('Signed mail confirmed')?.rows[0]?.filter).toStrictEqual({
+                scope: { kind: 'verdicts', verdicts: ['confirmed', 'confirmed-with-caveats'] },
+            });
+            expect(group('Signed mail confirmed')?.rows[1]?.filter).toStrictEqual({ verdict: 'confirmed' });
+            // `missingOnly`: the number counts the no-key signatures, so the list must be the
+            // same set — a message this pair already confirmed is not waiting for it.
+            expect(group('Most missing keys')?.rows[0]?.filter).toStrictEqual({
+                scope: { kind: 'key', domain: 'example.com', selector: 'gone', missingOnly: true },
+            });
+        });
+
+        await it('makes only the message total of the first group tappable', async () => {
+            // Bytes and dates are not message counts: a row that silently emptied the list over
+            // one would be a wrong answer to a tap.
+            const stats = overviewStats(report());
+            expect(stats.find((stat) => stat.label === 'Messages')?.filter).toStrictEqual({ all: true });
+            expect(stats.find((stat) => stat.label === 'Raw mail stored')?.filter).toBe(undefined);
+            expect(stats.find((stat) => stat.label === 'Period')?.filter).toBe(undefined);
+        });
+    });
+
+    await describe('tapping an overview number', async () => {
+        const signer = { kind: 'signer', domain: 'example.com' } as const;
+
+        await it('shows the whole case when the row counted the whole case', async () => {
+            // The "Messages" line. Its number is over everything, so every axis goes — but the
+            // search term is not a filter this module knows about and stays as it is.
+            expect(
+                tappedFilter({ verdict: 'confirmed', source: '/leak/a.mbox', scope: signer }, { all: true }),
+            ).toStrictEqual({});
+        });
+
+        await it('keeps an archive beside a verdict, because the sidebar composes that pair', async () => {
+            expect(
+                tappedFilter({ source: '/leak/a.mbox', scope: signer }, { verdict: 'confirmed' }),
+            ).toStrictEqual({ verdict: 'confirmed', source: '/leak/a.mbox' });
+            expect(tappedFilter({ scope: signer }, { verdict: 'confirmed' })).toStrictEqual({
+                verdict: 'confirmed',
+            });
+        });
+
+        await it('drops a scope a verdict-only row did not name', async () => {
+            // The row's number was counted over the whole case: a list still narrowed by the
+            // mailbox would show fewer messages than the row promised.
+            expect(
+                tappedFilter(
+                    { verdict: 'unsigned', scope: { kind: 'mailbox', mailbox: 'ada@example.com' } },
+                    { verdict: 'confirmed' },
+                ),
+            ).toStrictEqual({ verdict: 'confirmed' });
+        });
+
+        await it('replaces the archive with a scope, and the verdict with it unless named', async () => {
+            const scope = { kind: 'mailbox', mailbox: 'ada@example.com' } as const;
+            expect(tappedFilter({ source: '/leak/a.mbox', verdict: 'unsigned' }, { scope })).toStrictEqual({
+                scope,
+            });
+            expect(
+                tappedFilter(
+                    { source: '/leak/a.mbox', verdict: 'unsigned' },
+                    { scope, verdict: 'confirmed' },
+                ),
+            ).toStrictEqual({ scope, verdict: 'confirmed' });
+        });
+
+        await it('leaves the filters alone when the row carries no filter', async () => {
+            const current = { verdict: 'confirmed' as Verdict, scope: signer };
+            expect(tappedFilter(current, {})).toStrictEqual(current);
+        });
+    });
+
+    await describe('the filter banner', async () => {
+        await it('names the mailbox, the verdicts or the signer in one line', async () => {
+            expect(filterBannerText({ kind: 'mailbox', mailbox: 'ada@example.com' })).toBe(
+                'Only the mailbox ada@example.com',
+            );
+            expect(
+                filterBannerText({ kind: 'verdicts', verdicts: ['confirmed', 'confirmed-with-caveats'] }),
+            ).toBe(
+                `Only these verdicts: ${verdictLook('confirmed').label}, ${verdictLook('confirmed-with-caveats').label}`,
+            );
+            expect(filterBannerText({ kind: 'signer', domain: 'example.com' })).toBe(
+                'Only mail signed by example.com',
+            );
+        });
+
+        await it('separates a key the case waits for from one it already used', async () => {
+            // The difference between "these messages have no verdict" and "these messages carry
+            // this signature" is the whole reason the banner is there.
+            expect(
+                filterBannerText({ kind: 'key', domain: 'example.com', selector: 'gone', missingOnly: true }),
+            ).toBe('Only mail waiting for the key gone._domainkey.example.com');
+            expect(filterBannerText({ kind: 'key', domain: 'example.com', selector: 'sel' })).toBe(
+                'Only mail signed by the key sel._domainkey.example.com',
+            );
+        });
+
+        await it('spells the unverifiable reason out, and carries no markup', async () => {
+            // The banner's title parses markup, and a scope can hold a translator's sentence.
+            const text = filterBannerText({ kind: 'reason', reason: 'no-key' });
+            expect(text).toBe('Only mail with no verdict: No public key for this selector and domain.');
+            expect(text.includes('<')).toBe(false);
         });
     });
 };

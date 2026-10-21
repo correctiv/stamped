@@ -199,25 +199,6 @@ Yahoo/Epstein archives — the app has to be shown doing a real DKIM verificatio
 - The exception authorises **display only**. It never authorises committing a real message,
   key or case file into this repo — the fixture rule above keeps applying.
 
-## Screenshots may show one real set — a narrow, explicit exception
-
-Screenshots otherwise behave like fixtures: synthetic only. The one exception, decided by Pascal
-(2026-10), covers site pages and PR screenshots that display the **publicly published**
-Yahoo/Epstein archives — the app has to be shown doing a real DKIM verification:
-
-- **Publicly published leaks only.** Anything unpublished — above all the AfD material — never
-  appears in a screenshot, in any view, until it is public.
-- **Two views only:** the case overview and the key store. One Yahoo-signed message is allowed
-  (Yahoo being recognisable is the point); never a third-party sender name, subject or body text.
-- **Nothing third-party in frame:** build the screenshot case under `~/Cases/` with exactly the
-  Yahoo messages chosen for display, so no other name or domain can appear.
-- **Headless only:** `./scripts/headless-run -- …` from the werkstatt root (never open a window
-  on the real desktop), window ≤ 1000×700 logical, per the Flathub quality guidelines.
-- **Paid models only** touch those images or that case data (screenshot or caption work) —
-  free/hosted models never, even though the set is public.
-- The exception authorises **display only**. It never authorises committing a real message,
-  key or case file into this repo — the fixture rule above keeps applying.
-
 ## Conventions
 
 - **User-facing strings go through gettext** — `_`, `_n`, `fmt` from `@stamped/core`, English

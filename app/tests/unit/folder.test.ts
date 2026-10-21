@@ -435,11 +435,7 @@ export default async () => {
                 // Every mailbox of the tree is in the stream — the broken one among them, whose
                 // part holds no message. A mailbox missing from the stream cannot be told apart
                 // from one that was never reached.
-                expect(seen).toStrictEqual([
-                    'ada@example.com',
-                    'broken@example.org',
-                    'grace@example.net',
-                ]);
+                expect(seen).toStrictEqual(['ada@example.com', 'broken@example.org', 'grace@example.net']);
                 // And the closing line, which is about the whole run, names the mailbox the run
                 // ended in — that is where a watcher looking for the stall looks.
                 expect(imported.lastMailbox).toBe('grace@example.net');

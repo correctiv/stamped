@@ -23,6 +23,7 @@ export {
     CAVEAT_BY_UNSIGNED_HEADER,
     CAVEATS,
     type Caveat,
+    type ExportArtefact,
     describeCaveat,
     describeUnverifiableReason,
     describeVerdict,
@@ -31,10 +32,20 @@ export {
     type SignatureEvidence,
     type SignatureFinding,
     type UnverifiableReason,
+    UNVERIFIABLE_REASONS,
     type Verdict,
     VERDICTS,
     verdictRank,
 } from './verdict.ts';
+
+export {
+    type Explanation,
+    explainMessage,
+    explainSignature,
+    REASON_CODES,
+    type ReasonCode,
+    type ReasonDetail,
+} from './explain.ts';
 
 export {
     caveatsFor,

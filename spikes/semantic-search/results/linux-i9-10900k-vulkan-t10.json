@@ -1,0 +1,637 @@
+{
+  "schema": "stamped-semantic-search-spike/1",
+  "createdAt": "2026-10-21T09:09:02.468Z",
+  "host": {
+    "platform": "linux",
+    "arch": "x64",
+    "node": "v24.19.0",
+    "cpuModel": "Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz",
+    "cpuCount": 20,
+    "totalMemBytes": 67277352960
+  },
+  "options": {
+    "models": [
+      "embeddinggemma2",
+      "granite278m",
+      "qwen3-0.6b"
+    ],
+    "cpu": false,
+    "threads": 10,
+    "docs": 200,
+    "context": "auto"
+  },
+  "modelDirectory": "~/.cache/stamped-spike/models",
+  "runs": [
+    {
+      "model": "embeddinggemma2",
+      "label": "EmbeddingGemma 2 271M (Matryoshka-truncatable)",
+      "uri": "hf:ggml-org/embeddinggemma-2-GGUF:Q8_0",
+      "threads": 10,
+      "contextSizeRequested": "auto",
+      "backend": "vulkan",
+      "gpuOffload": true,
+      "buildType": "prebuilt",
+      "llamaCppRelease": {
+        "repo": "ggml-org/llama.cpp",
+        "release": "v0.7.0"
+      },
+      "systemInfo": "CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | REPACK = 1 | ",
+      "cpuMathCores": 10,
+      "gpuDeviceNames": [
+        "AMD Radeon RX 6600 (RADV NAVI23)"
+      ],
+      "errors": [],
+      "rssBeforeModelBytes": 138993664,
+      "resolveMs": 1.1654090000000679,
+      "modelPath": "~/.cache/stamped-spike/models/hf_ggml-org_embeddinggemma-2.Q8_0.gguf",
+      "modelFileBytes": 309855456,
+      "loadMs": 4278.488861,
+      "contextCreateMs": 640.6062280000006,
+      "contextSize": 262144,
+      "trainContextSize": 262144,
+      "llamaMemoryBytes": {
+        "cpuRam": 148430880,
+        "gpuVram": 238146680
+      },
+      "dimensions": 768,
+      "sanity": {
+        "vectors": 40,
+        "nonFiniteValues": 0,
+        "zeroNormVectors": 0,
+        "nan": false
+      },
+      "quality": {
+        "full": {
+          "queries": 12,
+          "recallAt1": 0.75,
+          "recallAt3": 0.9166666666666666,
+          "mrr": 0.8402777777777778,
+          "ranks": [
+            1,
+            1,
+            3,
+            1,
+            1,
+            4,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 0.8333333333333334,
+              "reciprocalRank": 4.583333333333334,
+              "ranks": [
+                1,
+                1,
+                3,
+                1,
+                1,
+                4
+              ],
+              "mrr": 0.763888888888889
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 3,
+              "ranks": [
+                1,
+                1,
+                1
+              ],
+              "mrr": 1
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 1,
+              "reciprocalRank": 1.5,
+              "ranks": [
+                1,
+                2
+              ],
+              "mrr": 0.75
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        },
+        "mrl256": {
+          "queries": 12,
+          "recallAt1": 0.75,
+          "recallAt3": 0.75,
+          "mrr": 0.8009259259259259,
+          "ranks": [
+            1,
+            1,
+            4,
+            1,
+            1,
+            9,
+            1,
+            1,
+            1,
+            1,
+            4,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 0.6666666666666666,
+              "reciprocalRank": 4.361111111111111,
+              "ranks": [
+                1,
+                1,
+                4,
+                1,
+                1,
+                9
+              ],
+              "mrr": 0.7268518518518517
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 3,
+              "ranks": [
+                1,
+                1,
+                1
+              ],
+              "mrr": 1
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 0.5,
+              "reciprocalRank": 1.25,
+              "ranks": [
+                1,
+                4
+              ],
+              "mrr": 0.625
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        }
+      },
+      "queryLatencyMs": {
+        "p50": 12.28355399999964,
+        "p95": 13.194876000000477,
+        "min": 11.411232999999811,
+        "max": 13.194876000000477,
+        "mean": 12.319834416666557,
+        "all": [
+          12.29573100000016,
+          12.227912999999717,
+          11.731711999999789,
+          12.3507869999994,
+          12.28355399999964,
+          11.818462000000181,
+          11.411232999999811,
+          12.033470999999736,
+          12.686689000000115,
+          12.955336999999417,
+          12.84824800000024,
+          13.194876000000477
+        ]
+      },
+      "throughput": {
+        "docs": 200,
+        "targetWords": 180,
+        "totalTokens": 50519,
+        "totalSeconds": 5.535857301,
+        "tokensPerSecond": 9125.777138596803,
+        "calibration": {
+          "windowSeconds": 3,
+          "elapsedMs": 3001.022433,
+          "docs": 115,
+          "tokens": 29040.105843089324,
+          "tokensPerSecond": 9680.035281029775
+        },
+        "first3sTokensPerSecond": 9680.035281029775,
+        "ratio3s": 1.0607354457615208,
+        "avgTokensPerDoc": 252.595,
+        "docsPerSecond": 36.12809888793049
+      },
+      "extrapolation": {
+        "tokensPerMail": 256,
+        "hoursFor10k": 0.0779233483692604,
+        "hoursFor100k": 0.7792334836926041
+      },
+      "peakRssBytes": 1147129856,
+      "peakRssDeltaBytes": 1008136192
+    },
+    {
+      "model": "granite278m",
+      "label": "Granite Embedding 278M multilingual (no truncation)",
+      "uri": "hf:bartowski/granite-embedding-278m-multilingual-GGUF:Q8_0",
+      "threads": 10,
+      "contextSizeRequested": "auto",
+      "backend": "vulkan",
+      "gpuOffload": true,
+      "buildType": "prebuilt",
+      "llamaCppRelease": {
+        "repo": "ggml-org/llama.cpp",
+        "release": "v0.7.0"
+      },
+      "systemInfo": "CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | REPACK = 1 | ",
+      "cpuMathCores": 10,
+      "gpuDeviceNames": [
+        "AMD Radeon RX 6600 (RADV NAVI23)"
+      ],
+      "errors": [],
+      "rssBeforeModelBytes": 841056256,
+      "resolveMs": 5.481003999999302,
+      "modelPath": "~/.cache/stamped-spike/models/hf_bartowski_granite-embedding-278m-multilingual.Q8_0.gguf",
+      "modelFileBytes": 303137952,
+      "loadMs": 3841.127811000002,
+      "contextCreateMs": 604.4593229999991,
+      "contextSize": 512,
+      "trainContextSize": 512,
+      "llamaMemoryBytes": {
+        "cpuRam": 213990784,
+        "gpuVram": 105417732
+      },
+      "dimensions": 768,
+      "sanity": {
+        "vectors": 40,
+        "nonFiniteValues": 0,
+        "zeroNormVectors": 0,
+        "nan": false
+      },
+      "quality": {
+        "full": {
+          "queries": 12,
+          "recallAt1": 0.75,
+          "recallAt3": 0.8333333333333334,
+          "mrr": 0.8125000000000001,
+          "ranks": [
+            1,
+            4,
+            6,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            3,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 0.6666666666666666,
+              "reciprocalRank": 4.416666666666667,
+              "ranks": [
+                1,
+                4,
+                6,
+                1,
+                1,
+                1
+              ],
+              "mrr": 0.7361111111111112
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 3,
+              "ranks": [
+                1,
+                1,
+                1
+              ],
+              "mrr": 1
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 1,
+              "reciprocalRank": 1.3333333333333333,
+              "ranks": [
+                1,
+                3
+              ],
+              "mrr": 0.6666666666666666
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        }
+      },
+      "queryLatencyMs": {
+        "p50": 7.683407000000443,
+        "p95": 8.430675999999949,
+        "min": 7.078820000002452,
+        "max": 8.430675999999949,
+        "mean": 7.660452250000465,
+        "all": [
+          7.700980999998137,
+          7.683407000000443,
+          8.430675999999949,
+          7.8310789999995905,
+          8.272931000003155,
+          7.726915999999619,
+          7.4948699999986275,
+          7.719161000000895,
+          7.264408000002732,
+          7.078820000002452,
+          7.2757369999999355,
+          7.44644100000005
+        ]
+      },
+      "throughput": {
+        "docs": 200,
+        "targetWords": 180,
+        "totalTokens": 51164,
+        "totalSeconds": 3.3548301030000003,
+        "tokensPerSecond": 15250.846817621989,
+        "calibration": {
+          "windowSeconds": 3,
+          "elapsedMs": 3010.481534999999,
+          "docs": 174,
+          "tokens": 44344.97102331747,
+          "tokensPerSecond": 14781.65700777249
+        },
+        "first3sTokensPerSecond": 14781.65700777249,
+        "ratio3s": 0.9692351634331963,
+        "avgTokensPerDoc": 255.82,
+        "docsPerSecond": 59.61553755618008
+      },
+      "extrapolation": {
+        "tokensPerMail": 256,
+        "hoursFor10k": 0.04662764760638991,
+        "hoursFor100k": 0.4662764760638991
+      },
+      "peakRssBytes": 1140916224,
+      "peakRssDeltaBytes": 299859968
+    },
+    {
+      "model": "qwen3-0.6b",
+      "label": "Qwen3 Embedding 0.6B (Matryoshka-truncatable)",
+      "uri": "hf:Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0",
+      "threads": 10,
+      "contextSizeRequested": "auto",
+      "backend": "vulkan",
+      "gpuOffload": true,
+      "buildType": "prebuilt",
+      "llamaCppRelease": {
+        "repo": "ggml-org/llama.cpp",
+        "release": "v0.7.0"
+      },
+      "systemInfo": "CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | REPACK = 1 | ",
+      "cpuMathCores": 10,
+      "gpuDeviceNames": [
+        "AMD Radeon RX 6600 (RADV NAVI23)"
+      ],
+      "errors": [],
+      "rssBeforeModelBytes": 971096064,
+      "resolveMs": 0.4023139999990235,
+      "modelPath": "~/.cache/stamped-spike/models/hf_Qwen_Qwen3-Embedding-0.6B.Q8_0.gguf",
+      "modelFileBytes": 639150592,
+      "loadMs": 1914.1987200000003,
+      "contextCreateMs": 258.92301999999836,
+      "contextSize": 32768,
+      "trainContextSize": 32768,
+      "llamaMemoryBytes": {
+        "cpuRam": 206991712,
+        "gpuVram": 4447940932
+      },
+      "dimensions": 1024,
+      "sanity": {
+        "vectors": 40,
+        "nonFiniteValues": 0,
+        "zeroNormVectors": 0,
+        "nan": false
+      },
+      "quality": {
+        "full": {
+          "queries": 12,
+          "recallAt1": 0.5833333333333334,
+          "recallAt3": 0.9166666666666666,
+          "mrr": 0.7430555555555555,
+          "ranks": [
+            1,
+            2,
+            1,
+            1,
+            2,
+            4,
+            1,
+            1,
+            3,
+            1,
+            3,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.5,
+              "recallAt3": 0.8333333333333334,
+              "reciprocalRank": 4.25,
+              "ranks": [
+                1,
+                2,
+                1,
+                1,
+                2,
+                4
+              ],
+              "mrr": 0.7083333333333334
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 1,
+              "reciprocalRank": 2.3333333333333335,
+              "ranks": [
+                1,
+                1,
+                3
+              ],
+              "mrr": 0.7777777777777778
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 1,
+              "reciprocalRank": 1.3333333333333333,
+              "ranks": [
+                1,
+                3
+              ],
+              "mrr": 0.6666666666666666
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        },
+        "mrl256": {
+          "queries": 12,
+          "recallAt1": 0.5,
+          "recallAt3": 1,
+          "mrr": 0.75,
+          "ranks": [
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            1,
+            2,
+            1,
+            1,
+            2,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.3333333333333333,
+              "recallAt3": 1,
+              "reciprocalRank": 4,
+              "ranks": [
+                1,
+                2,
+                2,
+                1,
+                2,
+                2
+              ],
+              "mrr": 0.6666666666666666
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 1,
+              "reciprocalRank": 2.5,
+              "ranks": [
+                1,
+                2,
+                1
+              ],
+              "mrr": 0.8333333333333334
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 1,
+              "reciprocalRank": 1.5,
+              "ranks": [
+                1,
+                2
+              ],
+              "mrr": 0.75
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        }
+      },
+      "queryLatencyMs": {
+        "p50": 16.645048999998835,
+        "p95": 19.104114000001573,
+        "min": 16.048095999998623,
+        "max": 19.104114000001573,
+        "mean": 16.79802341666679,
+        "all": [
+          19.104114000001573,
+          16.670624999998836,
+          16.622754000003624,
+          16.645048999998835,
+          16.66597399999955,
+          16.879423999998835,
+          16.14520999999877,
+          16.934134999999515,
+          16.048095999998623,
+          16.540335000001505,
+          16.565608000000793,
+          16.754957000001014
+        ]
+      },
+      "throughput": {
+        "docs": 200,
+        "targetWords": 180,
+        "totalTokens": 56519,
+        "totalSeconds": 10.012045033000001,
+        "tokensPerSecond": 5645.100457869664,
+        "calibration": {
+          "windowSeconds": 3,
+          "elapsedMs": 3013.3506499999967,
+          "docs": 59,
+          "tokens": 16593.230346308817,
+          "tokensPerSecond": 5531.076782102939
+        },
+        "first3sTokensPerSecond": 5531.076782102939,
+        "ratio3s": 0.9798013026308916,
+        "avgTokensPerDoc": 282.595,
+        "docsPerSecond": 19.97593891565549
+      },
+      "extrapolation": {
+        "tokensPerMail": 256,
+        "hoursFor10k": 0.1259696114211347,
+        "hoursFor100k": 1.259696114211347
+      },
+      "peakRssBytes": 1555054592,
+      "peakRssDeltaBytes": 583958528
+    }
+  ]
+}

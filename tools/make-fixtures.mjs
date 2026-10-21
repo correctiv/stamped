@@ -365,6 +365,57 @@ write(
     }).replace('Subject: Quarterly figures', 'Subject: Quarterly figures (final, approved)'),
 );
 
+// Export artefacts: the signature is genuine over the original bytes, then an exporter rewrote
+// them. Stamped's retry must find the hash again for these (and say so), and must NOT find it for
+// body-altered.eml, where a person changed the words.
+{
+    const dotBody = [
+        'The quarterly figures are attached.',
+        '',
+        '.Provisional until the audit closes.',
+        '',
+        '-- Ada',
+        '',
+    ].join('\r\n');
+    const signedDot = sign({
+        headers: headersFor({ subject: 'Quarterly figures' }),
+        body: dotBody,
+        key: rsa2048.privateKey,
+        domain: rsa2048.domain,
+        selector: rsa2048.selector,
+        algorithm: 'rsa-sha256',
+        canonicalization: 'relaxed/relaxed',
+        signedHeaders: SIGNED,
+    });
+    write('export-dot-stuffed.eml', signedDot.replace('\r\n.Provisional', '\r\n..Provisional'));
+    // No line-endings-only fixture: mailauth converts bare LF to CRLF before hashing, so such an
+    // export still verifies and never reaches body-altered.
+    write(
+        'export-both.eml',
+        signedDot.replace('\r\n.Provisional', '\r\n..Provisional').replace(/\r\n/g, '\n'),
+    );
+}
+
+// `l=` covers the first part of the body, and a word INSIDE that part was changed: unlike
+// caveat-length-limited.eml, the appended text is not the problem.
+{
+    const signedLength = Buffer.byteLength(relaxedBody(BODY), 'binary');
+    write(
+        'body-altered-length-limited.eml',
+        sign({
+            headers: headersFor({ subject: 'Quarterly figures' }),
+            body: BODY,
+            key: rsa2048.privateKey,
+            domain: rsa2048.domain,
+            selector: rsa2048.selector,
+            algorithm: 'rsa-sha256',
+            canonicalization: 'relaxed/relaxed',
+            signedHeaders: SIGNED,
+            lengthLimit: signedLength,
+        }).replace('provisional until', 'final after'),
+    );
+}
+
 // The body hash matches and the header signature fails, but only because the key in the store is
 // not the one that signed: the verdict must be `unverifiable`, never `headers-altered`.
 write(

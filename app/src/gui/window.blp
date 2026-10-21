@@ -211,6 +211,14 @@ template $StampedWindow: Adw.ApplicationWindow {
                   margin-end: 12;
                 }
 
+                // What the list is narrowed to by a tap on the overview — a mailbox, a signer,
+                // a key. Revealed from the code, never here: a banner that starts out saying
+                // "clear filter" over an unfiltered list is a lie in the header bar.
+                [top]
+                Adw.Banner filterBanner {
+                  button-label: _("Clear filter");
+                }
+
                 content: Gtk.Stack listStack {
                   Gtk.StackPage {
                     name: "list";
