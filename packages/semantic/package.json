@@ -1,0 +1,17 @@
+{
+  "name": "@stamped/semantic",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "description": "Semantic search primitives: embedder seam, text preparation, vector storage, and reciprocal rank fusion. No model runtime in this package — only interfaces and pure logic.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "gjsify tsc --noEmit"
+  },
+  "files": [
+    "src"
+  ]
+}

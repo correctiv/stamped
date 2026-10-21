@@ -14,6 +14,7 @@ import fts5 from './unit/fts5.test.ts';
 import importSuite from './unit/import.test.ts';
 import store from './unit/store.test.ts';
 import view from './unit/view.test.ts';
+import semantic from './unit/semantic.test.ts';
 
 run({
     autokeys,
@@ -27,4 +28,5 @@ run({
     import: importSuite,
     store,
     view,
+    semantic,
 });

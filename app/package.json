@@ -103,6 +103,7 @@
   "dependencies": {
     "@stamped/core": "*",
     "@stamped/import": "*",
+    "@stamped/semantic": "*",
     "@stamped/store": "*",
     "@stamped/verify": "*",
     "yargs": "^18.1.0"
