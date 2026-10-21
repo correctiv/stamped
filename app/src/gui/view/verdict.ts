@@ -74,11 +74,18 @@ function verdictCssClass(verdict: Verdict): string {
     }
 }
 
-/** Distinct icons for the two tampering verdicts: the badge colour alone does not separate them. */
+/**
+ * Distinct icons for the two tampering verdicts: the badge colour alone does not separate them.
+ *
+ * EVERY NAME HERE EXISTS IN ADWAITA, checked against the installed theme and not guessed from
+ * memory. A missing one draws nothing at all — no fallback, no warning — and a screenshot shipped
+ * with an empty square where `confirmed` should have had its tick: the one verdict a reader looks
+ * for was the one with no icon. `emblem-ok-symbolic` is the name that was not there.
+ */
 function verdictIcon(verdict: Verdict): string {
     switch (verdict) {
         case 'confirmed':
-            return 'emblem-ok-symbolic';
+            return 'object-select-symbolic';
         case 'confirmed-with-caveats':
             return 'dialog-warning-symbolic';
         case 'body-altered':

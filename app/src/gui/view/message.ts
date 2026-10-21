@@ -170,6 +170,9 @@ export function emptyList(total: number, query?: string): EmptyList {
     return {
         title: escapeLine(_('Nothing in this view')),
         description: escapeLine(`${haystack} ${_('No message has the verdict you filtered for.')}`),
-        icon: 'view-filter-symbolic',
+        // Adwaita has no filter icon at all; `view-conceal-symbolic` says what happened here —
+        // the mail is in the case and this view is hiding it. A name the theme lacks would draw
+        // nothing, which is how `view-filter-symbolic` left this page blank.
+        icon: 'view-conceal-symbolic',
     };
 }
