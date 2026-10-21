@@ -49,7 +49,7 @@ import {
     verdictCounts,
 } from '@stamped/store';
 
-import { archive, fixtureKeys } from './fixtures.ts';
+import { archive, fixtureKeys, fixturePath } from './fixtures.ts';
 
 /** A fresh case folder under the system temporary directory, removed when `body` returns. */
 async function withCase(body: (paths: CasePaths, root: string) => void | Promise<void>): Promise<void> {
@@ -817,6 +817,50 @@ export default async () => {
                 const log = JSON.parse(readFileSync(paths.log, 'utf8').trim()) as ImportLogEntry;
                 expect(log.kind).toBe('eml');
                 expect(log.offset).toBe(0);
+            });
+        });
+    });
+
+    await describe('a key that confirms other mail of the case', async () => {
+        // Both fixtures are dated March 2024 and signed with the same pair; keys first seen in
+        // 2026 postdate them.
+        const NEWER = '2026-01-01T00:00:00Z';
+        const caveated = (paths: CasePaths): number => {
+            const db = openIndex(paths);
+            try {
+                return (
+                    caveatCounts(db).find((count) => count.caveat === 'key-newer-than-message')?.messages ?? 0
+                );
+            } finally {
+                db.close();
+            }
+        };
+
+        await it('keeps key-newer-than-message when nothing else confirms the pair', async () => {
+            await withCase(async (paths) => {
+                await importSources(paths, [fixturePath('headers-altered.eml')], {
+                    keys: fixtureKeys('operator', NEWER),
+                });
+                expect(caveated(paths)).toBe(1);
+            });
+        });
+
+        await it('drops it once the same pair confirmed another message', async () => {
+            await withCase(async (paths) => {
+                await importSources(
+                    paths,
+                    [fixturePath('confirmed.eml'), fixturePath('headers-altered.eml')],
+                    { keys: fixtureKeys('operator', NEWER) },
+                );
+                const db = openIndex(paths);
+                try {
+                    const by = new Map(verdictCounts(db).map((count) => [count.verdict, count.messages]));
+                    expect(by.get('confirmed')).toBe(1);
+                    expect(by.get('headers-altered')).toBe(1);
+                } finally {
+                    db.close();
+                }
+                expect(caveated(paths)).toBe(0);
             });
         });
     });
