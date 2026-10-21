@@ -120,6 +120,18 @@ which, and the GUI and the CLI say so. The GUI backfills in low-priority idle ba
 - **Large scopes are filled inside SQLite** (`queryScope`), so a person with 100,000 mails never
   passes 100,000 hashes through JavaScript.
 
+**A running import writes `<case>/import-status.json`** (`packages/store/src/import-status.ts`):
+PID, times, sources, current mailbox, mails and BYTES done/total across ALL sources of the run
+(the percentage is by bytes — the message total is the current mailbox's and would restart at
+every mailbox), rate, ETA, errors, and a state of `running | finished | failed | cancelled`. Written
+atomically (tmp + rename) at most once a second, and the final state STAYS. It holds numbers and
+mailbox/file names only — never mail content. `readImportStatus` + `orphanedImport` tell a
+`running` file whose PID is dead or whose last update is over 60 s old from a live run. The CLI
+import and the window's in-process fallback write it; `stamped status [--json]` (exit 0 even with
+no import) and the window's banner (polled once a second, no modal dialog) read it. The banner's
+Cancel button exists only for a subprocess the window started itself. Formatting lives in
+`app/src/lib/status.ts` and `app/src/gui/view/import.ts`, not in `window.ts`.
+
 ## Why mailauth and not our own verifier
 
 Measured, not assumed (see [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md)). RFC 6376 canonicalization —

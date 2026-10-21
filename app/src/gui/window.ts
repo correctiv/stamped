@@ -29,7 +29,13 @@ import {
     type MessageFinding,
     type Verdict,
 } from '@stamped/core';
-import type { CaseReport, IndexedMessage, ReverifyResult, SearchHit } from '@stamped/store';
+import {
+    orphanedImport,
+    type CaseReport,
+    type IndexedMessage,
+    type ReverifyResult,
+    type SearchHit,
+} from '@stamped/store';
 
 import { StampedHelpButton } from './help-button.ts';
 import {
@@ -39,8 +45,10 @@ import {
     createSession,
     dropFilterCaches,
     importInto,
+    importStatusOf,
     isCaseFolder,
     knownKeyNames,
+    markImportCancelled,
     filteredCount,
     messageOf,
     openSession,
@@ -68,7 +76,7 @@ import {
     type VerdictCard,
 } from './view/evidence.ts';
 import { groupDigits } from './view/format.ts';
-// importSummary is no longer used here; subprocess prints its own summary.
+import { importBannerView, importOutcome } from './view/import.ts';
 import {
     explainKey,
     keyRows,
@@ -273,6 +281,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private hits: SearchHit[] = [];
     /** Cancellable for an in-flight import subprocess. */
     private importCancellable?: Gio.Cancellable;
+    /** The import subprocess this window started, if any; only its Cancel button may kill it. */
+    private importProc?: Gio.Subprocess;
+    /** The poll source reading the status file, and whether the last tick saw a live run. */
+    private importPoll = 0;
+    private importWasRunning = false;
     /** How many of the filtered messages have actually been loaded into the list. */
     private listOffset = 0;
     /** Whether a further page is being fetched right now. */
@@ -362,6 +375,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // verdicts, and a mailbox, a signer or one key is neither. Its button clears exactly
         // what the banner says, so a verdict chosen afterwards stays chosen.
         this._filterBanner.connect('button-clicked', () => this.clearScope());
+        this._importBanner.connect('button-clicked', () => this.cancelImport());
 
         // The index handle is a connection held open on the case folder, and a folder with an
         // open connection cannot be unmounted — which is where a working copy of a leak lives.
@@ -372,6 +386,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.peopleTimer = 0;
             if (this.backfillSource !== 0) GLib.source_remove(this.backfillSource);
             this.backfillSource = 0;
+            this.stopImportPoll();
             if (this.session) closeSession(this.session);
             this.session = undefined;
             return false;
@@ -490,10 +505,18 @@ export class StampedWindow extends Adw.ApplicationWindow {
         return row;
     }
 
+    private stopImportPoll(): void {
+        if (this.importPoll !== 0) GLib.source_remove(this.importPoll);
+        this.importPoll = 0;
+    }
+
     /** Take over a case: the old one is closed, the filters are dropped, the panes rebuild. */
     private adopt(session: CaseSession): void {
         if (this.session) closeSession(this.session);
+        this.stopImportPoll();
         this.session = session;
+        this.importWasRunning = false;
+        this.importPoll = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => this.pollImport());
         this.text = '';
         this.verdict = undefined;
         this.source = undefined;
@@ -1341,106 +1364,61 @@ export class StampedWindow extends Adw.ApplicationWindow {
             return;
         }
 
-        const dialog = new Adw.AlertDialog({
-            heading: _('Importing…'),
-            body: _('Reading the archive. This can be cancelled; running it again resumes where it stopped.'),
-        });
-        const progress = new Gtk.ProgressBar({ showText: true, text: _('Starting…') });
-        dialog.set_extra_child(progress);
-        dialog.add_response('cancel', _('Cancel'));
-        dialog.set_default_response('cancel');
-        dialog.set_close_response('cancel');
-
+        // No modal dialog: the banner shows the run from the status file, a CLI-started one too.
         this.importCancellable = new Gio.Cancellable();
         const cancellable = this.importCancellable;
         const proc = Gio.Subprocess.new(
             argv,
-            Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
+            Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,
         );
-
-        const stdout = new Gio.DataInputStream({ base_stream: proc.get_stdout_pipe() as Gio.InputStream });
-
-        const readPromise = (async () => {
-            while (true) {
-                let bytes: Uint8Array | null;
-                try {
-                    const result = await stdout.read_line_async(GLib.PRIORITY_DEFAULT, cancellable);
-                    bytes = result[0];
-                } catch {
-                    bytes = null;
-                }
-                if (bytes === null) break;
-                const text = new TextDecoder().decode(bytes).trim();
-                if (text === '') continue;
-                try {
-                    const obj = JSON.parse(text) as {
-                        done?: number;
-                        total?: number;
-                        rate?: number;
-                        eta?: number;
-                        final?: boolean;
-                    };
-                    const total = typeof obj.total === 'number' ? obj.total : 0;
-                    const done = typeof obj.done === 'number' ? obj.done : 0;
-                    if (total > 0) progress.set_fraction(Math.min(1, done / total));
-                    if (typeof obj.rate === 'number') {
-                        progress.set_text(
-                            fmt(_(' {done} of {total} · {rate}/s'), {
-                                done: String(done),
-                                total: String(total),
-                                rate: String(obj.rate),
-                            }),
-                        );
-                    }
-                } catch {
-                    // A non-JSON line is a subprocess message, not progress.
-                }
-            }
-        })();
-
-        const waitPromise = proc.wait_check_async(cancellable).then(
-            () => undefined,
-            (error: unknown) => {
-                if (!cancellable.is_cancelled()) throw error;
-            },
-        );
-
-        const responsePromise = dialog.choose(this, null);
-        // Start the process read loop and the dialog concurrently.
-        void readPromise;
-        void waitPromise;
-
-        let cancelled = false;
-        let finished = false;
-        responsePromise.then((response) => {
-            // Closing the dialog below answers with its close response, `cancel`, too.
-            if (response === 'cancel' && !finished) {
-                cancelled = true;
-                cancellable.cancel();
-                try {
-                    proc.force_exit();
-                } catch {
-                    // already gone
-                }
-            }
-        });
-
+        this.importProc = proc;
+        this.pollImport();
         try {
-            await Promise.all([readPromise, waitPromise]);
+            await proc.wait_check_async(cancellable);
         } catch (error) {
-            if (!cancelled) throw error;
+            if (!cancellable.is_cancelled()) throw error;
         } finally {
-            // Nothing else closes it: a finished import would sit at 100 % until Cancel, and a
-            // failed one would open its error dialog underneath.
-            finished = true;
-            dialog.force_close();
+            this.importProc = undefined;
+            this.importCancellable = undefined;
         }
+        this.pollImport();
+    }
 
-        this.importCancellable = undefined;
-        // The subprocess wrote its own index; drop our cached filters and reload.
-        dropFilterCaches(session);
-        this.refresh();
-        if (cancelled) showToast(_('Import cancelled. Run it again to resume.'), 5);
+    /** Cancel the import this window started; a run it did not start is never touched. */
+    private cancelImport(): void {
+        const proc = this.importProc;
+        const session = this.session;
+        if (proc === undefined || session === undefined) return;
+        this.importCancellable?.cancel();
+        try {
+            proc.force_exit();
+        } catch {
+            // already gone
+        }
+        markImportCancelled(session);
+        this.pollImport();
+    }
+
+    /** One tick of the import banner: read the status file, show it, reload when a run ends. */
+    private pollImport(): boolean {
+        const session = this.session;
+        if (!session) return GLib.SOURCE_CONTINUE;
+        const status = importStatusOf(session);
+        const view = importBannerView(status);
+        const own = this.importProc !== undefined;
+        this._importBanner.set_revealed(view?.revealed === true);
+        if (view?.revealed === true) {
+            this._importBanner.set_title(view.title);
+            this._importBanner.set_button_label(view.cancellable && own ? _('Cancel') : '');
+        }
+        const running = status?.state === 'running' && view?.cancellable === true;
+        if (this.importWasRunning && !running && status !== undefined) {
+            dropFilterCaches(session);
+            this.refresh();
+            showToast(importOutcome(status, orphanedImport(status)), 5);
+        }
+        this.importWasRunning = running;
+        return GLib.SOURCE_CONTINUE;
     }
 
     /**

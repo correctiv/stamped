@@ -95,6 +95,14 @@ export interface ImportProgress {
     readonly duplicates: number;
     readonly indexed: number;
     readonly failed: number;
+    /**
+     * Bytes read out of the sources so far, across the whole run.
+     *
+     * Optional because a caller may synthesise a progress snapshot (the closing jsonl line
+     * does); the importer always fills it. It is what makes one percentage span a multi-source
+     * run — `total` is the current source's.
+     */
+    readonly bytesRead?: number;
     /** Messages of the current source still to verify and index, once its read pass is done. */
     readonly total: number;
     /** Of {@link total}, how many are processed. */
@@ -186,6 +194,7 @@ export async function importSources(
     let failed = 0;
     let total = 0;
     let done = 0;
+    let bytesRead = 0;
     let files = 0;
     let mailboxes = 0;
     let skipped = 0;
@@ -209,6 +218,7 @@ export async function importSources(
         failed,
         total,
         done,
+        bytesRead,
         ...(mailbox === undefined ? {} : { mailbox }),
     });
 
@@ -239,6 +249,7 @@ export async function importSources(
                 // happens to the message.
                 const emit = (message: SourceMessage): void => {
                     read++;
+                    bytesRead += message.raw.length;
                     let result: ReturnType<typeof store>;
                     try {
                         result = store(paths, message.raw, madeDirs);

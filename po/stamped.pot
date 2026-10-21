@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 20:15+0200\n"
+"POT-Creation-Date: 2026-10-21 21:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,22 +18,22 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: app/src/commands/import.ts:51
+#: app/src/commands/import.ts:58
 msgid "Read mail archives into a case folder and index them"
 msgstr ""
 
-#: app/src/commands/import.ts:56
+#: app/src/commands/import.ts:63
 msgid ""
 "The case folder (created when it does not exist), then the sources: an mbox "
 "file, a Maildir, a single .eml, or a directory of those. With --case, only "
 "the sources."
 msgstr ""
 
-#: app/src/commands/import.ts:62
+#: app/src/commands/import.ts:69
 msgid "The case folder to import into, instead of the first argument"
 msgstr ""
 
-#: app/src/commands/import.ts:67
+#: app/src/commands/import.ts:74
 msgid ""
 "Read the source as a folder tree of mailboxes: every folder that holds mail "
 "files is one mailbox, named after the folder. A folder that holds .mbox "
@@ -41,71 +41,71 @@ msgid ""
 "files."
 msgstr ""
 
-#: app/src/commands/import.ts:73
+#: app/src/commands/import.ts:80
 msgid ""
 "A public key to verify against: <selector>._domainkey.<domain>=<TXT record, "
 "or a path to a .pem or .txt file holding one>. Repeatable."
 msgstr ""
 
-#: app/src/commands/import.ts:79
+#: app/src/commands/import.ts:86
 msgid ""
 "Which \"From \" quoting the mbox files use: mboxrd (the default) or mboxo"
 msgstr ""
 
-#: app/src/commands/import.ts:84
+#: app/src/commands/import.ts:91
 msgid ""
 "Look up missing keys after the import (asks first); --no-lookup skips it"
 msgstr ""
 
-#: app/src/commands/import.ts:89
+#: app/src/commands/import.ts:96
 msgid "Accept the key lookup without asking"
 msgstr ""
 
-#: app/src/commands/import.ts:95
+#: app/src/commands/import.ts:102
 msgid ""
 "Machine-readable progress: jsonl prints one JSON object per indexed batch on "
 "stdout, then a final one"
 msgstr ""
 
-#: app/src/commands/import.ts:100
+#: app/src/commands/import.ts:107
 msgid "Print only the summary, no progress"
 msgstr ""
 
-#: app/src/commands/import.ts:106
+#: app/src/commands/import.ts:113
 msgid ""
 "Import one mbox, with no keys yet — run `stamped report` to see which are "
 "needed"
 msgstr ""
 
-#: app/src/commands/import.ts:110
+#: app/src/commands/import.ts:117
 msgid ""
 "Import a folder of mailboxes: one folder per account, each holding its mbox "
 "parts"
 msgstr ""
 
-#: app/src/commands/import.ts:116
+#: app/src/commands/import.ts:123
 msgid "No source given. Use `stamped import <case> <source…>`."
 msgstr ""
 
-#: app/src/commands/import.ts:146
+#: app/src/commands/import.ts:158
 msgid "{read} read, {stored} stored, {duplicates} duplicates"
 msgstr ""
 
-#: app/src/commands/import.ts:178
+#: app/src/commands/import.ts:198
 msgid "{read} message read."
 msgid_plural "{read} messages read."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/import.ts:183
+#: app/src/commands/import.ts:203
 msgid "{stored} newly stored, {duplicates} already in the case."
 msgstr ""
 
-#: app/src/commands/import.ts:188
+#: app/src/commands/import.ts:208
 msgid "{indexed} indexed."
 msgstr ""
 
-#: app/src/commands/import.ts:196
+#: app/src/commands/import.ts:216
 msgid ""
 "{failed} message could not be verified; it is stored but has no verdict."
 msgid_plural ""
@@ -113,7 +113,7 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/import.ts:204
+#: app/src/commands/import.ts:224 app/src/commands/status.ts:66
 msgid "Case folder: {path}"
 msgstr ""
 
@@ -225,7 +225,7 @@ msgstr ""
 msgid "The key text, or a path to a file holding it"
 msgstr ""
 
-#: app/src/commands/keys.ts:225 app/src/gui/session.ts:436
+#: app/src/commands/keys.ts:225 app/src/gui/session.ts:479
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
@@ -341,6 +341,7 @@ msgid ""
 msgstr ""
 
 #: app/src/commands/report.ts:34 app/src/commands/report.ts:35
+#: app/src/commands/status.ts:34 app/src/commands/status.ts:35
 msgid "The case folder to report on"
 msgstr ""
 
@@ -368,8 +369,8 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:82 app/src/gui/window.ts:1227
-#: app/src/gui/window.blp:158
+#: app/src/commands/report.ts:82 app/src/gui/window.ts:1263
+#: app/src/gui/window.blp:171
 msgid "Verdicts"
 msgstr ""
 
@@ -533,6 +534,18 @@ msgid ""
 "`column : word` to search one field."
 msgstr ""
 
+#: app/src/commands/status.ts:31
+msgid "Show how far the last import into a case folder has got"
+msgstr ""
+
+#: app/src/commands/status.ts:37
+msgid "Print the status as JSON"
+msgstr ""
+
+#: app/src/commands/status.ts:43
+msgid "Watch an import that is running somewhere else, without touching it"
+msgstr ""
+
 #: app/src/commands/timeline.ts:25
 msgid "Count the mail of a case folder per month or day"
 msgstr ""
@@ -572,7 +585,7 @@ msgid "Check one message against a key you have on disk"
 msgstr ""
 
 #: app/src/commands/verify.ts:83 packages/import/src/folder.ts:128
-#: packages/import/src/source.ts:219 packages/store/src/importer.ts:416
+#: packages/import/src/source.ts:219 packages/store/src/importer.ts:427
 msgid "Cannot read {path}."
 msgstr ""
 
@@ -588,18 +601,18 @@ msgid ""
 "you fill, so examining a message sends no lookup to the signing domain."
 msgstr ""
 
-#: app/src/gui/session.ts:465
+#: app/src/gui/session.ts:508
 msgid "That key was already stored."
 msgstr ""
 
-#: app/src/gui/session.ts:468
+#: app/src/gui/session.ts:511
 msgid ""
 "Stored — but this case already held a DIFFERENT key for that selector. "
 "Either the domain rotated it, or one of the two is not theirs. Check both "
 "before you rely on the new verdicts."
 msgstr ""
 
-#: app/src/gui/session.ts:471
+#: app/src/gui/session.ts:514
 msgid "Key stored."
 msgstr ""
 
@@ -655,27 +668,70 @@ msgstr ""
 msgid "{n} TB"
 msgstr ""
 
-#: app/src/gui/view/import.ts:23
+#: app/src/gui/view/import.ts:24
 msgid "Nothing imported: no messages were found in it."
 msgstr ""
 
-#: app/src/gui/view/import.ts:26
+#: app/src/gui/view/import.ts:27
 msgid "{count} new message"
 msgid_plural "{count} new messages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/import.ts:33
+#: app/src/gui/view/import.ts:34
 msgid "{count} was already in the case"
 msgid_plural "{count} were already in the case"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/import.ts:42
+#: app/src/gui/view/import.ts:43
 msgid "{count} could not be verified and has no verdict"
 msgid_plural "{count} could not be verified and have no verdict"
 msgstr[0] ""
 msgstr[1] ""
+
+#: app/src/gui/view/import.ts:67
+msgid ""
+"Import interrupted — its process is gone. Run the import again to resume."
+msgstr ""
+
+#: app/src/gui/view/import.ts:71
+msgid "{percent}% · {done} message"
+msgid_plural "{percent}% · {done} messages"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/import.ts:78
+msgid "about {time} left"
+msgstr ""
+
+#: app/src/gui/view/import.ts:85
+msgid "{n} s"
+msgstr ""
+
+#: app/src/gui/view/import.ts:86
+msgid "{n} min"
+msgstr ""
+
+#: app/src/gui/view/import.ts:119
+msgid "The import stopped without finishing. Run it again to resume."
+msgstr ""
+
+#: app/src/gui/view/import.ts:123
+msgid "Import finished."
+msgstr ""
+
+#: app/src/gui/view/import.ts:125
+msgid "The import failed."
+msgstr ""
+
+#: app/src/gui/view/import.ts:127
+msgid "Import cancelled. Run it again to resume."
+msgstr ""
+
+#: app/src/gui/view/import.ts:129
+msgid "Import running."
+msgstr ""
 
 #: app/src/gui/view/keys.ts:104
 msgid "{count} message waiting"
@@ -842,8 +898,8 @@ msgstr ""
 msgid "No message has the verdict you filtered for."
 msgstr ""
 
-#: app/src/gui/view/overview.ts:108 app/src/gui/window.blp:187
-#: app/src/gui/window.blp:201
+#: app/src/gui/view/overview.ts:108 app/src/gui/window.blp:200
+#: app/src/gui/window.blp:214
 msgid "Messages"
 msgstr ""
 
@@ -1119,179 +1175,157 @@ msgstr ""
 msgid "{shown} of {total} shown"
 msgstr ""
 
-#: app/src/gui/window.ts:202
+#: app/src/gui/window.ts:223
 msgid "All files"
 msgstr ""
 
-#: app/src/gui/window.ts:204
+#: app/src/gui/window.ts:225
 msgid "Mail archives"
 msgstr ""
 
-#: app/src/gui/window.ts:388
+#: app/src/gui/window.ts:416
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
-#: app/src/gui/window.ts:745
+#: app/src/gui/window.ts:781
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 
-#: app/src/gui/window.ts:806
+#: app/src/gui/window.ts:842
 msgid "Details"
 msgstr ""
 
-#: app/src/gui/window.ts:821 app/src/gui/window.blp:272
+#: app/src/gui/window.ts:857 app/src/gui/window.blp:285
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:840
+#: app/src/gui/window.ts:876
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:849
+#: app/src/gui/window.ts:885
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:865
+#: app/src/gui/window.ts:901
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:905
+#: app/src/gui/window.ts:941
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:907
+#: app/src/gui/window.ts:943
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:909
+#: app/src/gui/window.ts:945
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:941
+#: app/src/gui/window.ts:977
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:953
+#: app/src/gui/window.ts:989
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:991
+#: app/src/gui/window.ts:1027
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:1000
+#: app/src/gui/window.ts:1036
 msgid "Copy Request…"
 msgstr ""
 
-#: app/src/gui/window.ts:1001
+#: app/src/gui/window.ts:1037
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 
-#: app/src/gui/window.ts:1005
+#: app/src/gui/window.ts:1041
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr ""
 
-#: app/src/gui/window.ts:1050
+#: app/src/gui/window.ts:1086
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:1072
+#: app/src/gui/window.ts:1108
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:1074
+#: app/src/gui/window.ts:1110
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:1093 app/src/gui/window.ts:1302
-#: app/src/gui/window.ts:1336
+#: app/src/gui/window.ts:1129 app/src/gui/window.ts:1338
+#: app/src/gui/window.ts:1412 app/src/gui/window.blp:109
 msgid "Cancel"
 msgstr ""
 
-#: app/src/gui/window.ts:1094
+#: app/src/gui/window.ts:1130
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:1220
+#: app/src/gui/window.ts:1256
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:1229
+#: app/src/gui/window.ts:1265
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:1278
+#: app/src/gui/window.ts:1314
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:1294
+#: app/src/gui/window.ts:1330
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:1297
+#: app/src/gui/window.ts:1333
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:1301
+#: app/src/gui/window.ts:1337
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:1325
+#: app/src/gui/window.ts:1362
 msgid "Imported."
 msgstr ""
 
-#: app/src/gui/window.ts:1331
-msgid "Importing…"
-msgstr ""
-
-#: app/src/gui/window.ts:1332
-msgid ""
-"Reading the archive. This can be cancelled; running it again resumes where "
-"it stopped."
-msgstr ""
-
-#: app/src/gui/window.ts:1334
-msgid "Starting…"
-msgstr ""
-
-#: app/src/gui/window.ts:1374
-msgid " {done} of {total} · {rate}/s"
-msgstr ""
-
-#: app/src/gui/window.ts:1422
-msgid "Import cancelled. Run it again to resume."
-msgstr ""
-
-#: app/src/gui/window.ts:1444
+#: app/src/gui/window.ts:1443
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:1444
+#: app/src/gui/window.ts:1443
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:1478
+#: app/src/gui/window.ts:1477
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:1478
+#: app/src/gui/window.ts:1477
 msgid "Close"
 msgstr ""
 
-#: app/src/index.ts:42
+#: app/src/index.ts:43
 msgid "stamped <command> [options]"
 msgstr ""
 
-#: app/src/index.ts:51
+#: app/src/index.ts:53
 msgid "Pick a command — try `stamped verify --help`."
 msgstr ""
 
@@ -1515,6 +1549,64 @@ msgstr ""
 
 #: app/src/lib/report.ts:57
 msgid "  caveat: {text}"
+msgstr ""
+
+#: app/src/lib/status.ts:73
+msgid ""
+"An import is marked running, but its process is gone or it has not reported "
+"for a while — it was interrupted."
+msgstr ""
+
+#: app/src/lib/status.ts:75
+msgid "An import is running in this case."
+msgstr ""
+
+#: app/src/lib/status.ts:79
+msgid "The last import finished."
+msgstr ""
+
+#: app/src/lib/status.ts:81
+msgid "The last import failed."
+msgstr ""
+
+#: app/src/lib/status.ts:83
+msgid "The last import was cancelled."
+msgstr ""
+
+#: app/src/lib/status.ts:99
+msgid "{done} message read ({percent}% of {size})."
+msgid_plural "{done} messages read ({percent}% of {size})."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/status.ts:106
+msgid "Mailbox: {mailbox}"
+msgstr ""
+
+#: app/src/lib/status.ts:108
+msgid "Sources: {sources}"
+msgstr ""
+
+#: app/src/lib/status.ts:110
+msgid "{rate} messages/s, {bytes}/s."
+msgstr ""
+
+#: app/src/lib/status.ts:116
+msgid "About {time} left."
+msgstr ""
+
+#: app/src/lib/status.ts:122
+msgid "{count} message has no verdict because verification failed."
+msgid_plural "{count} messages have no verdict because verification failed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/status.ts:131
+msgid "Started {started}, last update {updated}."
+msgstr ""
+
+#: app/src/lib/status.ts:141
+msgid "No import has run in {path}."
 msgstr ""
 
 #: app/src/lib/vault.ts:25
@@ -1975,7 +2067,7 @@ msgstr ""
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 
-#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:394
+#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:405
 msgid "{path} is not a folder."
 msgstr ""
 
@@ -1983,11 +2075,11 @@ msgstr ""
 msgid "The case folder {path} was written by a newer version of Stamped."
 msgstr ""
 
-#: packages/store/src/importer.ts:301
+#: packages/store/src/importer.ts:312
 msgid "{path} holds no messages."
 msgstr ""
 
-#: packages/store/src/importer.ts:404
+#: packages/store/src/importer.ts:415
 msgid "{path} holds no mail files."
 msgstr ""
 
@@ -2011,7 +2103,7 @@ msgstr ""
 msgid "Stamped"
 msgstr ""
 
-#: app/src/gui/window.blp:58 app/src/gui/window.blp:118
+#: app/src/gui/window.blp:58 app/src/gui/window.blp:131
 msgid "Main menu"
 msgstr ""
 
@@ -2021,75 +2113,75 @@ msgid ""
 "this machine."
 msgstr ""
 
-#: app/src/gui/window.blp:75 app/src/gui/window.blp:426
+#: app/src/gui/window.blp:75 app/src/gui/window.blp:440
 msgid "Open Case…"
 msgstr ""
 
-#: app/src/gui/window.blp:84 app/src/gui/window.blp:431
+#: app/src/gui/window.blp:84 app/src/gui/window.blp:445
 msgid "Import Archive…"
 msgstr ""
 
-#: app/src/gui/window.blp:111
+#: app/src/gui/window.blp:124
 msgid "Import another archive into this case"
 msgstr ""
 
-#: app/src/gui/window.blp:124
+#: app/src/gui/window.blp:137
 msgid "Case"
 msgstr ""
 
-#: app/src/gui/window.blp:137
+#: app/src/gui/window.blp:150
 msgid "Archives"
 msgstr ""
 
-#: app/src/gui/window.blp:196
+#: app/src/gui/window.blp:209
 msgid "Show the case sidebar"
 msgstr ""
 
-#: app/src/gui/window.blp:207
+#: app/src/gui/window.blp:220
 msgid "Search senders, subjects, bodies"
 msgstr ""
 
-#: app/src/gui/window.blp:219
+#: app/src/gui/window.blp:232
 msgid "Clear filter"
 msgstr ""
 
-#: app/src/gui/window.blp:252
+#: app/src/gui/window.blp:265
 msgid "Verification"
 msgstr ""
 
-#: app/src/gui/window.blp:281
+#: app/src/gui/window.blp:294
 msgid "No message selected"
 msgstr ""
 
-#: app/src/gui/window.blp:282
+#: app/src/gui/window.blp:295
 msgid ""
 "Pick a message to see which of its signatures hold, and what each one covers."
 msgstr ""
 
-#: app/src/gui/window.blp:311
+#: app/src/gui/window.blp:324
 msgid "Keys"
 msgstr ""
 
-#: app/src/gui/window.blp:334
+#: app/src/gui/window.blp:347
 msgid "People"
 msgstr ""
 
-#: app/src/gui/window.blp:341
+#: app/src/gui/window.blp:354
 msgid "Search names and addresses"
 msgstr ""
 
-#: app/src/gui/window.blp:370
+#: app/src/gui/window.blp:383
 msgid "Timeline"
 msgstr ""
 
-#: app/src/gui/window.blp:393
+#: app/src/gui/window.blp:406
 msgid "Overview"
 msgstr ""
 
-#: app/src/gui/window.blp:438
+#: app/src/gui/window.blp:452
 msgid "Import Folder…"
 msgstr ""
 
-#: app/src/gui/window.blp:445
+#: app/src/gui/window.blp:459
 msgid "About Stamped"
 msgstr ""

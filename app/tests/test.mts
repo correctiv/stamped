@@ -17,6 +17,7 @@ import importSuite from './unit/import.test.ts';
 import store from './unit/store.test.ts';
 import throughput from './unit/throughput.test.ts';
 import people from './unit/people.test.ts';
+import status from './unit/status.test.ts';
 import view from './unit/view.test.ts';
 import semantic from './unit/semantic.test.ts';
 import llamaPrompts from './unit/llama-prompts.test.ts';
@@ -36,6 +37,7 @@ run({
     store,
     throughput,
     people,
+    status,
     view,
     semantic,
     llamaPrompts,
