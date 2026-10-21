@@ -566,6 +566,20 @@ export default async () => {
                 expect(by.get('archive-key')).toBe(2);
                 expect(by.get('unsigned-date')).toBe(1);
                 expect(by.get('rsa-sha1')).toBe(0);
+                // `key-newer-than-message` sits on a headers-altered message, which is not a
+                // confirmation: it must be counted all the same, or the doubt would be invisible.
+                const raw3 = message('Four', 'body four');
+                indexMessage(db, {
+                    hash: digest(raw3),
+                    bytes: raw3.length,
+                    summary: summarise(raw3),
+                    finding: { ...finding('headers-altered', sig), caveats: ['key-newer-than-message'] },
+                });
+                expect(
+                    new Map(caveatCounts(db).map((c) => [c.caveat, c.messages])).get(
+                        'key-newer-than-message',
+                    ),
+                ).toBe(1);
                 expect(caseReport(db).caveats.length).toBe(CAVEATS.length);
             });
         });
