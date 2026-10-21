@@ -30,7 +30,13 @@ import {
     browseMessages,
     caseReport,
     countMessages,
+    addressesComplete,
+    backfillAddresses,
     hashScope,
+    peopleList,
+    timeline,
+    periodScope,
+    personScope,
     importSources,
     isCase,
     logSources,
@@ -52,6 +58,8 @@ import {
     type ImportResult,
     type IndexedMessage,
     type LogSource,
+    type Person,
+    type Timeline,
     type ReverifyResult,
     type SearchHit,
     type SearchOptions,
@@ -174,7 +182,11 @@ export type ScopeRef =
           readonly missingOnly?: boolean;
       }
     /** The messages with no verdict because of this reason. */
-    | { readonly kind: 'reason'; readonly reason: UnverifiableReason };
+    | { readonly kind: 'reason'; readonly reason: UnverifiableReason }
+    /** Every message one address appears in, in any role. */
+    | { readonly kind: 'person'; readonly address: string }
+    /** The messages of one timeline bucket: `2024-03`, `2024-03-05` or `undated`. */
+    | { readonly kind: 'period'; readonly period: string };
 
 /**
  * The hashes one scope names, from wherever they live.
@@ -185,6 +197,10 @@ export type ScopeRef =
  */
 function hashesFor(session: CaseSession, ref: ScopeRef): Set<string> {
     switch (ref.kind) {
+        case 'person':
+        case 'period':
+            // built inside SQLite by scopeFor; never reaches here
+            return new Set();
         case 'mailbox':
             return mailboxHashes(session.paths).get(ref.mailbox) ?? new Set();
         case 'verdicts':
@@ -218,6 +234,10 @@ function scopeKey(ref: ScopeRef): string {
             return `key:${ref.domain.toLowerCase()}:${ref.selector.toLowerCase()}:${ref.missingOnly === true ? 'missing' : 'any'}`;
         case 'reason':
             return `reason:${ref.reason}`;
+        case 'person':
+            return `person:${ref.address.toLowerCase()}`;
+        case 'period':
+            return `period:${ref.period}`;
     }
 }
 
@@ -232,7 +252,12 @@ function scopeFor(session: CaseSession, ref: ScopeRef): HashScope {
     const key = scopeKey(ref);
     if (session.scopeFilter?.key === key) return session.scopeFilter.scope;
     session.scopeFilter?.scope.close();
-    const scope = hashScope(session.db, hashesFor(session, ref));
+    const scope =
+        ref.kind === 'person'
+            ? personScope(session.db, ref.address)
+            : ref.kind === 'period'
+              ? periodScope(session.db, ref.period)
+              : hashScope(session.db, hashesFor(session, ref));
     session.scopeFilter = { key, scope };
     return scope;
 }
@@ -306,6 +331,26 @@ export function filteredCount(session: CaseSession, query: Query): number {
         limit: 5000,
     };
     return searchHits(session.db, text, searchOptions).length;
+}
+
+/** The people of the case, most mail first, narrowed by a name/address search. */
+export function peopleOf(session: CaseSession, search: string, limit = 100): Person[] {
+    return peopleList(session.db, { search, limit });
+}
+
+/** Mails per month (or day), plus the count without a date. */
+export function timelineOf(session: CaseSession): Timeline {
+    return timeline(session.db);
+}
+
+/** Is the address table complete for this case? */
+export function peopleComplete(session: CaseSession): boolean {
+    return addressesComplete(session.db);
+}
+
+/** One short backfill batch for a case that predates the address table; `true` when finished. */
+export function backfillStep(session: CaseSession): boolean {
+    return backfillAddresses(session.db, 1000).done;
 }
 
 /** How many messages the case holds, whatever the filters — the denominator of every count. */

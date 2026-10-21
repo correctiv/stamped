@@ -330,6 +330,65 @@ template $StampedWindow: Adw.ApplicationWindow {
                   }
 
                   Adw.ViewStackPage {
+                    name: "people";
+                    title: _("People");
+                    icon-name: "system-users-symbolic";
+
+                    child: Gtk.Box {
+                      orientation: vertical;
+
+                      Gtk.SearchEntry peopleSearch {
+                        placeholder-text: _("Search names and addresses");
+                        margin-top: 6;
+                        margin-bottom: 6;
+                        margin-start: 12;
+                        margin-end: 12;
+                      }
+
+                      Gtk.ScrolledWindow {
+                        hscrollbar-policy: never;
+                        vexpand: true;
+
+                        child: Adw.Clamp {
+                          maximum-size: 760;
+
+                          child: Gtk.Box peopleBody {
+                            orientation: vertical;
+                            spacing: 12;
+                            margin-top: 6;
+                            margin-bottom: 24;
+                            margin-start: 12;
+                            margin-end: 12;
+                          };
+                        };
+                      }
+                    };
+                  }
+
+                  Adw.ViewStackPage {
+                    name: "timeline";
+                    title: _("Timeline");
+                    icon-name: "month-symbolic";
+
+                    child: Gtk.ScrolledWindow {
+                      hscrollbar-policy: never;
+
+                      child: Adw.Clamp {
+                        maximum-size: 760;
+
+                        child: Gtk.Box timelineBody {
+                          orientation: vertical;
+                          spacing: 12;
+                          margin-top: 18;
+                          margin-bottom: 24;
+                          margin-start: 12;
+                          margin-end: 12;
+                        };
+                      };
+                    };
+                  }
+
+                  Adw.ViewStackPage {
                     name: "overview";
                     title: _("Overview");
                     icon-name: "view-list-symbolic";

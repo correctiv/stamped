@@ -40,6 +40,9 @@ export declare const InternalChildren: [
     'readerBody',
     'keysPage',
     'keysBody',
+    'peopleSearch',
+    'peopleBody',
+    'timelineBody',
     'overviewBody',
     'viewSwitcher',
     'switcherBar',
@@ -65,6 +68,9 @@ export interface Children {
     _readerBody: Gtk.Box;
     _keysPage: Adw.ViewStackPage;
     _keysBody: Gtk.Box;
+    _peopleSearch: Gtk.SearchEntry;
+    _peopleBody: Gtk.Box;
+    _timelineBody: Gtk.Box;
     _overviewBody: Gtk.Box;
     _viewSwitcher: Adw.ViewSwitcher;
     _switcherBar: Adw.ViewSwitcherBar;

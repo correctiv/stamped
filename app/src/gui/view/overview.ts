@@ -503,6 +503,14 @@ export function filterBannerText(scope: ScopeRef): string {
                     : fmt(_('Only mail signed by the key {name}'), { name }),
             );
         }
+        case 'person':
+            return escapeLine(fmt(_('Only mail to or from {address}'), { address: scope.address }));
+        case 'period':
+            return escapeLine(
+                scope.period === 'undated'
+                    ? _('Only mail without a date')
+                    : fmt(_('Only mail from {period}'), { period: scope.period }),
+            );
         case 'reason':
             return escapeLine(
                 fmt(_('Only mail with no verdict: {reason}'), {
