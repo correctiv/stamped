@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 21:10+0200\n"
+"POT-Creation-Date: 2026-10-21 21:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -695,9 +695,11 @@ msgid ""
 "Import interrupted — its process is gone. Run the import again to resume."
 msgstr ""
 
-#: app/src/gui/view/import.ts:70
-msgid "{percent}% · {done} of {total} messages"
-msgstr ""
+#: app/src/gui/view/import.ts:71
+msgid "{percent}% · {done} message"
+msgid_plural "{percent}% · {done} messages"
+msgstr[0] ""
+msgstr[1] ""
 
 #: app/src/gui/view/import.ts:78
 msgid "about {time} left"
@@ -1571,37 +1573,39 @@ msgstr ""
 msgid "The last import was cancelled."
 msgstr ""
 
-#: app/src/lib/status.ts:97
-msgid "{done} of {total} messages read ({percent}% of {size})."
-msgstr ""
+#: app/src/lib/status.ts:99
+msgid "{done} message read ({percent}% of {size})."
+msgid_plural "{done} messages read ({percent}% of {size})."
+msgstr[0] ""
+msgstr[1] ""
 
-#: app/src/lib/status.ts:105
+#: app/src/lib/status.ts:106
 msgid "Mailbox: {mailbox}"
 msgstr ""
 
-#: app/src/lib/status.ts:107
+#: app/src/lib/status.ts:108
 msgid "Sources: {sources}"
 msgstr ""
 
-#: app/src/lib/status.ts:109
+#: app/src/lib/status.ts:110
 msgid "{rate} messages/s, {bytes}/s."
 msgstr ""
 
-#: app/src/lib/status.ts:115
+#: app/src/lib/status.ts:116
 msgid "About {time} left."
 msgstr ""
 
-#: app/src/lib/status.ts:121
+#: app/src/lib/status.ts:122
 msgid "{count} message has no verdict because verification failed."
 msgid_plural "{count} messages have no verdict because verification failed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/status.ts:130
+#: app/src/lib/status.ts:131
 msgid "Started {started}, last update {updated}."
 msgstr ""
 
-#: app/src/lib/status.ts:140
+#: app/src/lib/status.ts:141
 msgid "No import has run in {path}."
 msgstr ""
 

@@ -94,9 +94,10 @@ export function statusHeadline(status: ImportStatus): string {
 export function statusLines(status: ImportStatus): string[] {
     const lines = [statusHeadline(status)];
     lines.push(
-        fmt(_('{done} of {total} messages read ({percent}% of {size}).'), {
+        // No "of N": `mailsTotal` is the CURRENT source's count and `mailsDone` the run's, so the
+        // pair read "4 of 1" on a folder import. The run-wide progress is the byte percentage.
+        fmt(_n('{done} message read ({percent}% of {size}).', '{done} messages read ({percent}% of {size}).', status.mailsDone), {
             done: groupDigits(status.mailsDone),
-            total: groupDigits(status.mailsTotal),
             percent: String(percent(status.bytesRead, status.bytesTotal)),
             size: formatBytes(status.bytesTotal),
         }),

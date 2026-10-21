@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 21:10+0200\n"
+"POT-Creation-Date: 2026-10-21 21:23+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -768,11 +768,15 @@ msgstr[1] "{count} konnten nicht geprüft werden und haben keinen Befund"
 #: app/src/gui/view/import.ts:67
 msgid ""
 "Import interrupted — its process is gone. Run the import again to resume."
-msgstr "Import unterbrochen – sein Prozess ist beendet. Starten Sie den Import erneut, um fortzusetzen."
+msgstr ""
+"Import unterbrochen – sein Prozess ist beendet. Starten Sie den Import "
+"erneut, um fortzusetzen."
 
-#: app/src/gui/view/import.ts:70
-msgid "{percent}% · {done} of {total} messages"
-msgstr "{percent} % · {done} von {total} Nachrichten"
+#: app/src/gui/view/import.ts:71
+msgid "{percent}% · {done} message"
+msgid_plural "{percent}% · {done} messages"
+msgstr[0] "{percent} % · {done} Nachricht"
+msgstr[1] "{percent} % · {done} Nachrichten"
 
 #: app/src/gui/view/import.ts:78
 msgid "about {time} left"
@@ -788,7 +792,9 @@ msgstr "{n} min"
 
 #: app/src/gui/view/import.ts:119
 msgid "The import stopped without finishing. Run it again to resume."
-msgstr "Der Import wurde nicht abgeschlossen. Starten Sie ihn erneut, um fortzusetzen."
+msgstr ""
+"Der Import wurde nicht abgeschlossen. Starten Sie ihn erneut, um "
+"fortzusetzen."
 
 #: app/src/gui/view/import.ts:123
 msgid "Import finished."
@@ -1710,7 +1716,9 @@ msgstr "  Einschränkung: {text}"
 msgid ""
 "An import is marked running, but its process is gone or it has not reported "
 "for a while — it was interrupted."
-msgstr "Ein Import ist als laufend markiert, aber sein Prozess ist beendet oder meldet sich nicht mehr – er wurde unterbrochen."
+msgstr ""
+"Ein Import ist als laufend markiert, aber sein Prozess ist beendet oder "
+"meldet sich nicht mehr – er wurde unterbrochen."
 
 #: app/src/lib/status.ts:75
 msgid "An import is running in this case."
@@ -1728,37 +1736,40 @@ msgstr "Der letzte Import ist fehlgeschlagen."
 msgid "The last import was cancelled."
 msgstr "Der letzte Import wurde abgebrochen."
 
-#: app/src/lib/status.ts:97
-msgid "{done} of {total} messages read ({percent}% of {size})."
-msgstr "{done} von {total} Nachrichten gelesen ({percent} % von {size})."
+#: app/src/lib/status.ts:99
+msgid "{done} message read ({percent}% of {size})."
+msgid_plural "{done} messages read ({percent}% of {size})."
+msgstr[0] "{done} Nachricht gelesen ({percent} % von {size})."
+msgstr[1] "{done} Nachrichten gelesen ({percent} % von {size})."
 
-#: app/src/lib/status.ts:105
+#: app/src/lib/status.ts:106
 msgid "Mailbox: {mailbox}"
 msgstr "Postfach: {mailbox}"
 
-#: app/src/lib/status.ts:107
+#: app/src/lib/status.ts:108
 msgid "Sources: {sources}"
 msgstr "Quellen: {sources}"
 
-#: app/src/lib/status.ts:109
+#: app/src/lib/status.ts:110
 msgid "{rate} messages/s, {bytes}/s."
 msgstr "{rate} Nachrichten/s, {bytes}/s."
 
-#: app/src/lib/status.ts:115
+#: app/src/lib/status.ts:116
 msgid "About {time} left."
 msgstr "Noch etwa {time}."
 
-#: app/src/lib/status.ts:121
+#: app/src/lib/status.ts:122
 msgid "{count} message has no verdict because verification failed."
 msgid_plural "{count} messages have no verdict because verification failed."
 msgstr[0] "{count} Nachricht hat keinen Befund, weil die Prüfung fehlschlug."
-msgstr[1] "{count} Nachrichten haben keinen Befund, weil die Prüfung fehlschlug."
+msgstr[1] ""
+"{count} Nachrichten haben keinen Befund, weil die Prüfung fehlschlug."
 
-#: app/src/lib/status.ts:130
+#: app/src/lib/status.ts:131
 msgid "Started {started}, last update {updated}."
 msgstr "Gestartet {started}, letzte Aktualisierung {updated}."
 
-#: app/src/lib/status.ts:140
+#: app/src/lib/status.ts:141
 msgid "No import has run in {path}."
 msgstr "In {path} wurde noch kein Import ausgeführt."
 

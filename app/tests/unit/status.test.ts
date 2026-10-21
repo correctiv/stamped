@@ -220,7 +220,7 @@ export default async () => {
         await it('prints human lines with mailbox, percent, mails, rate, time left', () => {
             const text = statusLines(live()).join('\n');
             expect(text.includes('An import is running')).toBe(true);
-            expect(text.includes('250 of 1\u202f000 messages read (25% of 1.0 kB)')).toBe(true);
+            expect(text.includes('250 messages read (25% of 1.0 kB)')).toBe(true);
             expect(text.includes('Mailbox: ada@example.com')).toBe(true);
             expect(text.includes('25 messages/s')).toBe(true);
             expect(text.includes('About 30.0 s left.')).toBe(true);
@@ -281,10 +281,10 @@ export default async () => {
     await describe('import banner', async () => {
         await it('formats the title with percent, counts, mailbox and time left', () => {
             const title = importBannerTitle(live({ eta: 150 }), false);
-            expect(title).toBe('25% · 250 of 1 000 messages · ada@example.com · about 3 min left');
+            expect(title).toBe('25% · 250 messages · ada@example.com · about 3 min left');
             expect(importBannerTitle(live({ eta: 20 }), false).endsWith('about 20 s left')).toBe(true);
             expect(importBannerTitle(live({ eta: -1, mailbox: undefined }), false)).toBe(
-                '25% · 250 of 1 000 messages',
+                '25% · 250 messages',
             );
         });
 

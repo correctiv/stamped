@@ -1406,8 +1406,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const status = importStatusOf(session);
         const view = importBannerView(status);
         const own = this.importProc !== undefined;
-        this._importBanner.set_revealed(view !== undefined);
-        if (view !== undefined) {
+        this._importBanner.set_revealed(view?.revealed === true);
+        if (view?.revealed === true) {
             this._importBanner.set_title(view.title);
             this._importBanner.set_button_label(view.cancellable && own ? _('Cancel') : '');
         }

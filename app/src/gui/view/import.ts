@@ -67,10 +67,10 @@ export function importBannerTitle(status: ImportStatus, orphaned: boolean): stri
         return escapeLine(_('Import interrupted — its process is gone. Run the import again to resume.'));
     }
     const parts = [
-        fmt(_('{percent}% · {done} of {total} messages'), {
+        // The run's count without the current source's total — see `statusLines`.
+        fmt(_n('{percent}% · {done} message', '{percent}% · {done} messages', status.mailsDone), {
             percent: String(percent(status.bytesRead, status.bytesTotal)),
             done: groupDigits(status.mailsDone),
-            total: groupDigits(status.mailsTotal),
         }),
     ];
     if (status.mailbox !== undefined) parts.push(status.mailbox);

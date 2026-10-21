@@ -146,16 +146,18 @@ export function orphanedImport(status: ImportStatus, now: number = Date.now()): 
 /**
  * Is a process alive?
  *
- * `/proc` rather than `kill(pid, 0)`: both runtimes here are Linux, and asking the kernel
- * through the process directory needs no signal semantics on either of them. `false` for a
- * PID that is not there; the staleness check covers a recycled one.
+ * `/proc` rather than `kill(pid, 0)`: asking the kernel through the process directory needs no
+ * signal semantics on either runtime. Where there is no `/proc` (macOS, Windows) the answer is
+ * "alive", never "gone" — a missing directory would otherwise call every running import
+ * interrupted, and the staleness check still catches a dead one within a minute.
  */
 function processAlive(pid: number): boolean {
     if (!Number.isInteger(pid) || pid <= 0) return false;
     try {
+        if (!existsSync('/proc/self')) return true;
         return existsSync(`/proc/${pid}`);
     } catch {
-        return false;
+        return true;
     }
 }
 
