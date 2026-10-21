@@ -57,7 +57,7 @@ export async function mapPool<T, R>(
     limit: number,
     fn: (item: T) => Promise<R>,
 ): Promise<R[]> {
-    const results = new Array<R>(items.length);
+    const results: R[] = Array.from({ length: items.length });
     let next = 0;
     const worker = async (): Promise<void> => {
         while (next < items.length) {
