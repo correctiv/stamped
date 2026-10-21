@@ -88,6 +88,7 @@ export function openIndex(paths: CasePaths): DatabaseSync {
         }
     }
     if (schemaVersion(db) !== SCHEMA_VERSION) createSchema(db);
+    ensureIndexes(db);
     return db;
 }
 
@@ -170,10 +171,6 @@ function createSchema(db: DatabaseSync): void {
             aligned INTEGER NOT NULL,
             reason TEXT NOT NULL
         );
-        CREATE INDEX signatures_hash ON signatures (hash);
-        CREATE INDEX signatures_key ON signatures (domain, selector);
-        CREATE INDEX messages_sent_at ON messages (sent_at);
-        CREATE INDEX messages_from_domain ON messages (from_domain);
     `);
 
     // Separate from the script above: a virtual table is a different statement kind, and keeping
@@ -183,16 +180,75 @@ function createSchema(db: DatabaseSync): void {
     db.prepare("INSERT INTO meta (key, value) VALUES ('schema', ?)").run(String(SCHEMA_VERSION));
 }
 
+/**
+ * The indexes, by name, so {@link ensureIndexes} can add one to a case that predates it.
+ *
+ * NOT part of {@link createSchema} and not covered by {@link SCHEMA_VERSION}, deliberately. A
+ * version bump DROPS the index and a dropped index is empty until somebody re-imports the
+ * archive — which is exactly the thing a journalist may no longer have. An index is derived from
+ * rows that are already there, so it can be created in place instead, and adding one then costs
+ * a case nothing but the time to build it.
+ *
+ * `messages_browse` carries the browse order as the ORDER BY writes it, expression and all:
+ * `sent_at IS NULL` first so a message whose `Date` could not be read sorts LAST rather than to
+ * 1970, then newest first, then the hash to break ties. Without it a page deep into a six-figure
+ * case sorts the whole table to throw away everything before the offset. `messages_verdict_browse`
+ * is the same order per verdict, which is what the sidebar filter asks for.
+ */
+const INDEXES: readonly { readonly name: string; readonly sql: string }[] = [
+    { name: 'signatures_hash', sql: 'CREATE INDEX signatures_hash ON signatures (hash)' },
+    { name: 'signatures_key', sql: 'CREATE INDEX signatures_key ON signatures (domain, selector)' },
+    { name: 'messages_sent_at', sql: 'CREATE INDEX messages_sent_at ON messages (sent_at)' },
+    { name: 'messages_from_domain', sql: 'CREATE INDEX messages_from_domain ON messages (from_domain)' },
+    {
+        name: 'messages_browse',
+        sql: 'CREATE INDEX messages_browse ON messages (sent_at IS NULL, sent_at DESC, hash ASC)',
+    },
+    {
+        name: 'messages_verdict_browse',
+        sql: 'CREATE INDEX messages_verdict_browse ON messages (verdict, sent_at IS NULL, sent_at DESC, hash ASC)',
+    },
+    // Partial: a case is mostly messages with no caveat, and `caveatCounts` walks `json_each` over
+    // every row that has one. The index holds only the rows that do, so the count reads them and
+    // nothing else.
+    {
+        name: 'messages_caveats',
+        sql: "CREATE INDEX messages_caveats ON messages (caveats) WHERE caveats <> '[]'",
+    },
+];
+
+/**
+ * Create whatever index is missing. Runs on every open, costs one `sqlite_master` query each.
+ *
+ * Each statement on its own `exec`, as the schema's virtual table is: gjsify's `node:sqlite`
+ * splits a script on every `;`, and a failure then says which index could not be built rather
+ * than that the schema failed.
+ *
+ * Best effort per index, because `CREATE INDEX` is a write and the GUI opens the same case while
+ * an import subprocess is writing it — a busy database must not make a case unopenable for
+ * reading. The index is then built by whichever open comes after the import, and every query
+ * here is correct without it, only slower.
+ */
+function ensureIndexes(db: DatabaseSync): void {
+    for (const index of INDEXES) {
+        if (tableExists(db, index.name)) continue;
+        try {
+            db.exec(index.sql);
+        } catch {
+            // see above
+        }
+    }
+}
+
 /** Is this message in the index already? The question that makes indexing resumable. */
 export function isIndexed(db: DatabaseSync, hash: string): boolean {
     const row = db.prepare('SELECT 1 AS n FROM messages WHERE hash = ?').get(hash);
     return row !== undefined;
 }
 
-/** How many messages the index holds. */
+/** How many messages the index holds, whatever any filter would say. */
 export function messageCount(db: DatabaseSync): number {
-    const row = db.prepare('SELECT count(*) AS n FROM messages').get() as { n?: number } | undefined;
-    return Number(row?.n ?? 0);
+    return countMessages(db);
 }
 
 /**
@@ -272,18 +328,6 @@ export function removeMessage(db: DatabaseSync, hash: string): void {
     db.prepare('DELETE FROM signatures WHERE hash = ?').run(hash);
 }
 
-/**
- * Search, newest-looking matches first by FTS5's own relevance ranking.
- *
- * Two queries rather than a join with `MATCH`: the FTS table answers which hashes matched and in
- * what order, then the ordinary table is read by key. It is one extra round trip per hit on a
- * list the operator is going to read with their eyes, and it keeps both statements to the plain
- * SQL that gjsify's parser handles.
- *
- * `query` is tried as FTS5 syntax first (phrases, `AND`/`OR`, `subject : …`); what FTS5 rejects —
- * an address like `chef@firma.de`, a domain, `Re: Angebot` — is searched as literal terms instead
- * (see {@link toLiteralTerms}), so a plain search never ends in a syntax error.
- */
 /** Every whitespace-separated word as a quoted FTS5 string: all must occur, none is syntax. */
 export function toLiteralTerms(query: string): string {
     return query
@@ -293,8 +337,20 @@ export function toLiteralTerms(query: string): string {
         .join(' ');
 }
 
-/** The columns {@link toHit} reads, so the two queries that produce hits cannot drift apart. */
-const HIT_COLUMNS = 'hash, subject, sender, date, sent_at, verdict';
+/**
+ * The columns {@link toHit} reads, so the two queries that produce hits cannot drift apart.
+ *
+ * Qualified by table and aliased back: a browse page joins {@link HashScope}'s table, where a
+ * bare `hash` would be ambiguous.
+ */
+const HIT_COLUMNS = [
+    'messages.hash AS hash',
+    'messages.subject AS subject',
+    'messages.sender AS sender',
+    'messages.date AS date',
+    'messages.sent_at AS sent_at',
+    'messages.verdict AS verdict',
+].join(', ');
 
 /** One row of `messages`, as a hit. The one place a column name becomes a field name. */
 function toHit(message: Record<string, unknown>): SearchHit {
@@ -309,44 +365,199 @@ function toHit(message: Record<string, unknown>): SearchHit {
     };
 }
 
-export function searchMessages(db: DatabaseSync, query: string, limit = 20): SearchHit[] {
-    const match = query.trim();
-    if (match === '') return [];
-    // Interpolated, not bound: `LIMIT ?` is not accepted everywhere, and the value is an integer
-    // this function clamps itself, so there is no string to inject.
-    const capped = Math.max(1, Math.min(1000, Math.trunc(limit) || 1));
-    const statement = db.prepare(
-        `SELECT hash FROM messages_fts WHERE messages_fts MATCH ? ORDER BY rank LIMIT ${capped}`,
-    );
-    let hits: { hash?: string }[];
-    try {
-        hits = statement.all(match) as { hash?: string }[];
-    } catch {
-        hits = statement.all(toLiteralTerms(match)) as { hash?: string }[];
-    }
-
-    const row = db.prepare(`SELECT ${HIT_COLUMNS} FROM messages WHERE hash = ?`);
-    const found: SearchHit[] = [];
-    for (const hit of hits) {
-        if (typeof hit.hash !== 'string') continue;
-        const message = row.get(hit.hash) as Record<string, unknown> | undefined;
-        if (!message) continue;
-        found.push(toHit(message));
-    }
-    return found;
-}
-
-/** How a list of messages is narrowed. Every field absent means "the whole case, newest first". */
-export interface ListOptions {
-    /** Only messages with this verdict. */
+/** How a search is narrowed. The term itself is not in here: it is never optional. */
+export interface SearchOptions {
+    /** Only hits with this verdict. */
     readonly verdict?: Verdict;
-    /** Only these hashes — what a folder filter is, see `sourceHashes` in `raw.ts`. */
-    readonly hashes?: ReadonlySet<string>;
+    /** Only the hashes this scope admits — see {@link hashScope}. */
+    readonly scope?: HashScope;
+    /** How many hits to return. */
     readonly limit?: number;
 }
 
 /**
- * The messages of a case, newest first, without a search term.
+ * How many ranked hits a FILTERED search reads before it stops looking.
+ *
+ * A filter is applied to the ranked hits rather than inside the `MATCH` query — ranking the
+ * narrowed set is a different question from narrowing the ranked set, and the second is the one
+ * a search box asks. So the rows a filter drops still have to be read, and a search for a common
+ * word in a six-figure case would otherwise read every match to fill a page of thirty. This cap
+ * shows a SHORT page rather than a wrong one, which is why {@link SearchHit} counts are never
+ * reported as a total.
+ */
+const SEARCH_SCAN_CAP = 20_000;
+
+/**
+ * Search, best matches first by FTS5's own relevance ranking, narrowed by verdict and by source.
+ *
+ * Two queries rather than a join with `MATCH`: the FTS table answers which hashes matched and in
+ * what order, then the ordinary table is read by key. It is one extra round trip per hit on a
+ * list the operator is going to read with their eyes, and it keeps both statements to the plain
+ * SQL that gjsify's parser handles.
+ *
+ * `query` is tried as FTS5 syntax first (phrases, `AND`/`OR`, `subject : …`); what FTS5 rejects —
+ * an address like `chef@firma.de`, a domain, `Re: Angebot` — is searched as literal terms instead
+ * (see {@link toLiteralTerms}), so a plain search never ends in a syntax error.
+ *
+ * The hits are a bounded list by construction — nobody reads the thirty-thousandth match — so
+ * this returns them whole and has no `offset`: the list model pages through what it is given,
+ * and page two of a ranked search must not re-rank.
+ */
+export function searchHits(db: DatabaseSync, query: string, options: SearchOptions = {}): SearchHit[] {
+    const match = query.trim();
+    if (match === '') return [];
+    // Interpolated, not bound: `LIMIT ?` is not accepted everywhere, and the value is an integer
+    // this function clamps itself, so there is no string to inject.
+    const limit = Math.max(1, Math.min(5000, Math.trunc(options.limit ?? 20) || 1));
+    const filtered = options.verdict !== undefined || options.scope !== undefined;
+    const scan = filtered ? Math.min(SEARCH_SCAN_CAP, limit * 50) : limit;
+    const statement = db.prepare(
+        `SELECT hash FROM messages_fts WHERE messages_fts MATCH ? ORDER BY rank LIMIT ${scan}`,
+    );
+    let ranked: { hash?: string }[];
+    try {
+        ranked = statement.all(match) as { hash?: string }[];
+    } catch {
+        ranked = statement.all(toLiteralTerms(match)) as { hash?: string }[];
+    }
+
+    const row = db.prepare(`SELECT ${HIT_COLUMNS} FROM messages WHERE messages.hash = ?`);
+    const found: SearchHit[] = [];
+    for (const hit of ranked) {
+        if (typeof hit.hash !== 'string') continue;
+        // The scope first: one indexed lookup in a temp table is cheaper than reading the row.
+        if (options.scope && !options.scope.has(hit.hash)) continue;
+        const message = row.get(hit.hash) as Record<string, unknown> | undefined;
+        if (!message) continue;
+        if (options.verdict !== undefined && String(message.verdict) !== options.verdict) continue;
+        found.push(toHit(message));
+        if (found.length >= limit) break;
+    }
+    return found;
+}
+
+export function searchMessages(db: DatabaseSync, query: string, limit = 20): SearchHit[] {
+    return searchHits(db, query, { limit });
+}
+
+/**
+ * The hashes a filter admits, held in SQLite instead of in TypeScript.
+ *
+ * WHY A TABLE AND NOT A `Set`. A source filter IS a set of hashes: provenance belongs to the
+ * import log and not to a row here (see the module note), so "only this archive" can never become
+ * a `WHERE source = ?`. Those hashes cannot be bound — a hundred thousand of them is far past
+ * SQLite's variable limit — and filtering them in TypeScript means reading rows only to throw
+ * them away, which is what made a filtered list cost a scan of the whole table. Written into a
+ * table once, every page of the list joins it instead: the scope is built when the person picks
+ * the archive and reused by every page they scroll to.
+ *
+ * TEMPORARY, so it belongs to this connection and no crash can leave it behind in the case's
+ * `index.db`. {@link close} drops it — a scope that outlives its filter is a filter that silently
+ * still applies.
+ */
+export interface HashScope {
+    /** The table name, for a query that joins it. Generated here, never from input. */
+    readonly table: string;
+    /** How many distinct hashes it admits. */
+    readonly size: number;
+    /** Is this hash admitted? One indexed lookup — what a ranked search filters its hits with. */
+    has(hash: string): boolean;
+    /** Drop the table. Idempotent, and safe after the connection is gone. */
+    close(): void;
+}
+
+/** Makes each scope's table name its own, so a new filter can be built before the old is dropped. */
+let scopeSerial = 0;
+
+/**
+ * Put a set of hashes where SQL can reach it. The caller closes it; see {@link HashScope}.
+ *
+ * One transaction around the inserts, because without one every row is its own commit and a
+ * hundred thousand of them take minutes rather than a second. Best effort: a transaction may
+ * already be open — the importer holds one — and the inserts are then simply part of it.
+ */
+export function hashScope(db: DatabaseSync, hashes: Iterable<string>): HashScope {
+    scopeSerial += 1;
+    const table = `scope_${scopeSerial}`;
+    db.exec(`CREATE TEMP TABLE ${table} (hash TEXT PRIMARY KEY)`);
+
+    const insert = db.prepare(`INSERT OR IGNORE INTO ${table} (hash) VALUES (?)`);
+    const own = beganHere(db);
+    try {
+        for (const hash of hashes) insert.run(hash);
+        if (own) commitBatch(db);
+    } catch (error) {
+        if (own) rollbackBatch(db);
+        db.exec(`DROP TABLE ${table}`);
+        throw error;
+    }
+
+    const member = db.prepare(`SELECT 1 AS n FROM ${table} WHERE hash = ?`);
+    const size = Number(
+        (db.prepare(`SELECT count(*) AS n FROM ${table}`).get() as { n?: number } | undefined)?.n ?? 0,
+    );
+    let open = true;
+    return {
+        table,
+        size,
+        has(hash: string): boolean {
+            return member.get(hash) !== undefined;
+        },
+        close(): void {
+            if (!open) return;
+            open = false;
+            try {
+                db.exec(`DROP TABLE ${table}`);
+            } catch {
+                // the connection is already closed, which drops the temp table anyway
+            }
+        },
+    };
+}
+
+/** Open a transaction if none is open. `false` means somebody else owns the one we are in. */
+function beganHere(db: DatabaseSync): boolean {
+    try {
+        beginBatch(db);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/** How a page of the message list is narrowed. Every field absent means "the whole case". */
+export interface BrowseOptions {
+    /** Only messages with this verdict. */
+    readonly verdict?: Verdict;
+    /** Only the hashes this scope admits — what a source filter is, see {@link hashScope}. */
+    readonly scope?: HashScope;
+    /** How many rows the page holds. */
+    readonly limit?: number;
+    /** How many rows to skip: which page of the order below is wanted. */
+    readonly offset?: number;
+}
+
+/** {@link BrowseOptions} plus the convenience form — a plain set, for one query. */
+export interface ListOptions extends BrowseOptions {
+    /** Only these hashes. Builds a scope for this call alone; a list builds one and keeps it. */
+    readonly hashes?: ReadonlySet<string>;
+}
+
+/** What a filtered count is asked about: the same narrowing, without a page. */
+export type CountOptions = Pick<BrowseOptions, 'verdict' | 'scope'>;
+
+/** `LIMIT`/`OFFSET` are interpolated, not bound: `LIMIT ?` is not accepted everywhere. Integers only. */
+function clampLimit(limit: number): number {
+    return Math.max(1, Math.min(1000, Math.trunc(limit) || 1));
+}
+
+/** The join that applies a scope, or nothing at all. */
+function scopeJoin(scope: HashScope | undefined): string {
+    return scope ? `JOIN ${scope.table} ON ${scope.table}.hash = messages.hash` : '';
+}
+
+/**
+ * One page of the case, newest first, without a search term.
  *
  * The list a journalist sees before they have typed anything, so it is a separate function from
  * {@link searchMessages} rather than that one with an empty query: the orders differ and neither
@@ -355,33 +566,60 @@ export interface ListOptions {
  * sort LAST instead of to 1970 — a gap in the data must not look like a fact about the message
  * (same rule as `parseDate`).
  *
- * `hashes` is filtered in TypeScript rather than as a `WHERE hash IN (…)`: a source of a hundred
- * thousand messages would be a hundred thousand bind parameters, past SQLite's variable limit.
- * The page is small, so the cost is reading rows until it is full.
+ * PAGED, because the alternative at four hundred thousand messages is to build four hundred
+ * thousand rows for a window that shows thirty. The order is exactly what `messages_browse`
+ * indexes, expression and all, so a page deep in the case is an index walk rather than a sort of
+ * the whole table — which is the difference between a scroll and a freeze.
  */
-export function listMessages(db: DatabaseSync, options: ListOptions = {}): SearchHit[] {
-    const limit = Math.max(1, Math.min(1000, Math.trunc(options.limit ?? 200) || 1));
-    const hashes = options.hashes;
-    // Over-read when a hash filter applies: the rows it drops still have to come from somewhere,
-    // and reading the whole case to filter it would defeat the LIMIT on a large archive. A filter
-    // that is sparser than this cap shows a short page rather than a wrong one.
-    const scan = hashes ? Math.min(20_000, limit * 50) : limit;
-
-    const where = options.verdict ? 'WHERE verdict = ?' : '';
+export function browseMessages(db: DatabaseSync, options: BrowseOptions = {}): SearchHit[] {
+    const limit = clampLimit(options.limit ?? 200);
+    const offset = Math.max(0, Math.trunc(options.offset ?? 0) || 0);
     const rows = db
         .prepare(
-            `SELECT ${HIT_COLUMNS} FROM messages ${where}
-             ORDER BY sent_at IS NULL, sent_at DESC, hash ASC LIMIT ${scan}`,
+            `SELECT ${HIT_COLUMNS} FROM messages
+             ${scopeJoin(options.scope)}
+             ${options.verdict ? 'WHERE messages.verdict = ?' : ''}
+             ORDER BY messages.sent_at IS NULL, messages.sent_at DESC, messages.hash ASC
+             LIMIT ${limit} OFFSET ${offset}`,
         )
         .all(...(options.verdict ? [options.verdict] : [])) as Record<string, unknown>[];
+    return rows.map((row) => toHit(row));
+}
 
-    const found: SearchHit[] = [];
-    for (const row of rows) {
-        if (hashes && !hashes.has(String(row.hash))) continue;
-        found.push(toHit(row));
-        if (found.length >= limit) break;
+/**
+ * How many messages a filter admits — the length of the list, not of a page.
+ *
+ * Counted in SQLite rather than by taking the length of what {@link browseMessages} returns: the
+ * list model needs the total before it fetches anything, and the number under the list ("300 of
+ * 420,000") is a fact about the case that a page cannot see.
+ */
+export function countMessages(db: DatabaseSync, options: CountOptions = {}): number {
+    const row = db
+        .prepare(
+            `SELECT count(*) AS n FROM messages
+             ${scopeJoin(options.scope)}
+             ${options.verdict ? 'WHERE messages.verdict = ?' : ''}`,
+        )
+        .get(...(options.verdict ? [options.verdict] : [])) as { n?: number } | undefined;
+    return Number(row?.n ?? 0);
+}
+
+/**
+ * The first page of a filtered list, taking the hashes as a plain set.
+ *
+ * The convenience form of {@link browseMessages} for a caller that asks once — a command, a test.
+ * The scope it builds lives exactly as long as the query; a list the person scrolls through
+ * builds one with {@link hashScope} and keeps it, which is the whole point of the table.
+ */
+export function listMessages(db: DatabaseSync, options: ListOptions = {}): SearchHit[] {
+    const hashes = options.hashes;
+    if (hashes === undefined || options.scope !== undefined) return browseMessages(db, options);
+    const scope = hashScope(db, hashes);
+    try {
+        return browseMessages(db, { ...options, scope });
+    } finally {
+        scope.close();
     }
-    return found;
 }
 
 /** Everything the index holds about one message — the detail pane's row, verdict and signatures. */

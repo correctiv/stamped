@@ -25,28 +25,31 @@ import {
     type MessageFinding,
 } from '@stamped/core';
 import {
+    browseMessages,
     caseReport,
+    countMessages,
+    hashScope,
     importSources,
     isCase,
-    listMessages,
     logSources,
-    messageCount,
     openCase,
     openIndex,
     readMessage,
     readRaw,
     reverifyPairs,
-    searchMessages,
+    searchHits,
     sourceHashes,
+    type BrowseOptions,
     type CasePaths,
     type CaseReport,
+    type HashScope,
     type ImportProgress,
     type ImportResult,
     type IndexedMessage,
-    type ListOptions,
     type LogSource,
     type ReverifyResult,
     type SearchHit,
+    type SearchOptions,
 } from '@stamped/store';
 import { verifyMessage } from '@stamped/verify';
 
@@ -62,6 +65,8 @@ export interface CaseSession {
     readonly db: ReturnType<typeof openIndex>;
     /** Mutable: `addKey` and `runLookup` grow it, and the reader re-verifies against it. */
     vault: KeyVault;
+    /** Cached source filter, rebuilt when the chosen archive changes. */
+    sourceScope?: { source: string; scope: HashScope };
 }
 
 /** How many rows one page of the message list holds. */
@@ -94,6 +99,8 @@ export function createSession(root: string): CaseSession {
  * live.
  */
 export function closeSession(session: CaseSession): void {
+    session.sourceScope?.scope.close();
+    session.sourceScope = undefined;
     session.db.close();
 }
 
@@ -110,9 +117,24 @@ export function knownKeyNames(vault: KeyVault): Set<string> {
 /** How a message list is asked for: a search term, a verdict, an archive, or nothing at all. */
 export interface Query {
     readonly text?: string;
-    readonly verdict?: ListOptions['verdict'];
+    readonly verdict?: BrowseOptions['verdict'];
     /** A `LogSource.source` — the path an import read the messages out of. */
     readonly source?: string;
+}
+
+/**
+ * The hashes one archive contributed, as a scope the index can join.
+ *
+ * Built once per chosen archive and kept on the session: rebuilding it on every page would
+ * re-insert a hundred thousand rows each time the person scrolled. The scope outlives a single
+ * query by design — see {@link HashScope}.
+ */
+function sourceScopeFor(session: CaseSession, source: string): HashScope {
+    if (session.sourceScope?.source === source) return session.sourceScope.scope;
+    session.sourceScope?.scope.close();
+    const scope = hashScope(session.db, sourceHashes(session.paths, source));
+    session.sourceScope = { source, scope };
+    return scope;
 }
 
 /**
@@ -123,27 +145,50 @@ export interface Query {
  * without one it is newest first — and the verdict filter is applied in TypeScript for a search,
  * because narrowing the ranked hits is not the same query as ranking the narrowed set, and the
  * second would silently return other messages than the first.
+ *
+ * Paged: `offset` selects which page. The default keeps the first page, so callers that never
+ * ask for more keep working.
  */
-export function pageOf(session: CaseSession, query: Query): SearchHit[] {
-    const hashes = query.source ? sourceHashes(session.paths, query.source) : undefined;
+export function pageOf(session: CaseSession, query: Query, offset = 0): SearchHit[] {
+    const scope = query.source ? sourceScopeFor(session, query.source) : undefined;
     const text = query.text?.trim() ?? '';
     if (text === '') {
-        return listMessages(session.db, {
+        return browseMessages(session.db, {
             ...(query.verdict ? { verdict: query.verdict } : {}),
-            ...(hashes ? { hashes } : {}),
+            ...(scope ? { scope } : {}),
             limit: PAGE_SIZE,
+            offset,
         });
     }
-    return searchMessages(session.db, text, PAGE_SIZE).filter(
-        (hit) =>
-            (query.verdict === undefined || hit.verdict === query.verdict) &&
-            (hashes === undefined || hashes.has(hit.hash)),
-    );
+    const searchOptions: SearchOptions = {
+        ...(query.verdict ? { verdict: query.verdict } : {}),
+        ...(scope ? { scope } : {}),
+        limit: PAGE_SIZE,
+    };
+    return searchHits(session.db, text, searchOptions).slice(offset, offset + PAGE_SIZE);
+}
+
+/** How many messages a filter admits — the length of the list behind {@link pageOf}. */
+export function filteredCount(session: CaseSession, query: Query): number {
+    const scope = query.source ? sourceScopeFor(session, query.source) : undefined;
+    const text = query.text?.trim() ?? '';
+    if (text === '') {
+        return countMessages(session.db, {
+            ...(query.verdict ? { verdict: query.verdict } : {}),
+            ...(scope ? { scope } : {}),
+        });
+    }
+    const searchOptions: SearchOptions = {
+        ...(query.verdict ? { verdict: query.verdict } : {}),
+        ...(scope ? { scope } : {}),
+        limit: 5000,
+    };
+    return searchHits(session.db, text, searchOptions).length;
 }
 
 /** How many messages the case holds, whatever the filters — the denominator of every count. */
 export function totalMessages(session: CaseSession): number {
-    return messageCount(session.db);
+    return countMessages(session.db);
 }
 
 /** The archives this case was imported from, read out of the import log. */
