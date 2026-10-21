@@ -72,11 +72,13 @@ jobs:
       - name: Type check (app + every package)
         run: gjsify foreach -A check
 
-      - name: Format check
-        run: gjsify workspace stamped-cli format:check
+      # Runs from the repo root, so the root .oxfmtrc.json covers app/ AND packages/* — the
+      # same config, no second one.
+      - name: Format check (app + every package)
+        run: gjsify format --check .
 
-      - name: Lint
-        run: gjsify workspace stamped-cli lint
+      - name: Lint (app + every package)
+        run: gjsify lint .
 
       - name: Build the CLI bundle
         run: gjsify workspace stamped-cli build

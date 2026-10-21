@@ -14,9 +14,9 @@
     "build": "gjsify workspace stamped-cli build",
     "start": "gjsify workspace stamped-cli start",
     "test": "gjsify workspace stamped-cli test",
-    "lint": "gjsify workspace stamped-cli lint",
-    "format": "gjsify workspace stamped-cli format",
-    "format:check": "gjsify workspace stamped-cli format:check",
+    "lint": "gjsify lint .",
+    "format": "gjsify format --write .",
+    "format:check": "gjsify format --check .",
     "fixtures": "node tools/make-fixtures.mjs",
     "i18n:extract": "./dev/i18n.sh extract",
     "i18n:compile": "./dev/i18n.sh compile"
