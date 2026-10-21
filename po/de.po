@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 09:12+0200\n"
+"POT-Creation-Date: 2026-10-21 09:59+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -13,20 +13,22 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: app/src/commands/import.ts:37
+#: app/src/commands/import.ts:39
 msgid "Read mail archives into a case folder and index them"
 msgstr "Mail-Archive in einen Fallordner einlesen und indizieren"
 
-#: app/src/commands/import.ts:41
-msgid "The case folder to import into. Created when it does not exist."
-msgstr "Der Fallordner, in den importiert wird. Wird angelegt, wenn er fehlt."
+#: app/src/commands/import.ts:44
+msgid ""
+"The case folder (created when it does not exist), then the sources: an mbox "
+"file, a Maildir, a single .eml, or a directory of those. With --case, only "
+"the sources."
+msgstr "Der Fallordner (wird angelegt, wenn er fehlt), dann die Quellen: eine mbox-Datei, ein Maildir, eine einzelne .eml oder ein Ordner davon. Mit --case nur die Quellen."
 
-#: app/src/commands/import.ts:46
-msgid "An mbox file, a Maildir, a single .eml, or a directory of those"
-msgstr ""
-"Eine mbox-Datei, ein Maildir, eine einzelne .eml oder ein Verzeichnis davon"
+#: app/src/commands/import.ts:50
+msgid "The case folder to import into, instead of the first argument"
+msgstr "Der Fallordner, in den importiert wird, statt des ersten Arguments"
 
-#: app/src/commands/import.ts:53
+#: app/src/commands/import.ts:55
 msgid ""
 "A public key to verify against: <selector>._domainkey.<domain>=<TXT record, "
 "or a path to a .pem or .txt file holding one>. Repeatable."
@@ -35,29 +37,29 @@ msgstr ""
 "<Domain>=<TXT-Eintrag oder Pfad zu einer .pem- oder .txt-Datei, die einen "
 "enthält>. Mehrfach möglich."
 
-#: app/src/commands/import.ts:59
+#: app/src/commands/import.ts:61
 msgid ""
 "Which \"From \" quoting the mbox files use: mboxrd (the default) or mboxo"
 msgstr ""
 "Welche \"From \"-Maskierung die mbox-Dateien verwenden: mboxrd (Vorgabe) "
 "oder mboxo"
 
-#: app/src/commands/import.ts:64
+#: app/src/commands/import.ts:66
 msgid ""
 "Look up missing keys after the import (asks first); --no-lookup skips it"
 msgstr ""
 "Fehlende Schlüssel nach dem Import abfragen (mit Rückfrage); --no-lookup "
 "überspringt das"
 
-#: app/src/commands/import.ts:69
+#: app/src/commands/import.ts:71
 msgid "Accept the key lookup without asking"
 msgstr "Die Schlüsselabfrage ohne Rückfrage annehmen"
 
-#: app/src/commands/import.ts:74
+#: app/src/commands/import.ts:76
 msgid "Print only the summary, no progress"
 msgstr "Nur die Zusammenfassung ausgeben, keinen Fortschritt"
 
-#: app/src/commands/import.ts:80
+#: app/src/commands/import.ts:82
 msgid ""
 "Import one mbox, with no keys yet — run `stamped report` to see which are "
 "needed"
@@ -65,25 +67,29 @@ msgstr ""
 "Eine mbox importieren, noch ohne Schlüssel — `stamped report` zeigt, welche "
 "fehlen"
 
-#: app/src/commands/import.ts:98
+#: app/src/commands/import.ts:88
+msgid "No source given. Use `stamped import <case> <source…>`."
+msgstr "Keine Quelle angegeben. Nutze `stamped import <Fall> <Quelle…>`."
+
+#: app/src/commands/import.ts:104
 msgid "{read} read, {stored} stored, {duplicates} duplicates"
 msgstr "{read} gelesen, {stored} gespeichert, {duplicates} Duplikate"
 
-#: app/src/commands/import.ts:112
+#: app/src/commands/import.ts:118
 msgid "{read} message read."
 msgid_plural "{read} messages read."
 msgstr[0] "{read} Nachricht gelesen."
 msgstr[1] "{read} Nachrichten gelesen."
 
-#: app/src/commands/import.ts:117
+#: app/src/commands/import.ts:123
 msgid "{stored} newly stored, {duplicates} already in the case."
 msgstr "{stored} neu gespeichert, {duplicates} schon im Fall."
 
-#: app/src/commands/import.ts:122
+#: app/src/commands/import.ts:128
 msgid "{indexed} indexed."
 msgstr "{indexed} indiziert."
 
-#: app/src/commands/import.ts:130
+#: app/src/commands/import.ts:136
 msgid ""
 "{failed} message could not be verified; it is stored but has no verdict."
 msgid_plural ""
@@ -95,11 +101,11 @@ msgstr[1] ""
 "{failed} Nachrichten konnten nicht geprüft werden; sie sind gespeichert, "
 "haben aber keinen Befund."
 
-#: app/src/commands/import.ts:138
+#: app/src/commands/import.ts:144
 msgid "Case folder: {path}"
 msgstr "Fallordner: {path}"
 
-#: app/src/commands/keys.ts:41
+#: app/src/commands/keys.ts:57
 msgid ""
 "Every DKIM signature names a domain and a selector; the matching public key "
 "is what proves the signature. Without that key a message is “unverifiable”. "
@@ -111,11 +117,11 @@ msgstr ""
 "„nicht prüfbar“. Schlüssel sind öffentlich, doch ihr Abruf kann Ihr "
 "Interesse verraten – deshalb fragt Stamped vorher."
 
-#: app/src/commands/keys.ts:48
+#: app/src/commands/keys.ts:64
 msgid "Ways to get a missing key, safest first:"
 msgstr "Wege zu einem fehlenden Schlüssel, der sicherste zuerst:"
 
-#: app/src/commands/keys.ts:49
+#: app/src/commands/keys.ts:65
 msgid ""
 "  1. Ask the provider for the old record: stamped keys template <domain> "
 "<selector>"
@@ -123,7 +129,7 @@ msgstr ""
 "  1. Den alten Eintrag beim Anbieter anfragen: stamped keys template "
 "<Domain> <Selektor>"
 
-#: app/src/commands/keys.ts:50
+#: app/src/commands/keys.ts:66
 msgid ""
 "  2. Paste it yourself:                   stamped keys add "
 "<selector>._domainkey.<domain> <key>"
@@ -131,68 +137,71 @@ msgstr ""
 "  2. Selbst einfügen:                     stamped keys add "
 "<Selektor>._domainkey.<Domain> <Schlüssel>"
 
-#: app/src/commands/keys.ts:51
+#: app/src/commands/keys.ts:67
 msgid "  3. archive.prove.email (third party):   stamped keys fetch --archive"
 msgstr "  3. archive.prove.email (Dritter):       stamped keys fetch --archive"
 
-#: app/src/commands/keys.ts:52
+#: app/src/commands/keys.ts:68
 msgid "  4. Live DNS (tells the domain):         stamped keys fetch --dns"
 msgstr "  4. Live-DNS (verrät es der Domain):     stamped keys fetch --dns"
 
-#: app/src/commands/keys.ts:59
+#: app/src/commands/keys.ts:75
 msgid "Expected <selector>._domainkey.<domain>, got: {name}"
 msgstr "Erwartet <Selektor>._domainkey.<Domain>, erhalten: {name}"
 
-#: app/src/commands/keys.ts:71 app/src/lib/autofetch.ts:124
+#: app/src/commands/keys.ts:87 app/src/lib/autofetch.ts:167
 msgid "  no key  {name}: {reason}"
 msgstr "  kein Schlüssel  {name}: {reason}"
 
-#: app/src/commands/keys.ts:78
+#: app/src/commands/keys.ts:94
 msgid "See which DKIM keys are needed and store them"
 msgstr "Zeigen, welche DKIM-Schlüssel nötig sind, und sie ablegen"
 
-#: app/src/commands/keys.ts:82
-msgid "The case folder holding keys.json"
-msgstr "Der Fallordner mit keys.json"
+#: app/src/commands/keys.ts:98
+msgid "The case folder holding keys.json (default: .stamped)"
+msgstr "Der Fallordner mit keys.json (Standard: .stamped)"
 
-#: app/src/commands/keys.ts:90
+#: app/src/commands/keys.ts:105
 msgid "Pick a subcommand — try `stamped keys --help`."
 msgstr "Bitte einen Unterbefehl wählen — etwa `stamped keys --help`."
 
-#: app/src/commands/keys.ts:104
+#: app/src/commands/keys.ts:119
 msgid "List stored keys, and with --pairs the ones still missing"
 msgstr "Gespeicherte Schlüssel auflisten, mit --pairs auch die noch fehlenden"
 
-#: app/src/commands/keys.ts:109
-msgid ""
-"A pair list (domain, selector[, mail count] per line) to check for missing "
-"keys"
-msgstr ""
-"Eine Paarliste (Domain, Selektor[, Mailanzahl] je Zeile), um fehlende "
-"Schlüssel zu finden"
+#: app/src/commands/keys.ts:122 app/src/commands/keys.ts:218
+#: app/src/commands/keys.ts:271 app/src/commands/reverify.ts:24
+msgid "The case folder"
+msgstr "Der Fallordner"
 
-#: app/src/commands/keys.ts:113
+#: app/src/commands/keys.ts:125
+msgid ""
+"Check for missing keys: a pair list file (domain, selector[, mail count] per "
+"line), or no value for the case’s own missing pairs"
+msgstr "Fehlende Schlüssel prüfen: eine Paarlisten-Datei (Domain, Selektor[, Mailanzahl] je Zeile), oder ohne Wert die fehlenden Paare des Falls"
+
+#: app/src/commands/keys.ts:129
 msgid "Print JSON"
 msgstr "JSON ausgeben"
 
-#: app/src/commands/keys.ts:124 app/src/gui/view/keys.ts:218
+#: app/src/commands/keys.ts:154 app/src/gui/view/keys.ts:217
 msgid "{count} key stored"
 msgid_plural "{count} keys stored"
 msgstr[0] "{count} Schlüssel gespeichert"
 msgstr[1] "{count} Schlüssel gespeichert"
 
-#: app/src/commands/keys.ts:136
+#: app/src/commands/keys.ts:166
 msgid ""
 "! {name} holds different keys — a key rotation, or a forgery. Compare them."
 msgstr ""
 "! {name} enthält verschiedene Schlüssel – eine Schlüsselrotation oder eine "
 "Fälschung. Bitte vergleichen."
 
-#: app/src/commands/keys.ts:145
+#: app/src/commands/keys.ts:175
 msgid "No key is missing."
 msgstr "Es fehlt kein Schlüssel."
 
-#: app/src/commands/keys.ts:148
+#: app/src/commands/keys.ts:178
 msgid "{count} key is missing; messages signed with it stay unverifiable:"
 msgid_plural ""
 "{count} keys are missing; messages signed with them stay unverifiable:"
@@ -201,22 +210,22 @@ msgstr[0] ""
 msgstr[1] ""
 "{count} Schlüssel fehlen; damit signierte Nachrichten bleiben nicht prüfbar:"
 
-#: app/src/commands/keys.ts:175
+#: app/src/commands/keys.ts:205
 msgid ""
 "Store a key you have: a PEM, a bare p= value, or a pasted DNS TXT record"
 msgstr ""
 "Einen vorhandenen Schlüssel ablegen: PEM, reiner p=-Wert oder eingefügter "
 "DNS-TXT-Eintrag"
 
-#: app/src/commands/keys.ts:179
+#: app/src/commands/keys.ts:209
 msgid "<selector>._domainkey.<domain>"
 msgstr "<Selektor>._domainkey.<Domain>"
 
-#: app/src/commands/keys.ts:184
+#: app/src/commands/keys.ts:214
 msgid "The key text, or a path to a file holding it"
 msgstr "Der Schlüsseltext oder der Pfad zu einer Datei damit"
 
-#: app/src/commands/keys.ts:194 app/src/gui/session.ts:224
+#: app/src/commands/keys.ts:225 app/src/gui/session.ts:224
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
@@ -224,11 +233,11 @@ msgstr ""
 "Der Eintrag hat ein leeres p=: Die Domain hat diesen Schlüssel "
 "zurückgezogen, es gibt nichts zu speichern."
 
-#: app/src/commands/keys.ts:207
+#: app/src/commands/keys.ts:239
 msgid "Stored {name}: {algorithm} {bits} bit."
 msgstr "{name} gespeichert: {algorithm}, {bits} Bit."
 
-#: app/src/commands/keys.ts:216
+#: app/src/commands/keys.ts:248
 msgid ""
 "! The case already held a different key for this pair. Both are kept: this "
 "is either a key rotation or a forgery."
@@ -237,35 +246,39 @@ msgstr ""
 "bleiben erhalten: Das ist entweder eine Schlüsselrotation oder eine "
 "Fälschung."
 
-#: app/src/commands/keys.ts:235
+#: app/src/commands/keys.ts:268
 msgid ""
 "Look up missing keys over the network, after you confirm exactly what is sent"
 msgstr ""
 "Fehlende Schlüssel über das Netz abrufen, nachdem Sie bestätigt haben, was "
 "genau gesendet wird"
 
-#: app/src/commands/keys.ts:238
+#: app/src/commands/keys.ts:272
 msgid "A pair list (domain, selector per line)"
 msgstr "Eine Paarliste (Domain, Selektor je Zeile)"
 
-#: app/src/commands/keys.ts:240
+#: app/src/commands/keys.ts:274
 msgid "One <selector>._domainkey.<domain>. Repeatable."
 msgstr "Ein <Selektor>._domainkey.<Domain>. Wiederholbar."
 
-#: app/src/commands/keys.ts:245
+#: app/src/commands/keys.ts:279
 msgid "Ask archive.prove.email (a third party; its keys are unsigned)"
 msgstr ""
 "archive.prove.email fragen (ein Dritter; seine Schlüssel sind unsigniert)"
 
-#: app/src/commands/keys.ts:250
+#: app/src/commands/keys.ts:284
 msgid "Query the public DNS (the domain’s operator can see it)"
 msgstr "Das öffentliche DNS abfragen (der Betreiber der Domain kann es sehen)"
 
-#: app/src/commands/keys.ts:255
+#: app/src/commands/keys.ts:289
 msgid "Skip the confirmation prompt"
 msgstr "Die Rückfrage überspringen"
 
-#: app/src/commands/keys.ts:276
+#: app/src/commands/keys.ts:294
+msgid "Print one line per key stored or not found"
+msgstr "Eine Zeile je gespeichertem oder nicht gefundenem Schlüssel ausgeben"
+
+#: app/src/commands/keys.ts:319
 msgid ""
 "Choose where to look: --archive and/or --dns. Stamped never goes online "
 "unasked."
@@ -273,60 +286,60 @@ msgstr ""
 "Wählen Sie, wo gesucht wird: --archive und/oder --dns. Stamped geht nie "
 "ungefragt online."
 
-#: app/src/commands/keys.ts:287
+#: app/src/commands/keys.ts:332
 msgid "Every listed key is already stored."
 msgstr "Alle genannten Schlüssel sind bereits gespeichert."
 
-#: app/src/commands/keys.ts:298 app/src/lib/autofetch.ts:110
+#: app/src/commands/keys.ts:343 app/src/lib/autofetch.ts:151
 msgid "Skipped; nothing was sent."
 msgstr "Übersprungen; es wurde nichts gesendet."
 
-#: app/src/commands/keys.ts:317
+#: app/src/commands/keys.ts:364
 msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr "  gespeichert  {name}: {algorithm}, {bits} Bit, über {origin}{flag}"
 
-#: app/src/commands/keys.ts:322 app/src/lib/autofetch.ts:119
+#: app/src/commands/keys.ts:369 app/src/lib/autofetch.ts:161
 msgid " — DIFFERS from a stored key"
 msgstr " – WEICHT von einem gespeicherten Schlüssel ab"
 
-#: app/src/commands/keys.ts:344
+#: app/src/commands/keys.ts:395
 msgid "Print a request you can send to the provider for the historical key"
 msgstr ""
 "Eine Anfrage ausgeben, die Sie an den Anbieter nach dem historischen "
 "Schlüssel schicken können"
 
-#: app/src/commands/keys.ts:348
+#: app/src/commands/keys.ts:399
 msgid "The signing domain"
 msgstr "Die signierende Domain"
 
-#: app/src/commands/keys.ts:353
+#: app/src/commands/keys.ts:404
 msgid "One or more selectors"
 msgstr "Ein oder mehrere Selektoren"
 
-#: app/src/commands/keys.ts:359
+#: app/src/commands/keys.ts:410
 msgid "When the messages were sent, e.g. \"March 2019\""
 msgstr "Wann die Nachrichten gesendet wurden, z. B. \"März 2019\""
 
-#: app/src/commands/report.ts:30
+#: app/src/commands/report.ts:31
 msgid ""
 "Summarise a case folder: verdicts, and which keys would answer the most mail"
 msgstr ""
 "Einen Fallordner zusammenfassen: Befunde und die Schlüssel, die am meisten "
 "Mail klären"
 
-#: app/src/commands/report.ts:34
+#: app/src/commands/report.ts:34 app/src/commands/report.ts:35
 msgid "The case folder to report on"
 msgstr "Der Fallordner, über den berichtet wird"
 
-#: app/src/commands/report.ts:39
+#: app/src/commands/report.ts:37
 msgid "How many (domain, selector) pairs to list"
 msgstr "Wie viele (Domain, Selektor)-Paare aufgelistet werden"
 
-#: app/src/commands/report.ts:44
+#: app/src/commands/report.ts:42
 msgid "Print the report as JSON"
 msgstr "Den Bericht als JSON ausgeben"
 
-#: app/src/commands/report.ts:50
+#: app/src/commands/report.ts:48
 msgid ""
 "See how much of the case is still unverifiable, and which key would change "
 "that"
@@ -334,65 +347,73 @@ msgstr ""
 "Sehen, wie viel des Falls noch unprüfbar ist und welcher Schlüssel das "
 "ändern würde"
 
-#: app/src/commands/report.ts:67
+#: app/src/commands/report.ts:65
 msgid "{count} message, {bytes} bytes."
 msgid_plural "{count} messages, {bytes} bytes."
 msgstr[0] "{count} Nachricht, {bytes} Bytes."
 msgstr[1] "{count} Nachrichten, {bytes} Bytes."
 
-#: app/src/commands/report.ts:76
+#: app/src/commands/report.ts:74
 msgid "Dated {earliest} to {latest}."
 msgstr "Datiert von {earliest} bis {latest}."
 
-#: app/src/commands/report.ts:84 app/src/gui/window.ts:952
+#: app/src/commands/report.ts:82 app/src/gui/window.ts:952
 #: app/src/gui/window.blp:158
 msgid "Verdicts"
 msgstr "Befunde"
 
-#: app/src/commands/report.ts:94
+#: app/src/commands/report.ts:93
+msgid "Caveats on confirmed messages"
+msgstr "Einschränkungen bei bestätigten Nachrichten"
+
+#: app/src/commands/report.ts:101
 msgid "No DKIM signatures in this case, so no keys are needed."
 msgstr ""
 "Keine DKIM-Signaturen in diesem Fall, also werden keine Schlüssel gebraucht."
 
-#: app/src/commands/report.ts:97
+#: app/src/commands/report.ts:104
 msgid "Keys, by how much mail depends on them"
 msgstr "Schlüssel, nach der Menge Mail, die von ihnen abhängt"
 
-#: app/src/commands/report.ts:99
+#: app/src/commands/report.ts:106
 msgid "messages"
 msgstr "Mails"
 
-#: app/src/commands/report.ts:99
+#: app/src/commands/report.ts:106
 msgid "unverifiable"
 msgstr "unprüfbar"
 
-#: app/src/commands/report.ts:99
+#: app/src/commands/report.ts:106
 msgid "confirmed"
 msgstr "bestätigt"
 
-#: app/src/commands/report.ts:99
+#: app/src/commands/report.ts:106
+msgid "w/ caveats"
+msgstr "m. Einschr."
+
+#: app/src/commands/report.ts:106
 msgid "selector._domainkey.domain"
 msgstr "Selektor._domainkey.Domain"
 
-#: app/src/commands/reverify.ts:20
+#: app/src/commands/reverify.ts:22
 msgid "Re-verify messages with the keys the case now holds (offline)"
 msgstr "Nachrichten mit den Schlüsseln des Falls erneut prüfen (offline)"
 
-#: app/src/commands/reverify.ts:23
-msgid "The case folder"
-msgstr "Der Fallordner"
+#: app/src/commands/reverify.ts:25
+msgid "The case folder (default: .stamped)"
+msgstr "Der Fallordner (Standard: .stamped)"
 
-#: app/src/commands/reverify.ts:30
+#: app/src/commands/reverify.ts:32
 msgid "No stored key applies to an unverified message."
 msgstr "Kein gespeicherter Schlüssel betrifft eine ungeprüfte Nachricht."
 
-#: app/src/commands/search.ts:32
+#: app/src/commands/search.ts:33
 msgid "Search the messages in a case folder"
 msgstr "Die Nachrichten in einem Fallordner durchsuchen"
 
-#: app/src/commands/search.ts:36
-msgid "The case folder to search"
-msgstr "Der zu durchsuchende Fallordner"
+#: app/src/commands/search.ts:37
+msgid "The case folder, or the query when --case is given"
+msgstr "Der Fallordner, oder die Suchanfrage, wenn --case angegeben ist"
 
 #: app/src/commands/search.ts:42
 msgid ""
@@ -401,6 +422,10 @@ msgid ""
 msgstr ""
 "Wonach gesucht wird. Volltextsyntax: ein Wort, \"eine Wendung\", a AND b "
 "oder subject : Wort"
+
+#: app/src/commands/search.ts:46
+msgid "The case folder to search"
+msgstr "Der zu durchsuchende Fallordner"
 
 #: app/src/commands/search.ts:48
 msgid "How many matches to print"
@@ -414,22 +439,26 @@ msgstr "Die Treffer als JSON ausgeben"
 msgid "Find messages with \"invoice\" in the subject"
 msgstr "Nachrichten mit \"invoice\" im Betreff finden"
 
-#: app/src/commands/search.ts:73
+#: app/src/commands/search.ts:65
+msgid "No search query given. Use `stamped search <case> <query>`."
+msgstr "Keine Suchanfrage angegeben. Nutze `stamped search <Fall> <Anfrage>`."
+
+#: app/src/commands/search.ts:78
 msgid "No match."
 msgstr "Kein Treffer."
 
-#: app/src/commands/search.ts:77 app/src/gui/view/message.ts:160
+#: app/src/commands/search.ts:82 app/src/gui/view/message.ts:160
 msgid "The case holds {total} message."
 msgid_plural "The case holds {total} messages."
 msgstr[0] "Der Fall enthält {total} Nachricht."
 msgstr[1] "Der Fall enthält {total} Nachrichten."
 
-#: app/src/commands/search.ts:85
+#: app/src/commands/search.ts:90
 msgid "  from    {from}"
 msgstr "  von     {from}"
 
-#: app/src/commands/search.ts:85 app/src/commands/search.ts:86
-#: app/src/commands/search.ts:87 app/src/gui/view/message.ts:87
+#: app/src/commands/search.ts:90 app/src/commands/search.ts:91
+#: app/src/commands/search.ts:92 app/src/gui/view/message.ts:87
 #: app/src/gui/view/message.ts:88 app/src/gui/view/message.ts:94
 #: app/src/gui/view/message.ts:95 app/src/lib/evidence.ts:66
 #: app/src/lib/evidence.ts:69 app/src/lib/evidence.ts:70
@@ -437,21 +466,21 @@ msgstr "  von     {from}"
 msgid "(none)"
 msgstr "(keine)"
 
-#: app/src/commands/search.ts:86
+#: app/src/commands/search.ts:91
 msgid "  date    {date}"
 msgstr "  Datum   {date}"
 
-#: app/src/commands/search.ts:87
+#: app/src/commands/search.ts:92
 msgid "  subject {subject}"
 msgstr "  Betreff {subject}"
 
-#: app/src/commands/search.ts:91
+#: app/src/commands/search.ts:96
 msgid "{count} match."
 msgid_plural "{count} matches."
 msgstr[0] "{count} Treffer."
 msgstr[1] "{count} Treffer."
 
-#: app/src/commands/search.ts:116
+#: app/src/commands/search.ts:121
 msgid ""
 "Cannot read the search {query}. Put a phrase in double quotes, and use "
 "`column : word` to search one field."
@@ -484,7 +513,7 @@ msgstr "Befund und vollständige Belegkette als JSON ausgeben"
 msgid "Check one message against a key you have on disk"
 msgstr "Eine Nachricht gegen einen Schlüssel prüfen, der lokal vorliegt"
 
-#: app/src/commands/verify.ts:83 packages/import/src/source.ts:189
+#: app/src/commands/verify.ts:83 packages/import/src/source.ts:181
 msgid "Cannot read {path}."
 msgstr "{path} kann nicht gelesen werden."
 
@@ -597,62 +626,62 @@ msgid_plural "{count} could not be verified and have no verdict"
 msgstr[0] "{count} konnte nicht geprüft werden und hat keinen Befund"
 msgstr[1] "{count} konnten nicht geprüft werden und haben keinen Befund"
 
-#: app/src/gui/view/keys.ts:105
+#: app/src/gui/view/keys.ts:104
 msgid "{count} message waiting"
 msgid_plural "{count} messages waiting"
 msgstr[0] "{count} Nachricht wartet"
 msgstr[1] "{count} Nachrichten warten"
 
-#: app/src/gui/view/keys.ts:109
+#: app/src/gui/view/keys.ts:108
 msgid "Key stored"
 msgstr "Schlüssel gespeichert"
 
-#: app/src/gui/view/keys.ts:109
+#: app/src/gui/view/keys.ts:108
 msgid "Nothing waiting"
 msgstr "Nichts wartet"
 
-#: app/src/gui/view/keys.ts:115
+#: app/src/gui/view/keys.ts:114
 msgid "{messages} message signed with it"
 msgid_plural "{messages} messages signed with it"
 msgstr[0] "{messages} Nachricht ist damit signiert"
 msgstr[1] "{messages} Nachrichten sind damit signiert"
 
-#: app/src/gui/view/keys.ts:120
+#: app/src/gui/view/keys.ts:119
 msgid "{signed}; the key is in this case’s store."
 msgstr "{signed}; der Schlüssel liegt im Speicher dieses Falls."
 
-#: app/src/gui/view/keys.ts:121
+#: app/src/gui/view/keys.ts:120
 msgid "{signed}; none of them are waiting for this key."
 msgstr "{signed}; keine davon wartet auf diesen Schlüssel."
 
-#: app/src/gui/view/keys.ts:124
+#: app/src/gui/view/keys.ts:123
 msgid "{count} has no verdict without it"
 msgid_plural "{count} have no verdict without it"
 msgstr[0] "{count} hat ohne ihn keinen Befund"
 msgstr[1] "{count} haben ohne ihn keinen Befund"
 
-#: app/src/gui/view/keys.ts:140
+#: app/src/gui/view/keys.ts:139
 msgid "No signatures in this case, so no keys are needed."
 msgstr ""
 "Keine Signaturen in diesem Fall, also werden keine Schlüssel gebraucht."
 
-#: app/src/gui/view/keys.ts:143
+#: app/src/gui/view/keys.ts:142
 msgid "Every signature in this case has the key it needs."
 msgstr "Jede Signatur in diesem Fall hat den Schlüssel, den sie braucht."
 
-#: app/src/gui/view/keys.ts:149
+#: app/src/gui/view/keys.ts:148
 msgid "{missing} of {total} signing key is missing."
 msgid_plural "{missing} of {total} signing keys are missing."
 msgstr[0] "{missing} von {total} Signaturschlüssel fehlt."
 msgstr[1] "{missing} von {total} Signaturschlüsseln fehlen."
 
-#: app/src/gui/view/keys.ts:157
+#: app/src/gui/view/keys.ts:156
 msgid "{waiting} message has no verdict without a key."
 msgid_plural "{waiting} messages have no verdict without a key."
 msgstr[0] "{waiting} Nachricht hat ohne Schlüssel keinen Befund."
 msgstr[1] "{waiting} Nachrichten haben ohne Schlüssel keinen Befund."
 
-#: app/src/gui/view/keys.ts:180
+#: app/src/gui/view/keys.ts:179
 msgid ""
 "A DKIM public key, published by the signing domain as the DNS TXT record "
 "{name}. Anyone may read it — it is the public half, and it only ever lets "
@@ -671,21 +700,21 @@ msgstr ""
 "Betreiber kommen, aus einem fremden Archiv alter Einträge oder aus dem "
 "untersuchten Archiv selbst – und woher er kam, ist Teil des Befunds."
 
-#: app/src/gui/view/keys.ts:225
+#: app/src/gui/view/keys.ts:224
 msgid "{count} had no published record"
 msgid_plural "{count} had no published record"
 msgstr[0] "{count} hatte keinen veröffentlichten Eintrag"
 msgstr[1] "{count} hatten keinen veröffentlichten Eintrag"
 
-#: app/src/gui/view/keys.ts:230
+#: app/src/gui/view/keys.ts:229
 msgid "nothing was found"
 msgstr "nichts gefunden"
 
-#: app/src/gui/view/keys.ts:231
+#: app/src/gui/view/keys.ts:230
 msgid "Lookup done: {results}."
 msgstr "Abfrage abgeschlossen: {results}."
 
-#: app/src/gui/view/keys.ts:236
+#: app/src/gui/view/keys.ts:235
 msgid ""
 "{count} key differs from one this case already held — check which is the "
 "real one."
@@ -699,13 +728,13 @@ msgstr[1] ""
 "{count} Schlüssel weichen von welchen ab, die dieser Fall bereits hatte – "
 "prüfen Sie, welche die echten sind."
 
-#: app/src/gui/view/keys.ts:261
+#: app/src/gui/view/keys.ts:260
 msgid "{count} message re-verified; its verdict is unchanged."
 msgid_plural "{count} messages re-verified; no verdict changed."
 msgstr[0] "{count} Nachricht erneut geprüft; ihr Befund ist unverändert."
 msgstr[1] "{count} Nachrichten erneut geprüft; kein Befund hat sich geändert."
 
-#: app/src/gui/view/keys.ts:270
+#: app/src/gui/view/keys.ts:269
 msgid "{count} verdict changed."
 msgid_plural "{count} verdicts changed."
 msgstr[0] "{count} Befund hat sich geändert."
@@ -1098,25 +1127,41 @@ msgstr "stamped <Befehl> [Optionen]"
 msgid "Pick a command — try `stamped verify --help`."
 msgstr "Bitte einen Befehl wählen — etwa `stamped verify --help`."
 
-#: app/src/lib/autofetch.ts:38
+#: app/src/lib/autofetch.ts:59
+msgid "{count} keys stored from archive.prove.email"
+msgstr "{count} Schlüssel aus archive.prove.email gespeichert"
+
+#: app/src/lib/autofetch.ts:60
+msgid "{count} keys stored from the DNS"
+msgstr "{count} Schlüssel aus dem DNS gespeichert"
+
+#: app/src/lib/autofetch.ts:61
+msgid "{count} keys not found"
+msgstr "{count} Schlüssel nicht gefunden"
+
+#: app/src/lib/autofetch.ts:65
+msgid "{count} differ from a key already stored — compare them"
+msgstr "{count} weichen von einem bereits gespeicherten Schlüssel ab — vergleichen"
+
+#: app/src/lib/autofetch.ts:79
 msgid "{count} message re-verified, {changed} verdict changed."
 msgid_plural "{count} messages re-verified, {changed} verdicts changed."
 msgstr[0] "{count} Nachricht erneut geprüft, {changed} Befund geändert."
 msgstr[1] "{count} Nachrichten erneut geprüft, {changed} Befunde geändert."
 
-#: app/src/lib/autofetch.ts:50
+#: app/src/lib/autofetch.ts:91
 msgid "! {name} holds different keys; its messages were left as they are."
 msgstr ""
 "! {name} enthält verschiedene Schlüssel; die zugehörigen Nachrichten blieben "
 "unverändert."
 
-#: app/src/lib/autofetch.ts:57
+#: app/src/lib/autofetch.ts:98
 msgid "{failed} message could not be re-verified."
 msgid_plural "{failed} messages could not be re-verified."
 msgstr[0] "{failed} Nachricht konnte nicht erneut geprüft werden."
 msgstr[1] "{failed} Nachrichten konnten nicht erneut geprüft werden."
 
-#: app/src/lib/autofetch.ts:94
+#: app/src/lib/autofetch.ts:135
 msgid ""
 "{count} key is missing. No terminal and no --yes, so nothing was looked up; "
 "run `stamped keys fetch --case {path}`."
@@ -1130,7 +1175,7 @@ msgstr[1] ""
 "{count} Schlüssel fehlen. Kein Terminal und kein --yes, daher wurde nichts "
 "abgefragt; führe `stamped keys fetch --case {path}` aus."
 
-#: app/src/lib/autofetch.ts:116
+#: app/src/lib/autofetch.ts:158
 msgid "  stored  {name} via {origin}{flag}"
 msgstr "  gespeichert  {name} über {origin}{flag}"
 
@@ -1141,9 +1186,18 @@ msgstr ""
 "{path} ist kein Fallordner. Zuerst `stamped import {path} <Quelle>` "
 "ausführen."
 
+#: app/src/lib/case.ts:47
+msgid ""
+"No case folder given. Use `stamped {command} <case> …` or `--case <dir>`."
+msgstr "Kein Fallordner angegeben. Nutze `stamped {command} <Fall> …` oder `--case <Ordner>`."
+
 #: app/src/lib/consent.ts:16
 msgid "Send these lookups? [y/N] "
 msgstr "Diese Abfragen senden? [j/N] "
+
+#: app/src/lib/duration.ts:13
+msgid "Took {duration}."
+msgstr "Dauer: {duration}."
 
 #: app/src/lib/evidence.ts:48
 msgid "Signature {position} of {total} — {verdict}"
@@ -1276,6 +1330,14 @@ msgstr ""
 msgid "Cannot read the key file {path}."
 msgstr "Die Schlüsseldatei {path} kann nicht gelesen werden."
 
+#: app/src/lib/pairs.ts:9
+msgid "Pair file {path} does not exist."
+msgstr "Die Paarliste {path} existiert nicht."
+
+#: app/src/lib/pairs.ts:15
+msgid "Pair file {path}: {reason}"
+msgstr "Paarliste {path}: {reason}"
+
 #: app/src/lib/report.ts:51
 msgid "  caveat: {text}"
 msgstr "  Einschränkung: {text}"
@@ -1284,18 +1346,18 @@ msgstr "  Einschränkung: {text}"
 msgid "Cannot use {path}: {reason}"
 msgstr "{path} kann nicht verwendet werden: {reason}"
 
-#: packages/core/src/autokeys.ts:31
+#: packages/core/src/autokeys.ts:40
 msgid "The archive is asked first; the DNS only for the keys it does not have."
 msgstr ""
 "Zuerst wird das Archiv gefragt; das DNS nur für Schlüssel, die es nicht hat."
 
-#: packages/core/src/autokeys.ts:34
+#: packages/core/src/autokeys.ts:43
 msgid "Look up {count} missing key?"
 msgid_plural "Look up {count} missing keys?"
 msgstr[0] "{count} fehlenden Schlüssel abfragen?"
 msgstr[1] "{count} fehlende Schlüssel abfragen?"
 
-#: packages/core/src/autokeys.ts:39
+#: packages/core/src/autokeys.ts:48
 msgid "{name} — {count} message"
 msgid_plural "{name} — {count} messages"
 msgstr[0] "{name} — {count} Nachricht"
@@ -1333,23 +1395,23 @@ msgstr ""
 "Email-Projekts, also eines Dritten). Die signierende Domain erfährt nichts, "
 "der Dienst aber sieht, welche Domains Sie untersuchen."
 
-#: packages/core/src/keylookup.ts:48
+#: packages/core/src/keylookup.ts:79
 msgid "No consent for looking up {name}."
 msgstr "Keine Freigabe für die Abfrage von {name}."
 
-#: packages/core/src/keylookup.ts:67
+#: packages/core/src/keylookup.ts:105
 msgid "archive.prove.email answered HTTP {status}."
 msgstr "archive.prove.email antwortete mit HTTP {status}."
 
-#: packages/core/src/keylookup.ts:105
+#: packages/core/src/keylookup.ts:143
 msgid "The archive holds no key for it."
 msgstr "Das Archiv hat dafür keinen Schlüssel."
 
-#: packages/core/src/keylookup.ts:129
+#: packages/core/src/keylookup.ts:172
 msgid "The record is empty: the key was withdrawn."
 msgstr "Der Eintrag ist leer: Der Schlüssel wurde zurückgezogen."
 
-#: packages/core/src/keylookup.ts:129
+#: packages/core/src/keylookup.ts:172
 msgid "No key record found."
 msgstr "Kein Schlüsseleintrag gefunden."
 
@@ -1385,7 +1447,7 @@ msgstr "Nicht unterstützter Schlüsseltyp \"{type}\"."
 msgid "Nothing to read: the key text is empty."
 msgstr "Nichts zu lesen: Der Schlüsseltext ist leer."
 
-#: packages/core/src/keymaterial.ts:181
+#: packages/core/src/keymaterial.ts:180
 msgid ""
 "That is neither a PEM public key, a DKIM TXT record nor a base64 p= value."
 msgstr ""
@@ -1431,7 +1493,7 @@ msgstr ""
 "entfernt, sodass ich die Signaturen nicht gegen die aktuellen Einträge "
 "prüfen kann."
 
-#: packages/core/src/keytemplate.ts:38
+#: packages/core/src/keytemplate.ts:39
 msgid ""
 "Could you send me the public key records (the DNS TXT values) that were "
 "published for these selectors:"
@@ -1439,7 +1501,7 @@ msgstr ""
 "Könnten Sie mir die öffentlichen Schlüsseleinträge (die DNS-TXT-Werte) "
 "senden, die für diese Selektoren veröffentlicht waren:"
 
-#: packages/core/src/keytemplate.ts:45
+#: packages/core/src/keytemplate.ts:47
 msgid ""
 "If a selector was never used or the key cannot be disclosed, a short note "
 "saying so helps just as much. Public keys are not secret, and I only need "
@@ -1450,23 +1512,23 @@ msgstr ""
 "sind nicht geheim; ich brauche nur den Text des TXT-Eintrags, möglichst mit "
 "den Daten der Veröffentlichung und des Rückzugs."
 
-#: packages/core/src/keytemplate.ts:48
+#: packages/core/src/keytemplate.ts:50
 msgid "Thank you,"
 msgstr "Vielen Dank,"
 
-#: packages/core/src/keyvault.ts:202
+#: packages/core/src/keyvault.ts:204
 msgid "The key store file is not valid JSON."
 msgstr "Die Schlüsseldatei ist kein gültiges JSON."
 
-#: packages/core/src/keyvault.ts:206
+#: packages/core/src/keyvault.ts:208
 msgid "The key store file has an unknown format."
 msgstr "Die Schlüsseldatei hat ein unbekanntes Format."
 
-#: packages/core/src/keyvault.ts:221
+#: packages/core/src/keyvault.ts:223
 msgid "The key store file has a malformed entry for {name}."
 msgstr "Die Schlüsseldatei enthält einen fehlerhaften Eintrag für {name}."
 
-#: packages/core/src/keyvault.ts:282
+#: packages/core/src/keyvault.ts:284
 msgid "Pair list line {line}: expected domain and selector."
 msgstr "Paarliste, Zeile {line}: Domain und Selektor erwartet."
 
@@ -1573,7 +1635,7 @@ msgstr ""
 msgid "(unknown domain)"
 msgstr "(unbekannte Domain)"
 
-#: packages/core/src/verdict.ts:253
+#: packages/core/src/verdict.ts:254
 msgid ""
 "The signing domain is not the From domain, so the signature does not vouch "
 "for the author."
@@ -1581,19 +1643,19 @@ msgstr ""
 "Die Signatur-Domain ist nicht die Absenderdomain; die Signatur bürgt daher "
 "nicht für den Absender."
 
-#: packages/core/src/verdict.ts:261
+#: packages/core/src/verdict.ts:263
 msgid "No public key for this selector and domain."
 msgstr "Kein öffentlicher Schlüssel für diesen Selektor und diese Domain."
 
-#: packages/core/src/verdict.ts:263
+#: packages/core/src/verdict.ts:265
 msgid "The public key record is unusable."
 msgstr "Der Eintrag des öffentlichen Schlüssels ist nicht verwendbar."
 
-#: packages/core/src/verdict.ts:265
+#: packages/core/src/verdict.ts:267
 msgid "The DKIM-Signature header does not parse."
 msgstr "Die Kopfzeile DKIM-Signature lässt sich nicht auswerten."
 
-#: packages/core/src/verdict.ts:267
+#: packages/core/src/verdict.ts:269
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
@@ -1601,16 +1663,16 @@ msgstr ""
 "Der Schlüsseleintrag erlaubt diese Signatur nicht (Hash-Algorithmus oder "
 "Dienstart)."
 
-#: packages/core/src/verdict.ts:269
+#: packages/core/src/verdict.ts:271
 msgid "The signature is expired or its timestamp lies in the future."
 msgstr ""
 "Die Signatur ist abgelaufen, oder ihr Zeitstempel liegt in der Zukunft."
 
-#: packages/core/src/verdict.ts:271
+#: packages/core/src/verdict.ts:273
 msgid "The key lookup failed and may succeed later."
 msgstr "Die Schlüsselabfrage ist fehlgeschlagen und könnte später gelingen."
 
-#: packages/core/src/verdict.ts:273
+#: packages/core/src/verdict.ts:275
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 "Der Signaturalgorithmus oder der Schlüsseltyp wird hier nicht unterstützt."
@@ -1629,7 +1691,7 @@ msgstr "Der Index des Fallordners {path} kann nicht geöffnet werden."
 msgid "Cannot write into the case folder {path}."
 msgstr "In den Fallordner {path} kann nicht geschrieben werden."
 
-#: packages/verify/src/mailauth.ts:136
+#: packages/verify/src/mailauth.ts:137
 msgid "no key in the store"
 msgstr "kein Schlüssel im Speicher"
 
@@ -1707,6 +1769,11 @@ msgstr "Ordner importieren…"
 #: app/src/gui/window.blp:378
 msgid "About Stamped"
 msgstr "Über Poststempel"
+
+#~ msgid "An mbox file, a Maildir, a single .eml, or a directory of those"
+#~ msgstr ""
+#~ "Eine mbox-Datei, ein Maildir, eine einzelne .eml oder ein Verzeichnis "
+#~ "davon"
 
 #~ msgid "Key stored. Reopen a message to see its new verdict."
 #~ msgstr ""

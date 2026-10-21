@@ -29,9 +29,11 @@ app/src/lib/autofetch.ts
 app/src/lib/case.ts
 app/src/lib/consent.ts
 app/src/lib/dns.ts
+app/src/lib/duration.ts
 app/src/lib/evidence.ts
 app/src/lib/i18n.ts
 app/src/lib/keys.ts
+app/src/lib/pairs.ts
 app/src/lib/report.ts
 app/src/lib/vault.ts
 packages/core/src/autokeys.ts
