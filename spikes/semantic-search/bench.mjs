@@ -30,6 +30,7 @@
 //   --context <n>  embedding context size in tokens; default: llama.cpp's "auto", which GREW WITH THE RAM
 //                  of the machine it runs on — on a 64 GB box that is gigabytes of KV cache for a model
 //                  whose mails are 256 tokens long. Pass an explicit number to see the real footprint.
+//   --quality-only skip query latency, throughput and extrapolation; run only the quality part (all prompt/strip variants)
 //   --json <file>  write the full result as JSON — SEND THIS BACK, it carries the numbers
 
 import { statSync } from 'node:fs';
@@ -90,6 +91,7 @@ function parseArgs(argv) {
         docs: 200,
         context: undefined,
         json: undefined,
+        qualityOnly: false,
     };
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -103,11 +105,13 @@ function parseArgs(argv) {
             options.docs = Number.parseInt(argv[++i], 10);
         } else if (arg === '--context') {
             options.context = Number.parseInt(argv[++i], 10);
+        } else if (arg === '--quality-only') {
+            options.qualityOnly = true;
         } else if (arg === '--json') {
             options.json = argv[++i];
         } else if (arg === '--help' || arg === '-h') {
             console.log(
-                'usage: node bench.mjs [--model <key>]... [--cpu] [--threads <n>] [--docs <n>] [--context <n>] [--json <file>]',
+                'usage: node bench.mjs [--model <key>]... [--cpu] [--threads <n>] [--docs <n>] [--context <n>] [--quality-only] [--json <file>]',
             );
             process.exit(0);
         } else {
@@ -188,57 +192,126 @@ function checkVector(vector) {
     return { nonFinite, norm: Math.sqrt(sum) };
 }
 
+/** Deterministic PRNG (mulberry32): the bootstrap intervals must be the same on every run. */
+function seededRandom(seed) {
+    let state = seed >>> 0;
+    return () => {
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+const BOOTSTRAP_RESAMPLES = 2000;
+const BOOTSTRAP_SEED = 20261021;
+
+/** recall@k and MRR of a list of ranks (1-based; the right mail's position). */
+function summarize(ranks) {
+    const n = ranks.length;
+    const share = (predicate) => ranks.filter(predicate).length / n;
+    return {
+        queries: n,
+        recallAt1: share((rank) => rank <= 1),
+        recallAt3: share((rank) => rank <= 3),
+        recallAt10: share((rank) => rank <= 10),
+        mrr: ranks.reduce((sum, rank) => sum + 1 / rank, 0) / n,
+    };
+}
+
+/** 95 % percentile-bootstrap interval for recall@3 and MRR; resamples the queries, fixed seed. */
+function bootstrap(ranks) {
+    const random = seededRandom(BOOTSTRAP_SEED);
+    const recall3 = [];
+    const mrr = [];
+    for (let i = 0; i < BOOTSTRAP_RESAMPLES; i++) {
+        let hits = 0;
+        let reciprocal = 0;
+        for (let j = 0; j < ranks.length; j++) {
+            const rank = ranks[Math.floor(random() * ranks.length)];
+            if (rank <= 3) {
+                hits++;
+            }
+            reciprocal += 1 / rank;
+        }
+        recall3.push(hits / ranks.length);
+        mrr.push(reciprocal / ranks.length);
+    }
+    const interval = (values) => {
+        const sorted = values.sort((a, b) => a - b);
+        return [sorted[Math.floor(0.025 * sorted.length)], sorted[Math.ceil(0.975 * sorted.length) - 1]];
+    };
+    return {
+        recallAt3: interval(recall3),
+        mrr: interval(mrr),
+        resamples: BOOTSTRAP_RESAMPLES,
+        seed: BOOTSTRAP_SEED,
+    };
+}
+
 /**
  * Ranks every query against every document and reports the quality numbers a journalist cares about:
- * is the right mail FIRST (recall@1), is it in the top three (recall@3), and how good is the average
- * position (MRR). The per-language breakdown is what shows a model that only works in English.
+ * is the right mail FIRST (recall@1), in the top three, in the top ten, and how good is the average
+ * position (MRR). The per-language and per-tag breakdowns show where a model is weak (cross-language,
+ * hard distractors) and the bootstrap interval says how much a number can be trusted at this sample size.
  */
 function measureQuality(docVectors, queryVectors) {
     const ranks = [];
-    const perLang = {};
-
     for (let q = 0; q < pairs.length; q++) {
-        const queryVector = queryVectors[q];
-        const scores = docVectors.map((docVector) => cosine(queryVector, docVector));
+        const scores = docVectors.map((docVector) => cosine(queryVectors[q], docVector));
         const order = scores.map((score, index) => ({ score, index })).sort((a, b) => b.score - a.score);
-        const rank = order.findIndex((entry) => CORPUS[entry.index].id === pairs[q].expect) + 1;
-        ranks.push(rank);
-
-        const lang = pairs[q].lang;
-        perLang[lang] = perLang[lang] ?? {
-            queries: 0,
-            recallAt1: 0,
-            recallAt3: 0,
-            reciprocalRank: 0,
-            ranks: [],
-        };
-        perLang[lang].queries++;
-        perLang[lang].ranks.push(rank);
-        if (rank === 1) {
-            perLang[lang].recallAt1++;
-        }
-        if (rank <= 3) {
-            perLang[lang].recallAt3++;
-        }
-        perLang[lang].reciprocalRank += 1 / rank;
+        ranks.push(order.findIndex((entry) => CORPUS[entry.index].id === pairs[q].expect) + 1);
     }
 
-    for (const lang of Object.keys(perLang)) {
-        const entry = perLang[lang];
-        entry.recallAt1 = entry.recallAt1 / entry.queries;
-        entry.recallAt3 = entry.recallAt3 / entry.queries;
-        entry.mrr = entry.reciprocalRank / entry.queries;
-    }
+    const group = (key) => {
+        const out = {};
+        for (const value of new Set(pairs.map((pair) => pair[key]))) {
+            const groupRanks = ranks.filter((_, q) => pairs[q][key] === value);
+            out[value] = { ...summarize(groupRanks), ci95: bootstrap(groupRanks) };
+        }
+        return out;
+    };
 
     return {
-        queries: ranks.length,
-        recallAt1: ranks.filter((rank) => rank === 1).length / ranks.length,
-        recallAt3: ranks.filter((rank) => rank <= 3).length / ranks.length,
-        mrr: ranks.reduce((sum, rank) => sum + 1 / rank, 0) / ranks.length,
+        ...summarize(ranks),
+        ci95: bootstrap(ranks),
         ranks,
-        perLang,
+        perLang: group('lang'),
+        perTag: group('tag'),
     };
 }
+
+/**
+ * Drops what a reply drags along: the signature (from "-- " on), `>` quote lines, "On … wrote:" /
+ * "Am … schrieb …:" lines and an Outlook-style original-message header block. Deliberately simple —
+ * the point is to see whether stripping helps at all, not to ship a perfect quote parser.
+ */
+function stripReplyNoise(body) {
+    const cut = body.split(/\n-- ?\n/)[0];
+    return cut
+        .split('\n')
+        .filter(
+            (line) =>
+                !/^\s*>/.test(line) &&
+                !/^\s*(Am .+ schrieb .+:|On .+ wrote:)\s*$/.test(line) &&
+                !/^\s*-{3,}.*-{3,}\s*$/.test(line) &&
+                !/^\s*(Von|Gesendet|An|Betreff|From|Sent|To|Subject):/.test(line),
+        )
+        .join('\n')
+        .trim();
+}
+
+/**
+ * The quality variants. `prefix` uses the model's documented prompt format, otherwise the bare text;
+ * `strip` removes quotes and signatures from the body before embedding.
+ */
+const QUALITY_VARIANTS = [
+    { name: 'prefix+raw', prefix: true, strip: false },
+    { name: 'noprefix+raw', prefix: false, strip: false },
+    { name: 'prefix+strip', prefix: true, strip: true },
+    { name: 'noprefix+strip', prefix: false, strip: true },
+];
 
 /** Runs one model end to end: load, embed, rank, time. Never two models at once — the RAM budget is small. */
 async function runModel(key, spec, context) {
@@ -296,136 +369,136 @@ async function runModel(key, spec, context) {
         run.llamaMemoryBytes = { cpuRam: llamaMemory.cpuRam, gpuVram: llamaMemory.gpuVram };
 
         // ─── Quality ────────────────────────────────────────────────────────────────────────────────────
-        const docVectors = [];
-        const docSanity = { nonFinite: 0, zeroNorm: 0 };
-        for (const mail of CORPUS) {
-            const vector = [...(await embeddingContext.getEmbeddingFor(spec.doc(mail))).vector];
-            const check = checkVector(vector);
-            docSanity.nonFinite += check.nonFinite;
-            if (check.norm === 0) {
-                docSanity.zeroNorm++;
+        // Every variant embeds the whole corpus again: the prompt prefix and the stripping both change the
+        // text the model sees, so nothing can be shared between them.
+        const sanity = { vectors: 0, nonFiniteValues: 0, zeroNormVectors: 0 };
+        const embedAll = async (texts) => {
+            const vectors = [];
+            for (const text of texts) {
+                const vector = [...(await embeddingContext.getEmbeddingFor(text)).vector];
+                const check = checkVector(vector);
+                sanity.vectors++;
+                sanity.nonFiniteValues += check.nonFinite;
+                if (check.norm === 0) {
+                    sanity.zeroNormVectors++;
+                }
+                vectors.push(normalize(vector));
             }
-            docVectors.push(normalize(vector));
-        }
+            return vectors;
+        };
 
-        const queryVectors = [];
-        const querySanity = { nonFinite: 0, zeroNorm: 0 };
-        for (const pair of pairs) {
-            const vector = [...(await embeddingContext.getEmbeddingFor(spec.query(pair.query))).vector];
-            const check = checkVector(vector);
-            querySanity.nonFinite += check.nonFinite;
-            if (check.norm === 0) {
-                querySanity.zeroNorm++;
+        const variants = {};
+        for (const variant of QUALITY_VARIANTS) {
+            const docText = (mail) => {
+                const shown = variant.strip ? { ...mail, body: stripReplyNoise(mail.body) } : mail;
+                return variant.prefix ? spec.doc(shown) : `${shown.subject}\n${shown.body}`;
+            };
+            const queryText = (query) => (variant.prefix ? spec.query(query) : query);
+            const docVectors = await embedAll(CORPUS.map(docText));
+            const queryVectors = await embedAll(pairs.map((pair) => queryText(pair.query)));
+            run.dimensions = docVectors[0]?.length ?? null;
+            variants[variant.name] = { full: measureQuality(docVectors, queryVectors) };
+            if (spec.mrl256 && run.dimensions > 256) {
+                variants[variant.name].mrl256 = measureQuality(
+                    docVectors.map((vector) => truncate(vector, 256)),
+                    queryVectors.map((vector) => truncate(vector, 256)),
+                );
             }
-            queryVectors.push(normalize(vector));
+            console.log(`  variant ${variant.name} done`);
         }
+        run.sanity = { ...sanity, nan: sanity.nonFiniteValues > 0 };
+        // The documented format on the raw body stays the headline; the table below reads `full`/`mrl256`.
+        run.quality = { ...variants['prefix+raw'], variants };
 
-        run.dimensions = docVectors[0]?.length ?? null;
-        run.sanity = {
-            vectors: docVectors.length + queryVectors.length,
-            nonFiniteValues: docSanity.nonFinite + querySanity.nonFinite,
-            zeroNormVectors: docSanity.zeroNorm + querySanity.zeroNorm,
-            nan: docSanity.nonFinite + querySanity.nonFinite > 0,
-        };
+        if (!context.qualityOnly) {
+            // ─── Query latency ───────────────────────────────────────────────────────────────────────────────
+            // Two warm-up calls first: the first embedding of a process pays for buffer allocation and page
+            // faults, and a journalist's FIRST SEARCH must not be ten times slower than the second.
+            await embeddingContext.getEmbeddingFor(spec.query(pairs[0].query));
+            await embeddingContext.getEmbeddingFor(spec.query(pairs[0].query));
 
-        const quality = { full: measureQuality(docVectors, queryVectors) };
-        if (spec.mrl256 && run.dimensions > 256) {
-            quality.mrl256 = measureQuality(
-                docVectors.map((vector) => truncate(vector, 256)),
-                queryVectors.map((vector) => truncate(vector, 256)),
-            );
-        } else if (spec.mrl256) {
-            quality.mrl256 = null;
-        }
-        run.quality = quality;
-
-        // ─── Query latency ───────────────────────────────────────────────────────────────────────────────
-        // Two warm-up calls first: the first embedding of a process pays for buffer allocation and page
-        // faults, and a journalist's FIRST SEARCH must not be ten times slower than the second.
-        await embeddingContext.getEmbeddingFor(spec.query(pairs[0].query));
-        await embeddingContext.getEmbeddingFor(spec.query(pairs[0].query));
-
-        const latencies = [];
-        for (const pair of pairs) {
-            const start = performance.now();
-            await embeddingContext.getEmbeddingFor(spec.query(pair.query));
-            latencies.push(performance.now() - start);
-        }
-        run.queryLatencyMs = {
-            p50: percentile(latencies, 50),
-            p95: percentile(latencies, 95),
-            min: Math.min(...latencies),
-            max: Math.max(...latencies),
-            mean: latencies.reduce((sum, value) => sum + value, 0) / latencies.length,
-            all: latencies,
-        };
-
-        // ─── Throughput ──────────────────────────────────────────────────────────────────────────────────
-        // The number that decides whether this is usable at all: how long does indexing an archive take?
-        const throughputDocsList = throughputDocs(docs, 180);
-        const tokenCounts = throughputDocsList.map((mail) => model.tokenize(spec.doc(mail)).length);
-
-        // The 3-second calibration runs FIRST, on a cold model, because that is the situation the question
-        // is about: an indexer that wants to know "how fast is this machine?" before committing to a full
-        // run. It is the first three seconds of embedding, nothing else.
-        const calibrationStart = performance.now();
-        let calibrationTokens = 0;
-        let calibrationDocs = 0;
-        for (const mail of throughputDocsList) {
-            const before = performance.now() - calibrationStart;
-            await embeddingContext.getEmbeddingFor(spec.doc(mail));
-            const after = performance.now() - calibrationStart;
-            const tokenCount = tokenCounts[calibrationDocs];
-            calibrationDocs++;
-            if (after <= 3000) {
-                calibrationTokens += tokenCount;
-            } else {
-                // The document that straddles the 3-second mark is interpolated, so the result is a RATE
-                // and not an artefact of where a document happened to end.
-                const share = after > before ? (3000 - before) / (after - before) : 1;
-                calibrationTokens += tokenCount * Math.max(0, Math.min(1, share));
-                break;
+            const latencies = [];
+            for (const pair of pairs) {
+                const start = performance.now();
+                await embeddingContext.getEmbeddingFor(spec.query(pair.query));
+                latencies.push(performance.now() - start);
             }
+            run.queryLatencyMs = {
+                p50: percentile(latencies, 50),
+                p95: percentile(latencies, 95),
+                min: Math.min(...latencies),
+                max: Math.max(...latencies),
+                mean: latencies.reduce((sum, value) => sum + value, 0) / latencies.length,
+                all: latencies,
+            };
+
+            // ─── Throughput ──────────────────────────────────────────────────────────────────────────────────
+            // The number that decides whether this is usable at all: how long does indexing an archive take?
+            const throughputDocsList = throughputDocs(docs, 180);
+            const tokenCounts = throughputDocsList.map((mail) => model.tokenize(spec.doc(mail)).length);
+
+            // The 3-second calibration runs FIRST, on a cold model, because that is the situation the question
+            // is about: an indexer that wants to know "how fast is this machine?" before committing to a full
+            // run. It is the first three seconds of embedding, nothing else.
+            const calibrationStart = performance.now();
+            let calibrationTokens = 0;
+            let calibrationDocs = 0;
+            for (const mail of throughputDocsList) {
+                const before = performance.now() - calibrationStart;
+                await embeddingContext.getEmbeddingFor(spec.doc(mail));
+                const after = performance.now() - calibrationStart;
+                const tokenCount = tokenCounts[calibrationDocs];
+                calibrationDocs++;
+                if (after <= 3000) {
+                    calibrationTokens += tokenCount;
+                } else {
+                    // The document that straddles the 3-second mark is interpolated, so the result is a RATE
+                    // and not an artefact of where a document happened to end.
+                    const share = after > before ? (3000 - before) / (after - before) : 1;
+                    calibrationTokens += tokenCount * Math.max(0, Math.min(1, share));
+                    break;
+                }
+            }
+            const calibrationElapsedMs = performance.now() - calibrationStart;
+            const calibrationWindowSeconds = Math.min(3, calibrationElapsedMs / 1000);
+            const calibrationTokensPerSecond = calibrationTokens / calibrationWindowSeconds;
+
+            let totalTokens = 0;
+            const throughputStart = performance.now();
+            for (const mail of throughputDocsList) {
+                await embeddingContext.getEmbeddingFor(spec.doc(mail));
+                totalTokens += model.tokenize(spec.doc(mail)).length;
+            }
+            const throughputSeconds = (performance.now() - throughputStart) / 1000;
+            const tokensPerSecond = totalTokens / throughputSeconds;
+
+            run.throughput = {
+                docs,
+                targetWords: 180,
+                totalTokens,
+                totalSeconds: throughputSeconds,
+                tokensPerSecond,
+                calibration: {
+                    windowSeconds: calibrationWindowSeconds,
+                    elapsedMs: calibrationElapsedMs,
+                    docs: calibrationDocs,
+                    tokens: calibrationTokens,
+                    tokensPerSecond: calibrationTokensPerSecond,
+                },
+                first3sTokensPerSecond: calibrationTokensPerSecond,
+                ratio3s: calibrationTokensPerSecond / tokensPerSecond,
+                avgTokensPerDoc: totalTokens / docs,
+                docsPerSecond: docs / throughputSeconds,
+            };
+
+            // ─── Extrapolation ───────────────────────────────────────────────────────────────────────────────
+            const hoursFor = (count) => (count * EXTRAPOLATION_TOKENS_PER_MAIL) / tokensPerSecond / 3600;
+            run.extrapolation = {
+                tokensPerMail: EXTRAPOLATION_TOKENS_PER_MAIL,
+                hoursFor10k: hoursFor(10_000),
+                hoursFor100k: hoursFor(100_000),
+            };
         }
-        const calibrationElapsedMs = performance.now() - calibrationStart;
-        const calibrationWindowSeconds = Math.min(3, calibrationElapsedMs / 1000);
-        const calibrationTokensPerSecond = calibrationTokens / calibrationWindowSeconds;
-
-        let totalTokens = 0;
-        const throughputStart = performance.now();
-        for (const mail of throughputDocsList) {
-            await embeddingContext.getEmbeddingFor(spec.doc(mail));
-            totalTokens += model.tokenize(spec.doc(mail)).length;
-        }
-        const throughputSeconds = (performance.now() - throughputStart) / 1000;
-        const tokensPerSecond = totalTokens / throughputSeconds;
-
-        run.throughput = {
-            docs,
-            targetWords: 180,
-            totalTokens,
-            totalSeconds: throughputSeconds,
-            tokensPerSecond,
-            calibration: {
-                windowSeconds: calibrationWindowSeconds,
-                elapsedMs: calibrationElapsedMs,
-                docs: calibrationDocs,
-                tokens: calibrationTokens,
-                tokensPerSecond: calibrationTokensPerSecond,
-            },
-            first3sTokensPerSecond: calibrationTokensPerSecond,
-            ratio3s: calibrationTokensPerSecond / tokensPerSecond,
-            avgTokensPerDoc: totalTokens / docs,
-            docsPerSecond: docs / throughputSeconds,
-        };
-
-        // ─── Extrapolation ───────────────────────────────────────────────────────────────────────────────
-        const hoursFor = (count) => (count * EXTRAPOLATION_TOKENS_PER_MAIL) / tokensPerSecond / 3600;
-        run.extrapolation = {
-            tokensPerMail: EXTRAPOLATION_TOKENS_PER_MAIL,
-            hoursFor10k: hoursFor(10_000),
-            hoursFor100k: hoursFor(100_000),
-        };
     } catch (err) {
         run.errors.push({ stage: 'run', message: err.message, stack: err.stack });
         console.error(`\n!! ${key} failed: ${err.message}`);
@@ -554,6 +627,7 @@ async function main() {
             threads: options.threads,
             docs: options.docs,
             contextSize: options.context,
+            qualityOnly: options.qualityOnly,
         });
         runs.push(run);
         console.log(
@@ -585,6 +659,7 @@ async function main() {
             threads: options.threads ?? null,
             docs: options.docs,
             context: options.context ?? 'auto',
+            qualityOnly: options.qualityOnly,
         },
         modelDirectory: tilde(MODEL_DIR),
         runs,

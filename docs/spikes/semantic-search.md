@@ -52,6 +52,32 @@ additional restriction the AGPL forbids — and the Prohibited Use Policy bars p
 personal information without "all consents", which is what a leak is. EmbeddingGemma 2 is Apache
 2.0: ship the licence text and NOTICE with the model.
 
+## Quality check (v2)
+
+EmbeddingGemma 2 only, CPU, 4 threads, context 512, no throughput numbers
+(`results/linux-i9-10900k-quality-v2.json`). 80 queries (36 de→de, 28 en→en, 8 de→en, 8 en→de;
+67 plain, 6 with a close hard distractor, 7 lexical) among 80 target mails and 157 distractors,
+237 documents in all. Brackets are 95 % bootstrap intervals (2000 resamples, fixed seed).
+
+| Variant | dims | recall@1 | recall@3 | recall@10 | MRR |
+|---|---|---|---|---|---|
+| prefixes, raw body | 768 | 0.500 | 0.700 [0.600, 0.800] | 0.850 | 0.634 [0.551, 0.719] |
+| prefixes, raw body | 256 | 0.487 | 0.662 [0.563, 0.762] | 0.875 | 0.612 [0.531, 0.699] |
+| no prefixes, raw body | 768 | 0.425 | 0.700 [0.600, 0.800] | 0.863 | 0.594 [0.513, 0.676] |
+| no prefixes, raw body | 256 | 0.463 | 0.713 [0.613, 0.813] | 0.838 | 0.602 [0.518, 0.689] |
+| prefixes, quotes/signature stripped | 768 | 0.475 | 0.700 [0.600, 0.800] | 0.863 | 0.619 [0.538, 0.703] |
+| prefixes, quotes/signature stripped | 256 | 0.463 | 0.662 [0.563, 0.762] | 0.863 | 0.597 [0.516, 0.683] |
+| no prefixes, stripped | 768 | 0.400 | 0.700 [0.600, 0.800] | 0.850 | 0.579 [0.500, 0.660] |
+| no prefixes, stripped | 256 | 0.450 | 0.713 [0.625, 0.813] | 0.838 | 0.591 [0.507, 0.680] |
+
+Per language (prefixes, raw, 768d): en→en recall@3 0.89, de→de 0.61, de→en 0.63 (n=8),
+en→de 0.50 (n=8). Lexical queries: 1.00 on all measures; they say nothing about semantic quality.
+
+- **768 vs 256 dimensions:** all intervals overlap, so the data shows no difference worth acting on.
+- **Prefixes:** they raise recall@1 (0.50 vs 0.43) and MRR slightly at 768d, but the intervals overlap, so this is a hint, not a finding.
+- **Stripping:** it did not help (MRR 0.619 vs 0.634); only five target mails carry quotes, so the test has little power here.
+- **Overall:** the right mail is first in half the cases and in the top ten in about 85 %. German queries are clearly weaker than English ones, and the cross-language groups are too small (n=8) to be read.
+
 ## Open
 
 - **Metal on Apple Silicon**: throughput and, above all, NaN. The app guards against it either
