@@ -37,6 +37,7 @@ import {
     applyKeys,
     closeSession,
     createSession,
+    dropFilterCaches,
     importInto,
     isCaseFolder,
     knownKeyNames,
@@ -52,6 +53,7 @@ import {
     verifyStored,
     type CaseSession,
     type Query,
+    type ScopeRef,
 } from './session.ts';
 import { LOOKUP_CHANNELS, channelLabel, consentDialog } from './view/consent.ts';
 import {
@@ -75,11 +77,15 @@ import {
 import { escapeLine, noHyphens, plainText } from './view/markup.ts';
 import { emptyList, headerFields, messageRows, rawHeaders, type HeaderField } from './view/message.ts';
 import {
+    filterBannerText,
     overviewHeadline,
     overviewInsights,
     overviewNextStep,
     overviewStats,
+    tappedFilter,
     verdictShares,
+    type OverviewFilter,
+    type OverviewStat,
 } from './view/overview.ts';
 import { allSources, baseName, shortPath, sourceRows } from './view/sources.ts';
 import { explainVerdict, filterSummary, verdictFilters } from './view/verdict.ts';
@@ -232,10 +238,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** The open case. Undefined is the welcome page: a window with no case is not an error. */
     private session?: CaseSession;
 
-    /** The three halves of the query, kept apart so each filter can be cleared on its own. */
+    /** The filters of the query, kept apart so each can be cleared on its own. */
     private text = '';
     private verdict?: Verdict;
     private source?: string;
+    /** The scope an overview tap set: the same "where from" axis as `source`, never both. */
+    private scope?: ScopeRef;
 
     /** The hits behind the message rows, by row index. */
     private hits: SearchHit[] = [];
@@ -303,6 +311,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this._sourceList.connect('row-selected', (_list, row) => {
             if (this.rebuilding || row === null) return;
             this.source = this.sources[row.get_index()];
+            // An archive and a scope are the same question — "where did these messages come
+            // from" — and a list narrowed by both would be a set nobody picked a number for.
+            this.scope = undefined;
             this.fillList();
         });
 
@@ -311,6 +322,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.verdict = this.filters[row.get_index()];
             this.fillList();
         });
+
+        // The banner is the only place a scope is visible: the sidebar knows archives and
+        // verdicts, and a mailbox, a signer or one key is neither. Its button clears exactly
+        // what the banner says, so a verdict chosen afterwards stays chosen.
+        this._filterBanner.connect('button-clicked', () => this.clearScope());
 
         // The index handle is a connection held open on the case folder, and a folder with an
         // open connection cannot be unmounted — which is where a working copy of a leak lives.
@@ -352,12 +368,13 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.add_action(action);
     }
 
-    /** The query as the three filters currently stand. */
+    /** The query as the filters currently stand. */
     private currentQuery(): Query {
         return {
             ...(this.text.trim() !== '' ? { text: this.text } : {}),
             ...(this.verdict !== undefined ? { verdict: this.verdict } : {}),
             ...(this.source !== undefined ? { source: this.source } : {}),
+            ...(this.scope !== undefined ? { scope: this.scope } : {}),
         };
     }
 
@@ -371,6 +388,69 @@ export class StampedWindow extends Adw.ApplicationWindow {
         });
     }
 
+    /** Say what the list is narrowed to — or nothing: a banner without a scope is noise. */
+    private updateFilterBanner(): void {
+        const scope = this.scope;
+        this._filterBanner.set_revealed(scope !== undefined);
+        if (scope !== undefined) this._filterBanner.set_title(filterBannerText(scope));
+    }
+
+    /** The banner's button: back to the whole case, with the verdict and archive untouched. */
+    private clearScope(): void {
+        if (this.scope === undefined) return;
+        this.scope = undefined;
+        this.fillList();
+    }
+
+    /**
+     * Tap an overview number: the list shows the messages that number counted.
+     *
+     * The rule itself lives in `tappedFilter`, where it is data and therefore tested; what is
+     * left here is the window's half of the tap — turn to the list, put the sidebar back where
+     * the filters say, and fill the list from the new query.
+     */
+    private applyFilter(filter: OverviewFilter): void {
+        const next = tappedFilter(
+            {
+                ...(this.verdict !== undefined ? { verdict: this.verdict } : {}),
+                ...(this.source !== undefined ? { source: this.source } : {}),
+                ...(this.scope !== undefined ? { scope: this.scope } : {}),
+            },
+            filter,
+        );
+        this.verdict = next.verdict;
+        this.source = next.source;
+        this.scope = next.scope;
+        this.syncSidebarSelection();
+        // The tap came from the overview pane, and what it asked for is a list of messages —
+        // so the window turns to it instead of leaving the person on the page they tapped.
+        this._contentStack.set_visible_child_name('message');
+        this.fillList();
+    }
+
+    /** The overview as rows: a tap applies its filter, children make it an expander. */
+    private overviewRow(stat: OverviewStat): Adw.PreferencesRow {
+        if (stat.rows !== undefined && stat.rows.length > 0) {
+            const expander = new Adw.ExpanderRow({ title: stat.label });
+            if (stat.value !== '') expander.set_subtitle(stat.value);
+            for (const child of stat.rows) expander.add_row(this.overviewRow(child));
+            return expander;
+        }
+        const row = new Adw.ActionRow({ title: stat.label });
+        if (stat.value !== '') row.set_subtitle(noHyphens(stat.value));
+        row.add_css_class('property');
+        row.set_subtitle_selectable(true);
+        const filter = stat.filter;
+        if (filter !== undefined) {
+            // `activatable-row` stays on, which is what `activated` needs: a row that filters
+            // must not look inert, and its filter is the whole reason the row was tappable.
+            row.connect('activated', () => this.applyFilter(filter));
+        } else {
+            row.set_activatable(false);
+        }
+        return row;
+    }
+
     /** Take over a case: the old one is closed, the filters are dropped, the panes rebuild. */
     private adopt(session: CaseSession): void {
         if (this.session) closeSession(this.session);
@@ -378,6 +458,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.text = '';
         this.verdict = undefined;
         this.source = undefined;
+        this.scope = undefined;
         this.reading = undefined;
         this._searchEntry.set_text('');
         this._readerStack.set_visible_child_name('empty');
@@ -433,9 +514,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // A rebuild must not silently widen the view: whatever was filtered stays filtered, and
         // a source that an import removed from the log falls back to "all" rather than to a row
         // that now means something else.
+        this.rebuilding = false;
+        this.syncSidebarSelection();
+    }
+
+    /** Put the sidebar's selection back where the filters say, without re-running its handlers. */
+    private syncSidebarSelection(): void {
+        this.rebuilding = true;
         this.selectRow(this._sourceList, this.sources.indexOf(this.source));
         this.selectRow(this._verdictList, this.filters.indexOf(this.verdict));
-
         this.rebuilding = false;
     }
 
@@ -447,6 +534,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const session = this.session;
         if (!session) return;
         const query = this.currentQuery();
+        this.updateFilterBanner();
         this.hits = [];
         this.listOffset = 0;
         this.loadingMore = false;
@@ -1011,10 +1099,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
         const stats = new Adw.PreferencesGroup({ title: _('The case') });
         for (const stat of overviewStats(report)) {
-            const row = new Adw.ActionRow({ title: stat.label, subtitle: stat.value });
-            row.add_css_class('property');
-            row.set_subtitle_selectable(true);
-            stats.add(row);
+            stats.add(this.overviewRow(stat));
         }
         this._overviewBody.append(stats);
 
@@ -1042,6 +1127,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
             count.add_css_class('numeric');
             row.add_suffix(count);
             row.add_suffix(new StampedHelpButton(explainVerdict(share.verdict)));
+            // The bar and the count are decoration on one filterable row: tapping it shows the
+            // messages behind the number, which is the whole reason the count is there.
+            row.connect('activated', () => this.applyFilter({ verdict: share.verdict }));
             verdicts.add(row);
         }
         this._overviewBody.append(verdicts);
@@ -1052,10 +1140,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 ...(insight.description !== undefined ? { description: insight.description } : {}),
             });
             for (const stat of insight.rows) {
-                const row = new Adw.ActionRow({ title: stat.label, subtitle: stat.value });
-                row.add_css_class('property');
-                row.set_subtitle_selectable(true);
-                group.add(row);
+                group.add(this.overviewRow(stat));
             }
             this._overviewBody.append(group);
         }
@@ -1211,9 +1296,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
 
         this.importCancellable = undefined;
-        // The subprocess wrote its own index; drop our cached source filter and reload.
-        session.sourceScope?.scope.close();
-        session.sourceScope = undefined;
+        // The subprocess wrote its own index; drop our cached filters and reload.
+        dropFilterCaches(session);
         this.refresh();
         if (cancelled) showToast(_('Import cancelled. Run it again to resume.'), 5);
     }
