@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 21:23+0200\n"
+"POT-Creation-Date: 2026-10-21 21:39+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -260,7 +260,7 @@ msgstr "<Selektor>._domainkey.<Domain>"
 msgid "The key text, or a path to a file holding it"
 msgstr "Der Schlüsseltext oder der Pfad zu einer Datei damit"
 
-#: app/src/commands/keys.ts:225 app/src/gui/session.ts:479
+#: app/src/commands/keys.ts:225 app/src/gui/session.ts:486
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
@@ -422,7 +422,7 @@ msgstr[1] "{count} Nachrichten, {bytes} Bytes."
 msgid "Dated {earliest} to {latest}."
 msgstr "Datiert von {earliest} bis {latest}."
 
-#: app/src/commands/report.ts:82 app/src/gui/window.ts:1263
+#: app/src/commands/report.ts:82 app/src/gui/window.ts:1466
 #: app/src/gui/window.blp:171
 msgid "Verdicts"
 msgstr "Befunde"
@@ -555,7 +555,7 @@ msgstr "Keine Suchanfrage angegeben. Nutze `stamped search <Fall> <Anfrage>`."
 msgid "No match."
 msgstr "Kein Treffer."
 
-#: app/src/commands/search.ts:82 app/src/gui/view/message.ts:160
+#: app/src/commands/search.ts:82 app/src/gui/view/message.ts:212
 msgid "The case holds {total} message."
 msgid_plural "The case holds {total} messages."
 msgstr[0] "Der Fall enthält {total} Nachricht."
@@ -566,9 +566,9 @@ msgid "  from    {from}"
 msgstr "  von     {from}"
 
 #: app/src/commands/search.ts:90 app/src/commands/search.ts:91
-#: app/src/commands/search.ts:92 app/src/gui/view/message.ts:87
-#: app/src/gui/view/message.ts:88 app/src/gui/view/message.ts:94
-#: app/src/gui/view/message.ts:95 app/src/lib/evidence.ts:66
+#: app/src/commands/search.ts:92 app/src/gui/view/message.ts:88
+#: app/src/gui/view/message.ts:89 app/src/gui/view/message.ts:95
+#: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:66
 #: app/src/lib/evidence.ts:69 app/src/lib/evidence.ts:70
 #: app/src/lib/evidence.ts:71 app/src/lib/evidence.ts:73
 #: packages/core/src/explain.ts:58
@@ -672,11 +672,11 @@ msgstr ""
 "stammen aus einem Speicher, den Sie selbst füllen, also geht beim Ansehen "
 "einer Nachricht keine Abfrage an die signierende Domain."
 
-#: app/src/gui/session.ts:508
+#: app/src/gui/session.ts:515
 msgid "That key was already stored."
 msgstr "Dieser Schlüssel war bereits gespeichert."
 
-#: app/src/gui/session.ts:511
+#: app/src/gui/session.ts:518
 msgid ""
 "Stored — but this case already held a DIFFERENT key for that selector. "
 "Either the domain rotated it, or one of the two is not theirs. Check both "
@@ -687,7 +687,7 @@ msgstr ""
 "beiden stammt nicht von ihr. Prüfen Sie beide, bevor Sie sich auf die neuen "
 "Befunde verlassen."
 
-#: app/src/gui/session.ts:514
+#: app/src/gui/session.ts:521
 msgid "Key stored."
 msgstr "Schlüssel gespeichert."
 
@@ -926,69 +926,69 @@ msgid_plural "{count} verdicts changed."
 msgstr[0] "{count} Befund hat sich geändert."
 msgstr[1] "{count} Befunde haben sich geändert."
 
-#: app/src/gui/view/message.ts:44
+#: app/src/gui/view/message.ts:45 app/src/gui/view/message.ts:162
 msgid "(no subject)"
 msgstr "(kein Betreff)"
 
-#: app/src/gui/view/message.ts:45
+#: app/src/gui/view/message.ts:46
 msgid "(no sender)"
 msgstr "(kein Absender)"
 
-#: app/src/gui/view/message.ts:87
+#: app/src/gui/view/message.ts:88
 msgid "From"
 msgstr "Von"
 
-#: app/src/gui/view/message.ts:88
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:890
 msgid "To"
 msgstr "An"
 
-#: app/src/gui/view/message.ts:91
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:891
 msgid "Cc"
 msgstr "Kopie"
 
-#: app/src/gui/view/message.ts:94
+#: app/src/gui/view/message.ts:95
 msgid "Subject"
 msgstr "Betreff"
 
-#: app/src/gui/view/message.ts:95
+#: app/src/gui/view/message.ts:96
 msgid "Date"
 msgstr "Datum"
 
-#: app/src/gui/view/message.ts:99
+#: app/src/gui/view/message.ts:100
 msgid "Message-ID"
 msgstr "Message-ID"
 
-#: app/src/gui/view/message.ts:106
+#: app/src/gui/view/message.ts:107
 msgid "Size"
 msgstr "Größe"
 
-#: app/src/gui/view/message.ts:109
+#: app/src/gui/view/message.ts:110
 msgid "SHA-256"
 msgstr "SHA-256"
 
-#: app/src/gui/view/message.ts:155
+#: app/src/gui/view/message.ts:207
 msgid "No messages in this case"
 msgstr "Keine Nachrichten in diesem Fall"
 
-#: app/src/gui/view/message.ts:156
+#: app/src/gui/view/message.ts:208
 msgid "Import a mailbox or a folder of messages to begin."
 msgstr ""
 "Importieren Sie ein Postfach oder einen Ordner mit Nachrichten, um zu "
 "beginnen."
 
-#: app/src/gui/view/message.ts:165
+#: app/src/gui/view/message.ts:217
 msgid "No match"
 msgstr "Kein Treffer"
 
-#: app/src/gui/view/message.ts:166
+#: app/src/gui/view/message.ts:218
 msgid "Nothing in it matches this search."
 msgstr "Nichts darin passt zu dieser Suche."
 
-#: app/src/gui/view/message.ts:171
+#: app/src/gui/view/message.ts:223
 msgid "Nothing in this view"
 msgstr "Nichts in dieser Ansicht"
 
-#: app/src/gui/view/message.ts:172
+#: app/src/gui/view/message.ts:224
 msgid "No message has the verdict you filtered for."
 msgstr "Keine Nachricht hat den Befund, nach dem Sie gefiltert haben."
 
@@ -1306,56 +1306,124 @@ msgstr "Alle Nachrichten"
 msgid "{shown} of {total} shown"
 msgstr "{shown} von {total} angezeigt"
 
-#: app/src/gui/window.ts:223
+#: app/src/gui/window.ts:241
 msgid "All files"
 msgstr "Alle Dateien"
 
-#: app/src/gui/window.ts:225
+#: app/src/gui/window.ts:243
 msgid "Mail archives"
 msgstr "Mail-Archive"
 
-#: app/src/gui/window.ts:416
+#: app/src/gui/window.ts:436
 msgid "{path} is not a Stamped case folder."
 msgstr "{path} ist kein Poststempel-Fallordner."
 
-#: app/src/gui/window.ts:781
+#: app/src/gui/window.ts:801
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 "Die gespeicherte Kopie dieser Nachricht fehlt im Datenspeicher des Falls."
 
-#: app/src/gui/window.ts:842
+#: app/src/gui/window.ts:897
+msgid "The stored copy could not be read."
+msgstr "Die gespeicherte Kopie konnte nicht gelesen werden."
+
+#: app/src/gui/window.ts:908
+msgid "(no text)"
+msgstr "(kein Text)"
+
+#: app/src/gui/window.ts:916
+msgid "(unnamed)"
+msgstr "(ohne Namen)"
+
+#: app/src/gui/window.ts:933
+msgid "Open in Mail Program"
+msgstr "Im Mailprogramm öffnen"
+
+#: app/src/gui/window.ts:935
+msgid "Open a read-only copy in your mail program"
+msgstr "Eine schreibgeschützte Kopie im Mailprogramm öffnen"
+
+#: app/src/gui/window.ts:939
+msgid "Open With…"
+msgstr "Öffnen mit…"
+
+#: app/src/gui/window.ts:943
+msgid "Shown as text; the HTML was not rendered."
+msgstr "Als Text angezeigt; das HTML wurde nicht dargestellt."
+
+#: app/src/gui/window.ts:944
+msgid "The text is cut here; the stored message is longer."
+msgstr "Der Text ist hier abgeschnitten; die gespeicherte Nachricht ist länger."
+
+#: app/src/gui/window.ts:957
+msgid ""
+"A mail program that loads remote content tells the sender’s server that "
+"someone is reading this message right now. How a program displays a message "
+"proves nothing about it; the DKIM verdict does. The program gets a read-only "
+"copy outside the case."
+msgstr "Ein Mailprogramm, das externe Inhalte nachlädt, verrät dem Server des Absenders, dass jemand diese Nachricht gerade liest. Wie ein Programm eine Nachricht darstellt, beweist nichts über sie; das DKIM-Urteil schon. Das Programm erhält eine schreibgeschützte Kopie außerhalb des Falls."
+
+#: app/src/gui/window.ts:980
+msgid "Open in a mail program?"
+msgstr "Im Mailprogramm öffnen?"
+
+#: app/src/gui/window.ts:982
+msgid ""
+"A mail program may load remote content. Only the verdict proves a message "
+"genuine."
+msgstr "Das Mailprogramm kann externe Inhalte nachladen. Nur das Urteil belegt die Echtheit."
+
+#: app/src/gui/window.ts:985 app/src/gui/window.ts:1332
+#: app/src/gui/window.ts:1541 app/src/gui/window.ts:1615
+#: app/src/gui/window.blp:109
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: app/src/gui/window.ts:986
+msgid "Open"
+msgstr "Öffnen"
+
+#: app/src/gui/window.ts:995
+msgid "The stored copy of this message is missing."
+msgstr "Die gespeicherte Kopie dieser Nachricht fehlt."
+
+#: app/src/gui/window.ts:1003
+msgid "Could not open the message: {reason}"
+msgstr "Die Nachricht konnte nicht geöffnet werden: {reason}"
+
+#: app/src/gui/window.ts:1045
 msgid "Details"
 msgstr "Details"
 
-#: app/src/gui/window.ts:857 app/src/gui/window.blp:285
+#: app/src/gui/window.ts:1060 app/src/gui/window.blp:285
 msgid "Message"
 msgstr "Nachricht"
 
-#: app/src/gui/window.ts:876
+#: app/src/gui/window.ts:1079
 msgid "Copy"
 msgstr "Kopieren"
 
-#: app/src/gui/window.ts:885
+#: app/src/gui/window.ts:1088
 msgid "Copied."
 msgstr "Kopiert."
 
-#: app/src/gui/window.ts:901
+#: app/src/gui/window.ts:1104
 msgid "Evidence"
 msgstr "Belege"
 
-#: app/src/gui/window.ts:941
+#: app/src/gui/window.ts:1144
 msgid "Raw message"
 msgstr "Rohnachricht"
 
-#: app/src/gui/window.ts:943
+#: app/src/gui/window.ts:1146
 msgid "Copy the whole message, headers and body, as stored"
 msgstr "Die ganze Nachricht kopieren, Kopfzeilen und Text, wie gespeichert"
 
-#: app/src/gui/window.ts:945
+#: app/src/gui/window.ts:1148
 msgid "Header block, as stored"
 msgstr "Kopfzeilenblock, wie gespeichert"
 
-#: app/src/gui/window.ts:977
+#: app/src/gui/window.ts:1180
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
@@ -1363,37 +1431,37 @@ msgstr ""
 "Poststempel bleibt offline, bis Sie etwas anderes sagen, und zeigt Ihnen "
 "genau, was es senden würde."
 
-#: app/src/gui/window.ts:989
+#: app/src/gui/window.ts:1192
 msgid "Signing keys this case needs"
 msgstr "Signaturschlüssel, die dieser Fall braucht"
 
-#: app/src/gui/window.ts:1027
+#: app/src/gui/window.ts:1230
 msgid "Paste Key…"
 msgstr "Schlüssel einfügen…"
 
-#: app/src/gui/window.ts:1036
+#: app/src/gui/window.ts:1239
 msgid "Copy Request…"
 msgstr "Anfrage kopieren…"
 
-#: app/src/gui/window.ts:1037
+#: app/src/gui/window.ts:1240
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 "Eine Anfrage kopieren, die Sie an den Betreiber der signierenden Domain "
 "schicken können"
 
-#: app/src/gui/window.ts:1041
+#: app/src/gui/window.ts:1244
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr "Anfrage kopiert. Fügen Sie sie in eine Mail an den Betreiber ein."
 
-#: app/src/gui/window.ts:1086
+#: app/src/gui/window.ts:1289
 msgid "Look Up Missing Keys…"
 msgstr "Fehlende Schlüssel abfragen…"
 
-#: app/src/gui/window.ts:1108
+#: app/src/gui/window.ts:1311
 msgid "Paste the key for {name}"
 msgstr "Den Schlüssel für {name} einfügen"
 
-#: app/src/gui/window.ts:1110
+#: app/src/gui/window.ts:1313
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
@@ -1403,20 +1471,15 @@ msgstr ""
 "Wert. Poststempel erkennt selbst, was es ist. Ein leeres p= ist ein "
 "Widerruf, kein Schlüssel, und wird abgelehnt."
 
-#: app/src/gui/window.ts:1129 app/src/gui/window.ts:1338
-#: app/src/gui/window.ts:1412 app/src/gui/window.blp:109
-msgid "Cancel"
-msgstr "Abbrechen"
-
-#: app/src/gui/window.ts:1130
+#: app/src/gui/window.ts:1333
 msgid "Store Key"
 msgstr "Schlüssel speichern"
 
-#: app/src/gui/window.ts:1256
+#: app/src/gui/window.ts:1459
 msgid "The case"
 msgstr "Der Fall"
 
-#: app/src/gui/window.ts:1265
+#: app/src/gui/window.ts:1468
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
@@ -1425,15 +1488,15 @@ msgstr ""
 "Ergebnis, und die Zeile, die am häufigsten auf null steht, ist die, die "
 "sagt, dass keine Manipulation gefunden wurde."
 
-#: app/src/gui/window.ts:1314
+#: app/src/gui/window.ts:1517
 msgid "Open Case Folder"
 msgstr "Fallordner öffnen"
 
-#: app/src/gui/window.ts:1330
+#: app/src/gui/window.ts:1533
 msgid "Create a new case here?"
 msgstr "Hier einen neuen Fall anlegen?"
 
-#: app/src/gui/window.ts:1333
+#: app/src/gui/window.ts:1536
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
@@ -1442,27 +1505,27 @@ msgstr ""
 "ein Speicher für die Rohnachrichten und ein Suchindex hineingeschrieben. Es "
 "wird nichts irgendwohin gesendet."
 
-#: app/src/gui/window.ts:1337
+#: app/src/gui/window.ts:1540
 msgid "Create Case"
 msgstr "Fall anlegen"
 
-#: app/src/gui/window.ts:1362
+#: app/src/gui/window.ts:1565
 msgid "Imported."
 msgstr "Importiert."
 
-#: app/src/gui/window.ts:1443
+#: app/src/gui/window.ts:1646
 msgid "Import a Mail Folder"
 msgstr "Einen Mail-Ordner importieren"
 
-#: app/src/gui/window.ts:1443
+#: app/src/gui/window.ts:1646
 msgid "Import Mail Archives"
 msgstr "Mail-Archive importieren"
 
-#: app/src/gui/window.ts:1477
+#: app/src/gui/window.ts:1680
 msgid "That did not work"
 msgstr "Das hat nicht geklappt"
 
-#: app/src/gui/window.ts:1477
+#: app/src/gui/window.ts:1680
 msgid "Close"
 msgstr "Schließen"
 
