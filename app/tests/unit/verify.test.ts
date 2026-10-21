@@ -46,11 +46,33 @@ const EXPECTED: ReadonlyArray<{ file: string; verdict: Verdict; caveats: Caveat[
     { file: 'aligned-subdomain.eml', verdict: 'confirmed', caveats: [] },
 ];
 
+/** The message with every CRLF turned into a bare LF, as an mbox from a Unix MTA stores it. */
+function withBareLf(raw: Uint8Array): Uint8Array {
+    const out: number[] = [];
+    for (let i = 0; i < raw.length; i++) {
+        if (raw[i] === 13 && raw[i + 1] === 10) continue;
+        out.push(raw[i] as number);
+    }
+    return Uint8Array.from(out);
+}
+
 async function classify(file: string, keys = fixtureKeys()) {
     return classifyMessage(await verifyMessage(fixture(file), { keys }));
 }
 
 export default async () => {
+    await describe('line ends', async () => {
+        for (const expected of EXPECTED) {
+            await it(`reads ${expected.file} the same with bare LF line ends`, async () => {
+                const keys = fixtureKeys();
+                const lf = classifyMessage(await verifyMessage(withBareLf(fixture(expected.file)), { keys }));
+                const crlf = await classify(expected.file);
+                expect(lf.verdict).toBe(crlf.verdict);
+                expect([...lf.caveats].sort().join(',')).toBe([...crlf.caveats].sort().join(','));
+            });
+        }
+    });
+
     await describe('verdicts over signed fixtures', async () => {
         for (const expected of EXPECTED) {
             await it(`reads ${expected.file} as ${expected.verdict}`, async () => {

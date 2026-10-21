@@ -16,6 +16,7 @@ import {
     addressDomain,
     decodeBase64,
     decodeEncodedWords,
+    decodeLatin1,
     decodeQuotedPrintable,
     encodeLatin1,
     headerValue,
@@ -148,6 +149,29 @@ export default async () => {
             // generator relies on the same strict rule.
             const text = `${SEPARATOR}Subject: Quoting\n\n>${escaped}\n`;
             expect(texts(split(text))[0]).toBe(`Subject: Quoting\n\n${body}`);
+        });
+    });
+
+    await describe('latin-1 view', async () => {
+        await it('reads ASCII, 8-bit bytes and an input larger than one chunk the same way', async () => {
+            const ascii = encodeLatin1('plain ASCII text\r\n');
+            expect(decodeLatin1(ascii)).toBe('plain ASCII text\r\n');
+            const eightBit = Uint8Array.from([0x41, 0xe4, 0xff, 0x80, 0x00, 0x7f]);
+            expect(decodeLatin1(eightBit)).toBe('A\u00e4\u00ff\u0080\u0000\u007f');
+            const big = new Uint8Array(50_000).map((_, i) => (i % 7 === 0 ? 0xe9 : 0x61 + (i % 20)));
+            const text = decodeLatin1(big);
+            expect(text.length).toBe(big.length);
+            expect(text.charCodeAt(49_999)).toBe(big[49_999] as number);
+            expect(text.charCodeAt(0)).toBe(0xe9);
+        });
+
+        await it('keeps a UTF-8 byte order mark as three characters instead of dropping it', async () => {
+            expect(decodeLatin1(Uint8Array.from([0xef, 0xbb, 0xbf, 0x41]))).toBe('\u00ef\u00bb\u00bfA');
+        });
+
+        await it('does not read a valid UTF-8 sequence as one character', async () => {
+            expect(decodeLatin1(encodeLatin1('x')).length).toBe(1);
+            expect(decodeLatin1(Uint8Array.from([0xc3, 0xa4])).length).toBe(2);
         });
     });
 
