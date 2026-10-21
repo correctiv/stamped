@@ -109,6 +109,24 @@ export default async () => {
             );
         });
 
+        await it('keeps the blank lines of a CRLF archive byte for byte', async () => {
+            // A blank line held back for the separator rule used to come back as a bare LF, so
+            // every CRLF message with a blank line in it — every message — was stored altered.
+            const sep = SEPARATOR.replace('\n', '\r\n');
+            const second = SECOND.replace('\n', '\r\n');
+            const text = `${sep}Subject: One\r\n\r\nbody\r\n\r\n\r\nend\r\n\r\n\r\n${second}Subject: Two\r\n\r\nx\r\n\r\n`;
+            const expected = ['Subject: One\r\n\r\nbody\r\n\r\n\r\nend\r\n\r\n', 'Subject: Two\r\n\r\nx\r\n'];
+            expect(texts(split(text))).toStrictEqual(expected);
+            for (const chunk of [1, 2, 3, 7, 64]) {
+                expect(texts(split(text, { chunk }))).toStrictEqual(expected);
+            }
+        });
+
+        await it('keeps mixed blank lines as they were', async () => {
+            const text = `${SEPARATOR}Subject: One\n\nbody\r\n\n\r\nend\n\r\n`;
+            expect(texts(split(text))[0]).toBe('Subject: One\n\nbody\r\n\n\r\nend\n');
+        });
+
         await it('ignores whatever precedes the first separator', async () => {
             expect(split(`a stray note\n\n${SEPARATOR}Subject: One\n\nbody\n`).length).toBe(1);
         });
