@@ -19,6 +19,7 @@ import throughput from './unit/throughput.test.ts';
 import people from './unit/people.test.ts';
 import status from './unit/status.test.ts';
 import view from './unit/view.test.ts';
+import reading from './unit/reading.test.ts';
 import semantic from './unit/semantic.test.ts';
 import llamaPrompts from './unit/llama-prompts.test.ts';
 
@@ -39,6 +40,7 @@ run({
     people,
     status,
     view,
+    reading,
     semantic,
     llamaPrompts,
 });

@@ -50,13 +50,13 @@ export function messageText(raw: Uint8Array): string {
 }
 
 /** `Content-Type`, with its parameters, lowercased type and all. */
-interface ContentType {
+export interface ContentType {
     readonly type: string;
     readonly boundary?: string;
     readonly charset?: string;
 }
 
-function contentType(fields: ReturnType<typeof parseHeaderFields>): ContentType {
+export function contentType(fields: ReturnType<typeof parseHeaderFields>): ContentType {
     // The RAW value, not the encoded-word-decoded one: a boundary is never an encoded word, and
     // decoding first could alter the delimiter the body is actually split on.
     const raw = fields.find((field) => field.lower === 'content-type')?.value ?? '';
@@ -70,13 +70,13 @@ function contentType(fields: ReturnType<typeof parseHeaderFields>): ContentType 
  * RFC 2231 continuations (`name*0=`, `name*=utf-8''…`) are not reassembled. For `boundary` they
  * are vanishingly rare and for `charset` the fallback is Latin-1, which still yields text.
  */
-function parameter(value: string, name: string): string | undefined {
+export function parameter(value: string, name: string): string | undefined {
     const match = new RegExp(`;\\s*${name}\\s*=\\s*("([^"]*)"|[^;\\s]+)`, 'i').exec(value);
     const found = match?.[2] ?? match?.[1];
     return found === undefined ? undefined : found.trim();
 }
 
-function transferEncoding(fields: ReturnType<typeof parseHeaderFields>): string {
+export function transferEncoding(fields: ReturnType<typeof parseHeaderFields>): string {
     return (headerValue(fields, 'content-transfer-encoding') ?? '').trim().toLowerCase();
 }
 
@@ -123,7 +123,7 @@ function collectText(
 }
 
 /** Undo the content-transfer-encoding. Anything unrecognised is already bytes. */
-function decodeBody(body: Uint8Array, encoding: string): Uint8Array {
+export function decodeBody(body: Uint8Array, encoding: string): Uint8Array {
     if (encoding === 'base64') return decodeBase64(decodeLatin1(body));
     if (encoding === 'quoted-printable') return decodeQuotedPrintable(decodeLatin1(body));
     return body;
@@ -136,7 +136,7 @@ function decodeBody(body: Uint8Array, encoding: string): Uint8Array {
  * both are text for clients that cannot read MIME, and "This is a multi-part message in MIME
  * format." in every message would be a token in every message.
  */
-function splitParts(body: Uint8Array, boundary: string): Uint8Array[] {
+export function splitParts(body: Uint8Array, boundary: string): Uint8Array[] {
     const text = decodeLatin1(body);
     const delimiter = `--${boundary}`;
     const parts: Uint8Array[] = [];
