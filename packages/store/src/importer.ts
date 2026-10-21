@@ -337,10 +337,14 @@ export async function importSources(
                                     { fresh: true },
                                 );
                                 indexed++;
-                            } catch {
+                            } catch (error) {
                                 // Stored and logged already, so the evidence is safe; only the verdict
-                                // is missing. Reported as a count rather than swallowed.
+                                // is missing. Reported as a count rather than swallowed. The hash as
+                                // path is deliberate — an index error has no file, the hash is the
+                                // nearest location there is. The reason goes with it, because a
+                                // failure that shows up only as a number is not debuggable.
                                 failed++;
+                                failures.push({ path: entry.hash, reason: reasonOf(error) });
                             }
                         }
                         done++;
