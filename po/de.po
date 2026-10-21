@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
-"Report-Msgid-Bugs-To: https://github.com/correctiv/stamped/issues\n"
-"POT-Creation-Date: 2026-10-20 22:22+0200\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-21 09:12+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -43,8 +43,11 @@ msgstr ""
 "oder mboxo"
 
 #: app/src/commands/import.ts:64
-msgid "Look up missing keys after the import (asks first); --no-lookup skips it"
-msgstr "Fehlende Schlüssel nach dem Import abfragen (mit Rückfrage); --no-lookup überspringt das"
+msgid ""
+"Look up missing keys after the import (asks first); --no-lookup skips it"
+msgstr ""
+"Fehlende Schlüssel nach dem Import abfragen (mit Rückfrage); --no-lookup "
+"überspringt das"
 
 #: app/src/commands/import.ts:69
 msgid "Accept the key lookup without asking"
@@ -172,7 +175,7 @@ msgstr ""
 msgid "Print JSON"
 msgstr "JSON ausgeben"
 
-#: app/src/commands/keys.ts:124
+#: app/src/commands/keys.ts:124 app/src/gui/view/keys.ts:218
 msgid "{count} key stored"
 msgid_plural "{count} keys stored"
 msgstr[0] "{count} Schlüssel gespeichert"
@@ -213,7 +216,7 @@ msgstr "<Selektor>._domainkey.<Domain>"
 msgid "The key text, or a path to a file holding it"
 msgstr "Der Schlüsseltext oder der Pfad zu einer Datei damit"
 
-#: app/src/commands/keys.ts:194
+#: app/src/commands/keys.ts:194 app/src/gui/session.ts:224
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
@@ -341,7 +344,8 @@ msgstr[1] "{count} Nachrichten, {bytes} Bytes."
 msgid "Dated {earliest} to {latest}."
 msgstr "Datiert von {earliest} bis {latest}."
 
-#: app/src/commands/report.ts:84
+#: app/src/commands/report.ts:84 app/src/gui/window.ts:952
+#: app/src/gui/window.blp:158
 msgid "Verdicts"
 msgstr "Befunde"
 
@@ -414,7 +418,7 @@ msgstr "Nachrichten mit \"invoice\" im Betreff finden"
 msgid "No match."
 msgstr "Kein Treffer."
 
-#: app/src/commands/search.ts:77
+#: app/src/commands/search.ts:77 app/src/gui/view/message.ts:160
 msgid "The case holds {total} message."
 msgid_plural "The case holds {total} messages."
 msgstr[0] "Der Fall enthält {total} Nachricht."
@@ -425,9 +429,11 @@ msgid "  from    {from}"
 msgstr "  von     {from}"
 
 #: app/src/commands/search.ts:85 app/src/commands/search.ts:86
-#: app/src/commands/search.ts:87 app/src/lib/report.ts:60
-#: app/src/lib/report.ts:63 app/src/lib/report.ts:64 app/src/lib/report.ts:65
-#: app/src/lib/report.ts:67
+#: app/src/commands/search.ts:87 app/src/gui/view/message.ts:87
+#: app/src/gui/view/message.ts:88 app/src/gui/view/message.ts:94
+#: app/src/gui/view/message.ts:95 app/src/lib/evidence.ts:66
+#: app/src/lib/evidence.ts:69 app/src/lib/evidence.ts:70
+#: app/src/lib/evidence.ts:71 app/src/lib/evidence.ts:73
 msgid "(none)"
 msgstr "(keine)"
 
@@ -482,6 +488,608 @@ msgstr "Eine Nachricht gegen einen Schlüssel prüfen, der lokal vorliegt"
 msgid "Cannot read {path}."
 msgstr "{path} kann nicht gelesen werden."
 
+#: app/src/gui/main.ts:83
+msgctxt "application name"
+msgid "Stamped"
+msgstr "Poststempel"
+
+#: app/src/gui/main.ts:92
+msgid ""
+"Verifies the DKIM signatures of an email archive and says what each "
+"signature actually covers. It works offline: public keys come from a store "
+"you fill, so examining a message sends no lookup to the signing domain."
+msgstr ""
+"Prüft die DKIM-Signaturen eines E-Mail-Archivs und sagt, was jede Signatur "
+"tatsächlich abdeckt. Die Prüfung läuft offline: Öffentliche Schlüssel "
+"stammen aus einem Speicher, den Sie selbst füllen, also geht beim Ansehen "
+"einer Nachricht keine Abfrage an die signierende Domain."
+
+#: app/src/gui/session.ts:253
+msgid "That key was already stored."
+msgstr "Dieser Schlüssel war bereits gespeichert."
+
+#: app/src/gui/session.ts:256
+msgid ""
+"Stored — but this case already held a DIFFERENT key for that selector. "
+"Either the domain rotated it, or one of the two is not theirs. Check both "
+"before you rely on the new verdicts."
+msgstr ""
+"Gespeichert – aber dieser Fall enthielt bereits einen ANDEREN Schlüssel für "
+"diesen Selektor. Entweder hat die Domain ihn gewechselt, oder einer von "
+"beiden stammt nicht von ihr. Prüfen Sie beide, bevor Sie sich auf die neuen "
+"Befunde verlassen."
+
+#: app/src/gui/session.ts:259
+msgid "Key stored."
+msgstr "Schlüssel gespeichert."
+
+#: app/src/gui/view/consent.ts:40
+msgid "Query the DNS"
+msgstr "Das DNS abfragen"
+
+#: app/src/gui/view/consent.ts:42
+msgid "Ask archive.prove.email"
+msgstr "archive.prove.email fragen"
+
+#: app/src/gui/view/consent.ts:71
+msgid "Stay offline"
+msgstr "Offline bleiben"
+
+#: app/src/gui/view/evidence.ts:74
+msgid "No DKIM signature was found in this message."
+msgstr "In dieser Nachricht wurde keine DKIM-Signatur gefunden."
+
+#: app/src/gui/view/evidence.ts:75
+msgid "{count} signature examined."
+msgid_plural "{count} signatures examined."
+msgstr[0] "{count} Signatur geprüft."
+msgstr[1] "{count} Signaturen geprüft."
+
+#: app/src/gui/view/evidence.ts:91
+msgid "{count} caveat"
+msgid_plural "{count} caveats"
+msgstr[0] "{count} Einschränkung"
+msgstr[1] "{count} Einschränkungen"
+
+#: app/src/gui/view/format.ts:35
+msgid "(no date)"
+msgstr "(kein Datum)"
+
+#: app/src/gui/view/format.ts:57
+msgid "{n} B"
+msgstr "{n} B"
+
+#: app/src/gui/view/format.ts:58
+msgid "{n} kB"
+msgstr "{n} kB"
+
+#: app/src/gui/view/format.ts:58
+msgid "{n} MB"
+msgstr "{n} MB"
+
+#: app/src/gui/view/format.ts:58
+msgid "{n} GB"
+msgstr "{n} GB"
+
+#: app/src/gui/view/format.ts:58
+msgid "{n} TB"
+msgstr "{n} TB"
+
+#: app/src/gui/view/import.ts:23
+msgid "Nothing imported: no messages were found in it."
+msgstr "Nichts importiert: Es wurden keine Nachrichten darin gefunden."
+
+#: app/src/gui/view/import.ts:26
+msgid "{count} new message"
+msgid_plural "{count} new messages"
+msgstr[0] "{count} neue Nachricht"
+msgstr[1] "{count} neue Nachrichten"
+
+#: app/src/gui/view/import.ts:33
+msgid "{count} was already in the case"
+msgid_plural "{count} were already in the case"
+msgstr[0] "{count} war schon im Fall"
+msgstr[1] "{count} waren schon im Fall"
+
+#: app/src/gui/view/import.ts:42
+msgid "{count} could not be verified and has no verdict"
+msgid_plural "{count} could not be verified and have no verdict"
+msgstr[0] "{count} konnte nicht geprüft werden und hat keinen Befund"
+msgstr[1] "{count} konnten nicht geprüft werden und haben keinen Befund"
+
+#: app/src/gui/view/keys.ts:105
+msgid "{count} message waiting"
+msgid_plural "{count} messages waiting"
+msgstr[0] "{count} Nachricht wartet"
+msgstr[1] "{count} Nachrichten warten"
+
+#: app/src/gui/view/keys.ts:109
+msgid "Key stored"
+msgstr "Schlüssel gespeichert"
+
+#: app/src/gui/view/keys.ts:109
+msgid "Nothing waiting"
+msgstr "Nichts wartet"
+
+#: app/src/gui/view/keys.ts:115
+msgid "{messages} message signed with it"
+msgid_plural "{messages} messages signed with it"
+msgstr[0] "{messages} Nachricht ist damit signiert"
+msgstr[1] "{messages} Nachrichten sind damit signiert"
+
+#: app/src/gui/view/keys.ts:120
+msgid "{signed}; the key is in this case’s store."
+msgstr "{signed}; der Schlüssel liegt im Speicher dieses Falls."
+
+#: app/src/gui/view/keys.ts:121
+msgid "{signed}; none of them are waiting for this key."
+msgstr "{signed}; keine davon wartet auf diesen Schlüssel."
+
+#: app/src/gui/view/keys.ts:124
+msgid "{count} has no verdict without it"
+msgid_plural "{count} have no verdict without it"
+msgstr[0] "{count} hat ohne ihn keinen Befund"
+msgstr[1] "{count} haben ohne ihn keinen Befund"
+
+#: app/src/gui/view/keys.ts:140
+msgid "No signatures in this case, so no keys are needed."
+msgstr ""
+"Keine Signaturen in diesem Fall, also werden keine Schlüssel gebraucht."
+
+#: app/src/gui/view/keys.ts:143
+msgid "Every signature in this case has the key it needs."
+msgstr "Jede Signatur in diesem Fall hat den Schlüssel, den sie braucht."
+
+#: app/src/gui/view/keys.ts:149
+msgid "{missing} of {total} signing key is missing."
+msgid_plural "{missing} of {total} signing keys are missing."
+msgstr[0] "{missing} von {total} Signaturschlüssel fehlt."
+msgstr[1] "{missing} von {total} Signaturschlüsseln fehlen."
+
+#: app/src/gui/view/keys.ts:157
+msgid "{waiting} message has no verdict without a key."
+msgid_plural "{waiting} messages have no verdict without a key."
+msgstr[0] "{waiting} Nachricht hat ohne Schlüssel keinen Befund."
+msgstr[1] "{waiting} Nachrichten haben ohne Schlüssel keinen Befund."
+
+#: app/src/gui/view/keys.ts:180
+msgid ""
+"A DKIM public key, published by the signing domain as the DNS TXT record "
+"{name}. Anyone may read it — it is the public half, and it only ever lets "
+"you check a signature, never make one. The catch is time: operators rotate "
+"selectors and delete the old record, so the key that signed a message from "
+"2019 is usually gone from today’s DNS. Then it has to come from the "
+"operator, from a third-party archive of old records, or from the archive "
+"under examination — and where it came from is part of the verdict."
+msgstr ""
+"Ein öffentlicher DKIM-Schlüssel, von der signierenden Domain als DNS-TXT-"
+"Eintrag {name} veröffentlicht. Jede und jeder darf ihn lesen – er ist die "
+"öffentliche Hälfte und erlaubt immer nur, eine Signatur zu prüfen, nie eine "
+"zu erzeugen. Der Haken ist die Zeit: Betreiber wechseln Selektoren und "
+"löschen den alten Eintrag, deshalb ist der Schlüssel, der eine Nachricht von "
+"2019 signiert hat, aus dem heutigen DNS meist verschwunden. Dann muss er vom "
+"Betreiber kommen, aus einem fremden Archiv alter Einträge oder aus dem "
+"untersuchten Archiv selbst – und woher er kam, ist Teil des Befunds."
+
+#: app/src/gui/view/keys.ts:225
+msgid "{count} had no published record"
+msgid_plural "{count} had no published record"
+msgstr[0] "{count} hatte keinen veröffentlichten Eintrag"
+msgstr[1] "{count} hatten keinen veröffentlichten Eintrag"
+
+#: app/src/gui/view/keys.ts:230
+msgid "nothing was found"
+msgstr "nichts gefunden"
+
+#: app/src/gui/view/keys.ts:231
+msgid "Lookup done: {results}."
+msgstr "Abfrage abgeschlossen: {results}."
+
+#: app/src/gui/view/keys.ts:236
+msgid ""
+"{count} key differs from one this case already held — check which is the "
+"real one."
+msgid_plural ""
+"{count} keys differ from ones this case already held — check which are the "
+"real ones."
+msgstr[0] ""
+"{count} Schlüssel weicht von einem ab, den dieser Fall bereits hatte – "
+"prüfen Sie, welcher der echte ist."
+msgstr[1] ""
+"{count} Schlüssel weichen von welchen ab, die dieser Fall bereits hatte – "
+"prüfen Sie, welche die echten sind."
+
+#: app/src/gui/view/keys.ts:261
+msgid "{count} message re-verified; its verdict is unchanged."
+msgid_plural "{count} messages re-verified; no verdict changed."
+msgstr[0] "{count} Nachricht erneut geprüft; ihr Befund ist unverändert."
+msgstr[1] "{count} Nachrichten erneut geprüft; kein Befund hat sich geändert."
+
+#: app/src/gui/view/keys.ts:270
+msgid "{count} verdict changed."
+msgid_plural "{count} verdicts changed."
+msgstr[0] "{count} Befund hat sich geändert."
+msgstr[1] "{count} Befunde haben sich geändert."
+
+#: app/src/gui/view/message.ts:44
+msgid "(no subject)"
+msgstr "(kein Betreff)"
+
+#: app/src/gui/view/message.ts:45
+msgid "(no sender)"
+msgstr "(kein Absender)"
+
+#: app/src/gui/view/message.ts:87
+msgid "From"
+msgstr "Von"
+
+#: app/src/gui/view/message.ts:88
+msgid "To"
+msgstr "An"
+
+#: app/src/gui/view/message.ts:91
+msgid "Cc"
+msgstr "Kopie"
+
+#: app/src/gui/view/message.ts:94
+msgid "Subject"
+msgstr "Betreff"
+
+#: app/src/gui/view/message.ts:95
+msgid "Date"
+msgstr "Datum"
+
+#: app/src/gui/view/message.ts:99
+msgid "Message-ID"
+msgstr "Message-ID"
+
+#: app/src/gui/view/message.ts:106
+msgid "Size"
+msgstr "Größe"
+
+#: app/src/gui/view/message.ts:109
+msgid "SHA-256"
+msgstr "SHA-256"
+
+#: app/src/gui/view/message.ts:155
+msgid "No messages in this case"
+msgstr "Keine Nachrichten in diesem Fall"
+
+#: app/src/gui/view/message.ts:156
+msgid "Import a mailbox or a folder of messages to begin."
+msgstr ""
+"Importieren Sie ein Postfach oder einen Ordner mit Nachrichten, um zu "
+"beginnen."
+
+#: app/src/gui/view/message.ts:165
+msgid "No match"
+msgstr "Kein Treffer"
+
+#: app/src/gui/view/message.ts:166
+msgid "Nothing in it matches this search."
+msgstr "Nichts darin passt zu dieser Suche."
+
+#: app/src/gui/view/message.ts:171
+msgid "Nothing in this view"
+msgstr "Nichts in dieser Ansicht"
+
+#: app/src/gui/view/message.ts:172
+msgid "No message has the verdict you filtered for."
+msgstr "Keine Nachricht hat den Befund, nach dem Sie gefiltert haben."
+
+#: app/src/gui/view/overview.ts:41 app/src/gui/window.blp:187
+#: app/src/gui/window.blp:201
+msgid "Messages"
+msgstr "Nachrichten"
+
+#: app/src/gui/view/overview.ts:45
+msgid "Raw mail stored"
+msgstr "Gespeicherte Rohdaten"
+
+#: app/src/gui/view/overview.ts:49
+msgid "Period"
+msgstr "Zeitraum"
+
+#: app/src/gui/view/overview.ts:65
+msgid "no readable dates"
+msgstr "keine lesbaren Daten"
+
+#: app/src/gui/view/overview.ts:67
+msgid "{from} to {to}, by the dates in the messages"
+msgstr "{from} bis {to}, nach den Daten in den Nachrichten"
+
+#: app/src/gui/view/overview.ts:111
+msgid "This case is empty. Import a mailbox to get started."
+msgstr "Dieser Fall ist leer. Importieren Sie ein Postfach, um zu beginnen."
+
+#: app/src/gui/view/overview.ts:121
+msgid ""
+"{total} messages: {confirmed} confirmed (of those {caveats} with caveats), "
+"{altered} altered, {unverifiable} without a verdict for want of a key, "
+"{unsigned} never signed."
+msgstr ""
+"{total} Nachrichten: {confirmed} bestätigt (davon {caveats} mit "
+"Einschränkungen), {altered} verändert, {unverifiable} ohne Befund mangels "
+"Schlüssel, {unsigned} nie signiert."
+
+#: app/src/gui/view/overview.ts:143
+msgid ""
+"{messages} messages are waiting on {pairs} signing key. Collect it in the "
+"Keys view."
+msgid_plural ""
+"{messages} messages are waiting on {pairs} signing keys. Collect them in the "
+"Keys view."
+msgstr[0] ""
+"{messages} Nachrichten warten auf {pairs} Signaturschlüssel. Holen Sie ihn "
+"in der Ansicht „Schlüssel“."
+msgstr[1] ""
+"{messages} Nachrichten warten auf {pairs} Signaturschlüssel. Holen Sie sie "
+"in der Ansicht „Schlüssel“."
+
+#: app/src/gui/view/sources.ts:76
+msgid "All archives"
+msgstr "Alle Archive"
+
+#: app/src/gui/view/sources.ts:78
+msgid "{count} archive imported"
+msgid_plural "{count} archives imported"
+msgstr[0] "{count} Archiv importiert"
+msgstr[1] "{count} Archive importiert"
+
+#: app/src/gui/view/sources.ts:116
+msgid "{count} message"
+msgid_plural "{count} messages"
+msgstr[0] "{count} Nachricht"
+msgstr[1] "{count} Nachrichten"
+
+#: app/src/gui/view/sources.ts:122
+msgid "{read}, one of them already in the case"
+msgid_plural "{read}, {duplicates} of them already in the case"
+msgstr[0] "{read}, eine davon schon im Fall"
+msgstr[1] "{read}, {duplicates} davon schon im Fall"
+
+#: app/src/gui/view/verdict.ts:46
+msgid "Confirmed"
+msgstr "Bestätigt"
+
+#: app/src/gui/view/verdict.ts:48
+msgid "With caveats"
+msgstr "Mit Einschränkungen"
+
+#: app/src/gui/view/verdict.ts:50
+msgid "Body altered"
+msgstr "Text verändert"
+
+#: app/src/gui/view/verdict.ts:52
+msgid "Headers altered"
+msgstr "Kopfzeilen verändert"
+
+#: app/src/gui/view/verdict.ts:54
+msgid "Unverifiable"
+msgstr "Nicht prüfbar"
+
+#: app/src/gui/view/verdict.ts:56
+msgid "Unsigned"
+msgstr "Ohne Signatur"
+
+#: app/src/gui/view/verdict.ts:128
+msgid ""
+"A signature from the sender’s own domain verified against a key you trust, "
+"and it covers the fields that matter. The message is byte for byte what was "
+"signed."
+msgstr ""
+"Eine Signatur aus der Domain des Absenders wurde gegen einen Schlüssel "
+"geprüft, dem Sie vertrauen, und sie deckt die entscheidenden Felder ab. Die "
+"Nachricht ist Byte für Byte das, was signiert wurde."
+
+#: app/src/gui/view/verdict.ts:132
+msgid ""
+"The cryptography checked out, but something limits what that proves — a weak "
+"algorithm, an unsigned Subject, or a key that came from the archive itself. "
+"Read the caveats before you quote the message."
+msgstr ""
+"Die Kryptografie stimmt, aber etwas schränkt ein, was das beweist – ein "
+"schwacher Algorithmus, ein nicht signierter Betreff oder ein Schlüssel, der "
+"aus dem Archiv selbst stammt. Lesen Sie die Einschränkungen, bevor Sie die "
+"Nachricht zitieren."
+
+#: app/src/gui/view/verdict.ts:136
+msgid ""
+"The signature is intact and the body does not match the hash it committed "
+"to. Somebody changed the text after it was signed. This is a finding, not a "
+"failure of the check."
+msgstr ""
+"Die Signatur ist intakt, und der Nachrichtentext passt nicht zu dem Hash, "
+"auf den sie sich festgelegt hat. Jemand hat den Text nach dem Signieren "
+"geändert. Das ist ein Befund, kein Fehlschlag der Prüfung."
+
+#: app/src/gui/view/verdict.ts:140
+msgid ""
+"The body is as signed, but one of the signed header fields is not. A changed "
+"Subject, From or Date — which can matter more than the body does."
+msgstr ""
+"Der Nachrichtentext ist wie signiert, eine der signierten Kopfzeilen aber "
+"nicht. Ein geänderter Betreff, Absender oder ein geändertes Datum – was mehr "
+"wiegen kann als der Text."
+
+#: app/src/gui/view/verdict.ts:144
+msgid ""
+"A signature is present and nothing here could check it, almost always "
+"because the public key is missing. This says nothing against the message: "
+"fetch the key and it will get a verdict."
+msgstr ""
+"Eine Signatur liegt vor, und hier war nichts, womit sie geprüft werden "
+"konnte – fast immer, weil der öffentliche Schlüssel fehlt. Das spricht nicht "
+"gegen die Nachricht: Holen Sie den Schlüssel, und sie bekommt einen Befund."
+
+#: app/src/gui/view/verdict.ts:148
+msgid ""
+"The message carries no DKIM signature at all. Most mail before the mid-2010s "
+"does not. It is neither evidence for nor against authenticity."
+msgstr ""
+"Die Nachricht trägt überhaupt keine DKIM-Signatur. Die meiste Mail von vor "
+"Mitte der 2010er-Jahre tut das nicht. Das ist weder ein Beleg für noch gegen "
+"die Echtheit."
+
+#: app/src/gui/view/verdict.ts:182
+msgid "All messages"
+msgstr "Alle Nachrichten"
+
+#: app/src/gui/view/verdict.ts:204
+msgid "{shown} of {total} shown"
+msgstr "{shown} von {total} angezeigt"
+
+#: app/src/gui/window.ts:177
+msgid "All files"
+msgstr "Alle Dateien"
+
+#: app/src/gui/window.ts:179
+msgid "Mail archives"
+msgstr "Mail-Archive"
+
+#: app/src/gui/window.ts:321
+msgid "{path} is not a Stamped case folder."
+msgstr "{path} ist kein Poststempel-Fallordner."
+
+#: app/src/gui/window.ts:477
+msgid "The stored copy of this message is missing from the case’s blob store."
+msgstr ""
+"Die gespeicherte Kopie dieser Nachricht fehlt im Datenspeicher des Falls."
+
+#: app/src/gui/window.ts:543 app/src/gui/window.blp:264
+msgid "Message"
+msgstr "Nachricht"
+
+#: app/src/gui/window.ts:562
+msgid "Copy"
+msgstr "Kopieren"
+
+#: app/src/gui/window.ts:571
+msgid "Copied."
+msgstr "Kopiert."
+
+#: app/src/gui/window.ts:587
+msgid "Evidence"
+msgstr "Belege"
+
+#: app/src/gui/window.ts:627
+msgid "Raw message"
+msgstr "Rohnachricht"
+
+#: app/src/gui/window.ts:629
+msgid "Copy the whole message, headers and body, as stored"
+msgstr "Die ganze Nachricht kopieren, Kopfzeilen und Text, wie gespeichert"
+
+#: app/src/gui/window.ts:631
+msgid "Header block, as stored"
+msgstr "Kopfzeilenblock, wie gespeichert"
+
+#: app/src/gui/window.ts:663
+msgid ""
+"Stamped stays offline until you say otherwise, and will show you exactly "
+"what it would send."
+msgstr ""
+"Poststempel bleibt offline, bis Sie etwas anderes sagen, und zeigt Ihnen "
+"genau, was es senden würde."
+
+#: app/src/gui/window.ts:675
+msgid "Signing keys this case needs"
+msgstr "Signaturschlüssel, die dieser Fall braucht"
+
+#: app/src/gui/window.ts:713
+msgid "Paste Key…"
+msgstr "Schlüssel einfügen…"
+
+#: app/src/gui/window.ts:722
+msgid "Copy Request…"
+msgstr "Anfrage kopieren…"
+
+#: app/src/gui/window.ts:723
+msgid "Copy a request to send to the signing domain’s operator"
+msgstr ""
+"Eine Anfrage kopieren, die Sie an den Betreiber der signierenden Domain "
+"schicken können"
+
+#: app/src/gui/window.ts:727
+msgid "Request copied. Paste it into a mail to the operator."
+msgstr "Anfrage kopiert. Fügen Sie sie in eine Mail an den Betreiber ein."
+
+#: app/src/gui/window.ts:772
+msgid "Look Up Missing Keys…"
+msgstr "Fehlende Schlüssel abfragen…"
+
+#: app/src/gui/window.ts:794
+msgid "Paste the key for {name}"
+msgstr "Den Schlüssel für {name} einfügen"
+
+#: app/src/gui/window.ts:796
+msgid ""
+"A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
+"Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
+"will be refused."
+msgstr ""
+"Ein PEM-Block, ein DNS-TXT-Eintrag, wie dig ihn ausgibt, oder nur der p=-"
+"Wert. Poststempel erkennt selbst, was es ist. Ein leeres p= ist ein "
+"Widerruf, kein Schlüssel, und wird abgelehnt."
+
+#: app/src/gui/window.ts:815 app/src/gui/window.ts:1011
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: app/src/gui/window.ts:816
+msgid "Store Key"
+msgstr "Schlüssel speichern"
+
+#: app/src/gui/window.ts:942
+msgid "The case"
+msgstr "Der Fall"
+
+#: app/src/gui/window.ts:954
+msgid ""
+"All six are listed, including the ones at zero: a measured zero is a result, "
+"and the line most often at zero is the one that says no tampering was found."
+msgstr ""
+"Alle sechs werden aufgeführt, auch die mit null: Eine gemessene Null ist ein "
+"Ergebnis, und die Zeile, die am häufigsten auf null steht, ist die, die "
+"sagt, dass keine Manipulation gefunden wurde."
+
+#: app/src/gui/window.ts:987
+msgid "Open Case Folder"
+msgstr "Fallordner öffnen"
+
+#: app/src/gui/window.ts:1003
+msgid "Create a new case here?"
+msgstr "Hier einen neuen Fall anlegen?"
+
+#: app/src/gui/window.ts:1006
+msgid ""
+"{path} is not a Stamped case yet. Creating one writes a case file, a store "
+"for the raw messages and a search index into it. Nothing is sent anywhere."
+msgstr ""
+"{path} ist noch kein Poststempel-Fall. Beim Anlegen werden eine Falldatei, "
+"ein Speicher für die Rohnachrichten und ein Suchindex hineingeschrieben. Es "
+"wird nichts irgendwohin gesendet."
+
+#: app/src/gui/window.ts:1010
+msgid "Create Case"
+msgstr "Fall anlegen"
+
+#: app/src/gui/window.ts:1038
+msgid "Import a Mail Folder"
+msgstr "Einen Mail-Ordner importieren"
+
+#: app/src/gui/window.ts:1038
+msgid "Import Mail Archives"
+msgstr "Mail-Archive importieren"
+
+#: app/src/gui/window.ts:1074
+msgid "That did not work"
+msgstr "Das hat nicht geklappt"
+
+#: app/src/gui/window.ts:1074
+msgid "Close"
+msgstr "Schließen"
+
 #: app/src/index.ts:40
 msgid "stamped <command> [options]"
 msgstr "stamped <Befehl> [Optionen]"
@@ -498,7 +1106,9 @@ msgstr[1] "{count} Nachrichten erneut geprüft, {changed} Befunde geändert."
 
 #: app/src/lib/autofetch.ts:50
 msgid "! {name} holds different keys; its messages were left as they are."
-msgstr "! {name} enthält verschiedene Schlüssel; die zugehörigen Nachrichten blieben unverändert."
+msgstr ""
+"! {name} enthält verschiedene Schlüssel; die zugehörigen Nachrichten blieben "
+"unverändert."
 
 #: app/src/lib/autofetch.ts:57
 msgid "{failed} message could not be re-verified."
@@ -507,10 +1117,18 @@ msgstr[0] "{failed} Nachricht konnte nicht erneut geprüft werden."
 msgstr[1] "{failed} Nachrichten konnten nicht erneut geprüft werden."
 
 #: app/src/lib/autofetch.ts:94
-msgid "{count} key is missing. No terminal and no --yes, so nothing was looked up; run `stamped keys fetch --case {path}`."
-msgid_plural "{count} keys are missing. No terminal and no --yes, so nothing was looked up; run `stamped keys fetch --case {path}`."
-msgstr[0] "{count} Schlüssel fehlt. Kein Terminal und kein --yes, daher wurde nichts abgefragt; führe `stamped keys fetch --case {path}` aus."
-msgstr[1] "{count} Schlüssel fehlen. Kein Terminal und kein --yes, daher wurde nichts abgefragt; führe `stamped keys fetch --case {path}` aus."
+msgid ""
+"{count} key is missing. No terminal and no --yes, so nothing was looked up; "
+"run `stamped keys fetch --case {path}`."
+msgid_plural ""
+"{count} keys are missing. No terminal and no --yes, so nothing was looked "
+"up; run `stamped keys fetch --case {path}`."
+msgstr[0] ""
+"{count} Schlüssel fehlt. Kein Terminal und kein --yes, daher wurde nichts "
+"abgefragt; führe `stamped keys fetch --case {path}` aus."
+msgstr[1] ""
+"{count} Schlüssel fehlen. Kein Terminal und kein --yes, daher wurde nichts "
+"abgefragt; führe `stamped keys fetch --case {path}` aus."
 
 #: app/src/lib/autofetch.ts:116
 msgid "  stored  {name} via {origin}{flag}"
@@ -527,6 +1145,127 @@ msgstr ""
 msgid "Send these lookups? [y/N] "
 msgstr "Diese Abfragen senden? [j/N] "
 
+#: app/src/lib/evidence.ts:48
+msgid "Signature {position} of {total} — {verdict}"
+msgstr "Signatur {position} von {total} — {verdict}"
+
+#: app/src/lib/evidence.ts:66
+msgid "domain"
+msgstr "Domain"
+
+#: app/src/lib/evidence.ts:67
+msgid "author domain"
+msgstr "Absenderdomain"
+
+#: app/src/lib/evidence.ts:67
+msgid "(unknown)"
+msgstr "(unbekannt)"
+
+#: app/src/lib/evidence.ts:68
+msgid "aligned"
+msgstr "übereinstimmend"
+
+#: app/src/lib/evidence.ts:68
+msgid "yes"
+msgstr "ja"
+
+#: app/src/lib/evidence.ts:68
+msgid "no"
+msgstr "nein"
+
+#: app/src/lib/evidence.ts:69
+msgid "selector"
+msgstr "Selektor"
+
+#: app/src/lib/evidence.ts:70
+msgid "algorithm"
+msgstr "Algorithmus"
+
+#: app/src/lib/evidence.ts:71
+msgid "canonicalization"
+msgstr "Kanonisierung"
+
+#: app/src/lib/evidence.ts:72
+msgid "key"
+msgstr "Schlüssel"
+
+#: app/src/lib/evidence.ts:73
+msgid "signed headers"
+msgstr "sign. Kopfzeilen"
+
+#: app/src/lib/evidence.ts:74
+msgid "body hash"
+msgstr "Body-Hash"
+
+#: app/src/lib/evidence.ts:75
+msgid "signature"
+msgstr "Signatur"
+
+#: app/src/lib/evidence.ts:75
+msgid "verified"
+msgstr "verifiziert"
+
+#: app/src/lib/evidence.ts:75
+msgid "not verified"
+msgstr "nicht verifiziert"
+
+#: app/src/lib/evidence.ts:79
+msgid "l= limit"
+msgstr "l=-Grenze"
+
+#: app/src/lib/evidence.ts:83
+msgid "reason"
+msgstr "Grund"
+
+#: app/src/lib/evidence.ts:90
+msgid "verifier says"
+msgstr "Prüfer meldet"
+
+#: app/src/lib/evidence.ts:105
+msgid "none fetched"
+msgstr "keiner abgerufen"
+
+#: app/src/lib/evidence.ts:111
+msgid "{bits} bit, {source}"
+msgstr "{bits} Bit, {source}"
+
+#: app/src/lib/evidence.ts:118
+msgid "from the DNS"
+msgstr "aus dem DNS"
+
+#: app/src/lib/evidence.ts:120
+msgid "supplied by you"
+msgstr "von Ihnen bereitgestellt"
+
+#: app/src/lib/evidence.ts:122
+msgid "from the archive itself"
+msgstr "aus dem Archiv selbst"
+
+#: app/src/lib/evidence.ts:136
+msgid "matches ({hash})"
+msgstr "stimmt überein ({hash})"
+
+#: app/src/lib/evidence.ts:137
+msgid "matches"
+msgstr "stimmt überein"
+
+#: app/src/lib/evidence.ts:140
+msgid "differs — signed {expected}, message hashes to {actual}"
+msgstr "weicht ab — signiert wurde {expected}, die Nachricht ergibt {actual}"
+
+#: app/src/lib/evidence.ts:145
+msgid "not checked"
+msgstr "nicht geprüft"
+
+#: app/src/lib/evidence.ts:152
+msgid "{limit} bytes of the body are signed"
+msgstr "{limit} Bytes des Nachrichtentextes sind signiert"
+
+#: app/src/lib/evidence.ts:154
+msgid "{limit} bytes of the body are signed, {unsigned} are not"
+msgstr ""
+"{limit} Bytes des Nachrichtentextes sind signiert, {unsigned} sind es nicht"
+
 #: app/src/lib/keys.ts:50
 msgid "{path} is neither a DKIM TXT record nor a PEM public key."
 msgstr ""
@@ -537,130 +1276,9 @@ msgstr ""
 msgid "Cannot read the key file {path}."
 msgstr "Die Schlüsseldatei {path} kann nicht gelesen werden."
 
-#: app/src/lib/report.ts:55
-msgid "Signature {position} of {total} — {verdict}"
-msgstr "Signatur {position} von {total} — {verdict}"
-
-#: app/src/lib/report.ts:60
-msgid "domain"
-msgstr "Domain"
-
-#: app/src/lib/report.ts:61
-msgid "author domain"
-msgstr "Absenderdomain"
-
-#: app/src/lib/report.ts:61
-msgid "(unknown)"
-msgstr "(unbekannt)"
-
-#: app/src/lib/report.ts:62
-msgid "aligned"
-msgstr "übereinstimmend"
-
-#: app/src/lib/report.ts:62
-msgid "yes"
-msgstr "ja"
-
-#: app/src/lib/report.ts:62
-msgid "no"
-msgstr "nein"
-
-#: app/src/lib/report.ts:63
-msgid "selector"
-msgstr "Selektor"
-
-#: app/src/lib/report.ts:64
-msgid "algorithm"
-msgstr "Algorithmus"
-
-#: app/src/lib/report.ts:65
-msgid "canonicalization"
-msgstr "Kanonisierung"
-
-#: app/src/lib/report.ts:66
-msgid "key"
-msgstr "Schlüssel"
-
-#: app/src/lib/report.ts:67
-msgid "signed headers"
-msgstr "sign. Kopfzeilen"
-
-#: app/src/lib/report.ts:68
-msgid "body hash"
-msgstr "Body-Hash"
-
-#: app/src/lib/report.ts:69
-msgid "signature"
-msgstr "Signatur"
-
-#: app/src/lib/report.ts:69
-msgid "verified"
-msgstr "verifiziert"
-
-#: app/src/lib/report.ts:69
-msgid "not verified"
-msgstr "nicht verifiziert"
-
-#: app/src/lib/report.ts:73
-msgid "l= limit"
-msgstr "l=-Grenze"
-
-#: app/src/lib/report.ts:76
-msgid "reason"
-msgstr "Grund"
-
-#: app/src/lib/report.ts:81
-msgid "verifier says"
-msgstr "Prüfer meldet"
-
-#: app/src/lib/report.ts:84
+#: app/src/lib/report.ts:51
 msgid "  caveat: {text}"
 msgstr "  Einschränkung: {text}"
-
-#: app/src/lib/report.ts:96
-msgid "none fetched"
-msgstr "keiner abgerufen"
-
-#: app/src/lib/report.ts:102
-msgid "{bits} bit, {source}"
-msgstr "{bits} Bit, {source}"
-
-#: app/src/lib/report.ts:109
-msgid "from the DNS"
-msgstr "aus dem DNS"
-
-#: app/src/lib/report.ts:111
-msgid "supplied by you"
-msgstr "von Ihnen bereitgestellt"
-
-#: app/src/lib/report.ts:113
-msgid "from the archive itself"
-msgstr "aus dem Archiv selbst"
-
-#: app/src/lib/report.ts:127
-msgid "matches ({hash})"
-msgstr "stimmt überein ({hash})"
-
-#: app/src/lib/report.ts:128
-msgid "matches"
-msgstr "stimmt überein"
-
-#: app/src/lib/report.ts:131
-msgid "differs — signed {expected}, message hashes to {actual}"
-msgstr "weicht ab — signiert wurde {expected}, die Nachricht ergibt {actual}"
-
-#: app/src/lib/report.ts:136
-msgid "not checked"
-msgstr "nicht geprüft"
-
-#: app/src/lib/report.ts:143
-msgid "{limit} bytes of the body are signed"
-msgstr "{limit} Bytes des Nachrichtentextes sind signiert"
-
-#: app/src/lib/report.ts:145
-msgid "{limit} bytes of the body are signed, {unsigned} are not"
-msgstr ""
-"{limit} Bytes des Nachrichtentextes sind signiert, {unsigned} sind es nicht"
 
 #: app/src/lib/vault.ts:25
 msgid "Cannot use {path}: {reason}"
@@ -668,7 +1286,8 @@ msgstr "{path} kann nicht verwendet werden: {reason}"
 
 #: packages/core/src/autokeys.ts:31
 msgid "The archive is asked first; the DNS only for the keys it does not have."
-msgstr "Zuerst wird das Archiv gefragt; das DNS nur für Schlüssel, die es nicht hat."
+msgstr ""
+"Zuerst wird das Archiv gefragt; das DNS nur für Schlüssel, die es nicht hat."
 
 #: packages/core/src/autokeys.ts:34
 msgid "Look up {count} missing key?"
@@ -1006,13 +1625,93 @@ msgstr ""
 msgid "Cannot open the index of the case folder {path}."
 msgstr "Der Index des Fallordners {path} kann nicht geöffnet werden."
 
-#: packages/store/src/raw.ts:73
+#: packages/store/src/raw.ts:81
 msgid "Cannot write into the case folder {path}."
 msgstr "In den Fallordner {path} kann nicht geschrieben werden."
 
 #: packages/verify/src/mailauth.ts:136
 msgid "no key in the store"
 msgstr "kein Schlüssel im Speicher"
+
+#: app/src/gui/window.blp:20 app/src/gui/window.blp:66
+msgid "Stamped"
+msgstr "Poststempel"
+
+#: app/src/gui/window.blp:58 app/src/gui/window.blp:118
+msgid "Main menu"
+msgstr "Hauptmenü"
+
+#: app/src/gui/window.blp:67
+msgid ""
+"Open a case folder, or import a mail archive to start one. Nothing leaves "
+"this machine."
+msgstr ""
+"Öffnen Sie einen Fallordner oder importieren Sie ein Mail-Archiv, um einen "
+"anzulegen. Nichts verlässt diesen Rechner."
+
+#: app/src/gui/window.blp:75 app/src/gui/window.blp:359
+msgid "Open Case…"
+msgstr "Fall öffnen…"
+
+#: app/src/gui/window.blp:84 app/src/gui/window.blp:364
+msgid "Import Archive…"
+msgstr "Archiv importieren…"
+
+#: app/src/gui/window.blp:111
+msgid "Import another archive into this case"
+msgstr "Ein weiteres Archiv in diesen Fall importieren"
+
+#: app/src/gui/window.blp:124
+msgid "Case"
+msgstr "Fall"
+
+#: app/src/gui/window.blp:137
+msgid "Archives"
+msgstr "Archive"
+
+#: app/src/gui/window.blp:196
+msgid "Show the case sidebar"
+msgstr "Die Fall-Seitenleiste anzeigen"
+
+#: app/src/gui/window.blp:207
+msgid "Search senders, subjects, bodies"
+msgstr "Absender, Betreffs, Texte durchsuchen"
+
+#: app/src/gui/window.blp:244
+msgid "Verification"
+msgstr "Prüfung"
+
+#: app/src/gui/window.blp:273
+msgid "No message selected"
+msgstr "Keine Nachricht ausgewählt"
+
+#: app/src/gui/window.blp:274
+msgid ""
+"Pick a message to see which of its signatures hold, and what each one covers."
+msgstr ""
+"Wählen Sie eine Nachricht, um zu sehen, welche ihrer Signaturen halten und "
+"was jede abdeckt."
+
+#: app/src/gui/window.blp:303
+msgid "Keys"
+msgstr "Schlüssel"
+
+#: app/src/gui/window.blp:326
+msgid "Overview"
+msgstr "Überblick"
+
+#: app/src/gui/window.blp:371
+msgid "Import Folder…"
+msgstr "Ordner importieren…"
+
+#: app/src/gui/window.blp:378
+msgid "About Stamped"
+msgstr "Über Poststempel"
+
+#~ msgid "Key stored. Reopen a message to see its new verdict."
+#~ msgstr ""
+#~ "Schlüssel gespeichert. Öffnen Sie eine Nachricht erneut, um ihren neuen "
+#~ "Befund zu sehen."
 
 #~ msgid "Give --pairs or --name: which keys to look up."
 #~ msgstr ""

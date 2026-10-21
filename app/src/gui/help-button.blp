@@ -1,0 +1,26 @@
+using Gtk 4.0;
+
+// The "?" button and its popover. Entirely static: the only thing TypeScript sets is the label,
+// which is one of the explanations the view models already produce.
+template $StampedHelpButton: Gtk.MenuButton {
+  icon-name: "help-about-symbolic";
+  valign: center;
+
+  styles [
+    "flat",
+    "circular",
+  ]
+
+  popover: Gtk.Popover {
+    child: Gtk.Label text {
+      xalign: 0;
+      wrap: true;
+      max-width-chars: 38;
+      margin-top: 10;
+      margin-bottom: 10;
+      margin-start: 12;
+      margin-end: 12;
+      use-markup: true;
+    };
+  };
+}

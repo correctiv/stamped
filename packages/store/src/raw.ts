@@ -20,7 +20,15 @@
  */
 
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, mkdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+    appendFileSync,
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    renameSync,
+    unlinkSync,
+    writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 import { fmt, _ } from '@stamped/core';
@@ -103,4 +111,104 @@ export function appendLog(paths: CasePaths, entries: readonly ImportLogEntry[]):
     if (entries.length === 0) return;
     const text = `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`;
     appendFileSync(paths.log, text);
+}
+
+/**
+ * Read one message back out of the store, or `undefined` when it cannot be read at all.
+ *
+ * Every consumer that shows a message — the detail pane, the raw-source view, a re-verification
+ * after a key arrived — goes through here rather than through {@link rawPath} and its own
+ * `readFileSync`, so the one place that turns a hash into octets is also the one place that
+ * decides what a missing or unreadable file means. `undefined` and not a throw: a case folder
+ * whose `raw/` was partly deleted must still open and still list what it has.
+ */
+export function readRaw(paths: CasePaths, hash: string): Uint8Array | undefined {
+    try {
+        return new Uint8Array(readFileSync(rawPath(paths, hash)));
+    } catch {
+        return undefined;
+    }
+}
+
+/** One file an import read messages out of, and how much of the case came from it. */
+export interface LogSource {
+    /** The path as the import saw it — the mbox, or the individual message file. */
+    readonly source: string;
+    readonly kind: string;
+    /** Messages read out of it, duplicates included. */
+    readonly messages: number;
+    /** Of those, how many the store already held — the same mail in a second archive. */
+    readonly duplicates: number;
+}
+
+/**
+ * Walk the import log entry by entry.
+ *
+ * THE LOG, NOT THE INDEX, is where a message's provenance lives — `index-db.ts` holds only what
+ * a message's own bytes say, which is what makes the index rebuildable. So "which archive did
+ * this come out of" can only be answered here, and anything that groups a case by its sources
+ * reads this function.
+ *
+ * The file is read whole. One line is about 200 bytes, so a case of a few hundred thousand
+ * messages is a few tens of megabytes — affordable for an answer a person asked for, and the
+ * seam for a chunked reader is this function alone if an archive ever makes it not so. A line
+ * that does not parse is skipped rather than fatal: the log is append-only, and a crash can
+ * truncate the last line.
+ */
+export function eachLogEntry(paths: CasePaths, visit: (entry: ImportLogEntry) => void): void {
+    if (!existsSync(paths.log)) return;
+    let text: string;
+    try {
+        text = readFileSync(paths.log, 'utf8');
+    } catch {
+        return;
+    }
+    for (const line of text.split('\n')) {
+        if (line.trim() === '') continue;
+        let entry: Partial<ImportLogEntry>;
+        try {
+            entry = JSON.parse(line) as Partial<ImportLogEntry>;
+        } catch {
+            continue;
+        }
+        if (typeof entry.hash !== 'string' || typeof entry.source !== 'string') continue;
+        visit({
+            hash: entry.hash,
+            source: entry.source,
+            offset: Number(entry.offset ?? 0),
+            kind: String(entry.kind ?? ''),
+            bytes: Number(entry.bytes ?? 0),
+            at: String(entry.at ?? ''),
+            duplicate: entry.duplicate === true,
+        });
+    }
+}
+
+/** The sources of a case, most mail first — the folder list of a case. */
+export function logSources(paths: CasePaths): LogSource[] {
+    const sources = new Map<string, { kind: string; messages: number; duplicates: number }>();
+    eachLogEntry(paths, (entry) => {
+        const seen = sources.get(entry.source) ?? { kind: entry.kind, messages: 0, duplicates: 0 };
+        seen.messages++;
+        if (entry.duplicate) seen.duplicates++;
+        sources.set(entry.source, seen);
+    });
+    return [...sources]
+        .map(([source, counts]) => ({ source, ...counts }))
+        .sort((a, b) => b.messages - a.messages || a.source.localeCompare(b.source));
+}
+
+/**
+ * The hashes one source contributed.
+ *
+ * A set rather than a query, because the index cannot answer it (see {@link eachLogEntry}) — and
+ * a set is also what a list filter needs: the same message can come out of two archives, so
+ * "the messages of this mbox" overlaps with another source's rather than partitioning the case.
+ */
+export function sourceHashes(paths: CasePaths, source: string): Set<string> {
+    const hashes = new Set<string>();
+    eachLogEntry(paths, (entry) => {
+        if (entry.source === source) hashes.add(entry.hash);
+    });
+    return hashes;
 }

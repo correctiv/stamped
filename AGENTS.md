@@ -142,12 +142,22 @@ the first.
 - **Commands are functions, not module-level objects.** `verifyCommand()` is called from
   `main()` after `initI18n()`; an exported const would be constructed at import time by ESM
   hoisting and freeze English into its `describe` and help text.
-- **The GJS entry point needs a `GLib.MainLoop`** (curlew's pattern, `app/src/index.ts`). Without
-  it `verify` printed nothing and exited 0, because the process ended at the handler's first
-  `await`. yargs runs with `.fail(false)` and `.exitProcess(false)`, a sync throw is normalised to
-  a rejection, and the exit goes through `process.exit()` — **never** `imports.system.exit()`,
-  which skips the loop teardown. Quitting the loop when `parsed` settles is only safe because
-  every command handler is async and yargs awaits it; a sync handler would need a different shape.
+- **The GJS entry point must keep the process alive across an `await`** — the original symptom was
+  `verify` printing nothing and exiting 0, because the process ended at the handler's first
+  `await`. The fix used to be a `GLib.MainLoop` in `app/src/index.ts` (curlew's pattern). It is
+  now the entry module's **top-level await**: GJS pumps the main context until that promise
+  settles, so `await runCli()` in `app/src/gui/main.ts` is the pump. `index.ts` therefore owns no
+  loop and runs nothing on import — it exports `runCli(): Promise<number>`.
+  **Do not put a `MainLoop` back in a module the GUI entry imports**: measured, `loop.run()`
+  inside a promise job blocks the microtask drain and the CLI hangs instead of exiting.
+  Unchanged: yargs runs with `.fail(false)` and `.exitProcess(false)`, a sync throw is normalised
+  to a rejection, and the exit goes through `process.exit()` — **never** `imports.system.exit()`.
+- **One binary, two frontends.** `app/src/gui/main.ts` is the entry and dispatches on `argv`: a
+  known subcommand, or anything starting with `-`, hands off to `runCli()`; anything else opens
+  the window. The GTK imports sit behind a dynamic `import()` so `stamped verify` does not pay for
+  libadwaita. It starts the app with `runApplication(app, [argv0])` and **strips the rest of
+  argv** — a GApplication without `HANDLES_OPEN`/`HANDLES_COMMAND_LINE` rejects arguments, so
+  `stamped <case-folder>` would otherwise exit 1 without a window.
 - **Exit codes:** `0` = a report was produced, whatever the verdict (`body-altered` is a result,
   not an error); `2` = Stamped could not produce one (unreadable file, bad `--key`). Never map a
   verdict to an exit code — a script that treats `body-altered` as a crash loses the finding.

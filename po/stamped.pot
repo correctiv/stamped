@@ -1,14 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the stamped package.
+# This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: stamped\n"
-"Report-Msgid-Bugs-To: https://github.com/correctiv/stamped/issues\n"
-"POT-Creation-Date: 2026-10-20 22:22+0200\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-21 09:12+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -156,7 +156,7 @@ msgstr ""
 msgid "Print JSON"
 msgstr ""
 
-#: app/src/commands/keys.ts:124
+#: app/src/commands/keys.ts:124 app/src/gui/view/keys.ts:218
 msgid "{count} key stored"
 msgid_plural "{count} keys stored"
 msgstr[0] ""
@@ -191,7 +191,7 @@ msgstr ""
 msgid "The key text, or a path to a file holding it"
 msgstr ""
 
-#: app/src/commands/keys.ts:194
+#: app/src/commands/keys.ts:194 app/src/gui/session.ts:224
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
@@ -303,7 +303,8 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:84
+#: app/src/commands/report.ts:84 app/src/gui/window.ts:952
+#: app/src/gui/window.blp:158
 msgid "Verdicts"
 msgstr ""
 
@@ -373,7 +374,7 @@ msgstr ""
 msgid "No match."
 msgstr ""
 
-#: app/src/commands/search.ts:77
+#: app/src/commands/search.ts:77 app/src/gui/view/message.ts:160
 msgid "The case holds {total} message."
 msgid_plural "The case holds {total} messages."
 msgstr[0] ""
@@ -384,9 +385,11 @@ msgid "  from    {from}"
 msgstr ""
 
 #: app/src/commands/search.ts:85 app/src/commands/search.ts:86
-#: app/src/commands/search.ts:87 app/src/lib/report.ts:60
-#: app/src/lib/report.ts:63 app/src/lib/report.ts:64 app/src/lib/report.ts:65
-#: app/src/lib/report.ts:67
+#: app/src/commands/search.ts:87 app/src/gui/view/message.ts:87
+#: app/src/gui/view/message.ts:88 app/src/gui/view/message.ts:94
+#: app/src/gui/view/message.ts:95 app/src/lib/evidence.ts:66
+#: app/src/lib/evidence.ts:69 app/src/lib/evidence.ts:70
+#: app/src/lib/evidence.ts:71 app/src/lib/evidence.ts:73
 msgid "(none)"
 msgstr ""
 
@@ -436,6 +439,545 @@ msgstr ""
 msgid "Cannot read {path}."
 msgstr ""
 
+#: app/src/gui/main.ts:83
+msgctxt "application name"
+msgid "Stamped"
+msgstr ""
+
+#: app/src/gui/main.ts:92
+msgid ""
+"Verifies the DKIM signatures of an email archive and says what each "
+"signature actually covers. It works offline: public keys come from a store "
+"you fill, so examining a message sends no lookup to the signing domain."
+msgstr ""
+
+#: app/src/gui/session.ts:253
+msgid "That key was already stored."
+msgstr ""
+
+#: app/src/gui/session.ts:256
+msgid ""
+"Stored — but this case already held a DIFFERENT key for that selector. "
+"Either the domain rotated it, or one of the two is not theirs. Check both "
+"before you rely on the new verdicts."
+msgstr ""
+
+#: app/src/gui/session.ts:259
+msgid "Key stored."
+msgstr ""
+
+#: app/src/gui/view/consent.ts:40
+msgid "Query the DNS"
+msgstr ""
+
+#: app/src/gui/view/consent.ts:42
+msgid "Ask archive.prove.email"
+msgstr ""
+
+#: app/src/gui/view/consent.ts:71
+msgid "Stay offline"
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:74
+msgid "No DKIM signature was found in this message."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:75
+msgid "{count} signature examined."
+msgid_plural "{count} signatures examined."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/evidence.ts:91
+msgid "{count} caveat"
+msgid_plural "{count} caveats"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/format.ts:35
+msgid "(no date)"
+msgstr ""
+
+#: app/src/gui/view/format.ts:57
+msgid "{n} B"
+msgstr ""
+
+#: app/src/gui/view/format.ts:58
+msgid "{n} kB"
+msgstr ""
+
+#: app/src/gui/view/format.ts:58
+msgid "{n} MB"
+msgstr ""
+
+#: app/src/gui/view/format.ts:58
+msgid "{n} GB"
+msgstr ""
+
+#: app/src/gui/view/format.ts:58
+msgid "{n} TB"
+msgstr ""
+
+#: app/src/gui/view/import.ts:23
+msgid "Nothing imported: no messages were found in it."
+msgstr ""
+
+#: app/src/gui/view/import.ts:26
+msgid "{count} new message"
+msgid_plural "{count} new messages"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/import.ts:33
+msgid "{count} was already in the case"
+msgid_plural "{count} were already in the case"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/import.ts:42
+msgid "{count} could not be verified and has no verdict"
+msgid_plural "{count} could not be verified and have no verdict"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:105
+msgid "{count} message waiting"
+msgid_plural "{count} messages waiting"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:109
+msgid "Key stored"
+msgstr ""
+
+#: app/src/gui/view/keys.ts:109
+msgid "Nothing waiting"
+msgstr ""
+
+#: app/src/gui/view/keys.ts:115
+msgid "{messages} message signed with it"
+msgid_plural "{messages} messages signed with it"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:120
+msgid "{signed}; the key is in this case’s store."
+msgstr ""
+
+#: app/src/gui/view/keys.ts:121
+msgid "{signed}; none of them are waiting for this key."
+msgstr ""
+
+#: app/src/gui/view/keys.ts:124
+msgid "{count} has no verdict without it"
+msgid_plural "{count} have no verdict without it"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:140
+msgid "No signatures in this case, so no keys are needed."
+msgstr ""
+
+#: app/src/gui/view/keys.ts:143
+msgid "Every signature in this case has the key it needs."
+msgstr ""
+
+#: app/src/gui/view/keys.ts:149
+msgid "{missing} of {total} signing key is missing."
+msgid_plural "{missing} of {total} signing keys are missing."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:157
+msgid "{waiting} message has no verdict without a key."
+msgid_plural "{waiting} messages have no verdict without a key."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:180
+msgid ""
+"A DKIM public key, published by the signing domain as the DNS TXT record "
+"{name}. Anyone may read it — it is the public half, and it only ever lets "
+"you check a signature, never make one. The catch is time: operators rotate "
+"selectors and delete the old record, so the key that signed a message from "
+"2019 is usually gone from today’s DNS. Then it has to come from the "
+"operator, from a third-party archive of old records, or from the archive "
+"under examination — and where it came from is part of the verdict."
+msgstr ""
+
+#: app/src/gui/view/keys.ts:225
+msgid "{count} had no published record"
+msgid_plural "{count} had no published record"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:230
+msgid "nothing was found"
+msgstr ""
+
+#: app/src/gui/view/keys.ts:231
+msgid "Lookup done: {results}."
+msgstr ""
+
+#: app/src/gui/view/keys.ts:236
+msgid ""
+"{count} key differs from one this case already held — check which is the "
+"real one."
+msgid_plural ""
+"{count} keys differ from ones this case already held — check which are the "
+"real ones."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:261
+msgid "{count} message re-verified; its verdict is unchanged."
+msgid_plural "{count} messages re-verified; no verdict changed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/keys.ts:270
+msgid "{count} verdict changed."
+msgid_plural "{count} verdicts changed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/message.ts:44
+msgid "(no subject)"
+msgstr ""
+
+#: app/src/gui/view/message.ts:45
+msgid "(no sender)"
+msgstr ""
+
+#: app/src/gui/view/message.ts:87
+msgid "From"
+msgstr ""
+
+#: app/src/gui/view/message.ts:88
+msgid "To"
+msgstr ""
+
+#: app/src/gui/view/message.ts:91
+msgid "Cc"
+msgstr ""
+
+#: app/src/gui/view/message.ts:94
+msgid "Subject"
+msgstr ""
+
+#: app/src/gui/view/message.ts:95
+msgid "Date"
+msgstr ""
+
+#: app/src/gui/view/message.ts:99
+msgid "Message-ID"
+msgstr ""
+
+#: app/src/gui/view/message.ts:106
+msgid "Size"
+msgstr ""
+
+#: app/src/gui/view/message.ts:109
+msgid "SHA-256"
+msgstr ""
+
+#: app/src/gui/view/message.ts:155
+msgid "No messages in this case"
+msgstr ""
+
+#: app/src/gui/view/message.ts:156
+msgid "Import a mailbox or a folder of messages to begin."
+msgstr ""
+
+#: app/src/gui/view/message.ts:165
+msgid "No match"
+msgstr ""
+
+#: app/src/gui/view/message.ts:166
+msgid "Nothing in it matches this search."
+msgstr ""
+
+#: app/src/gui/view/message.ts:171
+msgid "Nothing in this view"
+msgstr ""
+
+#: app/src/gui/view/message.ts:172
+msgid "No message has the verdict you filtered for."
+msgstr ""
+
+#: app/src/gui/view/overview.ts:41 app/src/gui/window.blp:187
+#: app/src/gui/window.blp:201
+msgid "Messages"
+msgstr ""
+
+#: app/src/gui/view/overview.ts:45
+msgid "Raw mail stored"
+msgstr ""
+
+#: app/src/gui/view/overview.ts:49
+msgid "Period"
+msgstr ""
+
+#: app/src/gui/view/overview.ts:65
+msgid "no readable dates"
+msgstr ""
+
+#: app/src/gui/view/overview.ts:67
+msgid "{from} to {to}, by the dates in the messages"
+msgstr ""
+
+#: app/src/gui/view/overview.ts:111
+msgid "This case is empty. Import a mailbox to get started."
+msgstr ""
+
+#: app/src/gui/view/overview.ts:121
+msgid ""
+"{total} messages: {confirmed} confirmed (of those {caveats} with caveats), "
+"{altered} altered, {unverifiable} without a verdict for want of a key, "
+"{unsigned} never signed."
+msgstr ""
+
+#: app/src/gui/view/overview.ts:143
+msgid ""
+"{messages} messages are waiting on {pairs} signing key. Collect it in the "
+"Keys view."
+msgid_plural ""
+"{messages} messages are waiting on {pairs} signing keys. Collect them in the "
+"Keys view."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/sources.ts:76
+msgid "All archives"
+msgstr ""
+
+#: app/src/gui/view/sources.ts:78
+msgid "{count} archive imported"
+msgid_plural "{count} archives imported"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/sources.ts:116
+msgid "{count} message"
+msgid_plural "{count} messages"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/sources.ts:122
+msgid "{read}, one of them already in the case"
+msgid_plural "{read}, {duplicates} of them already in the case"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/verdict.ts:46
+msgid "Confirmed"
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:48
+msgid "With caveats"
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:50
+msgid "Body altered"
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:52
+msgid "Headers altered"
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:54
+msgid "Unverifiable"
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:56
+msgid "Unsigned"
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:128
+msgid ""
+"A signature from the sender’s own domain verified against a key you trust, "
+"and it covers the fields that matter. The message is byte for byte what was "
+"signed."
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:132
+msgid ""
+"The cryptography checked out, but something limits what that proves — a weak "
+"algorithm, an unsigned Subject, or a key that came from the archive itself. "
+"Read the caveats before you quote the message."
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:136
+msgid ""
+"The signature is intact and the body does not match the hash it committed "
+"to. Somebody changed the text after it was signed. This is a finding, not a "
+"failure of the check."
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:140
+msgid ""
+"The body is as signed, but one of the signed header fields is not. A changed "
+"Subject, From or Date — which can matter more than the body does."
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:144
+msgid ""
+"A signature is present and nothing here could check it, almost always "
+"because the public key is missing. This says nothing against the message: "
+"fetch the key and it will get a verdict."
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:148
+msgid ""
+"The message carries no DKIM signature at all. Most mail before the mid-2010s "
+"does not. It is neither evidence for nor against authenticity."
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:182
+msgid "All messages"
+msgstr ""
+
+#: app/src/gui/view/verdict.ts:204
+msgid "{shown} of {total} shown"
+msgstr ""
+
+#: app/src/gui/window.ts:177
+msgid "All files"
+msgstr ""
+
+#: app/src/gui/window.ts:179
+msgid "Mail archives"
+msgstr ""
+
+#: app/src/gui/window.ts:321
+msgid "{path} is not a Stamped case folder."
+msgstr ""
+
+#: app/src/gui/window.ts:477
+msgid "The stored copy of this message is missing from the case’s blob store."
+msgstr ""
+
+#: app/src/gui/window.ts:543 app/src/gui/window.blp:264
+msgid "Message"
+msgstr ""
+
+#: app/src/gui/window.ts:562
+msgid "Copy"
+msgstr ""
+
+#: app/src/gui/window.ts:571
+msgid "Copied."
+msgstr ""
+
+#: app/src/gui/window.ts:587
+msgid "Evidence"
+msgstr ""
+
+#: app/src/gui/window.ts:627
+msgid "Raw message"
+msgstr ""
+
+#: app/src/gui/window.ts:629
+msgid "Copy the whole message, headers and body, as stored"
+msgstr ""
+
+#: app/src/gui/window.ts:631
+msgid "Header block, as stored"
+msgstr ""
+
+#: app/src/gui/window.ts:663
+msgid ""
+"Stamped stays offline until you say otherwise, and will show you exactly "
+"what it would send."
+msgstr ""
+
+#: app/src/gui/window.ts:675
+msgid "Signing keys this case needs"
+msgstr ""
+
+#: app/src/gui/window.ts:713
+msgid "Paste Key…"
+msgstr ""
+
+#: app/src/gui/window.ts:722
+msgid "Copy Request…"
+msgstr ""
+
+#: app/src/gui/window.ts:723
+msgid "Copy a request to send to the signing domain’s operator"
+msgstr ""
+
+#: app/src/gui/window.ts:727
+msgid "Request copied. Paste it into a mail to the operator."
+msgstr ""
+
+#: app/src/gui/window.ts:772
+msgid "Look Up Missing Keys…"
+msgstr ""
+
+#: app/src/gui/window.ts:794
+msgid "Paste the key for {name}"
+msgstr ""
+
+#: app/src/gui/window.ts:796
+msgid ""
+"A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
+"Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
+"will be refused."
+msgstr ""
+
+#: app/src/gui/window.ts:815 app/src/gui/window.ts:1011
+msgid "Cancel"
+msgstr ""
+
+#: app/src/gui/window.ts:816
+msgid "Store Key"
+msgstr ""
+
+#: app/src/gui/window.ts:942
+msgid "The case"
+msgstr ""
+
+#: app/src/gui/window.ts:954
+msgid ""
+"All six are listed, including the ones at zero: a measured zero is a result, "
+"and the line most often at zero is the one that says no tampering was found."
+msgstr ""
+
+#: app/src/gui/window.ts:987
+msgid "Open Case Folder"
+msgstr ""
+
+#: app/src/gui/window.ts:1003
+msgid "Create a new case here?"
+msgstr ""
+
+#: app/src/gui/window.ts:1006
+msgid ""
+"{path} is not a Stamped case yet. Creating one writes a case file, a store "
+"for the raw messages and a search index into it. Nothing is sent anywhere."
+msgstr ""
+
+#: app/src/gui/window.ts:1010
+msgid "Create Case"
+msgstr ""
+
+#: app/src/gui/window.ts:1038
+msgid "Import a Mail Folder"
+msgstr ""
+
+#: app/src/gui/window.ts:1038
+msgid "Import Mail Archives"
+msgstr ""
+
+#: app/src/gui/window.ts:1074
+msgid "That did not work"
+msgstr ""
+
+#: app/src/gui/window.ts:1074
+msgid "Close"
+msgstr ""
+
 #: app/src/index.ts:40
 msgid "stamped <command> [options]"
 msgstr ""
@@ -483,6 +1025,126 @@ msgstr ""
 msgid "Send these lookups? [y/N] "
 msgstr ""
 
+#: app/src/lib/evidence.ts:48
+msgid "Signature {position} of {total} — {verdict}"
+msgstr ""
+
+#: app/src/lib/evidence.ts:66
+msgid "domain"
+msgstr ""
+
+#: app/src/lib/evidence.ts:67
+msgid "author domain"
+msgstr ""
+
+#: app/src/lib/evidence.ts:67
+msgid "(unknown)"
+msgstr ""
+
+#: app/src/lib/evidence.ts:68
+msgid "aligned"
+msgstr ""
+
+#: app/src/lib/evidence.ts:68
+msgid "yes"
+msgstr ""
+
+#: app/src/lib/evidence.ts:68
+msgid "no"
+msgstr ""
+
+#: app/src/lib/evidence.ts:69
+msgid "selector"
+msgstr ""
+
+#: app/src/lib/evidence.ts:70
+msgid "algorithm"
+msgstr ""
+
+#: app/src/lib/evidence.ts:71
+msgid "canonicalization"
+msgstr ""
+
+#: app/src/lib/evidence.ts:72
+msgid "key"
+msgstr ""
+
+#: app/src/lib/evidence.ts:73
+msgid "signed headers"
+msgstr ""
+
+#: app/src/lib/evidence.ts:74
+msgid "body hash"
+msgstr ""
+
+#: app/src/lib/evidence.ts:75
+msgid "signature"
+msgstr ""
+
+#: app/src/lib/evidence.ts:75
+msgid "verified"
+msgstr ""
+
+#: app/src/lib/evidence.ts:75
+msgid "not verified"
+msgstr ""
+
+#: app/src/lib/evidence.ts:79
+msgid "l= limit"
+msgstr ""
+
+#: app/src/lib/evidence.ts:83
+msgid "reason"
+msgstr ""
+
+#: app/src/lib/evidence.ts:90
+msgid "verifier says"
+msgstr ""
+
+#: app/src/lib/evidence.ts:105
+msgid "none fetched"
+msgstr ""
+
+#: app/src/lib/evidence.ts:111
+msgid "{bits} bit, {source}"
+msgstr ""
+
+#: app/src/lib/evidence.ts:118
+msgid "from the DNS"
+msgstr ""
+
+#: app/src/lib/evidence.ts:120
+msgid "supplied by you"
+msgstr ""
+
+#: app/src/lib/evidence.ts:122
+msgid "from the archive itself"
+msgstr ""
+
+#: app/src/lib/evidence.ts:136
+msgid "matches ({hash})"
+msgstr ""
+
+#: app/src/lib/evidence.ts:137
+msgid "matches"
+msgstr ""
+
+#: app/src/lib/evidence.ts:140
+msgid "differs — signed {expected}, message hashes to {actual}"
+msgstr ""
+
+#: app/src/lib/evidence.ts:145
+msgid "not checked"
+msgstr ""
+
+#: app/src/lib/evidence.ts:152
+msgid "{limit} bytes of the body are signed"
+msgstr ""
+
+#: app/src/lib/evidence.ts:154
+msgid "{limit} bytes of the body are signed, {unsigned} are not"
+msgstr ""
+
 #: app/src/lib/keys.ts:50
 msgid "{path} is neither a DKIM TXT record nor a PEM public key."
 msgstr ""
@@ -491,128 +1153,8 @@ msgstr ""
 msgid "Cannot read the key file {path}."
 msgstr ""
 
-#: app/src/lib/report.ts:55
-msgid "Signature {position} of {total} — {verdict}"
-msgstr ""
-
-#: app/src/lib/report.ts:60
-msgid "domain"
-msgstr ""
-
-#: app/src/lib/report.ts:61
-msgid "author domain"
-msgstr ""
-
-#: app/src/lib/report.ts:61
-msgid "(unknown)"
-msgstr ""
-
-#: app/src/lib/report.ts:62
-msgid "aligned"
-msgstr ""
-
-#: app/src/lib/report.ts:62
-msgid "yes"
-msgstr ""
-
-#: app/src/lib/report.ts:62
-msgid "no"
-msgstr ""
-
-#: app/src/lib/report.ts:63
-msgid "selector"
-msgstr ""
-
-#: app/src/lib/report.ts:64
-msgid "algorithm"
-msgstr ""
-
-#: app/src/lib/report.ts:65
-msgid "canonicalization"
-msgstr ""
-
-#: app/src/lib/report.ts:66
-msgid "key"
-msgstr ""
-
-#: app/src/lib/report.ts:67
-msgid "signed headers"
-msgstr ""
-
-#: app/src/lib/report.ts:68
-msgid "body hash"
-msgstr ""
-
-#: app/src/lib/report.ts:69
-msgid "signature"
-msgstr ""
-
-#: app/src/lib/report.ts:69
-msgid "verified"
-msgstr ""
-
-#: app/src/lib/report.ts:69
-msgid "not verified"
-msgstr ""
-
-#: app/src/lib/report.ts:73
-msgid "l= limit"
-msgstr ""
-
-#: app/src/lib/report.ts:76
-msgid "reason"
-msgstr ""
-
-#: app/src/lib/report.ts:81
-msgid "verifier says"
-msgstr ""
-
-#: app/src/lib/report.ts:84
+#: app/src/lib/report.ts:51
 msgid "  caveat: {text}"
-msgstr ""
-
-#: app/src/lib/report.ts:96
-msgid "none fetched"
-msgstr ""
-
-#: app/src/lib/report.ts:102
-msgid "{bits} bit, {source}"
-msgstr ""
-
-#: app/src/lib/report.ts:109
-msgid "from the DNS"
-msgstr ""
-
-#: app/src/lib/report.ts:111
-msgid "supplied by you"
-msgstr ""
-
-#: app/src/lib/report.ts:113
-msgid "from the archive itself"
-msgstr ""
-
-#: app/src/lib/report.ts:127
-msgid "matches ({hash})"
-msgstr ""
-
-#: app/src/lib/report.ts:128
-msgid "matches"
-msgstr ""
-
-#: app/src/lib/report.ts:131
-msgid "differs — signed {expected}, message hashes to {actual}"
-msgstr ""
-
-#: app/src/lib/report.ts:136
-msgid "not checked"
-msgstr ""
-
-#: app/src/lib/report.ts:143
-msgid "{limit} bytes of the body are signed"
-msgstr ""
-
-#: app/src/lib/report.ts:145
-msgid "{limit} bytes of the body are signed, {unsigned} are not"
 msgstr ""
 
 #: app/src/lib/vault.ts:25
@@ -899,10 +1441,81 @@ msgstr ""
 msgid "Cannot open the index of the case folder {path}."
 msgstr ""
 
-#: packages/store/src/raw.ts:73
+#: packages/store/src/raw.ts:81
 msgid "Cannot write into the case folder {path}."
 msgstr ""
 
 #: packages/verify/src/mailauth.ts:136
 msgid "no key in the store"
+msgstr ""
+
+#: app/src/gui/window.blp:20 app/src/gui/window.blp:66
+msgid "Stamped"
+msgstr ""
+
+#: app/src/gui/window.blp:58 app/src/gui/window.blp:118
+msgid "Main menu"
+msgstr ""
+
+#: app/src/gui/window.blp:67
+msgid ""
+"Open a case folder, or import a mail archive to start one. Nothing leaves "
+"this machine."
+msgstr ""
+
+#: app/src/gui/window.blp:75 app/src/gui/window.blp:359
+msgid "Open Case…"
+msgstr ""
+
+#: app/src/gui/window.blp:84 app/src/gui/window.blp:364
+msgid "Import Archive…"
+msgstr ""
+
+#: app/src/gui/window.blp:111
+msgid "Import another archive into this case"
+msgstr ""
+
+#: app/src/gui/window.blp:124
+msgid "Case"
+msgstr ""
+
+#: app/src/gui/window.blp:137
+msgid "Archives"
+msgstr ""
+
+#: app/src/gui/window.blp:196
+msgid "Show the case sidebar"
+msgstr ""
+
+#: app/src/gui/window.blp:207
+msgid "Search senders, subjects, bodies"
+msgstr ""
+
+#: app/src/gui/window.blp:244
+msgid "Verification"
+msgstr ""
+
+#: app/src/gui/window.blp:273
+msgid "No message selected"
+msgstr ""
+
+#: app/src/gui/window.blp:274
+msgid ""
+"Pick a message to see which of its signatures hold, and what each one covers."
+msgstr ""
+
+#: app/src/gui/window.blp:303
+msgid "Keys"
+msgstr ""
+
+#: app/src/gui/window.blp:326
+msgid "Overview"
+msgstr ""
+
+#: app/src/gui/window.blp:371
+msgid "Import Folder…"
+msgstr ""
+
+#: app/src/gui/window.blp:378
+msgid "About Stamped"
 msgstr ""

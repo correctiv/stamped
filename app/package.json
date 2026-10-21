@@ -4,10 +4,11 @@
   "license": "AGPL-3.0-or-later",
   "private": true,
   "type": "module",
-  "description": "Stamped app: the `stamped` binary — the CLI over the @stamped/* packages, bundled to a single .gjs.mjs and run on GJS via gjsify.",
-  "main": "src/index.ts",
+  "description": "Stamped app: the `stamped` binary — the GTK4/libadwaita window and the CLI over the @stamped/* packages, bundled to a single .gjs.mjs and run on GJS via gjsify.",
+  "main": "src/gui/main.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/gui/main.ts",
+    "./cli": "./src/index.ts"
   },
   "scripts": {
     "check": "gjsify tsc --noEmit",
@@ -27,7 +28,7 @@
     "ship": {
       "appId": "org.correctiv.Stamped",
       "binaryName": "stamped",
-      "kind": "cli",
+      "kind": "app",
       "name": "Stamped",
       "localeDir": "dist/locale",
       "bundle": {
@@ -53,7 +54,29 @@
       "bugtrackerUrl": "https://github.com/correctiv/stamped/issues",
       "vcsBrowserUrl": "https://github.com/correctiv/stamped",
       "icon": "../data/icons/hicolor/scalable/apps/org.correctiv.Stamped.svg",
-      "maintainer": "CORRECTIV <info@correctiv.org>"
+      "maintainer": "CORRECTIV <info@correctiv.org>",
+      "categories": ["Office", "Email", "Security"],
+      "screenshots": [
+        {
+          "url": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/01-message.png",
+          "localizedUrls": {
+            "de": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/04-message-de.png"
+          },
+          "caption": "A message with its verdict and the evidence behind it",
+          "environment": "gnome",
+          "type": "default"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/02-keys.png",
+          "caption": "Which public keys the archive still needs",
+          "environment": "gnome"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/03-overview.png",
+          "caption": "How the whole case breaks down by verdict",
+          "environment": "gnome"
+        }
+      ]
     },
     "excludeGlobals": [
       "document",
@@ -91,11 +114,17 @@
     "@gjsify/rolldown-native": "0.64.2",
     "@gjsify/runtime": "0.64.2",
     "@gjsify/sqlite": "0.64.2",
+    "@gjsify/adwaita-app": "0.64.2",
     "@gjsify/unit": "0.64.2",
-    "@girs/gjs": "^4.1.0",
-    "@girs/glib-2.0": "^4.1.0",
-    "@girs/gobject-2.0": "^4.1.0",
-    "@girs/gio-2.0": "^4.1.0",
+    "@girs/adw-1": "5.4.0",
+    "@girs/gdk-4.0": "5.4.0",
+    "@girs/gio-2.0": "5.4.0",
+    "@girs/gjs": "5.4.0",
+    "@girs/glib-2.0": "5.4.0",
+    "@girs/gobject-2.0": "5.4.0",
+    "@girs/graphene-1.0": "5.4.0",
+    "@girs/gsk-4.0": "5.4.0",
+    "@girs/gtk-4.0": "5.4.0",
     "@types/node": "^26.1.2",
     "@types/yargs": "^17.0.35",
     "oxfmt": "^0.56.0",

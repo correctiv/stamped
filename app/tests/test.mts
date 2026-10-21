@@ -12,6 +12,7 @@ import report from './unit/report.test.ts';
 import fts5 from './unit/fts5.test.ts';
 import importSuite from './unit/import.test.ts';
 import store from './unit/store.test.ts';
+import view from './unit/view.test.ts';
 
 run({
     autokeys,
@@ -23,4 +24,5 @@ run({
     fts5,
     import: importSuite,
     store,
+    view,
 });

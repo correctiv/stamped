@@ -33,12 +33,17 @@ import {
     isCase,
     isIndexed,
     keyDemand,
+    listMessages,
+    logSources,
     messageCount,
     openCase,
     openIndex,
     rawPath,
+    readMessage,
+    readRaw,
     removeMessage,
     searchMessages,
+    sourceHashes,
     store,
     verdictCounts,
 } from '@stamped/store';
@@ -225,6 +230,17 @@ export default async () => {
             });
         });
 
+        await it('reads a stored message back, and says nothing about a hash it has not got', async () => {
+            // The window re-verifies from these bytes rather than trusting the index, so a read
+            // that quietly returned something else would make the evidence pane a fiction.
+            await withCase((paths) => {
+                const raw = message('Harbour contract', 'The contract is signed.');
+                const { hash } = store(paths, raw);
+                expect(readRaw(paths, hash)).toStrictEqual(raw);
+                expect(readRaw(paths, 'f'.repeat(64))).toBe(undefined);
+            });
+        });
+
         await it('writes the import log as one JSON object per line', async () => {
             // JSON Lines and not a table: the chain of custody must survive the index being
             // deleted and be readable with `tail` on a machine with no tooling.
@@ -256,6 +272,83 @@ export default async () => {
                 const second = JSON.parse(lines[1] ?? '') as ImportLogEntry;
                 expect(second.offset).toBe(120);
                 expect(second.duplicate).toBe(true);
+            });
+        });
+    });
+
+    await describe('the provenance of a case', async () => {
+        await it('groups the import log by source, most mail first', async () => {
+            await withCase(async (paths) => {
+                await importSources(paths, [archive('inbox.mbox'), archive('maildir')], {
+                    keys: fixtureKeys(),
+                });
+                const sources = logSources(paths);
+                // One mbox of five reads, and the two Maildir messages as one source each: the
+                // importer logs the file it read, and a Maildir message is its own file.
+                expect(sources.length).toBe(3);
+                expect(sources[0]?.messages).toBe(5);
+                expect(sources[0]?.kind).toBe('mbox');
+                expect(sources[0]?.source.endsWith('inbox.mbox')).toBe(true);
+                // The duplicate inside the mbox is reported, not netted off: the same mail twice
+                // is a fact about the archive.
+                expect(sources[0]?.duplicates).toBe(1);
+            });
+        });
+
+        await it('answers an unimported case with no sources rather than failing', async () => {
+            await withCase((paths) => {
+                expect(logSources(paths).length).toBe(0);
+                expect(sourceHashes(paths, '/archive/inbox.mbox').size).toBe(0);
+            });
+        });
+
+        await it('skips a log line a crash truncated', async () => {
+            // The log is append-only, so the last line is the one that can be half-written. A
+            // reader that threw on it would make a whole case unopenable.
+            await withCase((paths) => {
+                appendLog(paths, [
+                    {
+                        hash: 'a'.repeat(64),
+                        source: '/archive/inbox.mbox',
+                        offset: 0,
+                        kind: 'mbox',
+                        bytes: 120,
+                        at: '2026-01-01T00:00:00.000Z',
+                        duplicate: false,
+                    },
+                ]);
+                writeFileSync(paths.log, `${readFileSync(paths.log, 'utf8')}{"hash":"bb`, { flag: 'w' });
+                const sources = logSources(paths);
+                expect(sources.length).toBe(1);
+                expect(sources[0]?.messages).toBe(1);
+            });
+        });
+
+        await it('gives the hashes one source contributed, overlaps included', async () => {
+            // Sources do NOT partition a case: the same message out of two archives belongs to
+            // both, which is how an archive's overlap with another is reconstructed.
+            await withCase(async (paths) => {
+                const mbox = archive('inbox.mbox');
+                const elsewhere = mkdtempSync(join(tmpdir(), 'stamped-second-'));
+                try {
+                    // The same archive under another name — the everyday case of one mailbox
+                    // handed over twice.
+                    const copy = join(elsewhere, 'second.mbox');
+                    writeFileSync(copy, readFileSync(mbox));
+                    await importSources(paths, [mbox, copy], { keys: fixtureKeys() });
+
+                    const first = sourceHashes(paths, mbox);
+                    const second = sourceHashes(paths, copy);
+                    // Four distinct messages out of five reads: the mbox holds one of them twice.
+                    expect(first.size).toBe(4);
+                    expect(second.size).toBe(4);
+                    // Sources do NOT partition a case. A message out of two archives belongs to
+                    // both, and a filter that handed it to only the first would hide from which
+                    // archive a message is available — which is how provenance is reconstructed.
+                    expect([...second].every((hash) => first.has(hash))).toBe(true);
+                } finally {
+                    rmSync(elsewhere, { recursive: true, force: true });
+                }
             });
         });
     });
@@ -345,6 +438,74 @@ export default async () => {
                 expect(messageCount(db)).toBe(0);
                 expect(searchMessages(db, 'harbour').length).toBe(0);
                 expect(keyDemand(db).length).toBe(0);
+            });
+        });
+
+        await it('lists the case newest first, with the messages it could not date last', async () => {
+            // The window's list before anything is typed. A message whose `Date` was unreadable
+            // must not sort to 1970: a gap in the data would then read as a fact about the mail.
+            withIndex((db) => {
+                const dated = (subject: string, date: string) =>
+                    encodeLatin1(`Subject: ${subject}\nDate: ${date}\n\nbody of ${subject}\n`);
+                put(db, dated('Middle', 'Wed, 06 Mar 2024 09:40:00 +0000'), 'unsigned');
+                put(db, dated('Oldest', 'Tue, 05 Mar 2024 09:40:00 +0000'), 'unsigned');
+                put(db, dated('Newest', 'Fri, 08 Mar 2024 16:30:45 +0000'), 'unsigned');
+                put(db, dated('Undated', 'whenever'), 'unsigned');
+                const subjects = listMessages(db).map((hit) => hit.subject);
+                expect(subjects).toStrictEqual(['Newest', 'Middle', 'Oldest', 'Undated']);
+            });
+        });
+
+        await it('narrows the list to one verdict and to one source', async () => {
+            withIndex((db) => {
+                const one = put(db, message('One', 'body one'), 'confirmed');
+                put(db, message('Two', 'body two'), 'confirmed');
+                put(db, message('Three', 'body three'), 'unverifiable');
+                expect(listMessages(db, { verdict: 'confirmed' }).length).toBe(2);
+                expect(listMessages(db, { verdict: 'body-altered' }).length).toBe(0);
+                // What a folder filter is: the hashes one archive contributed.
+                const only = listMessages(db, { hashes: new Set([one]) });
+                expect(only.length).toBe(1);
+                expect(only[0]?.hash).toBe(one);
+                // Both at once, and a filter that matches nothing is empty rather than everything.
+                expect(listMessages(db, { verdict: 'unverifiable', hashes: new Set([one]) }).length).toBe(0);
+            });
+        });
+
+        await it('honours the list limit and clamps a nonsensical one', async () => {
+            withIndex((db) => {
+                for (let i = 0; i < 5; i++) put(db, message(`Note ${i}`, `body ${i}`), 'unsigned');
+                expect(listMessages(db, { limit: 2 }).length).toBe(2);
+                expect(listMessages(db, { limit: 0 }).length).toBe(1);
+                expect(listMessages(db, { limit: -7 }).length).toBe(1);
+            });
+        });
+
+        await it('reads one message out of the index, and nothing for a hash it has not got', async () => {
+            withIndex((db) => {
+                const raw = message('Harbour contract', 'the contract is signed');
+                const hash = put(db, raw, 'confirmed', [{ domain: 'example.com', selector: 'sel' }]);
+                const found = readMessage(db, hash);
+                expect(found?.subject).toBe('Harbour contract');
+                expect(found?.from).toBe('Ada Lovelace <ada@example.com>');
+                expect(found?.to).toBe('Grace Hopper <grace@example.net>');
+                expect(found?.verdict).toBe('confirmed');
+                expect(found?.bytes).toBe(raw.length);
+                expect(found?.fromDomain).toBe('example.com');
+                expect(readMessage(db, 'f'.repeat(64))).toBe(undefined);
+            });
+        });
+
+        await it('reports a header the message never had as absent, not as the word null', async () => {
+            // A nullable TEXT column read with String() gives "null", which in a pane about what
+            // a message says would be a header field this tool invented.
+            withIndex((db) => {
+                const hash = put(db, encodeLatin1('Subject: Bare\n\nbody\n'), 'unsigned');
+                const found = readMessage(db, hash);
+                expect(found?.messageId).toBe(undefined);
+                expect(found?.fromDomain).toBe(undefined);
+                expect(found?.from).toBe('');
+                expect(found?.date).toBe('');
             });
         });
 
