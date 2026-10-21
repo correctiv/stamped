@@ -19,10 +19,10 @@
 // side effect, so a module-level `_('…')` in the window or in a yargs `describe` is already
 // translated. ES modules evaluate their whole graph before this body runs, which is why this is
 // a module with a side effect and not a call down below.
-import './i18n-init.ts';
+import { LOCALE_DIR } from './i18n-init.ts';
 // Safe to import statically: `i18n-init.ts` already pulls `@stamped/core` in to install the
 // catalogue, so the CLI path pays nothing extra for it.
-import { _, _p } from '@stamped/core';
+import { _, _p, TEXT_DOMAIN } from '@stamped/core';
 
 /**
  * The CLI's commands, as `stamped --help` lists them.
@@ -49,8 +49,16 @@ if (wantsCli) {
     // nothing while exiting 0, which is exactly what it did before the loop existed.
     process.exit(await runCli());
 } else {
-    const { AdwaitaApp, runApplication } = await import('@gjsify/adwaita-app');
+    const { AdwaitaApp, initLocale, runApplication } = await import('@gjsify/adwaita-app');
     const { StampedWindow } = await import('./window.ts');
+
+    // The window's SECOND binding, and only the window needs it: `GtkBuilder` translates a
+    // template's `translatable="yes"` through the C library, so the blueprint labels — the whole
+    // welcome page, the sidebar headings, every button in the header bar — are looked up outside
+    // the catalogue `i18n-init.ts` installed. Binding the same directory under the same domain
+    // makes the two lookups answer alike. It also runs `setlocale`, which GTK needs for anything
+    // it formats itself. Left out of the CLI path deliberately: nothing there is rendered by GTK.
+    initLocale(TEXT_DOMAIN, { localeDir: LOCALE_DIR });
 
     const app = new AdwaitaApp({
         applicationId: 'org.correctiv.Stamped',

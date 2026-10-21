@@ -15,7 +15,7 @@
     <p>Stamped is for journalists working on leaked email archives. It verifies the DKIM signatures of a message and says what each signature actually covers: confirmed, confirmed with caveats, body altered, headers altered, unverifiable, or unsigned.</p>
     <p xml:lang="de">Poststempel ist für Journalistinnen und Journalisten, die mit geleakten Mailarchiven arbeiten. Es prüft die DKIM-Signaturen einer Mail und sagt, was jede Signatur tatsächlich abdeckt: bestätigt, bestätigt mit Einschränkung, Text geändert, Kopfzeilen geändert, nicht prüfbar oder unsigniert.</p>
     <p>It works offline: public keys come from a store you fill, so examining a message sends no lookup to the signing domain.</p>
-    <p xml:lang="de">Es arbeitet offline: Öffentliche Schlüssel stammen aus einem Lager, das du selbst füllst, daher erfährt die signierende Domain nichts von der Prüfung.</p>
+    <p xml:lang="de">Es arbeitet offline: Öffentliche Schlüssel stammen aus einem Speicher, den Sie selbst füllen, daher erfährt die signierende Domain nichts von der Prüfung.</p>
   </description>
   <icon type="stock">org.correctiv.Stamped</icon>
   <launchable type="desktop-id">org.correctiv.Stamped.desktop</launchable>
