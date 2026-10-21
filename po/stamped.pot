@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 10:19+0200\n"
+"POT-Creation-Date: 2026-10-21 12:02+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1518,11 +1518,15 @@ msgstr ""
 msgid "Cannot open the index of the case folder {path}."
 msgstr ""
 
-#: packages/store/src/raw.ts:81
-msgid "Cannot write into the case folder {path}."
+#: packages/store/src/raw.ts:86
+msgid "Cannot write into the case folder {path} ({code})."
 msgstr ""
 
-#: packages/verify/src/mailauth.ts:144
+#: packages/store/src/raw.ts:88
+msgid "unknown error"
+msgstr ""
+
+#: packages/verify/src/mailauth.ts:153
 msgid "no key in the store"
 msgstr ""
 
