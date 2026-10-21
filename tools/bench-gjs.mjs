@@ -5,7 +5,9 @@
 //
 // Builds a synthetic archive under the system temp directory (nothing is written into the repo),
 // imports it with `app/dist/stamped.gjs.mjs` — build it first — and prints mails/s plus the
-// resident memory sampled every five seconds, so a leak shows as a curve rather than a number.
+// resident memory sampled every five seconds, so a leak shows as a curve rather than a number —
+// and as one figure, `rssMiBPer1000Mails`: the slope of that curve after the first sample, which
+// is ~0 for a pipeline that holds nothing and ~the archive's size per 1000 mails for one that does.
 // Not part of `gjsify test`: it takes minutes and needs gigabytes of disk at 30 000 mails.
 
 import { spawn, spawnSync } from 'node:child_process';
@@ -20,6 +22,23 @@ const bundle = join(root, 'app', 'dist', 'stamped.gjs.mjs');
 if (!existsSync(bundle)) {
     console.error('build the bundle first: gjsify workspace stamped-cli build');
     process.exit(2);
+}
+
+/** Least-squares slope of the samples after the first (the warm-up), as MiB per 1000 mails. */
+function slopePer1000(samples, mailsPerSecond) {
+    const settled = samples.slice(1);
+    if (settled.length < 3) return null;
+    const n = settled.length;
+    const mean = (n - 1) / 2;
+    const my = settled.reduce((sum, y) => sum + y, 0) / n;
+    let num = 0;
+    let den = 0;
+    settled.forEach((y, i) => {
+        num += (i - mean) * (y - my);
+        den += (i - mean) ** 2;
+    });
+    const perSample = num / den;
+    return Number(((perSample / (5 * mailsPerSecond)) * 1000).toFixed(2));
 }
 
 const work = mkdtempSync(join(tmpdir(), 'stamped-bench-'));
@@ -66,13 +85,15 @@ try {
     const code = await new Promise((resolve) => child.on('exit', resolve));
     clearInterval(sample);
     const seconds = (Date.now() - started) / 1000;
+    const mailsPerSecond = count / seconds;
     console.log(
         JSON.stringify({
             exit: code,
             mails: count,
             seconds: Number(seconds.toFixed(1)),
-            mailsPerSecond: Number((count / seconds).toFixed(1)),
+            mailsPerSecond: Number(mailsPerSecond.toFixed(1)),
             rssMiBEvery5s: curve,
+            rssMiBPer1000Mails: slopePer1000(curve, mailsPerSecond),
         }),
     );
 } finally {
