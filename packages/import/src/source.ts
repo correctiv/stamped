@@ -1,10 +1,11 @@
 /**
- * The one module in this package that touches a filesystem.
+ * Reading a source: an mbox, a Maildir, a single message, a directory of those.
  *
- * Everything else here is pure, so the mbox rules and the decoders are testable from a byte
- * array. This is the part that decides what a path IS — an mbox, a Maildir, a single message, a
- * directory of any of those — and reads it in a way that keeps the memory ceiling at one message
- * rather than one archive.
+ * The parsing in this package is pure, so the mbox rules and the decoders are testable from a
+ * byte array. This module and `folder.ts` are the parts that touch a filesystem, and between
+ * them they decide what a path IS — `source.ts` for a source as it is, `folder.ts` for a tree of
+ * mailboxes — and read it in a way that keeps the memory ceiling at one message rather than one
+ * archive.
  *
  * WHY `readSync` INTO ONE BUFFER and not `createReadStream`: the consumer is synchronous and runs
  * on GJS, which has no always-on event loop (see `app/src/index.ts`). A stream would need the
@@ -31,11 +32,15 @@ export interface SourceMessage extends RawMessage {
     /** The file this message was read from — the mbox, or the individual `.eml`. */
     readonly path: string;
     readonly kind: SourceKind;
+    /** The mailbox this message belongs to, when the layout names one. See `folder.ts`. */
+    readonly mailbox?: string;
 }
 
 export interface ReadOptions {
     /** Which `From ` quoting the archives use. See {@link MboxFlavour}. */
     readonly flavour?: MboxFlavour;
+    /** The mailbox the messages belong to, recorded with every message. */
+    readonly mailbox?: string;
 }
 
 /**
@@ -56,6 +61,39 @@ export function readSource(
 }
 
 /**
+ * Read one file as an mbox, whatever its first line looks like.
+ *
+ * The general reader decides by CONTENT: a file that starts with a believable `From ` line is an
+ * archive, anything else is one message. That decision is the wrong one for a folder of mbox
+ * PARTS, because the layout says what the file is — a part of a mailbox — and a part that does
+ * not start with a separator is a BROKEN part, not a message. Reading it as one message would
+ * put a fragment of a mailbox into the case folder as a mail nobody sent, and the reporter
+ * would never know the archive was damaged.
+ *
+ * So the parts of a mailbox are read this way, and a part that yields no message is reported as
+ * the failure it is.
+ */
+export function readMboxFile(
+    path: string,
+    emit: (message: SourceMessage) => void,
+    options: ReadOptions = {},
+): number {
+    let count = 0;
+    const splitter = new MboxSplitter((message) => {
+        count++;
+        emit({ ...message, path, kind: 'mbox', ...named(options.mailbox) });
+    }, options.flavour);
+    forEachChunk(path, (chunk) => splitter.feed(chunk));
+    splitter.end();
+    return count;
+}
+
+/** The mailbox field, present only when there is one — an absent key and an undefined one differ. */
+function named(mailbox?: string): { mailbox?: string } {
+    return mailbox === undefined ? {} : { mailbox };
+}
+
+/**
  * A directory: a Maildir if it looks like one, otherwise a plain tree of sources.
  *
  * The Maildir test is the presence of `cur`/`new` (RFC-less, but universal since qmail), and it
@@ -73,7 +111,7 @@ function readDirectory(path: string, emit: (message: SourceMessage) => void, opt
             for (const name of readdirSync(dir).sort()) {
                 const file = join(dir, name);
                 if (!stat(file).isFile()) continue;
-                count += readMaildirMessage(file, emit);
+                count += readMaildirMessage(file, emit, options.mailbox);
             }
         }
         // A Maildir may hold sub-folders (`.Sent`, `.Archive`); they are Maildirs themselves.
@@ -93,10 +131,10 @@ function readDirectory(path: string, emit: (message: SourceMessage) => void, opt
 }
 
 /** One Maildir file is one message, whole. */
-function readMaildirMessage(path: string, emit: (message: SourceMessage) => void): number {
+function readMaildirMessage(path: string, emit: (message: SourceMessage) => void, mailbox?: string): number {
     const raw = readWhole(path);
     if (raw.length === 0) return 0;
-    emit({ raw, offset: 0, path, kind: 'maildir' });
+    emit({ raw, offset: 0, path, kind: 'maildir', ...named(mailbox) });
     return 1;
 }
 
@@ -114,13 +152,13 @@ function readFile(path: string, emit: (message: SourceMessage) => void, options:
     if (head.length === 0) return 0;
 
     if (!looksLikeMbox(head)) {
-        emit({ raw: readWhole(path), offset: 0, path, kind: 'eml' });
+        emit({ raw: readWhole(path), offset: 0, path, kind: 'eml', ...named(options.mailbox) });
         return 1;
     }
 
     const splitter = new MboxSplitter((message) => {
         count++;
-        emit({ ...message, path, kind: 'mbox' });
+        emit({ ...message, path, kind: 'mbox', ...named(options.mailbox) });
     }, options.flavour);
     forEachChunk(path, (chunk) => splitter.feed(chunk));
     splitter.end();

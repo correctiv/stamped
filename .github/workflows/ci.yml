@@ -107,6 +107,10 @@ jobs:
           mkdir -p /tmp/fixture-probe
           cp -r app/tests/fixtures /tmp/fixture-probe/committed
           node tools/make-fixtures.mjs
+          # The archive generator too: the mbox and Maildir quirks and the tree of mailboxes a
+          # leak arrives in. It is byte-stable, so the committed bytes and the generated ones are
+          # the same file — and the suite that reads them runs against what the generator makes.
+          node tools/make-archive-fixtures.mjs
           gjsify workspace stamped-cli test
           rm -rf app/tests/fixtures
           mv /tmp/fixture-probe/committed app/tests/fixtures

@@ -47,8 +47,10 @@ verdict or a caveat means a fixture and a test for it.
 | Package | Contains | May import |
 |---|---|---|
 | `@stamped/core` | **Pure, no dependencies.** The verdict model, the classifier, the key store and its record parsing (`p=` / PEM / DNS TXT), the i18n re-exports | nothing |
+| `@stamped/import` | **The reading.** The mbox splitter, the decoders, the header parser, and the two walkers over a filesystem: `source.ts` (a source as it is) and `folder.ts` (a tree of mailboxes) | `core`, `node:*` |
 | `@stamped/verify` | DKIM verification on **mailauth**: the offline resolver, the evidence extraction, `verifyMessage` | `core`, `mailauth`, `node:*` |
-| `stamped-cli` (`app/`) | yargs CLI, the report rendering, the key-flag parsing, fixtures and every test | both of the above |
+| `@stamped/store` | The case folder: the raw store, the import log, the SQLite/FTS5 index, the importer that drives all of them | `core`, `import`, `verify`, `node:*` |
+| `stamped-cli` (`app/`) | yargs CLI, the report rendering, the key-flag parsing, fixtures and every test | all of the above |
 
 **`@stamped/core` stays dependency-free and runtime-free** — no `gi://`, no `node:*`, no mailauth.
 It holds the part a reader must be able to audit without a toolchain: what each verdict means and
@@ -57,6 +59,42 @@ testable without a crypto library and reviewable without one.
 
 **mailauth is quarantined in `@stamped/verify`.** Nothing else imports it. If mailauth has to be
 replaced, `verifyMessage` is the only surface that changes.
+
+## A leaked archive is a folder, and how it is read
+
+A leak is handed over as a TREE: one folder per account, each holding its mailbox in pieces
+(`part-01.mbox`, `part-02.mbox`, …), with a README and a licence next to them. `stamped import`
+reads that tree through `packages/import/src/folder.ts`, and the rules below are the contract —
+change one only with a fixture and a test for it.
+
+- **A folder is a mailbox, named after the folder.** The layout is the only naming there is:
+  nobody writes a manifest, and a manifest written by the leaker is a manifest we would have to
+  trust. Two folders with the same name are named by their path from the root instead, so a
+  name never means two things.
+- **Only mail is mail.** `.mbox` and `.eml` files, and Maildirs, are read. Everything else is
+  left alone and counted — a README imported as a message would be a message nobody ever sent.
+- **A part is read as an mbox, whatever its first line looks like.** The general reader decides
+  by content (`source.ts`); a folder of mbox PARTS is the case where that is wrong, and a part
+  that yields no message is a damaged archive that must be reported, not turned into a mail.
+- **A link out of the tree is not followed.** The archive is evidence, and evidence that reaches
+  into the operator's own disk reads files that were never part of the leak. The test is on the
+  RESOLVED path, so a link through a link cannot get out either.
+- **A damaged file does not cost the tree.** In folder mode the failures are collected PER FILE,
+  the rest of the archive is imported, and the run ends with exit code 2. In the plain mode a
+  broken source still ends the import: a mistyped path is a typo, and half a case folder with no
+  sign of where it stopped is worse than an error.
+
+**The mode is the CLI's, not the window's.** `importSources` takes a `mode` (`sources` by
+default, `folders`, `auto`); the window never passes one, so the folder mode is not reachable
+from the GUI — the GUI imports what the person picked, and the person's file is the whole of its
+provenance. The CLI passes `auto`: a folder that holds `.mbox` files is read as a tree of
+mailboxes, everything else as it is, and `--folders` / `--no-folders` decide it outright.
+
+**A mailbox name is provenance, and it goes in the log.** The import log entry carries an
+optional `mailbox` field, absent for a plain import — a field that is always there and always
+empty is worse than one that is only there when it says something. `--progress=jsonl` names the
+mailbox in every batch line, because a progress stream that does not say which mailbox it is
+talking about cannot tell a journalist that the import has reached the interesting one.
 
 ## Why mailauth and not our own verifier
 
@@ -124,14 +162,20 @@ A long-running FOREGROUND GJS process is killed by the werkstatt sandbox (Exit 1
   listing and the `unverifiable-no-key` fixture works *by absence* — its selector `tmissing` has
   no file. Never add one.
 - Regenerating mints new keys, so every fixture changes together. Commit them as one change.
+- The archive fixtures come from a SECOND generator,
+  [`tools/make-archive-fixtures.mjs`](tools/make-archive-fixtures.mjs): they carry no signature,
+  they are byte-stable across runs, and they are the mbox and Maildir quirks plus `archives/leak/`
+  — the tree of mailboxes a leaked archive arrives in. Keep them out of the signing generator:
+  a fixture that changes whenever a key is regenerated is a fixture nobody reads the diff of.
 - Ed25519: `p=` is the RAW 32-byte key (RFC 8463 § 3), not SPKI. The SPKI base64 prefix
   `MCowBQYDK2VwAyEA` is exactly 12 bytes, which is why no DER parser is needed. The
   `recordFromPem` test is anchored to **RFC 8463 § A.2's published key**, not a locally generated
   one, so the expectation comes from the standard.
 
 `.gitignore` excludes `*.eml` and `*.pem` repo-wide with narrow negations for
-`app/tests/fixtures/**`. That is the second line of defence; not putting a real message there is
-the first.
+`app/tests/fixtures/**`, and `*.mbox` with a narrow negation for `app/tests/fixtures/archives/**`
+— that is where the leak tree lives. That is the second line of defence; not putting a real
+message there is the first.
 
 ## Screenshots may show one real set — a narrow, explicit exception
 
@@ -179,7 +223,9 @@ Yahoo/Epstein archives — the app has to be shown doing a real DKIM verificatio
   `stamped <case-folder>` would otherwise exit 1 without a window.
 - **Exit codes:** `0` = a report was produced, whatever the verdict (`body-altered` is a result,
   not an error); `2` = Stamped could not produce one (unreadable file, bad `--key`). Never map a
-  verdict to an exit code — a script that treats `body-altered` as a crash loses the finding.
+  verdict to an exit code — a script that treats `body-altered` as a crash loses the finding. A
+  FOLDER import that could not read every file is `2` as well: the report it produced covers less
+  than the archive, and a script must not read a partial import as a clean one.
 - **`@gjsify/unit`'s `toEqual` compares with `==`, not deeply.** Use `toStrictEqual` for every
   array and object assertion (or `toEqualArray`). An array compared with `toEqual` passes by
   stringification and will happily accept the wrong contents.

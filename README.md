@@ -52,9 +52,37 @@ Alongside the verdict, Stamped prints the evidence it came from: domain, selecto
 size and provenance, which headers are signed, and both body hashes when they differ. A claim a
 journalist cannot defend to an editor is not worth making.
 
+## Importing an archive
+
+```
+stamped import <case> <source…>            # an mbox, a Maildir, a .eml, a folder of those
+stamped import --case <case> <folder>      # a folder of mailboxes — a leak, as it is handed over
+```
+
+A leaked archive is not a file. It is a **folder**: one folder per account, each holding its
+mailbox in pieces (`part-01.mbox`, `part-02.mbox`, …), with a README and a licence next to them.
+Stamped reads that tree as it lies:
+
+- **A folder is a mailbox**, named after the folder it came from. The layout is the only naming
+  there is — nobody writes a manifest, and a manifest written by the leaker is a manifest we
+  would have to trust.
+- **Only mail is mail.** `.mbox` and `.eml` files are read; everything else — a README, a
+  licence — is left alone and counted. A file that is not mail never becomes a message.
+- **Each part is read on its own**, streamed, so the size of the archive is not a limit and the
+  largest single message is.
+- **A link out of the tree is not followed.** The archive is evidence; evidence that reaches into
+  the operator's own disk reads files that were never part of the leak.
+- **One damaged file does not cost the tree.** A part that cannot be read is reported by name,
+  the rest of the archive is imported, and the run ends with exit code 2 — a partial import must
+  not look like a clean one to a script.
+
+`--progress=jsonl` prints one JSON object per indexed batch, each naming the mailbox it belongs
+to, so a long import can be watched and a stalled one can be located.
+
 ## Status
 
-**Early.** PR 1: the verification core and a CLI.
+**Early.** The verification core, a CLI, and a libadwaita window that imports an archive and
+searches it (SQLite FTS5).
 
 ```
 stamped verify <file.eml> [--key <selector>._domainkey.<domain>=<record or .pem>] [--json]
@@ -62,9 +90,6 @@ stamped verify <file.eml> [--key <selector>._domainkey.<domain>=<record or .pem>
 
 Exit code 0 means a report was produced, whatever it says; 2 means Stamped could not produce one.
 A broken signature is a result, not a program failure.
-
-Next: a libadwaita interface, and the archive side — importing a mailbox and searching it
-(the SQLite FTS5 groundwork is in and tested).
 
 ## Build and run
 
@@ -94,6 +119,12 @@ The generator implements RFC 6376 canonicalization **independently of the verifi
 suite is two implementations agreeing rather than one agreeing with itself. Regenerate with
 `node tools/make-fixtures.mjs` from the repo root; it makes new keys too, so every fixture
 changes together.
+
+The archive fixtures come from `tools/make-archive-fixtures.mjs` — a second generator, because
+those files carry no signature and must stay byte-stable across runs. It writes the mbox and
+Maildir quirks and `archives/leak/`, the tree of mailboxes a leaked archive arrives in: one
+folder per account, each holding its mailbox in pieces, with the files that are not mail next to
+them. Synthetic like everything else: reserved example domains, invented bodies.
 
 ## Documentation
 

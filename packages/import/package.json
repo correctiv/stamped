@@ -4,7 +4,7 @@
   "license": "AGPL-3.0-or-later",
   "private": true,
   "type": "module",
-  "description": "Reading an archive: splitting mbox and Maildir into single messages without holding the archive in memory, and decoding one message far enough to index it. The parsing is pure; only the source walker touches a filesystem.",
+  "description": "Reading an archive: splitting mbox and Maildir into single messages without holding the archive in memory, decoding one message far enough to index it, and planning a folder tree of mailboxes. The parsing is pure; only the two walkers touch a filesystem.",
   "exports": {
     ".": "./src/index.ts"
   },

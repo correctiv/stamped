@@ -16,6 +16,9 @@
 //   not-a-separator.mbox  a body paragraph beginning "From the desk of …" with no ctime date —
 //                   the line a too-eager splitter cuts a message in half on.
 //   maildir/        new/ and cur/ hold a message each; tmp/ holds one that must NOT be imported.
+//   leak/           the shape a leaked archive is handed over in: a folder per account, each
+//                   holding its mailbox in pieces (`part-01.mbox`, `part-02.mbox`), with the
+//                   paperwork of the disk it came from next to it.
 //
 // `inbox.mbox` is written with LF line endings and the Maildir with CRLF, because real archives
 // are both and the splitters have a separate path for each.
@@ -229,6 +232,108 @@ write(
         },
         '\r\n',
     ),
+);
+
+// ── leak/ ────────────────────────────────────────────────────────────────────────────────────
+
+// The shape a leaked archive is handed over in: a folder per account, each holding its mailbox
+// in pieces, and the paperwork of the disk it came from next to them.
+//
+// The numbers in the file names are NOT what makes the mailbox — the parts are read one file at
+// a time, and the order between them decides nothing. The names are what a reader recognises,
+// and the split is what a leak actually looks like.
+//
+// `broken@example.org/part-01.mbox` is not an mbox at all. A part that holds no message is a
+// damaged archive, and the import has to say so — turning the fragments into a mail nobody sent
+// would put a message in the case folder that no one ever wrote.
+rmSync(join(archiveDir, 'leak'), { recursive: true, force: true });
+
+write(
+    join('leak', 'README.txt'),
+    [
+        'This archive was handed over as a folder: one folder per account, each holding its',
+        'mailbox in pieces. The files that are not mail are not part of any mailbox.',
+        '',
+    ].join('\n'),
+);
+
+write(
+    join('leak', 'ada@example.com', 'part-01.mbox'),
+    [
+        entry(
+            message(
+                {
+                    headers: headersFor({
+                        subject: 'Harbour contract',
+                        messageId: '<leak-01@example.com>',
+                    }),
+                    body: 'The harbour contract is signed.\n',
+                },
+                '\n',
+            ),
+        ),
+        entry(
+            message(
+                {
+                    headers: headersFor({
+                        subject: 'Survey schedule',
+                        messageId: '<leak-02@example.com>',
+                    }),
+                    body: 'The survey runs from Monday to Thursday.\n',
+                },
+                '\n',
+            ),
+            { date: 'Wed Mar  6 11:02:13 2024' },
+        ),
+    ].join(''),
+);
+
+write(
+    join('leak', 'ada@example.com', 'part-02.mbox'),
+    entry(
+        message(
+            {
+                headers: headersFor({
+                    subject: 'Survey results',
+                    messageId: '<leak-03@example.com>',
+                }),
+                body: 'The results are attached to the next mail.\n',
+            },
+            '\n',
+        ),
+        { date: 'Thu Mar  7 08:15:00 2024' },
+    ),
+);
+
+write(
+    join('leak', 'grace@example.net', 'part-01.mbox'),
+    entry(
+        message(
+            {
+                headers: headersFor({
+                    subject: 'Tender documents',
+                    messageId: '<leak-04@example.com>',
+                }),
+                body: 'The tender for the crossing closes on Friday.\n',
+            },
+            '\n',
+        ),
+        { date: 'Fri Mar  8 16:30:45 2024' },
+    ),
+);
+
+write(
+    join('leak', 'grace@example.net', 'notes.md'),
+    ['# Notes', '', 'Nothing in this file is mail.', ''].join('\n'),
+);
+
+write(
+    join('leak', 'broken@example.org', 'part-01.mbox'),
+    [
+        'This part was never filled in. It is not an mbox, and reading it as one message',
+        'would put a fragment of a mailbox into the case folder as a mail nobody sent.',
+        '',
+    ].join('\n'),
 );
 
 console.log(`archives:\n  ${archiveDir}`);

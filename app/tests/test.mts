@@ -6,6 +6,7 @@ import { run } from '@gjsify/unit';
 import autokeys from './unit/autokeys.test.ts';
 import cli from './unit/cli.test.ts';
 import classify from './unit/classify.test.ts';
+import folder from './unit/folder.test.ts';
 import keys from './unit/keys.test.ts';
 import keyvault from './unit/keyvault.test.ts';
 import verify from './unit/verify.test.ts';
@@ -19,6 +20,7 @@ run({
     autokeys,
     cli,
     classify,
+    folder,
     keys,
     keyvault,
     verify,
