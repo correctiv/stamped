@@ -27,6 +27,16 @@ export interface KeyRow {
     readonly subtitle: string;
     /** Is a key for this pair already in the case's store? */
     readonly have: boolean;
+    /**
+     * Does the case still want this key — are there messages it cannot give a verdict for?
+     *
+     * NOT the same question as {@link have}, and reading the work list off the store instead was
+     * a bug a screenshot caught: a case imported with `--key` verifies every message without
+     * putting anything in the store, so all seven pairs showed as missing while six of them had
+     * nothing left to answer. What a key is still WANTED for is a property of the verdicts, so it
+     * is counted from them.
+     */
+    readonly wanted: boolean;
     readonly cssClass: string;
     readonly icon: string;
     readonly messages: number;
@@ -48,20 +58,22 @@ export function keyRows(demands: readonly KeyDemand[], known: ReadonlySet<string
     const rows = demands.map((demand) => {
         const name = pairName({ domain: demand.domain, selector: demand.selector });
         const have = known.has(name);
+        const wanted = demand.unverifiable > 0;
         return {
             domain: demand.domain,
             selector: demand.selector,
             name: escapeLine(name),
             subtitle: escapeLine(demandLine(demand, have)),
             have,
-            cssClass: have ? 'success' : demand.unverifiable > 0 ? 'warning' : 'dimmed',
-            icon: have ? 'emblem-ok-symbolic' : 'dialog-password-symbolic',
+            wanted,
+            cssClass: wanted ? 'warning' : have ? 'success' : 'dimmed',
+            icon: wanted ? 'dialog-password-symbolic' : 'emblem-ok-symbolic',
             messages: demand.messages,
             unverifiable: demand.unverifiable,
         };
     });
     return rows.sort((a, b) => {
-        if (a.have !== b.have) return a.have ? 1 : -1;
+        if (a.wanted !== b.wanted) return a.wanted ? -1 : 1;
         return b.unverifiable - a.unverifiable || b.messages - a.messages || a.name.localeCompare(b.name);
     });
 }
@@ -84,29 +96,40 @@ function demandLine(demand: KeyDemand, have: boolean): string {
     return `${signed}, ${waiting}.`;
 }
 
-/** The one line above the list: how much of the case is waiting on a key. */
+/**
+ * The one line above the list: how much of the case is waiting on a key.
+ *
+ * TWO SENTENCES, not one, and that is the whole reason this reads the way it does. A single
+ * sentence carrying both counts can only agree with one of them, and the version that did it
+ * shipped as far as a screenshot reading "7 of 7 keys are missing, and 1 messages wait for one."
+ * Each count now inflects its own sentence, and neither refers to the other by a pronoun, so a
+ * translator never has to make one number agree with a word governed by the other.
+ */
 export function keySummary(rows: readonly KeyRow[]): string {
-    const missing = rows.filter((row) => !row.have);
     if (rows.length === 0) return escapeLine(_('No signatures in this case, so no keys are needed.'));
-    if (missing.length === 0) {
-        return escapeLine(_('Every signing key this case needs is in its store.'));
+    const wanted = rows.filter((row) => row.wanted);
+    if (wanted.length === 0) {
+        return escapeLine(_('Every signature in this case has the key it needs.'));
     }
     let waiting = 0;
-    for (const row of missing) waiting += row.unverifiable;
-    return escapeLine(
-        fmt(
-            _n(
-                '{missing} of {total} key is missing, and {waiting} messages wait for one.',
-                '{missing} of {total} keys are missing, and {waiting} messages wait for one.',
-                missing.length,
-            ),
-            {
-                missing: groupDigits(missing.length),
-                total: groupDigits(rows.length),
-                waiting: groupDigits(waiting),
-            },
+    for (const row of wanted) waiting += row.unverifiable;
+    const missing = fmt(
+        _n(
+            '{missing} of {total} signing key is missing.',
+            '{missing} of {total} signing keys are missing.',
+            wanted.length,
         ),
+        { missing: groupDigits(wanted.length), total: groupDigits(rows.length) },
     );
+    const without = fmt(
+        _n(
+            '{waiting} message has no verdict without a key.',
+            '{waiting} messages have no verdict without a key.',
+            waiting,
+        ),
+        { waiting: groupDigits(waiting) },
+    );
+    return escapeLine(`${missing} ${without}`);
 }
 
 /**
@@ -130,9 +153,17 @@ export function explainKey(row: KeyRow): string {
     );
 }
 
-/** The pairs a lookup would cover — the exact list the consent dialog must show. */
+/**
+ * The pairs a lookup would cover — the exact list the consent dialog must show.
+ *
+ * A pair the case has no verdict waiting on is left out even when the store holds no key for it,
+ * because asking for it would disclose a domain for nothing: the messages it signed already have
+ * their answer. The smallest request that does the work is the only one worth consenting to.
+ */
 export function lookupPairs(rows: readonly KeyRow[]): KeyPair[] {
-    return rows.filter((row) => !row.have).map((row) => ({ domain: row.domain, selector: row.selector }));
+    return rows
+        .filter((row) => row.wanted && !row.have)
+        .map((row) => ({ domain: row.domain, selector: row.selector }));
 }
 
 /**

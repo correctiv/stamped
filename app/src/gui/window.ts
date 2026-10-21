@@ -624,16 +624,20 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** The key pane: the work list, and the two ways to do the work. */
     private fillKeys(session: CaseSession, report: CaseReport): void {
         const rows = keyRows(report.keys, knownKeyNames(session.vault));
-        const missing = rows.filter((row) => !row.have);
+        const wanted = rows.filter((row) => row.wanted);
 
         clearBox(this._keysBody);
         // The badge is on the view switcher, so the number of keys still wanted is visible from
         // the message pane — the pane where the `unverifiable` verdicts that want them are read.
-        this._keysPage.set_badge_number(missing.length);
-        this._keysPage.set_needs_attention(missing.length > 0);
+        this._keysPage.set_badge_number(wanted.length);
+        this._keysPage.set_needs_attention(wanted.length > 0);
 
         this._keysBody.append(wrapLabel(keySummary(rows), 'title-4'));
-        if (missing.length > 0) {
+        // Gated on the pairs a lookup would actually carry, not on the work list: a case whose
+        // remaining `unverifiable` messages all have a key in the store has nothing to ask for,
+        // and a button that would send an empty request is a prompt to disclose for nothing.
+        const pairs = lookupPairs(rows);
+        if (pairs.length > 0) {
             this._keysBody.append(
                 wrapLabel(
                     escapeLine(
@@ -645,7 +649,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 ),
             );
             const actions = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 });
-            actions.append(this.lookupButton(lookupPairs(rows)));
+            actions.append(this.lookupButton(pairs));
             this._keysBody.append(actions);
         }
 
@@ -664,7 +668,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         icon.add_css_class(row.cssClass);
         item.add_prefix(icon);
 
-        if (!row.have) {
+        if (row.wanted) {
             // Offered beside the lookup, not under it: a request to the operator is the channel
             // that discloses nothing to a resolver and is the only one that still works for a
             // selector retired years ago.

@@ -36,14 +36,20 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/src"
 cp "$ROOT"/app/tests/fixtures/*.eml "$WORK/src/"
+CASE="$WORK/case"
 K="$ROOT/app/tests/fixtures/keys"
-KEY_ARGS=()
+
+# Built the way a journalist builds one, and NOT with `import --key`: that flag verifies with a
+# key store it throws away, so the case would end up with fourteen verdicts and an empty
+# `keys.json` — the key view would report every pair as missing, and opening a message would
+# re-verify without the key that had just confirmed it. Import offline, store the keys, reverify.
+# `--no-lookup` so a screenshot run can never put a query on the wire.
+(cd "$ROOT" && gjsify run "$BUNDLE" import "$CASE" "$WORK/src" --no-lookup --quiet >/dev/null)
 for pem in "$K"/*.pub.pem; do
   name="$(basename "$pem" .pub.pem)"
-  KEY_ARGS+=(--key "$name=$pem")
+  (cd "$ROOT" && gjsify run "$BUNDLE" keys add --case "$CASE" "$name" "$pem" >/dev/null)
 done
-CASE="$WORK/case"
-(cd "$ROOT" && gjsify run "$BUNDLE" import "$CASE" "$WORK/src" "${KEY_ARGS[@]}" --quiet >/dev/null)
+(cd "$ROOT" && gjsify run "$BUNDLE" reverify --case "$CASE" >/dev/null)
 
 export GJSIFY_LOCALE_DIR="$ROOT/app/dist/locale"
 

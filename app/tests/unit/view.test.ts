@@ -425,7 +425,7 @@ export default async () => {
                 [
                     demand({ selector: 'big', messages: 4000, unverifiable: 0, confirmed: 4000 }),
                     demand({ selector: 'small', messages: 40, unverifiable: 40 }),
-                    demand({ selector: 'done', messages: 900, unverifiable: 900 }),
+                    demand({ selector: 'done', messages: 900, unverifiable: 0, confirmed: 900 }),
                 ],
                 new Set(['done._domainkey.example.com']),
             );
@@ -436,6 +436,22 @@ export default async () => {
             expect(rows[0]?.name).toBe('small._domainkey.example.com');
         });
 
+        await it('does not call a pair missing when nothing waits on it', async () => {
+            // The bug a screenshot caught: `big` has no key in the store, because the verdicts
+            // were produced from a key store the import threw away — but all 4000 of its
+            // messages are confirmed, so there is no work here and no reason to ask a resolver
+            // about this domain. Work is a property of the verdicts, not of the store.
+            const rows = keyRows(
+                [demand({ selector: 'big', messages: 4000, unverifiable: 0, confirmed: 4000 })],
+                new Set(),
+            );
+            expect(rows[0]?.have).toBe(false);
+            expect(rows[0]?.wanted).toBe(false);
+            expect(rows[0]?.cssClass).toBe('dimmed');
+            expect(lookupPairs(rows)).toStrictEqual([]);
+            expect(keySummary(rows).includes('missing')).toBe(false);
+        });
+
         await it('says how much of the case is waiting on a key', async () => {
             const rows = keyRows([demand({ messages: 500, unverifiable: 500 })], new Set());
             expect(keySummary(rows).includes('500')).toBe(true);
@@ -443,8 +459,21 @@ export default async () => {
                 [demand({ unverifiable: 0, confirmed: 10 })],
                 new Set(['sel._domainkey.example.com']),
             );
-            expect(keySummary(done).includes('Every signing key')).toBe(true);
+            expect(keySummary(done).includes('Every signature')).toBe(true);
             expect(keySummary([]).includes('no keys are needed')).toBe(true);
+        });
+
+        await it('inflects each count on its own sentence', async () => {
+            // One sentence carrying both counts can only agree with one of them, and the version
+            // that tried shipped as "7 of 7 keys are missing, and 1 messages wait for one."
+            const one = keySummary(keyRows([demand({ messages: 1, unverifiable: 1 })], new Set()));
+            expect(one.includes('1 message has')).toBe(true);
+            expect(one.includes('1 of 1 signing key is missing')).toBe(true);
+            const many = keySummary(
+                keyRows([demand({ selector: 'a' }), demand({ selector: 'b' })], new Set()),
+            );
+            expect(many.includes('2 of 2 signing keys are missing')).toBe(true);
+            expect(many.includes('20 messages have')).toBe(true);
         });
 
         await it('offers a lookup only for the pairs that are missing', async () => {
