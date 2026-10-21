@@ -44,6 +44,10 @@ import {
     filteredCount,
     messageOf,
     openSession,
+    backfillStep,
+    peopleComplete,
+    peopleOf,
+    timelineOf,
     PAGE_SIZE,
     pageOf,
     rawTextOf,
@@ -87,6 +91,13 @@ import {
     type OverviewFilter,
     type OverviewStat,
 } from './view/overview.ts';
+import {
+    peopleIncompleteNote,
+    personRows,
+    timelineNote,
+    timelineRows,
+    type BarSegment,
+} from './view/people.ts';
 import { allSources, baseName, shortPath, sourceRows } from './view/sources.ts';
 import { explainVerdict, filterSummary, verdictFilters } from './view/verdict.ts';
 
@@ -288,6 +299,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private rebuilding = false;
     /** The pending search debounce, or 0. */
     private searchTimer = 0;
+    /** The pending people-search debounce, and the idle source filling the address table. */
+    private peopleTimer = 0;
+    private backfillSource = 0;
 
     static {
         GObject.registerClass({ GTypeName, Template, InternalChildren }, this);
@@ -307,6 +321,14 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.addAction('import-folder', () => void this.importFrom('folder'));
 
         this._searchEntry.connect('search-changed', () => this.onSearchChanged());
+        this._peopleSearch.connect('search-changed', () => {
+            if (this.peopleTimer !== 0) GLib.source_remove(this.peopleTimer);
+            this.peopleTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SEARCH_DELAY_MS, () => {
+                this.peopleTimer = 0;
+                this.fillPeople();
+                return false;
+            });
+        });
 
         this._messageList.connect('row-selected', (_list, row) => {
             if (this.rebuilding || row === null) return;
@@ -346,6 +368,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.connect('close-request', () => {
             if (this.searchTimer !== 0) GLib.source_remove(this.searchTimer);
             this.searchTimer = 0;
+            if (this.peopleTimer !== 0) GLib.source_remove(this.peopleTimer);
+            this.peopleTimer = 0;
+            if (this.backfillSource !== 0) GLib.source_remove(this.backfillSource);
+            this.backfillSource = 0;
             if (this.session) closeSession(this.session);
             this.session = undefined;
             return false;
@@ -494,6 +520,100 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.fillList();
         this.fillKeys(session, report);
         this.fillOverview(report);
+        this.fillPeople();
+        this.fillTimeline();
+        this.startBackfill(session);
+    }
+
+    /**
+     * Fill the address table of a case that predates it, a batch per idle turn.
+     *
+     * Short transactions between frames: the window stays usable and an import subprocess can
+     * write in between. A busy database just stops the run; the next open resumes from the cursor.
+     */
+    private startBackfill(session: CaseSession): void {
+        if (this.backfillSource !== 0) GLib.source_remove(this.backfillSource);
+        this.backfillSource = 0;
+        if (peopleComplete(session)) return;
+        this.backfillSource = GLib.idle_add(GLib.PRIORITY_LOW, () => {
+            let done = true;
+            try {
+                done = backfillStep(session);
+            } catch {
+                done = true;
+            }
+            if (this.session !== session) {
+                this.backfillSource = 0;
+                return false;
+            }
+            if (done) {
+                this.backfillSource = 0;
+                this.fillPeople();
+                return false;
+            }
+            return true;
+        });
+    }
+
+    /** The people list: one row per address, a tap filters the messages to that address. */
+    private fillPeople(): void {
+        const session = this.session;
+        clearBox(this._peopleBody);
+        if (!session) return;
+        if (!peopleComplete(session)) {
+            this._peopleBody.append(wrapLabel(peopleIncompleteNote(), 'dimmed'));
+        }
+        const group = new Adw.PreferencesGroup();
+        for (const person of personRows(peopleOf(session, this._peopleSearch.get_text()))) {
+            const row = new Adw.ActionRow({ title: person.title, subtitle: person.subtitle });
+            row.set_activatable(true);
+            row.add_suffix(this.segmentBar(person.segments));
+            const count = new Gtk.Label({ label: person.count });
+            count.add_css_class('numeric');
+            row.add_suffix(count);
+            row.connect('activated', () => this.applyFilter(person.filter));
+            group.add(row);
+        }
+        this._peopleBody.append(group);
+    }
+
+    /** The timeline: one bar per month (or day), a tap filters the messages to that period. */
+    private fillTimeline(): void {
+        const session = this.session;
+        clearBox(this._timelineBody);
+        if (!session) return;
+        const data = timelineOf(session);
+        this._timelineBody.append(wrapLabel(timelineNote(data), 'dimmed'));
+        const group = new Adw.PreferencesGroup();
+        for (const bucket of timelineRows(data)) {
+            const row = new Adw.ActionRow({ title: bucket.label });
+            row.set_activatable(true);
+            const bar = this.segmentBar(bucket.segments, Math.max(0.02, bucket.share), 220);
+            row.add_suffix(bar);
+            const count = new Gtk.Label({ label: bucket.count });
+            count.add_css_class('numeric');
+            row.add_suffix(count);
+            row.connect('activated', () => this.applyFilter(bucket.filter));
+            group.add(row);
+        }
+        this._timelineBody.append(group);
+    }
+
+    /** Verdict-coloured slices side by side; `fraction` of `width` is filled. */
+    private segmentBar(segments: readonly BarSegment[], fraction = 1, width = 120): Gtk.Widget {
+        const box = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, valign: Gtk.Align.CENTER });
+        box.set_size_request(width, -1);
+        const filled = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, hexpand: false });
+        filled.set_size_request(Math.round(width * fraction), 8);
+        for (const segment of segments) {
+            const slice = new Gtk.LevelBar({ minValue: 0, maxValue: 1, value: 1, hexpand: true });
+            slice.add_css_class(segment.cssClass);
+            slice.set_size_request(Math.max(2, Math.round(width * fraction * segment.share)), 8);
+            slice.set_hexpand(false);
+            filled.append(slice);
+        }
+        box.append(filled);
+        return box;
     }
 
     private fillSidebar(session: CaseSession, report: CaseReport): void {

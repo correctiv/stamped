@@ -1,8 +1,10 @@
 app/src/commands/import.ts
 app/src/commands/keys.ts
+app/src/commands/people.ts
 app/src/commands/report.ts
 app/src/commands/reverify.ts
 app/src/commands/search.ts
+app/src/commands/timeline.ts
 app/src/commands/verify.ts
 app/src/gui/blp.d.ts
 app/src/gui/help-button.blp
@@ -19,6 +21,7 @@ app/src/gui/view/keys.ts
 app/src/gui/view/markup.ts
 app/src/gui/view/message.ts
 app/src/gui/view/overview.ts
+app/src/gui/view/people.ts
 app/src/gui/view/sources.ts
 app/src/gui/view/verdict.ts
 app/src/gui/window.blp
@@ -50,6 +53,7 @@ packages/core/src/keys.ts
 packages/core/src/keytemplate.ts
 packages/core/src/keyvault.ts
 packages/core/src/verdict.ts
+packages/import/src/addresses.ts
 packages/import/src/bytes.ts
 packages/import/src/codec.ts
 packages/import/src/folder.ts
@@ -59,10 +63,19 @@ packages/import/src/mbox.ts
 packages/import/src/message.ts
 packages/import/src/mime.ts
 packages/import/src/source.ts
+packages/semantic/src/embedder.ts
+packages/semantic/src/index.ts
+packages/semantic/src/llama-embedder.ts
+packages/semantic/src/prepare.ts
+packages/semantic/src/prompts.ts
+packages/semantic/src/rrf.ts
+packages/semantic/src/vector-db.ts
+packages/store/src/addresses-db.ts
 packages/store/src/case.ts
 packages/store/src/importer.ts
 packages/store/src/index-db.ts
 packages/store/src/index.ts
+packages/store/src/people.ts
 packages/store/src/raw.ts
 packages/store/src/report.ts
 packages/store/src/reverify.ts

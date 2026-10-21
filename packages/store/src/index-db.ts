@@ -22,6 +22,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { type Caveat, type MessageFinding, type Verdict, VERDICTS, fmt, _ } from '@stamped/core';
 import type { MessageSummary } from '@stamped/import';
 
+import { deleteAddresses, ensureAddresses, writeAddresses } from './addresses-db.ts';
 import type { CasePaths } from './case.ts';
 
 /**
@@ -92,6 +93,7 @@ export function openIndex(paths: CasePaths): DatabaseSync {
     // would mean no history, and the indexes of a case older than they were written.
     addFirstVerdictColumn(db);
     ensureIndexes(db);
+    ensureAddresses(db);
     return db;
 }
 
@@ -327,6 +329,8 @@ export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fre
         summary.text,
     );
 
+    writeAddresses(db, entry.hash, { from: summary.from, to: summary.to, cc: summary.cc });
+
     const signature = db.prepare(
         `INSERT INTO signatures (hash, position, domain, selector, algorithm, verdict, aligned, reason)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -350,6 +354,7 @@ export function removeMessage(db: DatabaseSync, hash: string): void {
     db.prepare('DELETE FROM messages WHERE hash = ?').run(hash);
     db.prepare('DELETE FROM messages_fts WHERE hash = ?').run(hash);
     db.prepare('DELETE FROM signatures WHERE hash = ?').run(hash);
+    deleteAddresses(db, hash);
 }
 
 /** Every whitespace-separated word as a quoted FTS5 string: all must occur, none is syntax. */
@@ -501,14 +506,38 @@ let scopeSerial = 0;
  * already be open — the importer holds one — and the inserts are then simply part of it.
  */
 export function hashScope(db: DatabaseSync, hashes: Iterable<string>): HashScope {
+    return buildScope(db, (table) => {
+        const insert = db.prepare(`INSERT OR IGNORE INTO ${table} (hash) VALUES (?)`);
+        for (const hash of hashes) insert.run(hash);
+    });
+}
+
+/**
+ * A scope filled by one `SELECT hash …` inside SQLite — no hash ever travels through JS.
+ *
+ * For the filters that name a large set by a property (a person, a period): at a million
+ * messages a person with a hundred thousand mails would otherwise be that many `Set` entries
+ * and that many `run` calls just to be written straight back. `select` must yield one column
+ * named `hash`; its parameters are bound, never interpolated.
+ */
+export function queryScope(
+    db: DatabaseSync,
+    select: string,
+    params: readonly (string | number)[] = [],
+): HashScope {
+    return buildScope(db, (table) => {
+        db.prepare(`INSERT OR IGNORE INTO ${table} (hash) ${select}`).run(...params);
+    });
+}
+
+function buildScope(db: DatabaseSync, fill: (table: string) => void): HashScope {
     scopeSerial += 1;
     const table = `scope_${scopeSerial}`;
     db.exec(`CREATE TEMP TABLE ${table} (hash TEXT PRIMARY KEY)`);
 
-    const insert = db.prepare(`INSERT OR IGNORE INTO ${table} (hash) VALUES (?)`);
     const own = beganHere(db);
     try {
-        for (const hash of hashes) insert.run(hash);
+        fill(table);
         if (own) commitBatch(db);
     } catch (error) {
         if (own) rollbackBatch(db);
