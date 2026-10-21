@@ -92,6 +92,19 @@ import { explainVerdict, filterSummary, verdictFilters } from './view/verdict.ts
 
 import Template, { GTypeName, InternalChildren, type Children } from './window.blp';
 
+/*
+ * Every GI async method this window awaits without a callback. The `@girs` typings declare the
+ * promise overloads, so `tsc` accepts the call either way — but at runtime GJS only returns a
+ * promise once the method is registered here; unregistered, it throws "At least 3 arguments
+ * required" (measured on GJS 1.88.1 / GTK 4.22). `read_line_async` fails worse: the read loop
+ * catches the throw as end of stream, and the import progress never moves.
+ */
+Gio._promisify(Adw.AlertDialog.prototype, 'choose', 'choose_finish');
+Gio._promisify(Gtk.FileDialog.prototype, 'select_folder', 'select_folder_finish');
+Gio._promisify(Gtk.FileDialog.prototype, 'open_multiple', 'open_multiple_finish');
+Gio._promisify(Gio.DataInputStream.prototype, 'read_line_async', 'read_line_finish');
+Gio._promisify(Gio.Subprocess.prototype, 'wait_check_async', 'wait_check_finish');
+
 /**
  * How long the search entry waits before it queries.
  *
@@ -1188,18 +1201,19 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /** How the import subprocess is launched, or null when no binary can be found. */
-    private importArgv(paths: readonly string[]): string[] | null {
+    private importArgv(root: string, paths: readonly string[]): string[] | null {
         const gjs = process.argv[0];
         const bundle = process.argv.find((arg) => typeof arg === 'string' && arg.endsWith('.mjs'));
-        if (bundle !== undefined) return [gjs, '-m', bundle, 'import', '--progress=jsonl', ...paths];
+        if (bundle !== undefined)
+            return [gjs, '-m', bundle, 'import', '--case', root, '--progress=jsonl', ...paths];
         const stamped = GLib.find_program_in_path('stamped');
-        if (stamped !== null) return [stamped, 'import', '--progress=jsonl', ...paths];
+        if (stamped !== null) return [stamped, 'import', '--case', root, '--progress=jsonl', ...paths];
         return null;
     }
 
     /** Run the import as a separate process, streaming `--progress=jsonl` into a progress bar. */
     private async runImportSubprocess(session: CaseSession, paths: readonly string[]): Promise<void> {
-        const argv = this.importArgv(paths);
+        const argv = this.importArgv(session.root, paths);
         if (argv === null) {
             await importInto(session, paths);
             showToast(_('Imported.'), 5);
@@ -1277,8 +1291,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
         void waitPromise;
 
         let cancelled = false;
+        let finished = false;
         responsePromise.then((response) => {
-            if (response === 'cancel') {
+            // Closing the dialog below answers with its close response, `cancel`, too.
+            if (response === 'cancel' && !finished) {
                 cancelled = true;
                 cancellable.cancel();
                 try {
@@ -1293,6 +1309,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
             await Promise.all([readPromise, waitPromise]);
         } catch (error) {
             if (!cancelled) throw error;
+        } finally {
+            // Nothing else closes it: a finished import would sit at 100 % until Cancel, and a
+            // failed one would open its error dialog underneath.
+            finished = true;
+            dialog.force_close();
         }
 
         this.importCancellable = undefined;
