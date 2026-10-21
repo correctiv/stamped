@@ -27,10 +27,16 @@ jobs:
       # load, before a single test runs, whether or not anything ever makes a request (Stamped
       # makes none). With `install_weak_deps=False` the `gjs` package does not drag it in, and the
       # whole suite dies on `Typelib file for namespace 'Soup', version '3.0' not found`.
-      - name: Install system prerequisites (gjs + libgda + libsoup3 + gettext)
+      # gtk4 and libadwaita for the SAME reason as libsoup3, and it is not about opening a window:
+      # the bundle is one file, so the GUI's `gi://Gtk?version=4.0` and `gi://Adw?version=1`
+      # become top-level imports that resolve at module load. Without the typelibs even
+      # `stamped --version` dies on `Typelib file for namespace 'Gtk' not found`, long before
+      # anything decides whether this invocation wanted a window. No display is needed for that.
+      - name: Install system prerequisites (gjs + gtk4 + libgda + libsoup3 + gettext)
         run: >
           dnf install -y --setopt=install_weak_deps=False
           git tar xz findutils gjs
+          gtk4 libadwaita
           libgda libgda-sqlite
           libsoup3
           gettext
@@ -80,7 +86,7 @@ jobs:
       - name: Lint (app + every package)
         run: gjsify lint .
 
-      - name: Build the CLI bundle
+      - name: Build the bundle (GUI entry + CLI)
         run: gjsify workspace stamped-cli build
 
       # Runs on gjs AND node. The limit is for a HANG rather than for slowness: the suite takes
@@ -108,10 +114,17 @@ jobs:
       # The claim in README.md, checked end to end against the real bundle: a signed fixture plus
       # its key must come back `confirmed`, and a tampered body must come back `body-altered`.
       # The unit suite drives `verifyMessage` directly, which cannot see a frontend that parses
-      # `--key` wrongly or prints nothing — the exact defect the GJS main loop fixed.
+      # `--key` wrongly or prints nothing — the exact defect the entry point's pump fixed.
+      #
+      # `--version` first, and it is not a formality. One bundle now serves two frontends: it
+      # proves the GTK typelibs resolve at load and that the argv dispatcher still routes a flag
+      # to the CLI instead of trying to open a window on a machine that has no display.
       - name: CLI smoke test (the bundle, not the library)
         run: |
           set -eu
+          VERSION=$(node -p "require('./app/package.json').version")
+          GOT=$(LC_ALL=C LANGUAGE= gjsify run app/dist/stamped.gjs.mjs --version | tail -1)
+          [ "$GOT" = "$VERSION" ] || { echo "::error::--version said '$GOT', expected '$VERSION'"; exit 1; }
           KEY=app/tests/fixtures/keys/t2048._domainkey.example.com.pub.pem
           OUT=$(LC_ALL=C LANGUAGE= gjsify run app/dist/stamped.gjs.mjs verify \
             app/tests/fixtures/confirmed.eml \

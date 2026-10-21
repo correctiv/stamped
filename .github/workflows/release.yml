@@ -1,11 +1,10 @@
 name: Release
 
-# A tag is a release: `git tag v0.1.0 && git push --tags` ships the `stamped` CLI as deb and rpm
+# A tag is a release: `git tag v0.1.0 && git push --tags` ships Stamped as deb, rpm and AppImage
 # (Linux), macos-app-zip (arm64, x64) and windows-dir-zip + msi, all attached to one GitHub
-# release. No AppImage: gjsify refuses it for a `kind: cli` project. Assembly is not host-bound
-# (gjsify ADR 0024 § A1), so one Linux job builds every platform; the Mach-O and PE payloads are
-# only RUN on their own OS. macOS and Windows output is unsigned; signing and notarisation attach
-# here once a Developer ID exists.
+# release. Assembly is not host-bound (gjsify ADR 0024 § A1), so one Linux job builds every
+# platform; the Mach-O and PE payloads are only RUN on their own OS. macOS and Windows output is
+# unsigned; signing and notarisation attach here once a Developer ID exists.
 on:
   push:
     tags: ['v*']
@@ -57,8 +56,9 @@ jobs:
       - name: Build the bundles
         run: cd app && gjsify run build:gjs && gjsify run build:node
 
+      # AppImage is back: it needs `kind: "app"`, which Stamped only became when it grew a window.
       - name: Ship Linux
-        run: cd app && gjsify ship linux --skip-build --target deb,rpm
+        run: cd app && gjsify ship linux --skip-build --target deb,rpm,appimage
 
       # Naming the target installs the os/cpu-gated runtime packages a plain install skips.
       - name: Ship macOS (arm64)

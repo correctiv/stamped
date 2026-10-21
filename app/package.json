@@ -54,7 +54,29 @@
       "bugtrackerUrl": "https://github.com/correctiv/stamped/issues",
       "vcsBrowserUrl": "https://github.com/correctiv/stamped",
       "icon": "../data/icons/hicolor/scalable/apps/org.correctiv.Stamped.svg",
-      "maintainer": "CORRECTIV <info@correctiv.org>"
+      "maintainer": "CORRECTIV <info@correctiv.org>",
+      "categories": ["Office", "Email", "Security"],
+      "screenshots": [
+        {
+          "url": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/01-message.png",
+          "localizedUrls": {
+            "de": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/04-message-de.png"
+          },
+          "caption": "A message with its verdict and the evidence behind it",
+          "environment": "gnome",
+          "type": "default"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/02-keys.png",
+          "caption": "Which public keys the archive still needs",
+          "environment": "gnome"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/03-overview.png",
+          "caption": "How the whole case breaks down by verdict",
+          "environment": "gnome"
+        }
+      ]
     },
     "excludeGlobals": [
       "document",
