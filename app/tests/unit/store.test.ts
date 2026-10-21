@@ -12,7 +12,7 @@
  * writes one there.
  */
 
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -228,6 +228,28 @@ export default async () => {
             await withCase((paths) => {
                 const result = store(paths, message('One', 'body'));
                 expect(existsSync(`${result.path}.part`)).toBe(false);
+            });
+        });
+
+        await it('names the errno and keeps the cause when a write fails', async () => {
+            // A directory squatting on the `.part` path makes the write fail with EISDIR, the same
+            // shape as ENOSPC or EACCES: an errno from the filesystem, not from Stamped.
+            await withCase((paths) => {
+                const raw = message('One', 'body');
+                const path = rawPath(paths, digest(raw));
+                mkdirSync(`${path}.part`, { recursive: true });
+                let thrown: unknown;
+                try {
+                    store(paths, raw);
+                } catch (error) {
+                    thrown = error;
+                }
+                expect(thrown instanceof Error).toBe(true);
+                const failure = thrown as Error;
+                expect(failure.message).toContain(paths.root);
+                const cause = failure.cause as { code?: string } | undefined;
+                expect(typeof cause?.code).toBe('string');
+                expect(failure.message).toContain(`(${cause?.code})`);
             });
         });
 

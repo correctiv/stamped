@@ -72,13 +72,23 @@ export function store(paths: CasePaths, raw: Uint8Array): StoreResult {
     try {
         writeFileSync(temporary, raw);
         renameSync(temporary, path);
-    } catch (_error) {
+    } catch (error) {
         try {
             if (existsSync(temporary)) unlinkSync(temporary);
         } catch {
             // The failure that matters is the one below; a leftover `.part` is inert.
         }
-        throw new Error(fmt(_('Cannot write into the case folder {path}.'), { path: paths.root }));
+        // The errno decides what the journalist does next (ENOSPC: free space; EACCES: fix
+        // permissions), so it is named in the message and kept as the cause. A full disk once
+        // stopped a 2,000-message import with a message that blamed nothing in particular.
+        const code = (error as { code?: unknown } | null)?.code;
+        throw new Error(
+            fmt(_('Cannot write into the case folder {path} ({code}).'), {
+                path: paths.root,
+                code: typeof code === 'string' ? code : _('unknown error'),
+            }),
+            { cause: error },
+        );
     }
     return { hash, stored: true, path };
 }

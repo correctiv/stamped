@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 10:17+0200\n"
+"POT-Creation-Date: 2026-10-21 12:02+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -1635,9 +1635,9 @@ msgid ""
 "The key was first seen after this message was sent. The selector may have "
 "been rotated, so this failure may come from a wrong key rather than an edit."
 msgstr ""
-"Der Schlüssel wurde erst nach dem Versand dieser Nachricht erstmals "
-"gesehen. Der Selektor wurde womöglich rotiert; dieser Fehler kann daher von "
-"einem falschen Schlüssel statt von einer Änderung herrühren."
+"Der Schlüssel wurde erst nach dem Versand dieser Nachricht erstmals gesehen. "
+"Der Selektor wurde womöglich rotiert; dieser Fehler kann daher von einem "
+"falschen Schlüssel statt von einer Änderung herrühren."
 
 #: packages/core/src/verdict.ts:277
 msgid ""
@@ -1712,11 +1712,15 @@ msgstr ""
 msgid "Cannot open the index of the case folder {path}."
 msgstr "Der Index des Fallordners {path} kann nicht geöffnet werden."
 
-#: packages/store/src/raw.ts:81
-msgid "Cannot write into the case folder {path}."
-msgstr "In den Fallordner {path} kann nicht geschrieben werden."
+#: packages/store/src/raw.ts:86
+msgid "Cannot write into the case folder {path} ({code})."
+msgstr "In den Fallordner {path} kann nicht geschrieben werden ({code})."
 
-#: packages/verify/src/mailauth.ts:144
+#: packages/store/src/raw.ts:88
+msgid "unknown error"
+msgstr "unbekannter Fehler"
+
+#: packages/verify/src/mailauth.ts:153
 msgid "no key in the store"
 msgstr "kein Schlüssel im Speicher"
 
