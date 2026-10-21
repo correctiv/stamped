@@ -99,6 +99,27 @@ about cannot tell a journalist that the import has reached the interesting one: 
 mailbox, also for a mailbox that held no message at all, and the closing line names the mailbox
 the run ended in.
 
+## People and the timeline — an additive table, never a schema bump
+
+The Personen and Zeitleiste views read the `addresses` table (`hash, address, name, sent,
+received`; one row per message and address). **Decision: it is NOT part of `createSchema` and
+`SCHEMA_VERSION` did not move.** A bump drops the index, and an index over several hundred GB is
+hours of re-import, or impossible once the archive is gone. Everything in the table derives from
+header columns that are already in `messages`, so `ensureAddresses` creates it in place (best
+effort, like `ensureIndexes`), `indexMessage` fills it for every new message, `removeMessage`
+empties it, and `backfillAddresses` fills it for older cases in short transactions (a `meta`
+rowid cursor, `addresses_done` at the end). The backfill is idempotent: delete, then write, per
+message. Queries over an unfilled table are incomplete, never wrong; `addressesComplete` says
+which, and the GUI and the CLI say so. The GUI backfills in low-priority idle batches, the CLI
+`people` runs it to the end first.
+
+- **One address is one person.** Addresses are lower-cased, display names are listed beside them,
+  and nothing is merged by guesswork: whether two mailboxes are one human is the journalist's call.
+- **Timeline buckets are the UTC calendar of `sent_at`** (day when the case spans 62 days or
+  fewer, otherwise month); mail without a readable date is counted apart, never put at 1970.
+- **Large scopes are filled inside SQLite** (`queryScope`), so a person with 100,000 mails never
+  passes 100,000 hashes through JavaScript.
+
 ## Why mailauth and not our own verifier
 
 Measured, not assumed (see [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md)). RFC 6376 canonicalization —

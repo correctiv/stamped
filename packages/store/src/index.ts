@@ -22,6 +22,27 @@ export {
     type ImportResult,
 } from './importer.ts';
 export {
+    addressesComplete,
+    addressRows,
+    backfillAddresses,
+    backfillAll,
+    ensureAddresses,
+} from './addresses-db.ts';
+export {
+    bucketRange,
+    DAY_UNIT_MAX_DAYS,
+    type PeopleOptions,
+    peopleList,
+    type Person,
+    personScope,
+    type PersonName,
+    periodScope,
+    timeline,
+    type Timeline,
+    type TimelineBucket,
+    type TimelineUnit,
+} from './people.ts';
+export {
     type IndexedMessage,
     type IndexEntry,
     beginBatch,
@@ -39,6 +60,7 @@ export {
     listMessages,
     messageCount,
     openIndex,
+    queryScope,
     readMessage,
     removeMessage,
     rollbackBatch,

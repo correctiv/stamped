@@ -13,6 +13,7 @@
  * quoting, which is undone precisely because leaving it in alters the bytes the sender signed.
  */
 
+export { type ParsedAddress, parseAddressList } from './addresses.ts';
 export { concat, decodeLatin1, encodeLatin1, splitMessage } from './bytes.ts';
 export { decodeBase64, decodeCharset, decodeEncodedWords, decodeQuotedPrintable } from './codec.ts';
 export {
