@@ -24,7 +24,7 @@
  * reader. That is the failure this module exists to prevent.
  */
 
-import { concat, CR, decodeLatin1, isBlankLine, LF } from './bytes.ts';
+import { concat, CR, decodeLatin1, LF } from './bytes.ts';
 
 /** One message as it came out of an archive, with where it came from. */
 export interface RawMessage {
@@ -106,9 +106,20 @@ export class MboxSplitter {
     private readonly emit: (message: RawMessage) => void;
     private readonly flavour: MboxFlavour;
 
-    /** The current message's lines, each already unquoted and already COPIED — see {@link feed}. */
-    private lines: Uint8Array[] = [];
+    /**
+     * The current message so far, in one buffer that is reused for every message and grown to the
+     * largest one: the ceiling stays one message, and a message costs no per-line allocation.
+     */
+    private buffer = new Uint8Array(65536);
     private size = 0;
+    /**
+     * The stretch of the chunk in hand that belongs to the message and is not yet copied into
+     * {@link buffer}. Consecutive lines extend it, so a message is copied in a few large pieces
+     * rather than line by line. Always flushed before the chunk is handed back — see {@link feed}.
+     */
+    private runSource: Uint8Array | undefined;
+    private runStart = 0;
+    private runEnd = 0;
     /** A line the last chunk ended in the middle of. */
     private partial: Uint8Array[] = [];
     private partialSize = 0;
@@ -138,11 +149,27 @@ export class MboxSplitter {
      */
     feed(chunk: Uint8Array): void {
         let from = 0;
-        for (let i = 0; i < chunk.length; i++) {
-            if (chunk[i] !== LF) continue;
-            this.takeLine(chunk.subarray(from, i + 1));
-            from = i + 1;
+        if (this.partialSize > 0) {
+            // The line the last chunk ended in the middle of: stitched together once, the slow way.
+            const end = chunk.indexOf(LF);
+            if (end < 0) {
+                this.partial.push(chunk.slice());
+                this.partialSize += chunk.length;
+                return;
+            }
+            const line = concat([...this.partial, chunk.subarray(0, end + 1)], this.partialSize + end + 1);
+            this.partial = [];
+            this.partialSize = 0;
+            this.takeLine(line, 0, line.length);
+            this.flushRun();
+            from = end + 1;
         }
+        // `indexOf` is a native scan; a byte loop in script is ~20x slower on GJS.
+        for (let end = chunk.indexOf(LF, from); end >= 0; end = chunk.indexOf(LF, from)) {
+            this.takeLine(chunk, from, end + 1);
+            from = end + 1;
+        }
+        this.flushRun();
         if (from < chunk.length) {
             const rest = chunk.subarray(from);
             this.partial.push(rest.slice());
@@ -156,25 +183,21 @@ export class MboxSplitter {
             const line = concat(this.partial, this.partialSize);
             this.partial = [];
             this.partialSize = 0;
-            this.takeLine(line);
+            this.takeLine(line, 0, line.length);
+            this.flushRun();
         }
         this.finishMessage();
     }
 
-    /** One complete line, with its end-of-line still attached. */
-    private takeLine(fragment: Uint8Array): void {
-        const line =
-            this.partialSize > 0
-                ? concat([...this.partial, fragment], this.partialSize + fragment.length)
-                : fragment;
-        if (this.partialSize > 0) {
-            this.partial = [];
-            this.partialSize = 0;
-        }
+    /** One complete line, `source[from, to)`, with its end-of-line still attached. */
+    private takeLine(source: Uint8Array, from: number, to: number): void {
+        const length = to - from;
         const offset = this.position;
-        this.position += line.length;
+        this.position += length;
 
-        if (this.afterBlank && looksLikeSeparator(line)) {
+        // A separator is `From ` at the start of a line, so the cheap byte test comes first and
+        // the line is only handed to the regex when it passes.
+        if (this.afterBlank && source[from] === 0x46 && looksLikeSeparator(source.subarray(from, to))) {
             this.finishMessage();
             this.start = offset;
             this.open = true;
@@ -182,7 +205,10 @@ export class MboxSplitter {
             return;
         }
 
-        const blank = isBlankLine(line);
+        const blank =
+            length === 1
+                ? source[from] === LF
+                : length === 2 && source[from] === CR && source[from + 1] === LF;
         this.afterBlank = blank;
         if (!this.open) {
             // Bytes before the first separator. A leading blank line or an mbox header comment is
@@ -193,19 +219,57 @@ export class MboxSplitter {
         if (blank) {
             // Held back, not appended: whether it belongs to this message depends on what comes
             // next, and only {@link finishMessage} knows that.
+            this.flushRun();
             this.blanks++;
             return;
         }
-        for (let i = 0; i < this.blanks; i++) this.lines.push(BLANK);
-        this.size += this.blanks * BLANK.length;
-        this.blanks = 0;
-        const unquoted = this.unquoteLine(line);
-        this.lines.push(unquoted.slice());
-        this.size += unquoted.length;
+        if (this.blanks > 0) {
+            this.flushRun();
+            this.reserve(this.blanks);
+            this.buffer.fill(LF, this.size, this.size + this.blanks);
+            this.size += this.blanks;
+            this.blanks = 0;
+        }
+
+        // Only a line that starts with `>` can have quoting to undo; `unquote` hands back a view
+        // one byte shorter when it did.
+        let begin = from;
+        if (source[from] === 0x3e) {
+            const unquoted = unquote(source.subarray(from, to), this.flavour);
+            if (unquoted.length !== length) {
+                this.flushRun();
+                begin = from + 1;
+            }
+        }
+        if (this.runSource !== source) {
+            this.flushRun();
+            this.runSource = source;
+            this.runStart = begin;
+        }
+        this.runEnd = to;
     }
 
-    private unquoteLine(line: Uint8Array): Uint8Array {
-        return unquote(line, this.flavour);
+    /** Copy the pending stretch into the message buffer. */
+    private flushRun(): void {
+        const source = this.runSource;
+        if (source !== undefined && this.runEnd > this.runStart) {
+            const length = this.runEnd - this.runStart;
+            this.reserve(length);
+            this.buffer.set(source.subarray(this.runStart, this.runEnd), this.size);
+            this.size += length;
+        }
+        this.runSource = undefined;
+        this.runStart = 0;
+        this.runEnd = 0;
+    }
+
+    /** Room for `extra` more bytes. */
+    private reserve(extra: number): void {
+        const needed = this.size + extra;
+        if (needed <= this.buffer.length) return;
+        const grown = new Uint8Array(Math.max(needed, this.buffer.length * 2));
+        grown.set(this.buffer.subarray(0, this.size));
+        this.buffer = grown;
     }
 
     /**
@@ -222,21 +286,21 @@ export class MboxSplitter {
             this.blanks = 0;
             return;
         }
-        for (let i = 1; i < this.blanks; i++) this.lines.push(BLANK);
-        this.size += Math.max(0, this.blanks - 1) * BLANK.length;
+        this.flushRun();
+        if (this.blanks > 1) {
+            this.reserve(this.blanks - 1);
+            this.buffer.fill(LF, this.size, this.size + this.blanks - 1);
+            this.size += this.blanks - 1;
+        }
         this.blanks = 0;
 
-        if (this.lines.length > 0) {
-            this.emit({ raw: concat(this.lines, this.size), offset: this.start });
+        if (this.size > 0) {
+            this.emit({ raw: this.buffer.slice(0, this.size), offset: this.start });
         }
-        this.lines = [];
         this.size = 0;
         this.open = false;
     }
 }
-
-/** The blank line held back and sometimes put back. LF only — see {@link isBlankLine}. */
-const BLANK = new Uint8Array([LF]);
 
 /**
  * Does this look like an mbox rather than a single message?
