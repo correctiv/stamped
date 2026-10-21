@@ -77,8 +77,45 @@ export function openIndex(paths: CasePaths): DatabaseSync {
     } catch {
         throw new Error(fmt(_('Cannot open the index of the case folder {path}.'), { path: paths.root }));
     }
+    // WAL + NORMAL: the index is a cache that `raw/` can refill, so a power cut costing the last
+    // few commits is harmless, while a sync per commit is what made indexing I/O-bound. Best
+    // effort: a backend that refuses a pragma still indexes, just slower.
+    for (const pragma of ['PRAGMA journal_mode=WAL', 'PRAGMA synchronous=NORMAL']) {
+        try {
+            db.exec(pragma);
+        } catch {
+            // see above
+        }
+    }
     if (schemaVersion(db) !== SCHEMA_VERSION) createSchema(db);
     return db;
+}
+
+/** Open a transaction. Pair with {@link commitBatch}; the importer commits every few hundred. */
+export function beginBatch(db: DatabaseSync): void {
+    db.exec('BEGIN');
+}
+
+/** Commit what {@link beginBatch} opened. */
+export function commitBatch(db: DatabaseSync): void {
+    db.exec('COMMIT');
+}
+
+/** Undo an open batch. Never throws: it runs on an error path that has a better error to report. */
+export function rollbackBatch(db: DatabaseSync): void {
+    try {
+        db.exec('ROLLBACK');
+    } catch {
+        // no transaction was open
+    }
+}
+
+/** Every indexed hash, loaded once — one scan instead of one query per message. */
+export function indexedHashes(db: DatabaseSync): Set<string> {
+    const rows = db.prepare('SELECT hash FROM messages').all() as { hash?: string }[];
+    const hashes = new Set<string>();
+    for (const row of rows) if (typeof row.hash === 'string') hashes.add(row.hash);
+    return hashes;
 }
 
 /** The version the database was created at, or 0 when it holds no schema of ours. */
@@ -163,10 +200,13 @@ export function messageCount(db: DatabaseSync): number {
  *
  * Replacing rather than failing on a conflict, because the same message re-indexed after a
  * schema change or a newly collected key must end up with the NEW verdict. The hash is the
- * identity, so there is nothing to lose by rewriting the row.
+ * identity, so there is nothing to lose by rewriting the row. `options.fresh` skips the removal
+ * for a message the caller knows is new.
  */
-export function indexMessage(db: DatabaseSync, entry: IndexEntry): void {
-    removeMessage(db, entry.hash);
+export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fresh?: boolean } = {}): void {
+    // `fresh`: the caller knows the hash is not indexed. The delete from the FTS table is a full
+    // scan (`hash` is UNINDEXED), so for a new message it is pure cost.
+    if (!options.fresh) removeMessage(db, entry.hash);
     const summary = entry.summary;
 
     db.prepare(

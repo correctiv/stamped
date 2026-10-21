@@ -17,6 +17,9 @@ export { importSources, type ImportOptions, type ImportProgress, type ImportResu
 export {
     type IndexedMessage,
     type IndexEntry,
+    beginBatch,
+    commitBatch,
+    indexedHashes,
     indexMessage,
     isIndexed,
     type ListOptions,
@@ -25,6 +28,7 @@ export {
     openIndex,
     readMessage,
     removeMessage,
+    rollbackBatch,
     SCHEMA_VERSION,
     type SearchHit,
     searchMessages,

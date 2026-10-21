@@ -801,6 +801,55 @@ export default async () => {
             });
         });
 
+        await it('finishes the rest after an interrupted run, without duplicates', async () => {
+            // A killed import leaves the raw store and log whole but the index short by the batch
+            // that never committed. Simulated by dropping two index rows.
+            await withCase(async (paths) => {
+                const source = archive('inbox.mbox');
+                await importSources(paths, [source], { keys: fixtureKeys() });
+                const db = openIndex(paths);
+                try {
+                    const gone = (
+                        db.prepare('SELECT hash FROM messages LIMIT 2').all() as { hash: string }[]
+                    ).map((row) => row.hash);
+                    for (const hash of gone) {
+                        db.prepare('DELETE FROM signatures WHERE hash = ?').run(hash);
+                        db.prepare('DELETE FROM messages_fts WHERE hash = ?').run(hash);
+                        db.prepare('DELETE FROM messages WHERE hash = ?').run(hash);
+                    }
+                    expect(messageCount(db)).toBe(2);
+                } finally {
+                    db.close();
+                }
+                const again = await importSources(paths, [source], { keys: fixtureKeys() });
+                expect(again.stored).toBe(0);
+                expect(again.indexed).toBe(2);
+                const check = openIndex(paths);
+                try {
+                    expect(messageCount(check)).toBe(4);
+                    const rows = check.prepare('SELECT count(*) AS n FROM messages_fts').get() as {
+                        n: number;
+                    };
+                    expect(rows.n).toBe(4);
+                } finally {
+                    check.close();
+                }
+            });
+        });
+
+        await it('reports each committed batch through onBatch', async () => {
+            await withCase(async (paths) => {
+                const seen: { done: number; total: number }[] = [];
+                await importSources(paths, [archive('inbox.mbox')], {
+                    keys: fixtureKeys(),
+                    onBatch: (progress) => seen.push({ done: progress.done, total: progress.total }),
+                });
+                expect(seen.length).toBe(1);
+                expect(seen[0]?.done).toBe(4);
+                expect(seen[0]?.total).toBe(4);
+            });
+        });
+
         await it('collapses the same message met in two different archives', async () => {
             await withCase(async (paths) => {
                 const result = await importSources(paths, [archive('inbox.mbox'), archive('maildir')], {

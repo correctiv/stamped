@@ -58,13 +58,20 @@ export interface StoreResult {
  *
  * The existence check is the deduplication: a hash collision on SHA-256 is not a failure mode
  * worth engineering around, so a file that is already there is the same message by definition.
+ * Pass the same `madeDirs` set across calls of one import to skip repeated `mkdir`s.
  */
-export function store(paths: CasePaths, raw: Uint8Array): StoreResult {
+export function store(paths: CasePaths, raw: Uint8Array, madeDirs: Set<string> = new Set()): StoreResult {
     const hash = digest(raw);
     const path = rawPath(paths, hash);
     if (existsSync(path)) return { hash, stored: false, path };
 
-    mkdirSync(join(paths.raw, hash.slice(0, 2)), { recursive: true });
+    // `madeDirs` remembers the fan-out directories this run created: 256 at most, but one
+    // `mkdirSync` per message otherwise.
+    const prefix = hash.slice(0, 2);
+    if (!madeDirs.has(prefix)) {
+        mkdirSync(join(paths.raw, prefix), { recursive: true });
+        madeDirs.add(prefix);
+    }
     // Written beside its destination and renamed: both are on the same filesystem, so the rename
     // is atomic and a killed process leaves a `.part` nobody reads rather than a short message
     // under a hash that does not describe it.
