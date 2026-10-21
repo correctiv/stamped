@@ -12,7 +12,13 @@
  */
 
 import { describeConsent, type ConsentText, type LookupChannel, type LookupConsent } from './keyconsent.ts';
-import { lookupArchive, lookupDns, type FetchLike, type LookupResult, type TxtResolver } from './keylookup.ts';
+import {
+    lookupArchive,
+    lookupDns,
+    type FetchLike,
+    type LookupResult,
+    type TxtResolver,
+} from './keylookup.ts';
 import { fmt, _, _n } from './i18n.ts';
 import {
     missingPairs,
@@ -24,7 +30,10 @@ import {
 } from './keyvault.ts';
 
 /** The one prompt: every pair, its message count, and what each channel discloses. */
-export function describeAutoConsent(channels: readonly LookupChannel[], pairs: readonly PairCount[]): ConsentText {
+export function describeAutoConsent(
+    channels: readonly LookupChannel[],
+    pairs: readonly PairCount[],
+): ConsentText {
     const count = pairs.length;
     const warnings = channels.map((channel) => describeConsent(channel, pairs).warning);
     if (channels.length > 1) {

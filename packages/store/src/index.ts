@@ -13,12 +13,7 @@
  */
 
 export { casePaths, type CasePaths, CASE_VERSION, isCase, openCase } from './case.ts';
-export {
-    importSources,
-    type ImportOptions,
-    type ImportProgress,
-    type ImportResult,
-} from './importer.ts';
+export { importSources, type ImportOptions, type ImportProgress, type ImportResult } from './importer.ts';
 export {
     type IndexEntry,
     indexMessage,

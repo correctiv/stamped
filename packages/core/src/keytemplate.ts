@@ -35,7 +35,9 @@ export function requestTemplate(request: KeyRequest): string {
             { domain: request.domain },
         ),
         '',
-        _('Could you send me the public key records (the DNS TXT values) that were published for these selectors:'),
+        _(
+            'Could you send me the public key records (the DNS TXT values) that were published for these selectors:',
+        ),
         '',
         names,
         '',

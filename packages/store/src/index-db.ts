@@ -282,7 +282,10 @@ export function searchMessages(db: DatabaseSync, query: string, limit = 20): Sea
             subject: String(message.subject ?? ''),
             from: String(message.sender ?? ''),
             date: String(message.date ?? ''),
-            sentAt: message.sent_at === null || message.sent_at === undefined ? undefined : Number(message.sent_at),
+            sentAt:
+                message.sent_at === null || message.sent_at === undefined
+                    ? undefined
+                    : Number(message.sent_at),
             verdict: String(message.verdict) as Verdict,
         });
     }

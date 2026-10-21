@@ -137,7 +137,12 @@ export async function importSources(
                 }
                 try {
                     const finding = classifyMessage(await verifyMessage(raw, { keys: options.keys }));
-                    indexMessage(db, { hash: entry.hash, bytes: entry.bytes, summary: summarise(raw), finding });
+                    indexMessage(db, {
+                        hash: entry.hash,
+                        bytes: entry.bytes,
+                        summary: summarise(raw),
+                        finding,
+                    });
                     indexed++;
                 } catch {
                     // Stored and logged already, so the evidence is safe; only the verdict is

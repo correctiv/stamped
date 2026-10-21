@@ -18,7 +18,8 @@
  * (`@stamped/core`'s `caveatsFor`).
  */
 
-import { keyNameFor, KeyStore, _ } from '@stamped/core';
+import type { KeyStore } from '@stamped/core';
+import { keyNameFor, _ } from '@stamped/core';
 import type { DKIMResult, DNSResolver } from 'mailauth/lib/types';
 
 import { evidenceFrom, type RawSignatureResult } from './evidence.ts';

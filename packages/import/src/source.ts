@@ -63,11 +63,7 @@ export function readSource(
  * the middle of writing, and importing one gets half a message into the case folder with a hash
  * that will never match the finished file.
  */
-function readDirectory(
-    path: string,
-    emit: (message: SourceMessage) => void,
-    options: ReadOptions,
-): number {
+function readDirectory(path: string, emit: (message: SourceMessage) => void, options: ReadOptions): number {
     const entries = readdirSync(path).sort();
     if (entries.includes('cur') || entries.includes('new')) {
         let count = 0;
@@ -112,11 +108,7 @@ function readMaildirMessage(path: string, emit: (message: SourceMessage) => void
  * declare which is which. A `.eml` that happens to start with a `From ` separator reads as a
  * one-message mbox, which gives back the same message.
  */
-function readFile(
-    path: string,
-    emit: (message: SourceMessage) => void,
-    options: ReadOptions,
-): number {
+function readFile(path: string, emit: (message: SourceMessage) => void, options: ReadOptions): number {
     let count = 0;
     const head = readHead(path, 1024);
     if (head.length === 0) return 0;

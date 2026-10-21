@@ -177,7 +177,5 @@ export function parseKeyMaterial(text: string): KeyMaterial {
     if (/^[A-Za-z0-9+/\s]+=*\s*$/.test(trimmed)) {
         return fromRecord(`v=DKIM1; p=${trimmed.replace(/\s+/g, '')}`);
     }
-    throw new Error(
-        _('That is neither a PEM public key, a DKIM TXT record nor a base64 p= value.'),
-    );
+    throw new Error(_('That is neither a PEM public key, a DKIM TXT record nor a base64 p= value.'));
 }

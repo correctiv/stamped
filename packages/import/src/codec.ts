@@ -102,7 +102,10 @@ export function decodeQuotedPrintable(text: string, underscoreIsSpace = false): 
  * would otherwise lose the whole message over one unrecognised label.
  */
 export function decodeCharset(bytes: Uint8Array, charset?: string): string {
-    const label = (charset ?? '').trim().toLowerCase().replace(/^["']|["']$/g, '');
+    const label = (charset ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/^["']|["']$/g, '');
     if (label === '' || LATIN1_LABELS.has(label)) return decodeLatin1(bytes);
     try {
         return new TextDecoder(label).decode(bytes);
@@ -118,7 +121,15 @@ export function decodeCharset(bytes: Uint8Array, charset?: string): string {
  * commonplace, and a strict ASCII decoder would drop exactly the characters that distinguish one
  * name from another.
  */
-const LATIN1_LABELS = new Set(['us-ascii', 'ascii', 'iso-8859-1', 'iso8859-1', 'latin1', 'latin-1', 'binary']);
+const LATIN1_LABELS = new Set([
+    'us-ascii',
+    'ascii',
+    'iso-8859-1',
+    'iso8859-1',
+    'latin1',
+    'latin-1',
+    'binary',
+]);
 
 /** One `=?charset?B?text?=`, anchored so a `?` inside the payload cannot end it early. */
 const ENCODED_WORD = /=\?([^?\s]+)\?([BbQq])\?([^?]*)\?=/g;
@@ -150,8 +161,6 @@ export function decodeEncodedWords(text: string): string {
 /** One encoded word's payload. The `*language` suffix of RFC 2231 is dropped, not parsed. */
 function decodeWord(charset: string, encoding: string, payload: string): string {
     const bytes =
-        encoding.toLowerCase() === 'b'
-            ? decodeBase64(payload)
-            : decodeQuotedPrintable(payload, true);
+        encoding.toLowerCase() === 'b' ? decodeBase64(payload) : decodeQuotedPrintable(payload, true);
     return decodeCharset(bytes, charset.split('*')[0]);
 }
