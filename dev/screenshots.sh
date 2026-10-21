@@ -34,9 +34,12 @@ BUNDLE="$ROOT/app/dist/stamped.gjs.mjs"
 # The demo case, rebuilt every run so it always matches the current index schema.
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
-mkdir -p "$WORK/src"
+mkdir -p "$WORK/src" "$WORK/home/Cases"
 cp "$ROOT"/app/tests/fixtures/*.eml "$WORK/src/"
-CASE="$WORK/case"
+# A case folder named the way a journalist names one, under a HOME the shot overrides below. The
+# header bar shows the case's path, and a subtitle reading `/tmp/tmp.hT3kQa/case` is a screenshot
+# of the build machine rather than of the app — Flathub wants real demo content there.
+CASE="$WORK/home/Cases/Harbour Leak"
 K="$ROOT/app/tests/fixtures/keys"
 
 # Built the way a journalist builds one, and NOT with `import --key`: that flag verifies with a
@@ -55,7 +58,10 @@ export GJSIFY_LOCALE_DIR="$ROOT/app/dist/locale"
 
 shot() { # <file> <view> <lang> [monitor WxH]
   local file="$1" view="$2" lang="$3" size="${4:-2400x1800}"
-  local -a vars=(STAMPED_SHOT_VIEW="$view")
+  # HOME points at the demo case's parent, so the header bar abbreviates it to `~/Cases/…`
+  # instead of printing this run's temporary directory. Only the shot gets it: the import above
+  # runs with the real HOME, where gjsify's caches live.
+  local -a vars=(STAMPED_SHOT_VIEW="$view" HOME="$WORK/home")
   if [ "$lang" = de ]; then
     vars+=(LANG=de_DE.UTF-8 LANGUAGE=de LC_ALL=de_DE.UTF-8)
   else

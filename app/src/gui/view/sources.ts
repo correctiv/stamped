@@ -35,6 +35,27 @@ export function baseName(path: string): string {
     return name === '' ? path : name;
 }
 
+/**
+ * A path as the header bar says it: the home directory written as `~`.
+ *
+ * PLAIN TEXT, like {@link baseName} — `Adw.WindowTitle` parses no markup. The abbreviation is the
+ * one every file manager and shell makes, and it is here because the subtitle is the line that
+ * says WHICH archive is open: `/home/someone/Cases/Harbour Leak` wraps out of the header bar and
+ * reads as a system path, where `~/Cases/Harbour Leak` reads as a folder the person chose. A
+ * screenshot showed the other end of it, a case under `mktemp -d` whose subtitle was
+ * `/tmp/tmp.hT3kQa/case` — a path that tells a reader nothing about their own case.
+ *
+ * `home` is passed in rather than read from the environment, so these view models keep running on
+ * both runtimes and the function stays testable without one.
+ */
+export function shortPath(path: string, home: string | undefined): string {
+    const base = (home ?? '').replace(/\/+$/, '');
+    if (base === '') return path;
+    if (path === base) return '~';
+    // The separator is part of the test: `/home/adamson` merely starts with `/home/ada`.
+    return path.startsWith(`${base}/`) ? `~${path.slice(base.length)}` : path;
+}
+
 /** The row above the archive list: the filter cleared, and how much there is to filter. */
 export interface AllSources {
     readonly title: string;
@@ -62,9 +83,15 @@ export function allSources(sources: readonly LogSource[]): AllSources {
     };
 }
 
-/** An mbox is one file holding many messages; a Maildir or a loose `.eml` is one message a file. */
+/**
+ * An mbox is one file holding many messages; a Maildir or a loose `.eml` is one message a file.
+ *
+ * `package-x-generic-symbolic` rather than the `mail-archive-symbolic` that was here: that name
+ * is not in Adwaita, and an icon name the theme does not have draws nothing — see the note on
+ * `verdictIcon`.
+ */
 function sourceIcon(kind: string): string {
-    return kind === 'mbox' ? 'mail-archive-symbolic' : 'mail-unread-symbolic';
+    return kind === 'mbox' ? 'package-x-generic-symbolic' : 'mail-unread-symbolic';
 }
 
 export function sourceRows(sources: readonly LogSource[]): SourceRow[] {
