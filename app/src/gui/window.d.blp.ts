@@ -34,6 +34,7 @@ export declare const InternalChildren: [
     'emptyState',
     'listTitle',
     'searchEntry',
+    'filterBanner',
     'contentStack',
     'readerStack',
     'readerBody',
@@ -58,6 +59,7 @@ export interface Children {
     _emptyState: Adw.StatusPage;
     _listTitle: Adw.WindowTitle;
     _searchEntry: Gtk.SearchEntry;
+    _filterBanner: Adw.Banner;
     _contentStack: Adw.ViewStack;
     _readerStack: Gtk.Stack;
     _readerBody: Gtk.Box;

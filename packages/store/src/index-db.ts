@@ -19,7 +19,7 @@
 
 import { DatabaseSync } from 'node:sqlite';
 
-import { type Caveat, type MessageFinding, type Verdict, fmt, _ } from '@stamped/core';
+import { type Caveat, type MessageFinding, type Verdict, VERDICTS, fmt, _ } from '@stamped/core';
 import type { MessageSummary } from '@stamped/import';
 
 import type { CasePaths } from './case.ts';
@@ -547,6 +547,79 @@ function beganHere(db: DatabaseSync): boolean {
     } catch {
         return false;
     }
+}
+
+/**
+ * The messages carrying one of these verdicts, as a set a scope can be built from.
+ *
+ * The set form of the `verdict` column filter: a tap on an overview number narrows the list to
+ * several verdicts at once ("the two confirmation verdicts"), which the `verdict = ?` form of
+ * {@link countMessages} cannot express. Unknown verdict names are dropped rather than bound —
+ * a name the schema has no column value for would silently match nothing anyway, and dropping
+ * keeps the caller from building a filter out of a typo.
+ */
+export function verdictHashes(db: DatabaseSync, verdicts: readonly Verdict[]): Set<string> {
+    const known = new Set<string>(VERDICTS);
+    const wanted = verdicts.filter((verdict) => known.has(verdict));
+    if (wanted.length === 0) return new Set();
+    const placeholders = wanted.map(() => '?').join(', ');
+    const rows = db
+        .prepare(`SELECT hash FROM messages WHERE verdict IN (${placeholders})`)
+        .all(...wanted) as { hash?: unknown }[];
+    const hashes = new Set<string>();
+    for (const row of rows) if (typeof row.hash === 'string') hashes.add(row.hash);
+    return hashes;
+}
+
+/** What a signature filter asks for. Every field is an `AND`; nothing set means "every signature". */
+export interface SignatureQuery {
+    /** `d=`, matched case-insensitively — a domain is a name, not a byte string. */
+    readonly domain?: string;
+    /** `s=`, matched case-insensitively. */
+    readonly selector?: string;
+    /** The `reason` column — `no-key` for a missing selector, one of the unverifiable reasons. */
+    readonly reason?: string;
+    /** Only signatures of messages whose own verdict is this one. */
+    readonly messageVerdict?: Verdict;
+}
+
+/**
+ * The messages carrying a matching signature, as a set a scope can be built from.
+ *
+ * THE SIGNATURE'S PROPERTIES, not the message's: "everything signed by example.com", "the
+ * messages waiting on this selector" and "the messages with no verdict because of this reason"
+ * are all questions about a `signatures` row, and only the last one additionally needs the
+ * message's verdict. Counted over DISTINCT hashes so a message signed twice by the same pair
+ * still appears once in the list it filters.
+ */
+export function signatureHashes(db: DatabaseSync, query: SignatureQuery): Set<string> {
+    const clauses: string[] = [];
+    const params: string[] = [];
+    if (query.domain !== undefined && query.domain !== '') {
+        clauses.push('lower(s.domain) = lower(?)');
+        params.push(query.domain);
+    }
+    if (query.selector !== undefined && query.selector !== '') {
+        clauses.push('lower(s.selector) = lower(?)');
+        params.push(query.selector);
+    }
+    if (query.reason !== undefined && query.reason !== '') {
+        clauses.push('s.reason = ?');
+        params.push(query.reason);
+    }
+    const verdict = query.messageVerdict;
+    if (verdict !== undefined) {
+        clauses.push('m.verdict = ?');
+        params.push(verdict);
+    }
+    const join = verdict !== undefined ? 'JOIN messages m ON m.hash = s.hash' : '';
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+    const rows = db
+        .prepare(`SELECT DISTINCT s.hash AS hash FROM signatures s ${join} ${where}`)
+        .all(...params) as { hash?: unknown }[];
+    const hashes = new Set<string>();
+    for (const row of rows) if (typeof row.hash === 'string') hashes.add(row.hash);
+    return hashes;
 }
 
 /** How a page of the message list is narrowed. Every field absent means "the whole case". */

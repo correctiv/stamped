@@ -238,3 +238,28 @@ export function sourceHashes(paths: CasePaths, source: string): Set<string> {
     });
     return hashes;
 }
+
+/**
+ * The raw hashes under each mailbox, grouped in ONE walk of the log.
+ *
+ * The bulk form of {@link sourceHashes} for the per-mailbox breakdown of a report: walking the
+ * log once per mailbox would read a few tens of megabytes once per row of the table. Mailboxes
+ * WITHOUT one are grouped under the empty key rather than dropped — a plain import must not
+ * appear as "no messages" next to the mailboxes a folder import produced.
+ *
+ * These are RAW hashes. Only messages the index holds may be counted in a report, so the caller
+ * intersects them with the index (a {@link HashScope} does exactly that by joining).
+ */
+export function mailboxHashes(paths: CasePaths): Map<string, Set<string>> {
+    const byMailbox = new Map<string, Set<string>>();
+    eachLogEntry(paths, (entry) => {
+        const key = entry.mailbox ?? '';
+        let hashes = byMailbox.get(key);
+        if (hashes === undefined) {
+            hashes = new Set<string>();
+            byMailbox.set(key, hashes);
+        }
+        hashes.add(entry.hash);
+    });
+    return byMailbox;
+}

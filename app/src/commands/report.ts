@@ -51,7 +51,7 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
             const paths = caseOrThrow(caseRoot('report', args.case, [args.folder]).root);
             const db = openIndex(paths);
             try {
-                const report = caseReport(db, args.keys ?? 20);
+                const report = caseReport(db, { keyLimit: args.keys ?? 20, paths });
 
                 if (args.json) {
                     console.log(JSON.stringify(report, undefined, 2));
@@ -85,6 +85,47 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     // read as if the other two had not been looked for.
                     console.log(`  ${String(count.messages).padStart(8)}  ${count.verdict}`);
                     if (count.messages > 0) console.log(`            ${describeVerdict(count.verdict)}`);
+                }
+
+                if (report.mailboxes !== undefined) {
+                    console.log('');
+                    console.log(_('Mailboxes'));
+                    for (const mailbox of report.mailboxes) {
+                        console.log(`  ${String(mailbox.messages).padStart(8)}  ${mailbox.mailbox}`);
+                        // The verdict spread as one line: the breakdown of a case is the same six
+                        // verdicts everywhere, and a table per mailbox would push the work list
+                        // off the screen.
+                        const spread = mailbox.verdicts.filter((count) => count.messages > 0);
+                        if (spread.length > 0) {
+                            console.log(
+                                `            ${spread.map((count) => `${count.messages} ${count.verdict}`).join(', ')}`,
+                            );
+                        }
+                    }
+                }
+
+                const altered = report.alterations.filter((count) => count.messages > 0);
+                if (altered.length > 0) {
+                    console.log('');
+                    console.log(_('Altered messages, and the keys behind them'));
+                    for (const count of altered) {
+                        console.log(`  ${String(count.messages).padStart(8)}  ${count.verdict}`);
+                        if (count.possiblyWrongKey > 0) {
+                            // The line that keeps a sum from being read as an accusation: a key
+                            // created after the message explains the failure without tampering.
+                            console.log(
+                                `            ${fmt(
+                                    _('{n} of them equally explained by a key newer than the message'),
+                                    { n: String(count.possiblyWrongKey) },
+                                )}`,
+                            );
+                        }
+                        for (const reason of count.reasons) {
+                            console.log(
+                                `            ${String(reason.messages).padStart(6)}  ${reason.selector}._domainkey.${reason.domain}`,
+                            );
+                        }
+                    }
                 }
 
                 if (report.before) {
@@ -160,6 +201,13 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                 if (report.keys.length === 0) {
                     console.log(_('No DKIM signatures in this case, so no keys are needed.'));
                     return;
+                }
+                if (report.domains.length > 0) {
+                    console.log(_('Signing domains, by how much mail they signed'));
+                    for (const domain of report.domains) {
+                        console.log(`  ${String(domain.messages).padStart(8)}  ${domain.domain}`);
+                    }
+                    console.log('');
                 }
                 console.log(_('Keys, by how much mail depends on them'));
                 console.log(

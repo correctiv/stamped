@@ -23,6 +23,8 @@ import {
     type LookupChannel,
     type LookupConsent,
     type MessageFinding,
+    type UnverifiableReason,
+    type Verdict,
 } from '@stamped/core';
 import {
     browseMessages,
@@ -32,13 +34,16 @@ import {
     importSources,
     isCase,
     logSources,
+    mailboxHashes,
     openCase,
     openIndex,
     readMessage,
     readRaw,
     reverifyPairs,
     searchHits,
+    signatureHashes,
     sourceHashes,
+    verdictHashes,
     type BrowseOptions,
     type CasePaths,
     type CaseReport,
@@ -67,6 +72,8 @@ export interface CaseSession {
     vault: KeyVault;
     /** Cached source filter, rebuilt when the chosen archive changes. */
     sourceScope?: { source: string; scope: HashScope };
+    /** Cached scope filter, rebuilt when the tapped overview number changes. Its key, not its ref. */
+    scopeFilter?: { key: string; scope: HashScope };
 }
 
 /** How many rows one page of the message list holds. */
@@ -99,9 +106,23 @@ export function createSession(root: string): CaseSession {
  * live.
  */
 export function closeSession(session: CaseSession): void {
+    dropFilterCaches(session);
+    session.db.close();
+}
+
+/**
+ * Drop the cached filter tables — after the index changed underneath them.
+ *
+ * An import writes new rows, and a mailbox scope built before it does not contain the messages
+ * that import just added: the list would go on showing the old selection and say nothing about
+ * it. Both caches are temp tables on OUR connection, so dropping them here is all the repair
+ * there is.
+ */
+export function dropFilterCaches(session: CaseSession): void {
     session.sourceScope?.scope.close();
     session.sourceScope = undefined;
-    session.db.close();
+    session.scopeFilter?.scope.close();
+    session.scopeFilter = undefined;
 }
 
 /** Does this folder hold a case? The question the file chooser's result is put to first. */
@@ -114,12 +135,113 @@ export function knownKeyNames(vault: KeyVault): Set<string> {
     return new Set(vault.all().map((entry) => pairName(entry)));
 }
 
-/** How a message list is asked for: a search term, a verdict, an archive, or nothing at all. */
+/** How a message list is asked for: a search term, a verdict, an archive, a scope, or nothing at all. */
 export interface Query {
     readonly text?: string;
     readonly verdict?: BrowseOptions['verdict'];
     /** A `LogSource.source` — the path an import read the messages out of. */
     readonly source?: string;
+    /**
+     * A set of messages named by what is true of them — what tapping an overview number sets.
+     *
+     * The same "where from" axis as `source`, so the two never stand together: a mailbox, a
+     * signer, a key and an archive all answer "which of these messages", and a list narrowed by
+     * both would be a set nobody asked for.
+     */
+    readonly scope?: ScopeRef;
+}
+
+/**
+ * A set of messages, named by what the index can enumerate about it.
+ *
+ * NOT by a hash list: a scope is rebuilt whenever the query runs (a page of a scrolled list, the
+ * counter under it, a search), and the hashes behind it are only reachable through the log and
+ * the signature rows — so the REFERENCE is what travels, and {@link scopeFor} turns it into a
+ * temporary table once per filter.
+ */
+export type ScopeRef =
+    /** The messages a mailbox of a folder import contributed. */
+    | { readonly kind: 'mailbox'; readonly mailbox: string }
+    /** Several verdicts at once, for a row that counts two of them together. */
+    | { readonly kind: 'verdicts'; readonly verdicts: readonly Verdict[] }
+    /** Everything carrying a signature from this `d=`. */
+    | { readonly kind: 'signer'; readonly domain: string }
+    /** Everything carrying this `s=` — with `missingOnly` for the messages still waiting on it. */
+    | {
+          readonly kind: 'key';
+          readonly domain: string;
+          readonly selector: string;
+          readonly missingOnly?: boolean;
+      }
+    /** The messages with no verdict because of this reason. */
+    | { readonly kind: 'reason'; readonly reason: UnverifiableReason };
+
+/**
+ * The hashes one scope names, from wherever they live.
+ *
+ * Mailbox provenance is the import log's (see {@link mailboxHashes}); every other scope is a
+ * question about signature rows. Both answers are RAW hash sets — the same thing the index is
+ * keyed by, so a scope table can join it directly.
+ */
+function hashesFor(session: CaseSession, ref: ScopeRef): Set<string> {
+    switch (ref.kind) {
+        case 'mailbox':
+            return mailboxHashes(session.paths).get(ref.mailbox) ?? new Set();
+        case 'verdicts':
+            return verdictHashes(session.db, ref.verdicts);
+        case 'signer':
+            return signatureHashes(session.db, { domain: ref.domain });
+        case 'key':
+            return signatureHashes(session.db, {
+                domain: ref.domain,
+                selector: ref.selector,
+                ...(ref.missingOnly === true ? { reason: 'no-key' } : {}),
+            });
+        case 'reason':
+            return signatureHashes(session.db, {
+                reason: ref.reason,
+                messageVerdict: 'unverifiable',
+            });
+    }
+}
+
+/** One string per scope, so "is this still the filter from last page?" is a string comparison. */
+function scopeKey(ref: ScopeRef): string {
+    switch (ref.kind) {
+        case 'mailbox':
+            return `mailbox:${ref.mailbox}`;
+        case 'verdicts':
+            return `verdicts:${[...ref.verdicts].sort().join(',')}`;
+        case 'signer':
+            return `signer:${ref.domain.toLowerCase()}`;
+        case 'key':
+            return `key:${ref.domain.toLowerCase()}:${ref.selector.toLowerCase()}:${ref.missingOnly === true ? 'missing' : 'any'}`;
+        case 'reason':
+            return `reason:${ref.reason}`;
+    }
+}
+
+/**
+ * The hashes one scope names, as a table the index can join.
+ *
+ * Built once per chosen scope and kept on the session, exactly like {@link sourceScopeFor} and
+ * for the same reason: the mailbox scope of a 400,000-message mailbox is 400,000 inserts, and
+ * re-inserting them on every scrolled page would turn a scroll into an import.
+ */
+function scopeFor(session: CaseSession, ref: ScopeRef): HashScope {
+    const key = scopeKey(ref);
+    if (session.scopeFilter?.key === key) return session.scopeFilter.scope;
+    session.scopeFilter?.scope.close();
+    const scope = hashScope(session.db, hashesFor(session, ref));
+    session.scopeFilter = { key, scope };
+    return scope;
+}
+
+/** The filter a query asks with: a scope when it has one, an archive when it has that. */
+function scopeOf(session: CaseSession, query: Query): HashScope | undefined {
+    if (query.scope !== undefined) return scopeFor(session, query.scope);
+    if (query.source !== undefined) return sourceScopeFor(session, query.source);
+    return undefined;
 }
 
 /**
@@ -150,7 +272,7 @@ function sourceScopeFor(session: CaseSession, source: string): HashScope {
  * ask for more keep working.
  */
 export function pageOf(session: CaseSession, query: Query, offset = 0): SearchHit[] {
-    const scope = query.source ? sourceScopeFor(session, query.source) : undefined;
+    const scope = scopeOf(session, query);
     const text = query.text?.trim() ?? '';
     if (text === '') {
         return browseMessages(session.db, {
@@ -170,7 +292,7 @@ export function pageOf(session: CaseSession, query: Query, offset = 0): SearchHi
 
 /** How many messages a filter admits — the length of the list behind {@link pageOf}. */
 export function filteredCount(session: CaseSession, query: Query): number {
-    const scope = query.source ? sourceScopeFor(session, query.source) : undefined;
+    const scope = scopeOf(session, query);
     const text = query.text?.trim() ?? '';
     if (text === '') {
         return countMessages(session.db, {
@@ -198,7 +320,7 @@ export function sourcesOf(session: CaseSession): LogSource[] {
 
 /** What the whole case adds up to. The same query `stamped report` prints. */
 export function reportOf(session: CaseSession): CaseReport {
-    return caseReport(session.db);
+    return caseReport(session.db, { paths: session.paths });
 }
 
 /** The indexed row for one message — the header block, and nothing a verdict rests on. */
