@@ -11,9 +11,10 @@ export function queryPrompt(query: string): string {
     return `task: search result | query: ${query}`;
 }
 
+/** The subject goes into `title:` only; repeating it in `text:` would weigh it twice. */
 export function documentPrompt(subject: string | undefined, body: string): string {
     const title = subject && subject.trim() ? subject.trim() : 'none';
-    return `title: ${title} | text: ${documentText(subject, body)}`;
+    return `title: ${title} | text: ${documentText(undefined, body)}`;
 }
 
 /** Matryoshka truncation: keep the leading dimensions and renormalise. */

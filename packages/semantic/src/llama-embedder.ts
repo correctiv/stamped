@@ -10,8 +10,8 @@
  */
 
 import { checkVector, normalize } from './embedder.ts';
-import type { Embedder } from './embedder.ts';
-import { queryPrompt, truncateVector } from './prompts.ts';
+import type { EmbedDocument, Embedder } from './embedder.ts';
+import { documentPrompt, queryPrompt, truncateVector } from './prompts.ts';
 
 export const EMBEDDING_GEMMA_MODEL_ID = 'ggml-org/embeddinggemma-2-GGUF:Q8_0';
 
@@ -61,8 +61,8 @@ interface Session {
 
 async function openSession(options: LlamaEmbedderOptions, forceCpu: boolean): Promise<Session> {
     const { getLlama } = await import('node-llama-cpp');
-    // gjsify gap (unfixed, gjsify/gjsify#2331): under GJS `loadBackends()` cannot find the
-    // prebuilt bins on its own and needs the bins directory passed explicitly.
+    // For the GJS bring-up: the probe there had to hand `loadBackends()` the prebuilt bins
+    // directory explicitly, or the model load segfaulted with "no backends are loaded".
     const llama = (await getLlama({
         gpu: forceCpu || options.gpu === false ? false : 'auto',
     })) as unknown as LlamaLike;
@@ -112,9 +112,9 @@ export async function createLlamaEmbedder(options: LlamaEmbedderOptions): Promis
         embedQuery(text: string): Promise<Float32Array> {
             return embed(queryPrompt(text));
         },
-        async embedDocuments(texts: string[]): Promise<Float32Array[]> {
+        async embedDocuments(documents: readonly EmbedDocument[]): Promise<Float32Array[]> {
             const out: Float32Array[] = [];
-            for (const text of texts) out.push(await embed(`title: none | text: ${text}`));
+            for (const doc of documents) out.push(await embed(documentPrompt(doc.subject, doc.body)));
             return out;
         },
         async dispose(): Promise<void> {

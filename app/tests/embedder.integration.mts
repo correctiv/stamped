@@ -24,8 +24,11 @@ const embedder = await createLlamaEmbedder({ modelPath, gpu: false, threads: 4 }
 try {
     const query = await embedder.embedQuery('who approved the payment to the supplier');
     const [relevant, unrelated] = await embedder.embedDocuments([
-        'The finance director signed off the invoice and released the transfer to the supplier.',
-        'The office picnic is moved to Friday because of the rain forecast.',
+        {
+            subject: 'Invoice approved',
+            body: 'The finance director signed off the invoice and released the transfer to the supplier.',
+        },
+        { subject: 'Picnic', body: 'The office picnic is moved to Friday because of the rain forecast.' },
     ]);
     for (const v of [query, relevant, unrelated]) {
         assert.equal(v.length, 768);

@@ -19,9 +19,7 @@ export default async () => {
         });
 
         await it('titles a document with its subject, or "none"', async () => {
-            expect(documentPrompt('Budget', 'Please approve.')).toBe(
-                'title: Budget | text: Budget\n\nPlease approve.',
-            );
+            expect(documentPrompt('Budget', 'Please approve.')).toBe('title: Budget | text: Please approve.');
             expect(documentPrompt(undefined, 'Hello')).toBe('title: none | text: Hello');
             expect(documentPrompt('   ', 'Hello')).toBe('title: none | text: Hello');
         });
