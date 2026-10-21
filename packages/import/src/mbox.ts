@@ -132,8 +132,15 @@ export class MboxSplitter {
      * the very beginning), which is the second half of the rule in {@link looksLikeSeparator}.
      */
     private afterBlank = true;
-    /** How many trailing blank lines are pending — see {@link finishMessage}. */
-    private blanks = 0;
+    /**
+     * The trailing blank lines pending — see {@link finishMessage} — as the bytes they were: a
+     * CRLF archive's blank line is `\r\n`, and writing it back as `\n` changes the stored bytes
+     * and the hash of every message with a blank line in it, which is every message.
+     */
+    private blankBytes = new Uint8Array(64);
+    private blankSize = 0;
+    /** Length of the last pending blank line, the one {@link finishMessage} drops. */
+    private lastBlank = 0;
 
     constructor(emit: (message: RawMessage) => void, flavour: MboxFlavour = 'mboxrd') {
         this.emit = emit;
@@ -220,15 +227,19 @@ export class MboxSplitter {
             // Held back, not appended: whether it belongs to this message depends on what comes
             // next, and only {@link finishMessage} knows that.
             this.flushRun();
-            this.blanks++;
+            if (this.blankSize + length > this.blankBytes.length) {
+                const grown = new Uint8Array(Math.max(this.blankSize + length, this.blankBytes.length * 2));
+                grown.set(this.blankBytes.subarray(0, this.blankSize));
+                this.blankBytes = grown;
+            }
+            this.blankBytes.set(source.subarray(from, to), this.blankSize);
+            this.blankSize += length;
+            this.lastBlank = length;
             return;
         }
-        if (this.blanks > 0) {
+        if (this.blankSize > 0) {
             this.flushRun();
-            this.reserve(this.blanks);
-            this.buffer.fill(LF, this.size, this.size + this.blanks);
-            this.size += this.blanks;
-            this.blanks = 0;
+            this.appendBlanks(this.blankSize);
         }
 
         // Only a line that starts with `>` can have quoting to undo; `unquote` hands back a view
@@ -263,6 +274,17 @@ export class MboxSplitter {
         this.runEnd = 0;
     }
 
+    /** Move the first `length` bytes of the pending blank lines into the message, drop the rest. */
+    private appendBlanks(length: number): void {
+        if (length > 0) {
+            this.reserve(length);
+            this.buffer.set(this.blankBytes.subarray(0, length), this.size);
+            this.size += length;
+        }
+        this.blankSize = 0;
+        this.lastBlank = 0;
+    }
+
     /** Room for `extra` more bytes. */
     private reserve(extra: number): void {
         const needed = this.size + extra;
@@ -283,16 +305,11 @@ export class MboxSplitter {
      */
     private finishMessage(): void {
         if (!this.open) {
-            this.blanks = 0;
+            this.appendBlanks(0);
             return;
         }
         this.flushRun();
-        if (this.blanks > 1) {
-            this.reserve(this.blanks - 1);
-            this.buffer.fill(LF, this.size, this.size + this.blanks - 1);
-            this.size += this.blanks - 1;
-        }
-        this.blanks = 0;
+        this.appendBlanks(this.blankSize - this.lastBlank);
 
         if (this.size > 0) {
             this.emit({ raw: this.buffer.slice(0, this.size), offset: this.start });
