@@ -17,6 +17,7 @@ import importSuite from './unit/import.test.ts';
 import store from './unit/store.test.ts';
 import view from './unit/view.test.ts';
 import semantic from './unit/semantic.test.ts';
+import llamaPrompts from './unit/llama-prompts.test.ts';
 
 run({
     autokeys,
@@ -33,4 +34,5 @@ run({
     store,
     view,
     semantic,
+    llamaPrompts,
 });

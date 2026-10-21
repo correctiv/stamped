@@ -22,7 +22,8 @@
     "start": "gjsify run dist/stamped.gjs.mjs",
     "dev": "gjsify run build:gjs && gjsify run start",
     "fixtures": "node ../tools/make-fixtures.mjs",
-    "test": "LC_ALL=C LANGUAGE= gjsify test"
+    "test": "LC_ALL=C LANGUAGE= gjsify test",
+    "test:embedder": "node --experimental-strip-types tests/embedder.integration.mts"
   },
   "gjsify": {
     "ship": {

@@ -6,12 +6,17 @@
   "type": "module",
   "description": "Semantic search primitives: embedder seam, text preparation, vector storage, and reciprocal rank fusion. No model runtime in this package — only interfaces and pure logic.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./llama-embedder": "./src/llama-embedder.ts",
+    "./prompts": "./src/prompts.ts"
   },
   "scripts": {
     "check": "gjsify tsc --noEmit"
   },
   "files": [
     "src"
-  ]
+  ],
+  "dependencies": {
+    "node-llama-cpp": "3.22.2"
+  }
 }
