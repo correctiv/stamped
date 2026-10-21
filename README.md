@@ -65,7 +65,8 @@ Stamped reads that tree as it lies:
 
 - **A folder is a mailbox**, named after the folder it came from. The layout is the only naming
   there is — nobody writes a manifest, and a manifest written by the leaker is a manifest we
-  would have to trust.
+  would have to trust. Two folders of the same name get a number on the end
+  (`ada@example.com`, `ada@example.com (2)`), so a name never means two things.
 - **Only mail is mail.** `.mbox` and `.eml` files are read; everything else — a README, a
   licence — is left alone and counted. A file that is not mail never becomes a message.
 - **Each part is read on its own**, streamed, so the size of the archive is not a limit and the
@@ -76,8 +77,9 @@ Stamped reads that tree as it lies:
   the rest of the archive is imported, and the run ends with exit code 2 — a partial import must
   not look like a clean one to a script.
 
-`--progress=jsonl` prints one JSON object per indexed batch, each naming the mailbox it belongs
-to, so a long import can be watched and a stalled one can be located.
+`--progress=jsonl` prints one JSON object per mailbox — each naming the mailbox it belongs to,
+also for a mailbox that held no message at all, and the closing line naming the mailbox the run
+ended in. A long import can be watched and a stalled one can be located.
 
 ## Status
 

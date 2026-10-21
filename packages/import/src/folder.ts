@@ -33,7 +33,7 @@
  */
 
 import { lstatSync, readdirSync, realpathSync, statSync, type Stats } from 'node:fs';
-import { basename, join, relative, sep } from 'node:path';
+import { basename, join, sep } from 'node:path';
 
 import { fmt, _ } from '@stamped/core';
 
@@ -108,10 +108,10 @@ export function planFolder(root: string): FolderPlan {
     // `tmp/` — where a delivery agent writes a message it has not finished — is never read.
     if (isMaildir(realRoot)) {
         folders.set(realRoot, [{ path: realRoot, kind: 'maildir', bytes: 0 }]);
-        return { root: realRoot, mailboxes: nameMailboxes(realRoot, folders), skipped };
+        return { root: realRoot, mailboxes: nameMailboxes(folders), skipped };
     }
     walk(realRoot, realRoot, folders, skipped, new Set([realRoot]));
-    return { root: realRoot, mailboxes: nameMailboxes(realRoot, folders), skipped };
+    return { root: realRoot, mailboxes: nameMailboxes(folders), skipped };
 }
 
 /**
@@ -280,28 +280,35 @@ function addPart(folders: Map<string, MailPart[]>, folder: string, part: MailPar
 /**
  * Name the mailboxes and order their parts.
  *
- * The name is the folder's own name — flattened, so a nested folder is called the same as the
- * account it holds. Two folders with the same name would collide, so those are named by their
- * path from the root instead: a name that says where it is beats a name that is ambiguous.
+ * The name is the folder's own name — the account folder is what the leak calls the mailbox, and
+ * nothing else in the tree says what a mailbox is called. Two folders can carry the same name
+ * (`ada@example.com` at the top of the tree and one inside `work/`), and two mailboxes with the
+ * same name are indistinguishable in the log — so the second one gets a number on the end.
  */
-function nameMailboxes(root: string, folders: Map<string, MailPart[]>): Mailbox[] {
+function nameMailboxes(folders: Map<string, MailPart[]>): Mailbox[] {
     const paths = [...folders.keys()].sort();
-    const counts = new Map<string, number>();
-    for (const path of paths) {
-        const name = basename(path);
-        counts.set(name, (counts.get(name) ?? 0) + 1);
-    }
+    const used = new Set<string>();
     return paths.map((path) => {
-        const name = basename(path);
+        const name = uniqueName(basename(path), used);
+        used.add(name);
         const parts = [...(folders.get(path) ?? [])].sort((a, b) =>
             compareNames(basename(a.path), basename(b.path)),
         );
-        return {
-            name: counts.get(name) === 1 ? name : relative(root, path).split(sep).join('/'),
-            folder: path,
-            parts,
-        };
+        return { name, folder: path, parts };
     });
+}
+
+/**
+ * A name no other mailbox has: the folder's own, or that name with a number on the end.
+ *
+ * The number is handed out in the order the folders are walked, which is sorted, so the same tree
+ * always yields the same names — an import that is run twice must log the same mailboxes.
+ */
+function uniqueName(base: string, used: Set<string>): string {
+    if (!used.has(base)) return base;
+    let n = 2;
+    while (used.has(`${base} (${n})`)) n++;
+    return `${base} (${n})`;
 }
 
 /**

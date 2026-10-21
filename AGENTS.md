@@ -69,8 +69,9 @@ change one only with a fixture and a test for it.
 
 - **A folder is a mailbox, named after the folder.** The layout is the only naming there is:
   nobody writes a manifest, and a manifest written by the leaker is a manifest we would have to
-  trust. Two folders with the same name are named by their path from the root instead, so a
-  name never means two things.
+  trust. Two folders with the same name get a number on the end — `ada@example.com` and
+  `ada@example.com (2)` — so a name never means two things. The number follows the sorted order
+  of the folders, so the same tree always yields the same names.
 - **Only mail is mail.** `.mbox` and `.eml` files, and Maildirs, are read. Everything else is
   left alone and counted — a README imported as a message would be a message nobody ever sent.
 - **A part is read as an mbox, whatever its first line looks like.** The general reader decides
@@ -93,8 +94,10 @@ mailboxes, everything else as it is, and `--folders` / `--no-folders` decide it 
 **A mailbox name is provenance, and it goes in the log.** The import log entry carries an
 optional `mailbox` field, absent for a plain import — a field that is always there and always
 empty is worse than one that is only there when it says something. `--progress=jsonl` names the
-mailbox in every batch line, because a progress stream that does not say which mailbox it is
-talking about cannot tell a journalist that the import has reached the interesting one.
+mailbox in EVERY line, because a progress stream that does not say which mailbox it is talking
+about cannot tell a journalist that the import has reached the interesting one: one line per
+mailbox, also for a mailbox that held no message at all, and the closing line names the mailbox
+the run ended in.
 
 ## Why mailauth and not our own verifier
 

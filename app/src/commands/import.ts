@@ -162,6 +162,10 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                         failed: result.failed,
                         total: result.indexed + result.failed,
                         done: result.indexed + result.failed,
+                        // The closing line is about the whole run, and a run has no single
+                        // mailbox — but it ended in one, and that is where a watcher looking for
+                        // the stall wants to look.
+                        ...(result.lastMailbox === undefined ? {} : { mailbox: result.lastMailbox }),
                     },
                     true,
                 );
