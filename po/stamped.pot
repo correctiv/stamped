@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 09:59+0200\n"
+"POT-Creation-Date: 2026-10-21 10:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -325,7 +325,7 @@ msgid "Verdicts"
 msgstr ""
 
 #: app/src/commands/report.ts:93
-msgid "Caveats on confirmed messages"
+msgid "Caveats"
 msgstr ""
 
 #: app/src/commands/report.ts:101
@@ -1323,12 +1323,12 @@ msgid ""
 "That is neither a PEM public key, a DKIM TXT record nor a base64 p= value."
 msgstr ""
 
-#: packages/core/src/keys.ts:93
+#: packages/core/src/keys.ts:95
 msgid ""
 "--key needs <selector>._domainkey.<domain>=<record or file>, got: {argument}"
 msgstr ""
 
-#: packages/core/src/keys.ts:141
+#: packages/core/src/keys.ts:143
 msgid "That PEM block holds no key data."
 msgstr ""
 
@@ -1388,113 +1388,125 @@ msgstr ""
 msgid "Pair list line {line}: expected domain and selector."
 msgstr ""
 
-#: packages/core/src/verdict.ts:204
+#: packages/core/src/verdict.ts:228
 msgid "Confirmed: a valid signature covers this message as it stands."
 msgstr ""
 
-#: packages/core/src/verdict.ts:206
+#: packages/core/src/verdict.ts:230
 msgid ""
 "Confirmed with caveats: the signature is valid but covers less than it "
 "appears to."
 msgstr ""
 
-#: packages/core/src/verdict.ts:208
+#: packages/core/src/verdict.ts:232
 msgid "Body altered: the body is not the body that was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:210
+#: packages/core/src/verdict.ts:234
 msgid "Headers altered: a signed header field is not what was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:212
+#: packages/core/src/verdict.ts:236
 msgid "Unverifiable: a signature is present, but nothing here can check it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:214
+#: packages/core/src/verdict.ts:238
 msgid ""
 "Unsigned: no DKIM signature. This says nothing about the message either way."
 msgstr ""
 
-#: packages/core/src/verdict.ts:227
+#: packages/core/src/verdict.ts:251
 msgid ""
 "Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
 "carry a valid signature (RFC 8301)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:230
+#: packages/core/src/verdict.ts:254
 msgid ""
 "The RSA key is shorter than 1024 bits and can be factored with ordinary "
 "resources."
 msgstr ""
 
-#: packages/core/src/verdict.ts:233
+#: packages/core/src/verdict.ts:257
 msgid ""
 "An l= tag limits the signature to the start of the body. Anything appended "
 "after that is unsigned."
 msgstr ""
 
-#: packages/core/src/verdict.ts:236
+#: packages/core/src/verdict.ts:260
 msgid ""
 "Subject is not signed: the subject line could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:238
+#: packages/core/src/verdict.ts:262
 msgid "To is not signed: the recipient could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:240
+#: packages/core/src/verdict.ts:264
 msgid "Date is not signed: the date could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:243
+#: packages/core/src/verdict.ts:267
 msgid ""
 "The public key came from the archive itself, so it proves consistency rather "
 "than authenticity."
 msgstr ""
 
-#: packages/core/src/verdict.ts:249
+#: packages/core/src/verdict.ts:271
+msgid ""
+"The key was first seen after this message was sent. The selector may have "
+"been rotated, so this failure may come from a wrong key rather than an edit."
+msgstr ""
+
+#: packages/core/src/verdict.ts:277
 msgid ""
 "The signature is from {signer}, but the message claims to be from {author}. "
 "It proves only that {signer} handled the message, not that {author} sent it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:251
+#: packages/core/src/verdict.ts:279
 msgid "(unknown domain)"
 msgstr ""
 
-#: packages/core/src/verdict.ts:254
+#: packages/core/src/verdict.ts:282
 msgid ""
 "The signing domain is not the From domain, so the signature does not vouch "
 "for the author."
 msgstr ""
 
-#: packages/core/src/verdict.ts:263
+#: packages/core/src/verdict.ts:291
 msgid "No public key for this selector and domain."
 msgstr ""
 
-#: packages/core/src/verdict.ts:265
+#: packages/core/src/verdict.ts:293
 msgid "The public key record is unusable."
 msgstr ""
 
-#: packages/core/src/verdict.ts:267
+#: packages/core/src/verdict.ts:295
 msgid "The DKIM-Signature header does not parse."
 msgstr ""
 
-#: packages/core/src/verdict.ts:269
+#: packages/core/src/verdict.ts:297
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:271
+#: packages/core/src/verdict.ts:299
 msgid "The signature is expired or its timestamp lies in the future."
 msgstr ""
 
-#: packages/core/src/verdict.ts:273
+#: packages/core/src/verdict.ts:301
 msgid "The key lookup failed and may succeed later."
 msgstr ""
 
-#: packages/core/src/verdict.ts:275
+#: packages/core/src/verdict.ts:304
+msgid ""
+"The key does not match the signature (different size or type), so it cannot "
+"have produced it. The selector was probably rotated."
+msgstr ""
+
+#: packages/core/src/verdict.ts:307
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 
@@ -1510,7 +1522,7 @@ msgstr ""
 msgid "Cannot write into the case folder {path}."
 msgstr ""
 
-#: packages/verify/src/mailauth.ts:137
+#: packages/verify/src/mailauth.ts:144
 msgid "no key in the store"
 msgstr ""
 

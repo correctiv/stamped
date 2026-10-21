@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 09:59+0200\n"
+"POT-Creation-Date: 2026-10-21 10:17+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -22,7 +22,10 @@ msgid ""
 "The case folder (created when it does not exist), then the sources: an mbox "
 "file, a Maildir, a single .eml, or a directory of those. With --case, only "
 "the sources."
-msgstr "Der Fallordner (wird angelegt, wenn er fehlt), dann die Quellen: eine mbox-Datei, ein Maildir, eine einzelne .eml oder ein Ordner davon. Mit --case nur die Quellen."
+msgstr ""
+"Der Fallordner (wird angelegt, wenn er fehlt), dann die Quellen: eine mbox-"
+"Datei, ein Maildir, eine einzelne .eml oder ein Ordner davon. Mit --case nur "
+"die Quellen."
 
 #: app/src/commands/import.ts:50
 msgid "The case folder to import into, instead of the first argument"
@@ -178,7 +181,9 @@ msgstr "Der Fallordner"
 msgid ""
 "Check for missing keys: a pair list file (domain, selector[, mail count] per "
 "line), or no value for the case’s own missing pairs"
-msgstr "Fehlende Schlüssel prüfen: eine Paarlisten-Datei (Domain, Selektor[, Mailanzahl] je Zeile), oder ohne Wert die fehlenden Paare des Falls"
+msgstr ""
+"Fehlende Schlüssel prüfen: eine Paarlisten-Datei (Domain, Selektor[, "
+"Mailanzahl] je Zeile), oder ohne Wert die fehlenden Paare des Falls"
 
 #: app/src/commands/keys.ts:129
 msgid "Print JSON"
@@ -363,8 +368,8 @@ msgid "Verdicts"
 msgstr "Befunde"
 
 #: app/src/commands/report.ts:93
-msgid "Caveats on confirmed messages"
-msgstr "Einschränkungen bei bestätigten Nachrichten"
+msgid "Caveats"
+msgstr "Einschränkungen"
 
 #: app/src/commands/report.ts:101
 msgid "No DKIM signatures in this case, so no keys are needed."
@@ -1141,7 +1146,8 @@ msgstr "{count} Schlüssel nicht gefunden"
 
 #: app/src/lib/autofetch.ts:65
 msgid "{count} differ from a key already stored — compare them"
-msgstr "{count} weichen von einem bereits gespeicherten Schlüssel ab — vergleichen"
+msgstr ""
+"{count} weichen von einem bereits gespeicherten Schlüssel ab — vergleichen"
 
 #: app/src/lib/autofetch.ts:79
 msgid "{count} message re-verified, {changed} verdict changed."
@@ -1189,7 +1195,9 @@ msgstr ""
 #: app/src/lib/case.ts:47
 msgid ""
 "No case folder given. Use `stamped {command} <case> …` or `--case <dir>`."
-msgstr "Kein Fallordner angegeben. Nutze `stamped {command} <Fall> …` oder `--case <Ordner>`."
+msgstr ""
+"Kein Fallordner angegeben. Nutze `stamped {command} <Fall> …` oder `--case "
+"<Ordner>`."
 
 #: app/src/lib/consent.ts:16
 msgid "Send these lookups? [y/N] "
@@ -1454,14 +1462,14 @@ msgstr ""
 "Das ist weder ein öffentlicher PEM-Schlüssel noch ein DKIM-TXT-Eintrag noch "
 "ein Base64-p=-Wert."
 
-#: packages/core/src/keys.ts:93
+#: packages/core/src/keys.ts:95
 msgid ""
 "--key needs <selector>._domainkey.<domain>=<record or file>, got: {argument}"
 msgstr ""
 "--key erwartet <Selektor>._domainkey.<Domain>=<Eintrag oder Datei>, "
 "erhalten: {argument}"
 
-#: packages/core/src/keys.ts:141
+#: packages/core/src/keys.ts:143
 msgid "That PEM block holds no key data."
 msgstr "Dieser PEM-Block enthält keine Schlüsseldaten."
 
@@ -1532,13 +1540,13 @@ msgstr "Die Schlüsseldatei enthält einen fehlerhaften Eintrag für {name}."
 msgid "Pair list line {line}: expected domain and selector."
 msgstr "Paarliste, Zeile {line}: Domain und Selektor erwartet."
 
-#: packages/core/src/verdict.ts:204
+#: packages/core/src/verdict.ts:228
 msgid "Confirmed: a valid signature covers this message as it stands."
 msgstr ""
 "Bestätigt: Eine gültige Signatur deckt diese Nachricht in ihrer vorliegenden "
 "Form ab."
 
-#: packages/core/src/verdict.ts:206
+#: packages/core/src/verdict.ts:230
 msgid ""
 "Confirmed with caveats: the signature is valid but covers less than it "
 "appears to."
@@ -1546,31 +1554,31 @@ msgstr ""
 "Bestätigt mit Einschränkungen: Die Signatur ist gültig, deckt aber weniger "
 "ab, als es scheint."
 
-#: packages/core/src/verdict.ts:208
+#: packages/core/src/verdict.ts:232
 msgid "Body altered: the body is not the body that was signed."
 msgstr ""
 "Nachrichtentext verändert: Der Text ist nicht der Text, der signiert wurde."
 
-#: packages/core/src/verdict.ts:210
+#: packages/core/src/verdict.ts:234
 msgid "Headers altered: a signed header field is not what was signed."
 msgstr ""
 "Kopfzeilen verändert: Eine signierte Kopfzeile ist nicht die, die signiert "
 "wurde."
 
-#: packages/core/src/verdict.ts:212
+#: packages/core/src/verdict.ts:236
 msgid "Unverifiable: a signature is present, but nothing here can check it."
 msgstr ""
 "Nicht prüfbar: Es liegt eine Signatur vor, aber hier ist nichts, womit sie "
 "geprüft werden könnte."
 
-#: packages/core/src/verdict.ts:214
+#: packages/core/src/verdict.ts:238
 msgid ""
 "Unsigned: no DKIM signature. This says nothing about the message either way."
 msgstr ""
 "Ohne Signatur: keine DKIM-Signatur. Das sagt über die Nachricht in keine "
 "Richtung etwas aus."
 
-#: packages/core/src/verdict.ts:227
+#: packages/core/src/verdict.ts:251
 msgid ""
 "Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
 "carry a valid signature (RFC 8301)."
@@ -1579,7 +1587,7 @@ msgstr ""
 "kann auch ein gefälschter Nachrichtentext eine gültige Signatur tragen (RFC "
 "8301)."
 
-#: packages/core/src/verdict.ts:230
+#: packages/core/src/verdict.ts:254
 msgid ""
 "The RSA key is shorter than 1024 bits and can be factored with ordinary "
 "resources."
@@ -1587,7 +1595,7 @@ msgstr ""
 "Der RSA-Schlüssel ist kürzer als 1024 Bit und lässt sich mit gewöhnlichen "
 "Mitteln faktorisieren."
 
-#: packages/core/src/verdict.ts:233
+#: packages/core/src/verdict.ts:257
 msgid ""
 "An l= tag limits the signature to the start of the body. Anything appended "
 "after that is unsigned."
@@ -1595,26 +1603,26 @@ msgstr ""
 "Ein l=-Tag begrenzt die Signatur auf den Anfang des Nachrichtentextes. Alles "
 "danach Angehängte ist nicht signiert."
 
-#: packages/core/src/verdict.ts:236
+#: packages/core/src/verdict.ts:260
 msgid ""
 "Subject is not signed: the subject line could have been changed or added."
 msgstr ""
 "Subject ist nicht signiert: Die Betreffzeile könnte geändert oder "
 "hinzugefügt worden sein."
 
-#: packages/core/src/verdict.ts:238
+#: packages/core/src/verdict.ts:262
 msgid "To is not signed: the recipient could have been changed or added."
 msgstr ""
 "To ist nicht signiert: Der Empfänger könnte geändert oder hinzugefügt worden "
 "sein."
 
-#: packages/core/src/verdict.ts:240
+#: packages/core/src/verdict.ts:264
 msgid "Date is not signed: the date could have been changed or added."
 msgstr ""
 "Date ist nicht signiert: Das Datum könnte geändert oder hinzugefügt worden "
 "sein."
 
-#: packages/core/src/verdict.ts:243
+#: packages/core/src/verdict.ts:267
 msgid ""
 "The public key came from the archive itself, so it proves consistency rather "
 "than authenticity."
@@ -1622,7 +1630,16 @@ msgstr ""
 "Der öffentliche Schlüssel stammt aus dem Archiv selbst und belegt damit "
 "Konsistenz, nicht Echtheit."
 
-#: packages/core/src/verdict.ts:249
+#: packages/core/src/verdict.ts:271
+msgid ""
+"The key was first seen after this message was sent. The selector may have "
+"been rotated, so this failure may come from a wrong key rather than an edit."
+msgstr ""
+"Der Schlüssel wurde erst nach dem Versand dieser Nachricht erstmals "
+"gesehen. Der Selektor wurde womöglich rotiert; dieser Fehler kann daher von "
+"einem falschen Schlüssel statt von einer Änderung herrühren."
+
+#: packages/core/src/verdict.ts:277
 msgid ""
 "The signature is from {signer}, but the message claims to be from {author}. "
 "It proves only that {signer} handled the message, not that {author} sent it."
@@ -1631,11 +1648,11 @@ msgstr ""
 "{author} aus. Sie belegt nur, dass {signer} die Nachricht bearbeitet hat, "
 "nicht, dass {author} sie gesendet hat."
 
-#: packages/core/src/verdict.ts:251
+#: packages/core/src/verdict.ts:279
 msgid "(unknown domain)"
 msgstr "(unbekannte Domain)"
 
-#: packages/core/src/verdict.ts:254
+#: packages/core/src/verdict.ts:282
 msgid ""
 "The signing domain is not the From domain, so the signature does not vouch "
 "for the author."
@@ -1643,19 +1660,19 @@ msgstr ""
 "Die Signatur-Domain ist nicht die Absenderdomain; die Signatur bürgt daher "
 "nicht für den Absender."
 
-#: packages/core/src/verdict.ts:263
+#: packages/core/src/verdict.ts:291
 msgid "No public key for this selector and domain."
 msgstr "Kein öffentlicher Schlüssel für diesen Selektor und diese Domain."
 
-#: packages/core/src/verdict.ts:265
+#: packages/core/src/verdict.ts:293
 msgid "The public key record is unusable."
 msgstr "Der Eintrag des öffentlichen Schlüssels ist nicht verwendbar."
 
-#: packages/core/src/verdict.ts:267
+#: packages/core/src/verdict.ts:295
 msgid "The DKIM-Signature header does not parse."
 msgstr "Die Kopfzeile DKIM-Signature lässt sich nicht auswerten."
 
-#: packages/core/src/verdict.ts:269
+#: packages/core/src/verdict.ts:297
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
@@ -1663,16 +1680,24 @@ msgstr ""
 "Der Schlüsseleintrag erlaubt diese Signatur nicht (Hash-Algorithmus oder "
 "Dienstart)."
 
-#: packages/core/src/verdict.ts:271
+#: packages/core/src/verdict.ts:299
 msgid "The signature is expired or its timestamp lies in the future."
 msgstr ""
 "Die Signatur ist abgelaufen, oder ihr Zeitstempel liegt in der Zukunft."
 
-#: packages/core/src/verdict.ts:273
+#: packages/core/src/verdict.ts:301
 msgid "The key lookup failed and may succeed later."
 msgstr "Die Schlüsselabfrage ist fehlgeschlagen und könnte später gelingen."
 
-#: packages/core/src/verdict.ts:275
+#: packages/core/src/verdict.ts:304
+msgid ""
+"The key does not match the signature (different size or type), so it cannot "
+"have produced it. The selector was probably rotated."
+msgstr ""
+"Der Schlüssel passt nicht zur Signatur (andere Größe oder Art) und kann sie "
+"daher nicht erzeugt haben. Der Selektor wurde wahrscheinlich rotiert."
+
+#: packages/core/src/verdict.ts:307
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 "Der Signaturalgorithmus oder der Schlüsseltyp wird hier nicht unterstützt."
@@ -1691,7 +1716,7 @@ msgstr "Der Index des Fallordners {path} kann nicht geöffnet werden."
 msgid "Cannot write into the case folder {path}."
 msgstr "In den Fallordner {path} kann nicht geschrieben werden."
 
-#: packages/verify/src/mailauth.ts:137
+#: packages/verify/src/mailauth.ts:144
 msgid "no key in the store"
 msgstr "kein Schlüssel im Speicher"
 
