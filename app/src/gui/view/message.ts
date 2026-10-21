@@ -11,6 +11,7 @@
  */
 
 import { fmt, _, _n } from '@stamped/core';
+import { parseAddressList } from '@stamped/import';
 import type { IndexedMessage, SearchHit } from '@stamped/store';
 import type { Verdict } from '@stamped/core';
 
@@ -114,6 +115,57 @@ export function headerFields(message: IndexedMessage): HeaderField[] {
         monospace: field.monospace,
         ...(field.copy !== undefined ? { copy: field.copy } : {}),
     }));
+}
+
+/** The mail "sheet" at the top of the reader: what a mail program shows above the body. */
+export interface MailHead {
+    /** The subject, or a marked placeholder. */
+    readonly subject: string;
+    /** Empty when the sender wrote no display name. */
+    readonly fromName: string;
+    /** Empty when no address could be read out of the From line. */
+    readonly fromAddress: string;
+    /** The To / Cc lines as written; empty when the field is absent. */
+    readonly to: string;
+    readonly cc: string;
+    /** In the reader's locale; the raw header when it cannot be read as a date. */
+    readonly date: string;
+}
+
+export interface MailHeadOptions {
+    /** BCP 47 tag; the system's when absent. */
+    readonly locale?: string;
+    /** IANA zone; the system's when absent. */
+    readonly timeZone?: string;
+}
+
+/**
+ * The sheet's header. Unlike the list rows, the date is shown in the READER's locale and zone
+ * (it is a reading aid; the header group below still quotes the raw `Date` as written), with
+ * the raw header as the fallback when no instant is known.
+ */
+export function mailHead(message: IndexedMessage, options: MailHeadOptions = {}): MailHead {
+    const sender = parseAddressList(message.from)[0];
+    let date = message.date;
+    if (message.sentAt !== undefined && Number.isFinite(message.sentAt)) {
+        try {
+            date = new Intl.DateTimeFormat(options.locale, {
+                dateStyle: 'long',
+                timeStyle: 'short',
+                ...(options.timeZone ? { timeZone: options.timeZone } : {}),
+            }).format(new Date(message.sentAt));
+        } catch {
+            date = message.date;
+        }
+    }
+    return {
+        subject: escapeLine(message.subject || _('(no subject)')),
+        fromName: escapeLine(sender?.name ?? ''),
+        fromAddress: escapeLine(sender?.address ?? (sender ? '' : message.from)),
+        to: escapeLine(message.to),
+        cc: escapeLine(message.cc),
+        date: escapeLine(date),
+    };
 }
 
 /**

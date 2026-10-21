@@ -36,7 +36,9 @@ import {
     type ReverifyResult,
     type SearchHit,
 } from '@stamped/store';
+import type { ReadableBody } from '@stamped/import';
 
+import { openCopy } from '../lib/open-copy.ts';
 import { StampedHelpButton } from './help-button.ts';
 import {
     addKey,
@@ -58,6 +60,7 @@ import {
     timelineOf,
     PAGE_SIZE,
     pageOf,
+    bodyOf,
     rawTextOf,
     reportOf,
     runLookup,
@@ -75,7 +78,7 @@ import {
     type SignatureCard,
     type VerdictCard,
 } from './view/evidence.ts';
-import { groupDigits } from './view/format.ts';
+import { formatBytes, groupDigits } from './view/format.ts';
 import { importBannerView, importOutcome } from './view/import.ts';
 import {
     explainKey,
@@ -87,7 +90,15 @@ import {
     type KeyRow,
 } from './view/keys.ts';
 import { escapeLine, noHyphens, plainText } from './view/markup.ts';
-import { emptyList, headerFields, messageRows, rawHeaders, type HeaderField } from './view/message.ts';
+import {
+    emptyList,
+    headerFields,
+    mailHead,
+    messageRows,
+    rawHeaders,
+    type HeaderField,
+    type MailHead,
+} from './view/message.ts';
 import {
     filterBannerText,
     overviewHeadline,
@@ -121,6 +132,7 @@ import Template, { GTypeName, InternalChildren, type Children } from './window.b
 Gio._promisify(Adw.AlertDialog.prototype, 'choose', 'choose_finish');
 Gio._promisify(Gtk.FileDialog.prototype, 'select_folder', 'select_folder_finish');
 Gio._promisify(Gtk.FileDialog.prototype, 'open_multiple', 'open_multiple_finish');
+Gio._promisify(Gtk.FileLauncher.prototype, 'launch', 'launch_finish');
 Gio._promisify(Gio.DataInputStream.prototype, 'read_line_async', 'read_line_finish');
 Gio._promisify(Gio.Subprocess.prototype, 'wait_check_async', 'wait_check_finish');
 
@@ -132,6 +144,12 @@ Gio._promisify(Gio.Subprocess.prototype, 'wait_check_async', 'wait_check_finish'
  * already shows results.
  */
 const SEARCH_DELAY_MS = 180;
+
+/** True when the person closed a portal or chooser dialog rather than it failing. */
+function isDismissed(error: unknown): boolean {
+    const gerror = error as { matches?: (domain: number, code: number) => boolean };
+    return gerror.matches?.(Gtk.dialog_error_quark(), Gtk.DialogError.DISMISSED) === true;
+}
 
 /** Children of a `Gtk.Box`, removed. Every pane rebuilds from scratch rather than diffing. */
 function clearBox(box: Gtk.Box): void {
@@ -303,6 +321,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
     /** The message the reader is showing, so a verification that lands late can be dropped. */
     private reading?: string;
+    /** The remote-content warning has been shown in this window; once is enough. */
+    private openWarned = false;
     /**
      * True while a list is being rebuilt.
      *
@@ -783,15 +803,24 @@ export class StampedWindow extends Adw.ApplicationWindow {
                     );
                     return;
                 }
-                this.renderMessage(message, finding, rawTextOf(session, hash) ?? '');
+                this.renderMessage(message, finding, rawTextOf(session, hash) ?? '', bodyOf(session, hash));
             },
             (error: unknown) => void this.fail(error),
         );
     }
 
     /** The reader, top to bottom: what Stamped claims, the headers, the evidence, the bytes. */
-    private renderMessage(message: IndexedMessage, finding: MessageFinding, raw: string): void {
+    private renderMessage(
+        message: IndexedMessage,
+        finding: MessageFinding,
+        raw: string,
+        body: ReadableBody | undefined,
+    ): void {
         clearBox(this._readerBody);
+        const card = verdictCard(finding);
+        this._readerBody.append(
+            this.mailSheet(mailHead(message, { locale: this.readerLocale() }), card, body, message.hash),
+        );
         this._readerBody.append(this.verdictCardWidget(verdictCard(finding)));
         this._readerBody.append(this.headerGroup(headerFields(message)));
         for (const card of signatureCards(finding)) {
@@ -799,6 +828,180 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
         if (raw !== '') this._readerBody.append(this.sourceGroup(raw));
         this._readerStack.set_visible_child_name('message');
+    }
+
+    /** The reader's locale as a BCP 47 tag, or nothing for `Intl`'s own default. */
+    private readerLocale(): string | undefined {
+        const name = GLib.get_language_names()[0] ?? '';
+        const tag = name.split('.')[0]?.split('@')[0]?.replace('_', '-') ?? '';
+        return tag === '' || tag === 'C' ? undefined : tag;
+    }
+
+    /**
+     * The mail "sheet": what a mail program shows above the body, with the verdict as its stamp.
+     *
+     * Everything shown here is decoded for reading and nothing in it is evidence — the verdict
+     * card, the header group and the raw block below still quote the message as it stands.
+     * HTML is never rendered, so opening a message here fetches nothing.
+     */
+    private mailSheet(
+        head: MailHead,
+        card: VerdictCard,
+        body: ReadableBody | undefined,
+        hash: string,
+    ): Gtk.Widget {
+        const sheet = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 12 });
+        sheet.add_css_class('card');
+        const inner = new Gtk.Box({
+            orientation: Gtk.Orientation.VERTICAL,
+            spacing: 12,
+            marginTop: 18,
+            marginBottom: 14,
+            marginStart: 18,
+            marginEnd: 18,
+        });
+        sheet.append(inner);
+
+        const top = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12 });
+        const title = wrapLabel(noHyphens(head.subject), 'title-2');
+        title.set_hexpand(true);
+        title.set_selectable(true);
+        top.append(title);
+        const stamp = badge(card.badge, card.cssClass);
+        stamp.set_valign(Gtk.Align.START);
+        top.append(stamp);
+        inner.append(top);
+
+        const lines = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 });
+        const sender = head.fromName !== '' ? `<b>${head.fromName}</b>` : '';
+        const address = head.fromAddress !== '' ? `<span alpha="65%">${head.fromAddress}</span>` : '';
+        const from = wrapLabel(noHyphens([sender, address].filter((part) => part !== '').join('  ')));
+        from.set_selectable(true);
+        lines.append(from);
+        const field = (label: string, value: string): void => {
+            if (value === '') return;
+            const row = wrapLabel(
+                `<span alpha="65%">${escapeLine(label)}</span>  ${noHyphens(value)}`,
+                'caption',
+            );
+            row.set_selectable(true);
+            lines.append(row);
+        };
+        field(_('To'), head.to);
+        field(_('Cc'), head.cc);
+        lines.append(wrapLabel(head.date, 'caption', 'dimmed'));
+        inner.append(lines);
+        inner.append(new Gtk.Separator());
+
+        if (body === undefined) {
+            inner.append(wrapLabel(escapeLine(_('The stored copy could not be read.')), 'dimmed'));
+        } else {
+            const view = new Gtk.TextView({
+                editable: false,
+                cursorVisible: false,
+                wrapMode: Gtk.WrapMode.WORD_CHAR,
+                topMargin: 2,
+                bottomMargin: 2,
+                leftMargin: 0,
+                rightMargin: 0,
+            });
+            view.get_buffer().set_text(body.text === '' ? _('(no text)') : body.text, -1);
+            inner.append(view);
+            if (body.attachments.length > 0) {
+                inner.append(new Gtk.Separator());
+                const list = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 });
+                for (const attachment of body.attachments) {
+                    const row = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 8 });
+                    row.append(new Gtk.Image({ iconName: 'mail-attachment-symbolic' }));
+                    const name = wrapLabel(escapeLine(attachment.name || _('(unnamed)')));
+                    name.set_hexpand(true);
+                    name.set_selectable(true);
+                    row.append(name);
+                    row.append(wrapLabel(escapeLine(formatBytes(attachment.bytes)), 'caption', 'dimmed'));
+                    list.append(row);
+                }
+                inner.append(list);
+            }
+        }
+
+        const actions = new Gtk.Box({
+            orientation: Gtk.Orientation.HORIZONTAL,
+            spacing: 6,
+            halign: Gtk.Align.END,
+        });
+        const open = new Gtk.Button({
+            label: _('Open in Mail Program'),
+            iconName: 'mail-send-symbolic',
+            tooltipText: _('Open a read-only copy in your mail program'),
+        });
+        open.add_css_class('flat');
+        open.connect('clicked', () => void this.openInMailProgram(hash, false));
+        const openWith = new Gtk.Button({ label: _('Open With…') });
+        openWith.add_css_class('flat');
+        openWith.connect('clicked', () => void this.openInMailProgram(hash, true));
+        const notes: string[] = [];
+        if (body?.fromHtml) notes.push(_('Shown as text; the HTML was not rendered.'));
+        if (body?.truncated) notes.push(_('The text is cut here; the stored message is longer.'));
+        if (notes.length > 0) {
+            const about = new StampedHelpButton(escapeLine(notes.join(' ')));
+            about.set_halign(Gtk.Align.START);
+            actions.append(about);
+            actions.append(new Gtk.Box({ hexpand: true }));
+        }
+        actions.append(open);
+        actions.append(openWith);
+        actions.append(
+            new StampedHelpButton(
+                escapeLine(
+                    _(
+                        'A mail program that loads remote content tells the sender’s server that someone is reading this message right now. How a program displays a message proves nothing about it; the DKIM verdict does. The program gets a read-only copy outside the case.',
+                    ),
+                ),
+            ),
+        );
+        sheet.append(actions);
+        return sheet;
+    }
+
+    /**
+     * Hand a READ-ONLY COPY of the message to another program.
+     *
+     * Never the stored file: a mail program may rewrite, move or flag what it is given, and the
+     * stored bytes are what every verdict is computed from. The warning comes once per window
+     * and before the first launch, because the damage of a remote image is done at the moment
+     * of opening and cannot be taken back.
+     */
+    private async openInMailProgram(hash: string, ask: boolean): Promise<void> {
+        const session = this.session;
+        if (!session) return;
+        try {
+            if (!this.openWarned) {
+                const dialog = new Adw.AlertDialog({
+                    heading: _('Open in a mail program?'),
+                    body: _(
+                        'A mail program may load remote content. Only the verdict proves a message genuine.',
+                    ),
+                });
+                dialog.add_response('cancel', _('Cancel'));
+                dialog.add_response('open', _('Open'));
+                dialog.set_response_appearance('open', Adw.ResponseAppearance.SUGGESTED);
+                dialog.set_default_response('cancel');
+                dialog.set_close_response('cancel');
+                if ((await dialog.choose(this, null)) !== 'open') return;
+                this.openWarned = true;
+            }
+            const copy = openCopy(session.paths, hash);
+            if (copy === undefined) {
+                showToast(escapeLine(_('The stored copy of this message is missing.')));
+                return;
+            }
+            const launcher = new Gtk.FileLauncher({ file: Gio.File.new_for_path(copy), alwaysAsk: ask });
+            await launcher.launch(this, null);
+        } catch (error) {
+            if (isDismissed(error)) return;
+            const reason = error instanceof Error ? error.message : String(error);
+            showToast(escapeLine(fmt(_('Could not open the message: {reason}'), { reason })));
+        }
     }
 
     /**

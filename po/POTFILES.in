@@ -38,6 +38,7 @@ app/src/lib/evidence.ts
 app/src/lib/i18n.ts
 app/src/lib/import-summary.ts
 app/src/lib/keys.ts
+app/src/lib/open-copy.ts
 app/src/lib/pairs.ts
 app/src/lib/progress.ts
 app/src/lib/report.ts
@@ -64,6 +65,7 @@ packages/import/src/index.ts
 packages/import/src/mbox.ts
 packages/import/src/message.ts
 packages/import/src/mime.ts
+packages/import/src/reading.ts
 packages/import/src/source.ts
 packages/semantic/src/embedder.ts
 packages/semantic/src/index.ts

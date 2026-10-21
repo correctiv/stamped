@@ -43,4 +43,5 @@ export {
 } from './mbox.ts';
 export { type MessageSummary, parseDate, summarise } from './message.ts';
 export { messageText, stripHtml } from './mime.ts';
+export { type Attachment, type ReadableBody, readableBody } from './reading.ts';
 export { readMboxFile, readSource, type ReadOptions, type SourceKind, type SourceMessage } from './source.ts';

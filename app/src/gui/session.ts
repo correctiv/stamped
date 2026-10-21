@@ -26,6 +26,7 @@ import {
     type UnverifiableReason,
     type Verdict,
 } from '@stamped/core';
+import { readableBody, type ReadableBody } from '@stamped/import';
 import {
     beginImportStatus,
     browseMessages,
@@ -402,6 +403,12 @@ export async function verifyStored(session: CaseSession, hash: string): Promise<
 export function rawTextOf(session: CaseSession, hash: string): string | undefined {
     const raw = readRaw(session.paths, hash);
     return raw ? new TextDecoder('utf-8').decode(raw) : undefined;
+}
+
+/** The readable body and attachments of one stored message, decoded for display only. */
+export function bodyOf(session: CaseSession, hash: string): ReadableBody | undefined {
+    const raw = readRaw(session.paths, hash);
+    return raw ? readableBody(raw) : undefined;
 }
 
 /**
