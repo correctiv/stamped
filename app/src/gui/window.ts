@@ -40,8 +40,10 @@ import {
     importInto,
     isCaseFolder,
     knownKeyNames,
+    filteredCount,
     messageOf,
     openSession,
+    PAGE_SIZE,
     pageOf,
     rawTextOf,
     reportOf,
@@ -60,7 +62,7 @@ import {
     type VerdictCard,
 } from './view/evidence.ts';
 import { groupDigits } from './view/format.ts';
-import { importSummary } from './view/import.ts';
+// importSummary is no longer used here; subprocess prints its own summary.
 import {
     explainKey,
     keyRows,
@@ -231,6 +233,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
     /** The hits behind the message rows, by row index. */
     private hits: SearchHit[] = [];
+    /** Cancellable for an in-flight import subprocess. */
+    private importCancellable?: Gio.Cancellable;
+    /** How many of the filtered messages have actually been loaded into the list. */
+    private listOffset = 0;
+    /** Whether a further page is being fetched right now. */
+    private loadingMore = false;
+    /** Whether more pages remain. */
+    private hasMore = true;
+    /** How many messages the current filter admits, for the counter under the list. */
+    private filteredTotal = 0;
     /** The archive behind each `sourceList` row; `undefined` at index 0 — the "all" row. */
     private sources: (string | undefined)[] = [];
     /** The verdict behind each `verdictList` row, with the same rule at index 0. */
@@ -274,6 +286,13 @@ export class StampedWindow extends Adw.ApplicationWindow {
             const hit = this.hits[row.get_index()];
             if (hit) this.showMessage(hit.hash);
         });
+
+        // Lazy loading: fetch the next page when the scroller nears the bottom, so a case of
+        // hundreds of thousands of messages never loads more than one page at a time.
+        const scroller = this._messageList.get_parent() as Gtk.ScrolledWindow | null;
+        if (scroller !== null) {
+            scroller.get_vadjustment().connect('value-changed', () => this.maybeLoadMore());
+        }
 
         this._sourceList.connect('row-selected', (_list, row) => {
             if (this.rebuilding || row === null) return;
@@ -422,26 +441,19 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const session = this.session;
         if (!session) return;
         const query = this.currentQuery();
-        this.hits = pageOf(session, query);
+        this.hits = [];
+        this.listOffset = 0;
+        this.loadingMore = false;
+        this.hasMore = true;
+        this.filteredTotal = filteredCount(session, query);
 
         this.rebuilding = true;
         clearList(this._messageList);
-        for (const row of messageRows(this.hits)) {
-            // The subtitle is the sender; `noHyphens` so a wrapped address keeps its own
-            // punctuation and nothing else.
-            const item = new Adw.ActionRow({ title: row.title, subtitle: noHyphens(row.subtitle) });
-            // One line, ellipsized: a long address would otherwise stretch the row past the
-            // list. The tooltip carries the full text.
-            item.set_subtitle_lines(1);
-            item.set_title_lines(1);
-            item.set_tooltip_markup(row.tooltip);
-            item.add_suffix(badge(row.badge, row.cssClass));
-            this._messageList.append(item);
-        }
         this.rebuilding = false;
 
+        this.loadMore(query, true);
+
         // Plain text, not markup: see `adopt` on `Adw.WindowTitle`.
-        this._listTitle.set_subtitle(filterSummary(this.hits.length, this.total));
         if (this.hits.length === 0) {
             const empty = emptyList(this.total, query.text);
             this._emptyState.set_title(empty.title);
@@ -452,6 +464,44 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.reading = undefined;
         } else {
             this._listStack.set_visible_child_name('list');
+        }
+    }
+
+    /** Fetch one more page and append it, unless there is nothing left or a fetch is in flight. */
+    private loadMore(query: Query = this.currentQuery(), replace = false): void {
+        const session = this.session;
+        if (!session || this.loadingMore || !this.hasMore) return;
+        this.loadingMore = true;
+        const page = pageOf(session, query, this.listOffset);
+        this.rebuilding = true;
+        if (replace) {
+            this.hits = [];
+            clearList(this._messageList);
+        }
+        for (const row of messageRows(page)) {
+            const item = new Adw.ActionRow({ title: row.title, subtitle: noHyphens(row.subtitle) });
+            item.set_subtitle_lines(1);
+            item.set_title_lines(1);
+            item.set_tooltip_markup(row.tooltip);
+            item.add_suffix(badge(row.badge, row.cssClass));
+            this._messageList.append(item);
+        }
+        this.rebuilding = false;
+        this.hits = replace ? page : this.hits.concat(page);
+        this.listOffset += page.length;
+        this.hasMore = page.length === PAGE_SIZE && this.listOffset < this.filteredTotal;
+        this.loadingMore = false;
+        this._listTitle.set_subtitle(filterSummary(this.hits.length, this.filteredTotal));
+    }
+
+    /** Triggered by the scroller: pull the next page when the bottom comes into view. */
+    private maybeLoadMore(): void {
+        if (this.rebuilding || this.loadingMore || !this.hasMore) return;
+        const scroller = this._messageList.get_parent() as Gtk.ScrolledWindow | null;
+        if (scroller === null) return;
+        const adj = scroller.get_vadjustment();
+        if (adj.get_value() + adj.get_page_size() >= adj.get_upper() - 200) {
+            this.loadMore();
         }
     }
 
@@ -1020,6 +1070,122 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
     }
 
+    /** How the import subprocess is launched, or null when no binary can be found. */
+    private importArgv(paths: readonly string[]): string[] | null {
+        const gjs = process.argv[0];
+        const bundle = process.argv.find((arg) => typeof arg === 'string' && arg.endsWith('.mjs'));
+        if (bundle !== undefined) return [gjs, '-m', bundle, 'import', '--progress=jsonl', ...paths];
+        const stamped = GLib.find_program_in_path('stamped');
+        if (stamped !== null) return [stamped, 'import', '--progress=jsonl', ...paths];
+        return null;
+    }
+
+    /** Run the import as a separate process, streaming `--progress=jsonl` into a progress bar. */
+    private async runImportSubprocess(session: CaseSession, paths: readonly string[]): Promise<void> {
+        const argv = this.importArgv(paths);
+        if (argv === null) {
+            await importInto(session, paths);
+            showToast(_('Imported.'), 5);
+            this.refresh();
+            return;
+        }
+
+        const dialog = new Adw.AlertDialog({
+            heading: _('Importing…'),
+            body: _('Reading the archive. This can be cancelled; running it again resumes where it stopped.'),
+        });
+        const progress = new Gtk.ProgressBar({ showText: true, text: _('Starting…') });
+        dialog.set_extra_child(progress);
+        dialog.add_response('cancel', _('Cancel'));
+        dialog.set_default_response('cancel');
+        dialog.set_close_response('cancel');
+
+        this.importCancellable = new Gio.Cancellable();
+        const cancellable = this.importCancellable;
+        const proc = Gio.Subprocess.new(
+            argv,
+            Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
+        );
+
+        const stdout = new Gio.DataInputStream({ base_stream: proc.get_stdout_pipe() as Gio.InputStream });
+
+        const readPromise = (async () => {
+            while (true) {
+                let bytes: Uint8Array | null;
+                try {
+                    const result = await stdout.read_line_async(GLib.PRIORITY_DEFAULT, cancellable);
+                    bytes = result[0];
+                } catch {
+                    bytes = null;
+                }
+                if (bytes === null) break;
+                const text = new TextDecoder().decode(bytes).trim();
+                if (text === '') continue;
+                try {
+                    const obj = JSON.parse(text) as {
+                        done?: number;
+                        total?: number;
+                        rate?: number;
+                        eta?: number;
+                        final?: boolean;
+                    };
+                    const total = typeof obj.total === 'number' ? obj.total : 0;
+                    const done = typeof obj.done === 'number' ? obj.done : 0;
+                    if (total > 0) progress.set_fraction(Math.min(1, done / total));
+                    if (typeof obj.rate === 'number') {
+                        progress.set_text(
+                            fmt(_(' {done} of {total} · {rate}/s'), {
+                                done: String(done),
+                                total: String(total),
+                                rate: String(obj.rate),
+                            }),
+                        );
+                    }
+                } catch {
+                    // A non-JSON line is a subprocess message, not progress.
+                }
+            }
+        })();
+
+        const waitPromise = proc.wait_check_async(cancellable).then(
+            () => undefined,
+            (error: unknown) => {
+                if (!cancellable.is_cancelled()) throw error;
+            },
+        );
+
+        const responsePromise = dialog.choose(this, null);
+        // Start the process read loop and the dialog concurrently.
+        void readPromise;
+        void waitPromise;
+
+        let cancelled = false;
+        responsePromise.then((response) => {
+            if (response === 'cancel') {
+                cancelled = true;
+                cancellable.cancel();
+                try {
+                    proc.force_exit();
+                } catch {
+                    // already gone
+                }
+            }
+        });
+
+        try {
+            await Promise.all([readPromise, waitPromise]);
+        } catch (error) {
+            if (!cancelled) throw error;
+        }
+
+        this.importCancellable = undefined;
+        // The subprocess wrote its own index; drop our cached source filter and reload.
+        session.sourceScope?.scope.close();
+        session.sourceScope = undefined;
+        this.refresh();
+        if (cancelled) showToast(_('Import cancelled. Run it again to resume.'), 5);
+    }
+
     /**
      * Import archives into the open case, asking for a case first if there is none.
      *
@@ -1058,9 +1224,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         if (paths.length === 0) return;
 
         try {
-            const result = await importInto(session, paths);
-            showToast(importSummary(result), 5);
-            this.refresh();
+            await this.runImportSubprocess(session, paths);
         } catch (error) {
             await this.fail(error);
         }
