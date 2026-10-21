@@ -15,6 +15,7 @@
 import {
     describeCaveat,
     describeVerdict,
+    explainSignature,
     fmt,
     type MessageFinding,
     type SignatureFinding,
@@ -44,6 +45,11 @@ export function reportLines(finding: MessageFinding): string[] {
 /** One signature's block: the numbered heading, the fields in a column, then the caveats. */
 export function signatureLines(finding: SignatureFinding, position: number, total: number): string[] {
     const lines = [signatureHeading(finding, position, total)];
+    const why = explainSignature(finding);
+    if (why) {
+        lines.push(`  ${why.sentence}`);
+        for (const { label, value } of why.details) lines.push(`    ${label}: ${value}`);
+    }
     for (const { label, value } of evidenceFields(finding)) {
         lines.push(`  ${label.padEnd(LABEL_WIDTH)}${value}`);
     }
@@ -62,6 +68,8 @@ export function reportJson(finding: MessageFinding, source: string): string {
             caveats: finding.caveats,
             signatures: finding.signatures.map((signature) => ({
                 verdict: signature.verdict,
+                reason: explainSignature(signature)?.code,
+                explanation: explainSignature(signature)?.sentence,
                 caveats: signature.caveats,
                 evidence: signature.evidence,
             })),

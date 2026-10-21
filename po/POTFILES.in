@@ -40,6 +40,7 @@ app/src/lib/report.ts
 app/src/lib/vault.ts
 packages/core/src/autokeys.ts
 packages/core/src/classify.ts
+packages/core/src/explain.ts
 packages/core/src/i18n.ts
 packages/core/src/index.ts
 packages/core/src/keyconsent.ts
@@ -69,3 +70,4 @@ packages/store/src/siblings.ts
 packages/verify/src/evidence.ts
 packages/verify/src/index.ts
 packages/verify/src/mailauth.ts
+packages/verify/src/retry.ts

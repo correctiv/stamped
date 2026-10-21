@@ -23,6 +23,7 @@ import { keyNameFor, _ } from '@stamped/core';
 import type { DKIMResult, DNSResolver } from 'mailauth/lib/types';
 
 import { evidenceFrom, type RawSignatureResult } from './evidence.ts';
+import { explainBodyByRetry } from './retry.ts';
 
 /** What `dkimVerify` is, as this module uses it. */
 type DkimVerify = (
@@ -194,15 +195,32 @@ export async function verifyMessage(
             .map((signature) => {
                 const name = keyNameFor(signature.signingDomain ?? '', signature.selector ?? '');
                 const key = sources.get(name);
-                return evidenceFrom(signature as RawSignatureResult, {
+                const evidence = evidenceFrom(signature as RawSignatureResult, {
                     keyConfirmsOthers: options.confirmedPairs?.has(name) ?? false,
                     authorDomain: author.authorDomain,
                     source: key?.source,
                     keySince: key?.since,
                     messageDate,
                 });
+                return withRetry(raw, evidence);
             })
     );
+}
+
+/**
+ * For a body-hash mismatch, record whether undoing a common export artefact brings the signed
+ * hash back. Adds an explanation to the evidence; `bodyHashOk` and the verdict are untouched.
+ */
+function withRetry(raw: string | Uint8Array, evidence: ReturnType<typeof evidenceFrom>) {
+    if (evidence.bodyHashOk || evidence.unverifiableBecause || !evidence.bodyHashExpected) return evidence;
+    const bytes = typeof raw === 'string' ? new TextEncoder().encode(raw) : raw;
+    const exportArtefact = explainBodyByRetry(bytes, {
+        canonicalization: evidence.canonicalization,
+        algorithm: evidence.algorithm,
+        bodyHashExpected: evidence.bodyHashExpected,
+        ...(evidence.lengthLimit !== undefined ? { lengthLimit: evidence.lengthLimit } : {}),
+    });
+    return { ...evidence, exportRetried: true, ...(exportArtefact ? { exportArtefact } : {}) };
 }
 
 /** Whether the header block (never the body) has a `DKIM-Signature` field. */

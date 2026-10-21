@@ -11,7 +11,7 @@
  * can never be two different things.
  */
 
-import { describeVerdict, fmt, _, _n } from '@stamped/core';
+import { describeUnverifiableReason, describeVerdict, fmt, _, _n } from '@stamped/core';
 import { caseReport, openIndex } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
@@ -87,12 +87,72 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     if (count.messages > 0) console.log(`            ${describeVerdict(count.verdict)}`);
                 }
 
+                if (report.before) {
+                    console.log('');
+                    console.log(_('Before and now (verdict at first indexing, verdict today)'));
+                    for (const now of report.verdicts) {
+                        const was = report.before.find((b) => b.verdict === now.verdict)?.messages ?? 0;
+                        if (was === 0 && now.messages === 0) continue;
+                        console.log(
+                            `  ${String(was).padStart(8)}  ${String(now.messages).padStart(8)}  ${now.verdict}`,
+                        );
+                    }
+                }
+
+                if (report.confirmation.signed > 0) {
+                    const { signed, clean, withCaveats } = report.confirmation;
+                    const pct = (n: number) => `${Math.round((n / signed) * 100)}%`;
+                    console.log('');
+                    console.log(
+                        fmt(
+                            _(
+                                'Signed mail confirmed: {all} of {signed} ({allPct}) including caveats, {clean} ({cleanPct}) without.',
+                            ),
+                            {
+                                all: String(clean + withCaveats),
+                                signed: String(signed),
+                                allPct: pct(clean + withCaveats),
+                                clean: String(clean),
+                                cleanPct: pct(clean),
+                            },
+                        ),
+                    );
+                }
+
+                if (report.missing.length > 0) {
+                    console.log('');
+                    console.log(_('Most missing keys'));
+                    for (const m of report.missing) {
+                        console.log(
+                            `  ${String(m.messages).padStart(8)}  ${m.selector}._domainkey.${m.domain}`,
+                        );
+                    }
+                    const top = report.missing[0];
+                    console.log(
+                        fmt(_('Hint: stamped keys template {domain} {selector}'), {
+                            domain: top.domain,
+                            selector: top.selector,
+                        }),
+                    );
+                }
+
                 const caveats = report.caveats.filter((c) => c.messages > 0);
                 if (caveats.length > 0) {
                     console.log('');
                     console.log(_('Caveats'));
                     for (const c of caveats) {
                         console.log(`  ${String(c.messages).padStart(8)}  ${c.caveat}`);
+                    }
+                }
+
+                if (report.reasons.length > 0) {
+                    // The reasons under the `unverifiable` line: a count of 389 is the question,
+                    // "no key for 3 selectors" is the answer.
+                    console.log('');
+                    console.log(_('No verdict, by reason'));
+                    for (const reason of report.reasons) {
+                        console.log(`  ${String(reason.messages).padStart(8)}  ${reason.reason}`);
+                        console.log(`            ${describeUnverifiableReason(reason.reason)}`);
                     }
                 }
 

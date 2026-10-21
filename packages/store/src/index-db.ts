@@ -88,8 +88,21 @@ export function openIndex(paths: CasePaths): DatabaseSync {
         }
     }
     if (schemaVersion(db) !== SCHEMA_VERSION) createSchema(db);
+    // Both are in-place additions to an index the journalist already has: a column whose absence
+    // would mean no history, and the indexes of a case older than they were written.
+    addFirstVerdictColumn(db);
     ensureIndexes(db);
     return db;
+}
+
+/**
+ * Older indexes lack `first_verdict`. Added in place instead of bumping the schema (which would
+ * drop the cache): those rows stay NULL, and the report reads NULL as "no history".
+ */
+function addFirstVerdictColumn(db: DatabaseSync): void {
+    const columns = db.prepare('PRAGMA table_info(messages)').all() as { name?: string }[];
+    if (columns.some((column) => column.name === 'first_verdict')) return;
+    db.exec('ALTER TABLE messages ADD COLUMN first_verdict TEXT');
 }
 
 /** Open a transaction. Pair with {@link commitBatch}; the importer commits every few hundred. */
@@ -158,6 +171,7 @@ function createSchema(db: DatabaseSync): void {
             refs TEXT NOT NULL,
             from_domain TEXT,
             verdict TEXT NOT NULL,
+            first_verdict TEXT,
             caveats TEXT NOT NULL,
             bytes INTEGER NOT NULL
         );
@@ -262,14 +276,23 @@ export function messageCount(db: DatabaseSync): number {
 export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fresh?: boolean } = {}): void {
     // `fresh`: the caller knows the hash is not indexed. The delete from the FTS table is a full
     // scan (`hash` is UNINDEXED), so for a new message it is pure cost.
-    if (!options.fresh) removeMessage(db, entry.hash);
+    // The verdict at the first indexing is kept across re-indexing: it is the "before" of the
+    // before/now table in the report. A legacy row (NULL) stays NULL.
+    let firstVerdict: string | null = entry.finding.verdict;
+    if (!options.fresh) {
+        const previous = db.prepare('SELECT first_verdict FROM messages WHERE hash = ?').get(entry.hash) as
+            | { first_verdict?: string | null }
+            | undefined;
+        if (previous) firstVerdict = previous.first_verdict ?? null;
+        removeMessage(db, entry.hash);
+    }
     const summary = entry.summary;
 
     db.prepare(
         `INSERT INTO messages (
             hash, message_id, sender, recipients, cc, subject, date, sent_at,
-            in_reply_to, refs, from_domain, verdict, caveats, bytes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            in_reply_to, refs, from_domain, verdict, first_verdict, caveats, bytes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
         entry.hash,
         summary.messageId ?? null,
@@ -283,6 +306,7 @@ export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fre
         summary.references,
         summary.fromDomain ?? null,
         entry.finding.verdict,
+        firstVerdict,
         JSON.stringify(entry.finding.caveats),
         entry.bytes,
     );
