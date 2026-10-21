@@ -27,7 +27,9 @@ import {
     type Verdict,
 } from '@stamped/core';
 import {
+    beginImportStatus,
     browseMessages,
+    cancelImportStatus,
     caseReport,
     countMessages,
     addressesComplete,
@@ -43,6 +45,7 @@ import {
     mailboxHashes,
     openCase,
     openIndex,
+    readImportStatus,
     readMessage,
     readRaw,
     reverifyPairs,
@@ -56,6 +59,7 @@ import {
     type HashScope,
     type ImportProgress,
     type ImportResult,
+    type ImportStatus,
     type IndexedMessage,
     type LogSource,
     type Person,
@@ -400,16 +404,55 @@ export function rawTextOf(session: CaseSession, hash: string): string | undefine
     return raw ? new TextDecoder('utf-8').decode(raw) : undefined;
 }
 
-/** Import archives into the open case. The index handle is the importer's own; ours survives. */
+/**
+ * Import archives into the open case. The index handle is the importer's own; ours survives.
+ *
+ * Writes the status file like the CLI's import does, so a run the window started in-process is
+ * visible to `stamped status` and to this same banner — the file is the one channel, not the
+ * process that happens to write it.
+ */
 export async function importInto(
     session: CaseSession,
     sources: readonly string[],
     onProgress?: (progress: ImportProgress) => void,
 ): Promise<ImportResult> {
-    return importSources(session.paths, sources, {
-        keys: session.vault.toKeyStore(),
-        ...(onProgress ? { onProgress } : {}),
-    });
+    const status = beginImportStatus(session.paths, sources);
+    try {
+        const result = await importSources(session.paths, sources, {
+            keys: session.vault.toKeyStore(),
+            onProgress: (progress) => {
+                status.update(progress);
+                onProgress?.(progress);
+            },
+        });
+        status.finish(result);
+        return result;
+    } catch (error) {
+        status.fail();
+        throw error;
+    }
+}
+
+/**
+ * The open case's import status, read from its file.
+ *
+ * The window polls this about once a second while a case is open: the status file is the ONLY
+ * channel — an import started on a command line writes the same file, and the window shows it
+ * just like one of its own.
+ */
+export function importStatusOf(session: CaseSession): ImportStatus | undefined {
+    return readImportStatus(session.paths);
+}
+
+/**
+ * Stop the running import by marking its status file cancelled.
+ *
+ * The window calls this after killing ITS OWN subprocess; the file is how every other reader
+ * learns the run is over. A run the window did not start is never touched — killing somebody
+ * else's terminal session from a window is not the window's to do.
+ */
+export function markImportCancelled(session: CaseSession): void {
+    cancelImportStatus(session.paths);
 }
 
 /** What storing a key did, in the words the toast uses. */

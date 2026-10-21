@@ -4,6 +4,7 @@ app/src/commands/people.ts
 app/src/commands/report.ts
 app/src/commands/reverify.ts
 app/src/commands/search.ts
+app/src/commands/status.ts
 app/src/commands/timeline.ts
 app/src/commands/verify.ts
 app/src/gui/blp.d.ts
@@ -40,6 +41,7 @@ app/src/lib/keys.ts
 app/src/lib/pairs.ts
 app/src/lib/progress.ts
 app/src/lib/report.ts
+app/src/lib/status.ts
 app/src/lib/vault.ts
 packages/core/src/autokeys.ts
 packages/core/src/classify.ts
@@ -73,6 +75,7 @@ packages/semantic/src/vector-db.ts
 packages/store/src/addresses-db.ts
 packages/store/src/case.ts
 packages/store/src/importer.ts
+packages/store/src/import-status.ts
 packages/store/src/index-db.ts
 packages/store/src/index.ts
 packages/store/src/people.ts

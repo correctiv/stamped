@@ -22,7 +22,14 @@
 
 import { fmt, _, _n } from '@stamped/core';
 import type { MboxFlavour } from '@stamped/import';
-import { type ImportMode, type ImportProgress, importSources, openCase } from '@stamped/store';
+import {
+    beginImportStatus,
+    type ImportMode,
+    type ImportProgress,
+    type ImportResult,
+    importSources,
+    openCase,
+} from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { fetchMissingAndReverify } from '../lib/autofetch.ts';
@@ -130,27 +137,40 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                 process.stdout.write(`${JSON.stringify(progressLine(progress, final, seconds))}\n`);
             };
 
-            const result = await importSources(paths, sources, {
-                keys,
-                flavour: args.flavour as MboxFlavour,
-                mode,
-                onBatch: jsonl ? (progress) => emit(progress, false) : undefined,
-                // Overwritten in place rather than scrolled: an import of a large archive would
-                // otherwise bury its own summary under tens of thousands of lines. Only when
-                // stdout is a terminal — a redirected log gets the summary and nothing else.
-                onProgress:
-                    args.quiet || !process.stdout.isTTY
-                        ? undefined
-                        : (progress) => {
-                              process.stdout.write(
-                                  `\r${fmt(_('{read} read, {stored} stored, {duplicates} duplicates'), {
-                                      read: String(progress.read),
-                                      stored: String(progress.stored),
-                                      duplicates: String(progress.duplicates),
-                                  })}   `,
-                              );
-                          },
-            });
+            // The status file in the case folder, so the run is visible to `stamped status` and
+            // to the window — a 200 GB import on a command line is otherwise invisible to
+            // everything but the terminal it was started in.
+            const status = beginImportStatus(paths, sources, { mode });
+            let result: ImportResult;
+            try {
+                result = await importSources(paths, sources, {
+                    keys,
+                    flavour: args.flavour as MboxFlavour,
+                    mode,
+                    onProgress: (progress) => {
+                        status.update(progress);
+                        if (args.quiet || !process.stdout.isTTY) return;
+                        // Overwritten in place rather than scrolled: an import of a large archive
+                        // would otherwise bury its own summary under tens of thousands of lines.
+                        // Only when stdout is a terminal — a redirected log gets the summary and
+                        // nothing else.
+                        process.stdout.write(
+                            `\r${fmt(_('{read} read, {stored} stored, {duplicates} duplicates'), {
+                                read: String(progress.read),
+                                stored: String(progress.stored),
+                                duplicates: String(progress.duplicates),
+                            })}   `,
+                        );
+                    },
+                    onBatch: jsonl ? (progress) => emit(progress, false) : undefined,
+                });
+                status.finish(result);
+            } catch (error) {
+                // The file must not be left saying `running` for a process that threw — the next
+                // reader would call it orphaned, which is a different statement than "it failed".
+                status.fail();
+                throw error;
+            }
             if (!args.quiet && process.stdout.isTTY) process.stdout.write('\n');
             if (jsonl) {
                 emit(

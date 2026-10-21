@@ -14,6 +14,22 @@
 
 export { casePaths, type CasePaths, CASE_VERSION, isCase, openCase } from './case.ts';
 export {
+    beginImportStatus,
+    cancelImportStatus,
+    IMPORT_STATUS_NAME,
+    IMPORT_STATUS_VERSION,
+    type ImportStatus,
+    type ImportStatusHandle,
+    type ImportStatusOptions,
+    type ImportState,
+    orphanedImport,
+    plannedImportBytes,
+    readImportStatus,
+    STATUS_STALE_SECONDS,
+    statusFile,
+    writeImportStatus,
+} from './import-status.ts';
+export {
     importSources,
     type ImportFailure,
     type ImportMode,

@@ -97,10 +97,23 @@ template $StampedWindow: Adw.ApplicationWindow {
       Gtk.StackPage {
         name: "case";
 
-        child: Adw.OverlaySplitView outerSplit {
-          sidebar-width-fraction: 0.22;
-          min-sidebar-width: 230;
-          max-sidebar-width: 330;
+        child: Gtk.Box {
+          orientation: vertical;
+
+          // The import progress line. Never a modal dialog: closing a dialog used to cancel the
+          // import, and an import started on a command line was invisible here at all. The
+          // banner reads the case's status file once a second, so it shows BOTH kinds of run —
+          // and its Cancel button only ever kills a subprocess this window started itself.
+          Adw.Banner importBanner {
+            revealed: false;
+            button-label: _("Cancel");
+          }
+
+          Adw.OverlaySplitView outerSplit {
+            vexpand: true;
+            sidebar-width-fraction: 0.22;
+            min-sidebar-width: 230;
+            max-sidebar-width: 330;
 
           sidebar: Adw.ToolbarView {
             [top]
@@ -414,6 +427,7 @@ template $StampedWindow: Adw.ApplicationWindow {
               };
             };
           };
+        }
         };
       }
     };
