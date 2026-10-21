@@ -124,7 +124,9 @@ export class KeyVault {
         const name = pairName(pair);
         return this.entries
             .filter((e) => pairName(e) === name)
-            .sort((a, b) => PRECEDENCE[b.origin] - PRECEDENCE[a.origin] || (a.fetchedAt < b.fetchedAt ? 1 : -1));
+            .sort(
+                (a, b) => PRECEDENCE[b.origin] - PRECEDENCE[a.origin] || (a.fetchedAt < b.fetchedAt ? 1 : -1),
+            );
     }
 
     /** Add a key; never replaces a differing one. */

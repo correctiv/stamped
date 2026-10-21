@@ -250,7 +250,9 @@ export function describeCaveat(caveat: Caveat, evidence?: SignatureEvidence): st
                       ),
                       { signer: evidence.domain, author: evidence.authorDomain ?? _('(unknown domain)') },
                   )
-                : _('The signing domain is not the From domain, so the signature does not vouch for the author.');
+                : _(
+                      'The signing domain is not the From domain, so the signature does not vouch for the author.',
+                  );
     }
 }
 

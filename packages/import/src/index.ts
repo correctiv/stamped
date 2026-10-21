@@ -13,12 +13,7 @@
  */
 
 export { concat, decodeLatin1, encodeLatin1, splitMessage } from './bytes.ts';
-export {
-    decodeBase64,
-    decodeCharset,
-    decodeEncodedWords,
-    decodeQuotedPrintable,
-} from './codec.ts';
+export { decodeBase64, decodeCharset, decodeEncodedWords, decodeQuotedPrintable } from './codec.ts';
 export {
     addressDomain,
     type HeaderField,
@@ -27,7 +22,14 @@ export {
     joinedHeader,
     parseHeaderFields,
 } from './headers.ts';
-export { looksLikeMbox, looksLikeSeparator, type MboxFlavour, MboxSplitter, type RawMessage, unquote } from './mbox.ts';
+export {
+    looksLikeMbox,
+    looksLikeSeparator,
+    type MboxFlavour,
+    MboxSplitter,
+    type RawMessage,
+    unquote,
+} from './mbox.ts';
 export { type MessageSummary, parseDate, summarise } from './message.ts';
 export { messageText, stripHtml } from './mime.ts';
 export { readSource, type ReadOptions, type SourceKind, type SourceMessage } from './source.ts';

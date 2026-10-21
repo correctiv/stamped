@@ -64,7 +64,7 @@ export function store(paths: CasePaths, raw: Uint8Array): StoreResult {
     try {
         writeFileSync(temporary, raw);
         renameSync(temporary, path);
-    } catch (error) {
+    } catch (_error) {
         try {
             if (existsSync(temporary)) unlinkSync(temporary);
         } catch {

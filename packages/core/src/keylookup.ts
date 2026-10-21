@@ -126,7 +126,9 @@ export async function lookupDns(
             } else {
                 result.misses.push({
                     pair,
-                    reason: key ? _('The record is empty: the key was withdrawn.') : _('No key record found.'),
+                    reason: key
+                        ? _('The record is empty: the key was withdrawn.')
+                        : _('No key record found.'),
                 });
             }
         } catch (error) {
