@@ -29,11 +29,12 @@ import {
     type MessageFinding,
     type Verdict,
 } from '@stamped/core';
-import type { CaseReport, IndexedMessage, SearchHit } from '@stamped/store';
+import type { CaseReport, IndexedMessage, ReverifyResult, SearchHit } from '@stamped/store';
 
 import { StampedHelpButton } from './help-button.ts';
 import {
     addKey,
+    applyKeys,
     closeSession,
     createSession,
     importInto,
@@ -60,7 +61,15 @@ import {
 } from './view/evidence.ts';
 import { groupDigits } from './view/format.ts';
 import { importSummary } from './view/import.ts';
-import { explainKey, keyRows, keySummary, lookupPairs, lookupSummary, type KeyRow } from './view/keys.ts';
+import {
+    explainKey,
+    keyRows,
+    keySummary,
+    lookupPairs,
+    lookupSummary,
+    reverifySummary,
+    type KeyRow,
+} from './view/keys.ts';
 import { escapeLine, plainText } from './view/markup.ts';
 import { emptyList, headerFields, messageRows, rawHeaders, type HeaderField } from './view/message.ts';
 import { overviewHeadline, overviewNextStep, overviewStats, verdictShares } from './view/overview.ts';
@@ -780,14 +789,29 @@ export class StampedWindow extends Adw.ApplicationWindow {
         if (text.trim() === '') return;
 
         try {
-            const outcome = addKey(session, { domain: row.domain, selector: row.selector }, text);
+            const pair = { domain: row.domain, selector: row.selector };
+            const outcome = addKey(session, pair, text);
+            const applied = await applyKeys(session, [pair]);
             // A conflict means the case held a DIFFERENT key for this selector, so its toast is
             // sticky: that is a finding to read, not a confirmation to watch go by.
-            showToast(escapeLine(outcome.message), outcome.conflict ? 0 : 5);
+            showToast(escapeLine(outcome.message) + this.appliedSentence(applied), outcome.conflict ? 0 : 5);
             this.refresh();
         } catch (error) {
             await this.fail(error);
         }
+    }
+
+    /**
+     * The re-verification sentence, ready to append to a toast — with its leading space, or ``.
+     *
+     * A space joined onto a sentence that may be empty is exactly the kind of detail that leaves
+     * a stray gap in a translated string, so the two cases are decided here rather than at each
+     * call site.
+     */
+    private appliedSentence(applied: ReverifyResult | undefined): string {
+        if (!applied) return '';
+        const sentence = reverifySummary(applied.checked, applied.changed.length);
+        return sentence === '' ? '' : ` ${sentence}`;
     }
 
     /**
@@ -834,8 +858,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
         if ((await dialog.choose(this, null)) !== 'go') return;
         try {
             const outcome = await runLookup(session, text.channel, text.pairs);
+            const applied = await applyKeys(session, outcome.pairs);
             showToast(
-                lookupSummary(outcome.stored, outcome.missed, outcome.conflicts),
+                lookupSummary(outcome.stored, outcome.missed, outcome.conflicts) +
+                    this.appliedSentence(applied),
                 outcome.conflicts > 0 ? 0 : 5,
             );
             this.refresh();

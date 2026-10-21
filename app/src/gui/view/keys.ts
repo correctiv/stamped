@@ -210,3 +210,34 @@ export function lookupSummary(stored: number, missed: number, conflicts: number)
         )}`,
     );
 }
+
+/**
+ * What re-verifying after a new key did, appended to the toast that announced the key.
+ *
+ * The unchanged case is SAID, not left silent. A key that produces no new verdict is a real
+ * result and usually an unwelcome one — the record found was not the one that signed these
+ * messages — and a toast that stopped at "key stored" would read as success while the sidebar
+ * still showed every message unverified. Nothing re-verified at all (a conflicting pair, which
+ * `reverifyPairs` leaves alone) yields an empty string instead: the sentence about the conflict
+ * has already been said in stronger words, and counting zero messages here would only soften it.
+ */
+export function reverifySummary(checked: number, changed: number): string {
+    if (checked === 0) return '';
+    if (changed === 0) {
+        return escapeLine(
+            fmt(
+                _n(
+                    '{count} message re-verified; its verdict is unchanged.',
+                    '{count} messages re-verified; no verdict changed.',
+                    checked,
+                ),
+                { count: groupDigits(checked) },
+            ),
+        );
+    }
+    return escapeLine(
+        fmt(_n('{count} verdict changed.', '{count} verdicts changed.', changed), {
+            count: groupDigits(changed),
+        }),
+    );
+}

@@ -35,6 +35,7 @@ import {
     openIndex,
     readMessage,
     readRaw,
+    reverifyPairs,
     searchMessages,
     sourceHashes,
     type CasePaths,
@@ -44,6 +45,7 @@ import {
     type IndexedMessage,
     type ListOptions,
     type LogSource,
+    type ReverifyResult,
     type SearchHit,
 } from '@stamped/store';
 import { verifyMessage } from '@stamped/verify';
@@ -254,8 +256,31 @@ function addedMessage(status: 'added' | 'unchanged' | 'conflict'): string {
                 'Stored — but this case already held a DIFFERENT key for that selector. Either the domain rotated it, or one of the two is not theirs. Check both before you rely on the new verdicts.',
             );
         case 'added':
-            return _('Key stored. Reopen a message to see its new verdict.');
+            return _('Key stored.');
     }
+}
+
+/**
+ * Re-verify the messages a newly stored key bears on, so the whole window agrees about them.
+ *
+ * {@link verifyStored} already re-reads the raw bytes for the message in the reader, which is why
+ * the pane the person is looking at is never stale. Everything ELSE is: the verdict counts in the
+ * sidebar, the badge on every row of the list and the overview all come from the index, and the
+ * index holds the verdict that import time produced — computed against a vault that did not have
+ * this key yet. Without this the window would answer the same question two ways at once, and the
+ * sidebar's "47 unverifiable" would survive the key that answered all 47.
+ *
+ * `reverifyPairs` is the same function `stamped reverify` runs, reading `raw/` rather than the
+ * index's copy, so a verdict a key changes here is exactly the verdict a re-import would give. It
+ * leaves a pair the vault holds two different keys for alone — choosing one would let an unproven
+ * key upgrade a verdict — and reports those back in `skippedConflicts`.
+ */
+export async function applyKeys(
+    session: CaseSession,
+    pairs: readonly KeyPair[],
+): Promise<ReverifyResult | undefined> {
+    if (pairs.length === 0) return undefined;
+    return reverifyPairs(session.paths, pairs, session.vault);
 }
 
 /** What one lookup run did, counted for the toast that follows it. */
@@ -263,6 +288,8 @@ export interface LookupOutcome {
     readonly stored: number;
     readonly missed: number;
     readonly conflicts: number;
+    /** The pairs that gained a key — what {@link applyKeys} has to re-verify. */
+    readonly pairs: readonly KeyPair[];
 }
 
 /**
@@ -285,6 +312,7 @@ export async function runLookup(
             : await lookupArchive(consent, pairs, (url) => fetch(url));
 
     const now = new Date().toISOString();
+    const gained: KeyPair[] = [];
     let stored = 0;
     let conflicts = 0;
     for (const found of result.found) {
@@ -298,7 +326,8 @@ export async function runLookup(
         });
         if (outcome.status !== 'unchanged') stored++;
         if (outcome.status === 'conflict') conflicts++;
+        gained.push(found.pair);
     }
     saveVault(session.root, session.vault);
-    return { stored, missed: result.misses.length, conflicts };
+    return { stored, missed: result.misses.length, conflicts, pairs: gained };
 }

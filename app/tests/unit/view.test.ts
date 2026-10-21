@@ -25,7 +25,14 @@ import { channelLabel, consentDialog, LOOKUP_CHANNELS } from '../../src/gui/view
 import { caveatsHeading, signatureCards, verdictCard } from '../../src/gui/view/evidence.ts';
 import { formatBytes, groupDigits, shortDate, shortHash } from '../../src/gui/view/format.ts';
 import { importSummary } from '../../src/gui/view/import.ts';
-import { explainKey, keyRows, keySummary, lookupPairs, lookupSummary } from '../../src/gui/view/keys.ts';
+import {
+    explainKey,
+    keyRows,
+    keySummary,
+    lookupPairs,
+    lookupSummary,
+    reverifySummary,
+} from '../../src/gui/view/keys.ts';
 import { escapeLine, escapeMarkup, plainText } from '../../src/gui/view/markup.ts';
 import { emptyList, headerFields, messageRow, rawHeaders } from '../../src/gui/view/message.ts';
 import {
@@ -539,6 +546,20 @@ export default async () => {
 
         await it('leaves the conflict clause out when there was none', async () => {
             expect(lookupSummary(2, 0, 0).includes('already held')).toBe(false);
+        });
+
+        await it('says so when a new key changed nothing', async () => {
+            // A key that produces no new verdict is a result, and usually an unwelcome one: the
+            // record that was found is not the one that signed these messages. Stopping at "key
+            // stored" would read as success while every message stayed unverified.
+            expect(reverifySummary(12, 0).includes('no verdict changed')).toBe(true);
+            expect(reverifySummary(12, 4).includes('4')).toBe(true);
+        });
+
+        await it('says nothing when nothing was re-verified', async () => {
+            // `reverifyPairs` leaves a pair with conflicting keys alone. The toast has already
+            // said that in stronger words; counting zero messages here would only soften it.
+            expect(reverifySummary(0, 0)).toBe('');
         });
     });
 
