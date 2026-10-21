@@ -42,6 +42,7 @@ export {
     classifySignature,
     hashAlgorithmOf,
     isConfirmed,
+    keyCannotHaveSigned,
     WEAK_RSA_BITS,
 } from './classify.ts';
 

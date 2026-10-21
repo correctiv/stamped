@@ -30,6 +30,10 @@ export interface EvidenceContext {
     readonly source?: KeySource;
     /** The From domain, which mailauth reports once per message rather than per signature. */
     readonly authorDomain?: string;
+    /** When the key was first seen or obtained (ISO). */
+    readonly keySince?: string;
+    /** The message's `Date:` header as ISO, if present and parseable. */
+    readonly messageDate?: string;
 }
 
 /** mailauth's key-error comments, from its `KEY_ERROR_COMMENTS` table, to Stamped's reasons. */
@@ -80,7 +84,16 @@ export function evidenceFrom(raw: RawSignatureResult, context: EvidenceContext =
     if (typeof raw.modulusLength === 'number') evidence.keyBits = raw.modulusLength;
     if (context.authorDomain) evidence.authorDomain = context.authorDomain;
     if (context.source) evidence.keySource = context.source;
-    if (raw.rr) evidence.keyRecord = raw.rr;
+    if (context.keySince) evidence.keySince = context.keySince;
+    if (context.messageDate) evidence.messageDate = context.messageDate;
+    if (raw.rr) {
+        evidence.keyRecord = raw.rr;
+        evidence.keyAlgorithm = keyAlgorithmOf(raw.rr);
+    }
+    if (typeof raw.signature === 'string') {
+        const bits = signatureBitsOf(raw.signature);
+        if (bits > 0) evidence.signatureBits = bits;
+    }
     if (raw.bodyHash) evidence.bodyHash = raw.bodyHash;
     if (raw.bodyHashExpecting) evidence.bodyHashExpected = raw.bodyHashExpecting;
     if (raw.canonBodyLengthLimited && typeof raw.canonBodyLengthLimit === 'number') {
@@ -97,6 +110,18 @@ export function evidenceFrom(raw: RawSignatureResult, context: EvidenceContext =
     }
 
     return evidence;
+}
+
+/** `k=` of a key record; RFC 6376 defaults it to rsa. */
+function keyAlgorithmOf(record: string): 'rsa' | 'ed25519' | undefined {
+    const kind = /(?:^|;)\s*k\s*=\s*([A-Za-z0-9]+)/.exec(record)?.[1]?.toLowerCase() ?? 'rsa';
+    return kind === 'rsa' || kind === 'ed25519' ? kind : undefined;
+}
+
+/** Decoded length of a base64 `b=` in bits. */
+function signatureBitsOf(b: string): number {
+    const chars = b.replace(/[\s=]+/g, '').length;
+    return Math.floor((chars * 6) / 8) * 8;
 }
 
 /** Make the readonly evidence writable while it is being assembled, and nowhere else. */

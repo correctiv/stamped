@@ -117,17 +117,24 @@ export async function verifyMessage(
     // Which names were answered from where, filled by the resolver below and read back per
     // signature. mailauth reports the key record it used but not its provenance — it has no
     // reason to care, and the `archive-key` caveat is exactly that provenance.
-    const sources = new Map<string, 'dns' | 'operator' | 'archive'>();
+    const sources = new Map<string, { source: 'dns' | 'operator' | 'archive'; since?: string }>();
 
     const resolver: DNSResolver = async (name, rrtype) => {
         const entry = options.keys.lookup(name);
         if (entry) {
-            sources.set(name.toLowerCase().replace(/\.$/, ''), entry.source);
+            sources.set(name.toLowerCase().replace(/\.$/, ''), {
+                source: entry.source,
+                ...(entry.since ? { since: entry.since } : {}),
+            });
             return [[entry.record]];
         }
         if (options.fallbackResolver) {
             const answer = await options.fallbackResolver(name, rrtype);
-            sources.set(name.toLowerCase().replace(/\.$/, ''), 'dns');
+            // A live answer is published as of now, which is when Stamped first saw it.
+            sources.set(name.toLowerCase().replace(/\.$/, ''), {
+                source: 'dns',
+                since: new Date().toISOString(),
+            });
             return answer;
         }
         // `ENOTFOUND` is mailauth's "there is no key, now or later" (its `KEY_ERROR_COMMENTS`),
@@ -136,6 +143,8 @@ export async function verifyMessage(
         // the operator to retry a lookup that was never going to happen.
         throw Object.assign(new Error(_('no key in the store')), { code: 'ENOTFOUND' });
     };
+
+    const messageDate = messageDateOf(raw);
 
     const result = await dkimVerify(raw, {
         resolver,
@@ -168,11 +177,29 @@ export async function verifyMessage(
             // `classifyMessage` reads an empty list as `unsigned`, and an entry here would make it
             // classify the absence of a signature as a broken one.
             .filter((signature) => signature.status.result !== 'none')
-            .map((signature) =>
-                evidenceFrom(signature as RawSignatureResult, {
+            .map((signature) => {
+                const key = sources.get(keyNameFor(signature.signingDomain ?? '', signature.selector ?? ''));
+                return evidenceFrom(signature as RawSignatureResult, {
                     authorDomain: author.authorDomain,
-                    source: sources.get(keyNameFor(signature.signingDomain ?? '', signature.selector ?? '')),
-                }),
-            )
+                    source: key?.source,
+                    keySince: key?.since,
+                    messageDate,
+                });
+            })
     );
+}
+
+/** The `Date:` header as ISO, read from the header block alone; undefined if absent or unparseable. */
+function messageDateOf(raw: string | Uint8Array): string | undefined {
+    let head = '';
+    if (typeof raw === 'string') {
+        head = raw.slice(0, 65536);
+    } else {
+        for (const byte of raw.subarray(0, 65536)) head += String.fromCharCode(byte);
+    }
+    const end = head.search(/\r?\n\r?\n/);
+    const block = (end === -1 ? head : head.slice(0, end)).replace(/\r?\n[ \t]+/g, ' ');
+    const value = /^date:[ \t]*(.*)$/im.exec(block)?.[1]?.trim();
+    const time = value ? Date.parse(value) : Number.NaN;
+    return Number.isNaN(time) ? undefined : new Date(time).toISOString();
 }
