@@ -47,7 +47,7 @@ export const VECTOR_SCHEMA_VERSION = 1;
  * statement is built for whichever the runtime can serve. One probe per process, so the
  * search does not pay for a try-and-catch per row.
  */
-// gjsify gap (unfixed, PR pending): @gjsify/sqlite convertValue drops Gda_Binary bytes.
+// gjsify gap (unfixed, gjsify/gjsify#2332): @gjsify/sqlite convertValue drops Gda_Binary bytes.
 let blobsAreBytes: boolean | undefined;
 
 function runtimeHandsBackBytes(): boolean {
