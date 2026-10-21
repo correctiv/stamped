@@ -70,10 +70,10 @@ import {
     reverifySummary,
     type KeyRow,
 } from './view/keys.ts';
-import { escapeLine, plainText } from './view/markup.ts';
+import { escapeLine, noHyphens, plainText } from './view/markup.ts';
 import { emptyList, headerFields, messageRows, rawHeaders, type HeaderField } from './view/message.ts';
 import { overviewHeadline, overviewNextStep, overviewStats, verdictShares } from './view/overview.ts';
-import { allSources, baseName, sourceRows } from './view/sources.ts';
+import { allSources, baseName, shortPath, sourceRows } from './view/sources.ts';
 import { explainVerdict, filterSummary, verdictFilters } from './view/verdict.ts';
 
 import Template, { GTypeName, InternalChildren, type Children } from './window.blp';
@@ -360,7 +360,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // form the view models hand the rows. A case folder called `Mail & Co` would otherwise
         // appear here as `Mail &amp; Co`.
         this._caseTitle.set_title(baseName(session.root));
-        this._caseTitle.set_subtitle(session.root);
+        this._caseTitle.set_subtitle(shortPath(session.root, GLib.get_home_dir()));
         this._rootStack.set_visible_child_name('case');
         this.refresh();
     }
@@ -427,7 +427,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.rebuilding = true;
         clearList(this._messageList);
         for (const row of messageRows(this.hits)) {
-            const item = new Adw.ActionRow({ title: row.title, subtitle: row.subtitle });
+            // The subtitle is the sender; `noHyphens` so a wrapped address keeps its own
+            // punctuation and nothing else.
+            const item = new Adw.ActionRow({ title: row.title, subtitle: noHyphens(row.subtitle) });
             item.set_tooltip_markup(row.tooltip);
             item.add_suffix(badge(row.badge, row.cssClass));
             this._messageList.append(item);
@@ -531,11 +533,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
         return frame;
     }
 
-    /** The header block, with a copy button on the fields a reader quotes elsewhere. */
+    /**
+     * The header block, with a copy button on the fields a reader quotes elsewhere.
+     *
+     * Every value goes through `noHyphens`: From, To, Cc and the Message-ID are addresses, and an
+     * address Pango broke with a hyphen is one a reader cannot tell from an address that has one.
+     */
     private headerGroup(fields: readonly HeaderField[]): Adw.PreferencesGroup {
         const group = new Adw.PreferencesGroup({ title: _('Message') });
         for (const field of fields) {
-            const row = new Adw.ActionRow({ title: field.label, subtitle: field.value });
+            const row = new Adw.ActionRow({ title: field.label, subtitle: noHyphens(field.value) });
             row.add_css_class('property');
             row.set_subtitle_selectable(true);
             if (field.monospace) row.add_css_class('monospace');
@@ -580,7 +587,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const facts = new Adw.ExpanderRow({ title: _('Evidence') });
         facts.add_prefix(new Gtk.Image({ iconName: 'view-list-bullet-symbolic' }));
         for (const fact of card.facts) {
-            const row = new Adw.ActionRow({ title: fact.label, subtitle: fact.value });
+            // A fact's value is a domain, a selector, an algorithm or a base64 hash — none of them
+            // text a hyphen may be inserted into. See `noHyphens`.
+            const row = new Adw.ActionRow({ title: fact.label, subtitle: noHyphens(fact.value) });
             row.add_css_class('property');
             // A body hash is two base64 strings long and must be readable in full: it is the one
             // fact a reader can check by hand against the message.
@@ -669,37 +678,63 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
     }
 
-    /** One `(domain, selector)` pair, with what it is worth and the two ways to get it. */
-    private keyRowWidget(row: KeyRow): Adw.ActionRow {
-        const item = new Adw.ActionRow({ title: row.name, subtitle: row.subtitle });
-        item.set_subtitle_lines(0);
+    /**
+     * One `(domain, selector)` pair: the name, where it stands, and the ways to get the key.
+     *
+     * AN EXPANDER, not one row carrying everything. What this pane is for is the ranking — which
+     * key, fetched once, answers the most mail — and a screenshot showed seven rows each with a
+     * two-line sentence and two buttons on it, in which the order could no longer be read. So the
+     * row itself holds the name, a three-word status and the `?`; the full sentence and the two
+     * actions are one click down, for the pair the reader has decided to work on.
+     *
+     * The name goes through `noHyphens`. In that same screenshot Pango had hyphenated
+     * `example.com` into `example.c-om`, and a domain that cannot be read off the screen is a
+     * wrong answer in a tool whose subject is which domain signed a message.
+     */
+    private keyRowWidget(row: KeyRow): Adw.ExpanderRow {
+        const item = new Adw.ExpanderRow({ title: noHyphens(row.name), subtitle: row.status });
         const icon = new Gtk.Image({ iconName: row.icon });
         icon.add_css_class(row.cssClass);
         item.add_prefix(icon);
+        item.add_suffix(new StampedHelpButton(explainKey(row)));
+
+        const body = new Gtk.Box({
+            orientation: Gtk.Orientation.VERTICAL,
+            spacing: 12,
+            marginTop: 12,
+            marginBottom: 12,
+            marginStart: 12,
+            marginEnd: 12,
+        });
+        body.append(wrapLabel(row.subtitle, 'dimmed'));
 
         if (row.wanted) {
+            const actions = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 });
+            const paste = new Gtk.Button({ label: _('Paste Key…') });
+            paste.add_css_class('suggested-action');
+            paste.connect('clicked', () => void this.askPaste(row));
+            actions.append(paste);
+
             // Offered beside the lookup, not under it: a request to the operator is the channel
             // that discloses nothing to a resolver and is the only one that still works for a
             // selector retired years ago.
             const ask = new Gtk.Button({
-                iconName: 'mail-send-symbolic',
-                valign: Gtk.Align.CENTER,
+                label: _('Copy Request…'),
                 tooltipText: _('Copy a request to send to the signing domain’s operator'),
             });
-            ask.add_css_class('flat');
             ask.connect('clicked', () => {
                 this.get_clipboard().set(requestTemplate({ domain: row.domain, selectors: [row.selector] }));
                 showToast(escapeLine(_('Request copied. Paste it into a mail to the operator.')));
             });
-            item.add_suffix(ask);
-
-            const paste = new Gtk.Button({ label: _('Paste Key…'), valign: Gtk.Align.CENTER });
-            paste.add_css_class('flat');
-            paste.connect('clicked', () => void this.askPaste(row));
-            item.add_suffix(paste);
+            actions.append(ask);
+            body.append(actions);
         }
 
-        item.add_suffix(new StampedHelpButton(explainKey(row)));
+        // A plain `Gtk.ListBoxRow`, not an `Adw.ActionRow`: `set_child` on an action row would
+        // replace the box that holds its own title and suffixes.
+        const holder = new Gtk.ListBoxRow({ activatable: false, selectable: false });
+        holder.set_child(body);
+        item.add_row(holder);
         return item;
     }
 
@@ -834,7 +869,14 @@ export class StampedWindow extends Adw.ApplicationWindow {
         });
         const list = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 2 });
         for (const item of text.items) {
-            const label = new Gtk.Label({ label: item, useMarkup: true, xalign: 0, selectable: true });
+            // Each item is a DNS name the request would carry. It is what consent is being given
+            // to, so it is shown exactly as it would go out — `noHyphens`, never Pango's break.
+            const label = new Gtk.Label({
+                label: noHyphens(item),
+                useMarkup: true,
+                xalign: 0,
+                selectable: true,
+            });
             label.add_css_class('monospace');
             list.append(label);
         }

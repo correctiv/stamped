@@ -23,7 +23,16 @@ export interface KeyRow {
     readonly selector: string;
     /** `<selector>._domainkey.<domain>` — the DNS name, which is also how a provider knows it. */
     readonly name: string;
-    /** How much of the case hangs on this pair. */
+    /**
+     * Where this pair stands, in as few words as fit beside the name.
+     *
+     * The row's one visible line. {@link KeyRow.subtitle} is the paragraph behind the expander —
+     * a screenshot showed why the two are separate: with the full demand sentence in the
+     * subtitle, seven rows of two-line prose filled the pane and the ranking the list exists for
+     * could not be read off it.
+     */
+    readonly status: string;
+    /** How much of the case hangs on this pair. Behind the row's expander, not in it. */
     readonly subtitle: string;
     /** Is a key for this pair already in the case's store? */
     readonly have: boolean;
@@ -63,11 +72,14 @@ export function keyRows(demands: readonly KeyDemand[], known: ReadonlySet<string
             domain: demand.domain,
             selector: demand.selector,
             name: escapeLine(name),
+            status: escapeLine(statusLine(demand, have, wanted)),
             subtitle: escapeLine(demandLine(demand, have)),
             have,
             wanted,
             cssClass: wanted ? 'warning' : have ? 'success' : 'dimmed',
-            icon: wanted ? 'dialog-password-symbolic' : 'emblem-ok-symbolic',
+            // `object-select-symbolic`, not the `emblem-ok-symbolic` that was here: Adwaita has
+            // no such name and an icon it lacks draws nothing — see the note on `verdictIcon`.
+            icon: wanted ? 'dialog-password-symbolic' : 'object-select-symbolic',
             messages: demand.messages,
             unverifiable: demand.unverifiable,
         };
@@ -76,6 +88,24 @@ export function keyRows(demands: readonly KeyDemand[], known: ReadonlySet<string
         if (a.wanted !== b.wanted) return a.wanted ? -1 : 1;
         return b.unverifiable - a.unverifiable || b.messages - a.messages || a.name.localeCompare(b.name);
     });
+}
+
+/**
+ * The row's one visible line: where this pair stands, in three or four words.
+ *
+ * THE COUNT THAT DECIDES THE RANKING is the only number in it. The list is sorted by how much
+ * mail a key would answer, and a row whose line led with the total it signed would read as if
+ * the order were wrong — so a wanted pair says what is waiting, and a pair with nothing waiting
+ * says that instead of a number nobody has to act on. The full sentence, both counts and where
+ * the key came from, is one expander away in {@link KeyRow.subtitle}.
+ */
+function statusLine(demand: KeyDemand, have: boolean, wanted: boolean): string {
+    if (wanted) {
+        return fmt(_n('{count} message waiting', '{count} messages waiting', demand.unverifiable), {
+            count: groupDigits(demand.unverifiable),
+        });
+    }
+    return have ? _('Key stored') : _('Nothing waiting');
 }
 
 /** What this pair is worth, in messages. */

@@ -33,7 +33,7 @@ import {
     lookupSummary,
     reverifySummary,
 } from '../../src/gui/view/keys.ts';
-import { escapeLine, escapeMarkup, plainText } from '../../src/gui/view/markup.ts';
+import { escapeLine, escapeMarkup, noHyphens, plainText } from '../../src/gui/view/markup.ts';
 import { emptyList, headerFields, messageRow, rawHeaders } from '../../src/gui/view/message.ts';
 import {
     overviewHeadline,
@@ -41,7 +41,7 @@ import {
     overviewStats,
     verdictShares,
 } from '../../src/gui/view/overview.ts';
-import { allSources, baseName, sourceRows } from '../../src/gui/view/sources.ts';
+import { allSources, baseName, shortPath, sourceRows } from '../../src/gui/view/sources.ts';
 import { explainVerdict, verdictFilters, verdictLook } from '../../src/gui/view/verdict.ts';
 
 /** A signature that verified cleanly, as the baseline every case below varies. */
@@ -141,6 +141,17 @@ export default async () => {
             // instead of decaying into `<`.
             expect(plainText(escapeMarkup('&lt;'))).toBe('&lt;');
         });
+
+        await it('wraps a value Pango may not hyphenate, leaving the value itself alone', async () => {
+            // A screenshot caught `example.com` wrapped as `example.c-om`, and a reader cannot
+            // tell an inserted hyphen from one that is part of the domain.
+            expect(noHyphens('sel._domainkey.example.com')).toBe(
+                '<span insert_hyphens="false">sel._domainkey.example.com</span>',
+            );
+            // The span goes AROUND the escaped text: applied inside a view model it would be
+            // escaped itself, and `plainText` would hand a widget the literal tag.
+            expect(noHyphens(escapeLine('<ada@example.com>')).includes('&lt;ada@example.com&gt;')).toBe(true);
+        });
     });
 
     await describe('how a verdict looks', async () => {
@@ -183,6 +194,51 @@ export default async () => {
             // A row a filter list hid would read as a verdict nobody looked for.
             expect(byVerdict.get('body-altered')).toBe(0);
             expect(filters.slice(1).every((filter) => (filter.explanation ?? '').length > 0)).toBe(true);
+        });
+
+        await it('says the same thing in the row, the card, the filter and the overview', async () => {
+            // THE BUG THIS GUARDS. The three panes get their verdict from different places: the
+            // list row and the sidebar counts from the index, the reader's card from a fresh
+            // verification of the stored bytes. When a key arrives and only one of them is
+            // rebuilt, one pane says `unverifiable` while another says `confirmed` about the
+            // same message — and a reader has no way to know which one to believe. They may
+            // differ only in how much they say, never in what they say, so every surface reads
+            // the one verdict through `verdictLook`.
+            for (const verdict of VERDICTS) {
+                const look = verdictLook(verdict);
+                const row = messageRow(hit({ verdict }));
+                const card = verdictCard({ verdict, caveats: [], signatures: [] });
+                const share = verdictShares([{ verdict, messages: 3 }]).find(
+                    (candidate) => candidate.verdict === verdict,
+                );
+                const filter = verdictFilters([{ verdict, messages: 3 }]).find(
+                    (candidate) => candidate.verdict === verdict,
+                );
+
+                expect(row.verdict).toBe(verdict);
+                expect(card.verdict).toBe(verdict);
+                for (const label of [row.badge, card.badge, share?.label, filter?.title]) {
+                    expect(label).toBe(escapeLine(look.label));
+                }
+                for (const cssClass of [row.cssClass, card.cssClass, share?.cssClass, filter?.cssClass]) {
+                    expect(cssClass).toBe(look.cssClass);
+                }
+                for (const icon of [row.icon, card.icon, share?.icon, filter?.icon]) {
+                    expect(icon).toBe(look.icon);
+                }
+                // The overview counts that verdict where the row shows it, so a share can never
+                // disagree with the list about how many messages have it.
+                expect(share?.count).toBe('3');
+                expect(filter?.count).toBe(3);
+            }
+        });
+
+        await it('names an icon for every verdict, so no badge draws blank', async () => {
+            // `emblem-ok-symbolic` was here and Adwaita has no such name: the `confirmed` badge
+            // showed an empty square. A missing icon draws nothing and reports nothing.
+            for (const verdict of VERDICTS) {
+                expect(verdictLook(verdict).icon.endsWith('-symbolic')).toBe(true);
+            }
         });
     });
 
@@ -490,6 +546,30 @@ export default async () => {
             );
             expect(lookupPairs(rows)).toStrictEqual([{ domain: 'example.com', selector: 'a' }]);
         });
+
+        await it('keeps the row’s own line short and only names the count that ranks it', async () => {
+            // A screenshot showed seven rows of two-line prose, in which the ranking the pane
+            // exists for could not be read. The row's line carries the waiting count — the one
+            // the sort is on — and the full sentence moved behind the expander.
+            const waiting = keyRows([demand({ messages: 4000, unverifiable: 40 })], new Set())[0];
+            expect(waiting?.status.includes('40')).toBe(true);
+            // A plain space, not the narrow no-break one `groupDigits` inserts: `escapeLine`
+            // collapses every run of whitespace, and JavaScript's `\s` includes U+202F.
+            expect(waiting?.status.includes('4 000')).toBe(false);
+            expect((waiting?.status ?? '').split(' ').length <= 4).toBe(true);
+            // Both counts, and where the key stands, are still said in full one click down.
+            expect(waiting?.subtitle.includes('4 000')).toBe(true);
+            expect(waiting?.subtitle.includes('40')).toBe(true);
+
+            // A pair with nothing waiting says so, rather than a number nobody has to act on.
+            const stored = keyRows(
+                [demand({ unverifiable: 0, confirmed: 10 })],
+                new Set(['sel._domainkey.example.com']),
+            )[0];
+            expect(stored?.status).toBe('Key stored');
+            const idle = keyRows([demand({ unverifiable: 0, confirmed: 10 })], new Set())[0];
+            expect(idle?.status).toBe('Nothing waiting');
+        });
     });
 
     await describe('the consent dialog', async () => {
@@ -605,6 +685,17 @@ export default async () => {
             expect(baseName('/leak/maildir/')).toBe('maildir');
             expect(baseName('inbox.mbox')).toBe('inbox.mbox');
             expect(baseName('/')).toBe('/');
+        });
+
+        await it('writes the home directory as ~, and leaves every other path alone', async () => {
+            expect(shortPath('/home/ada/Cases/Harbour Leak', '/home/ada')).toBe('~/Cases/Harbour Leak');
+            expect(shortPath('/home/ada', '/home/ada')).toBe('~');
+            // A trailing slash on HOME must not leave the `/` behind as `~/…`'s second one.
+            expect(shortPath('/home/ada/Cases', '/home/ada/')).toBe('~/Cases');
+            // A sibling that merely STARTS with the home path is a different directory.
+            expect(shortPath('/home/adamson/Cases', '/home/ada')).toBe('/home/adamson/Cases');
+            expect(shortPath('/srv/leak/case', '/home/ada')).toBe('/srv/leak/case');
+            expect(shortPath('/srv/leak/case', undefined)).toBe('/srv/leak/case');
         });
 
         await it('counts archives in the all-archives row, not messages', async () => {
