@@ -310,7 +310,7 @@ function nameMailboxes(root: string, folders: Map<string, MailPart[]>): Mailbox[
  * Hand-rolled rather than `localeCompare(…, { numeric: true })`, because a collation that depends
  * on the machine's locale would make the import log depend on the machine that produced it.
  */
-export function compareNames(a: string, b: string): number {
+function compareNames(a: string, b: string): number {
     const left = a.match(/\d+|\D+/g) ?? [];
     const right = b.match(/\d+|\D+/g) ?? [];
     for (let i = 0; i < Math.max(left.length, right.length); i++) {

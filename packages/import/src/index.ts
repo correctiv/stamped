@@ -24,7 +24,6 @@ export {
     parseHeaderFields,
 } from './headers.ts';
 export {
-    compareNames,
     type FolderPlan,
     type Mailbox,
     type MailPart,
