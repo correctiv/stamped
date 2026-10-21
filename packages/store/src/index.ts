@@ -51,7 +51,9 @@ export {
 } from './reverify.ts';
 export {
     type CaseReport,
+    type CaveatCount,
     caseReport,
+    caveatCounts,
     type KeyDemand,
     keyDemand,
     type VerdictCount,

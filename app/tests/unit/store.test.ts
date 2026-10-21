@@ -18,11 +18,12 @@ import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 
 import { describe, expect, it } from '@gjsify/unit';
-import { type MessageFinding, type Verdict, VERDICTS } from '@stamped/core';
+import { CAVEATS, type MessageFinding, type Verdict, VERDICTS } from '@stamped/core';
 import { decodeLatin1, encodeLatin1, summarise } from '@stamped/import';
 import {
     appendLog,
     caseReport,
+    caveatCounts,
     CASE_VERSION,
     casePaths,
     type CasePaths,
@@ -534,6 +535,38 @@ export default async () => {
                 expect(by.get('confirmed')).toBe(2);
                 expect(by.get('body-altered')).toBe(1);
                 expect(by.get('unsigned')).toBe(0);
+            });
+        });
+
+        await it('counts confirmed-with-caveats as confirmed per pair, and breaks the caveats down', async () => {
+            withIndex((db) => {
+                const sig = [{ domain: 'example.com', selector: 'sel' }];
+                put(db, message('One', 'body one'), 'confirmed', sig);
+                const raw = message('Two', 'body two');
+                const caveated = finding('confirmed-with-caveats', sig);
+                indexMessage(db, {
+                    hash: digest(raw),
+                    bytes: raw.length,
+                    summary: summarise(raw),
+                    finding: { ...caveated, caveats: ['archive-key', 'unsigned-date'] },
+                });
+                const raw2 = message('Three', 'body three');
+                indexMessage(db, {
+                    hash: digest(raw2),
+                    bytes: raw2.length,
+                    summary: summarise(raw2),
+                    finding: { ...caveated, caveats: ['archive-key'] },
+                });
+                const demand = keyDemand(db);
+                expect(demand[0]?.confirmed).toBe(3);
+                expect(demand[0]?.withCaveats).toBe(2);
+                const caveats = caveatCounts(db);
+                expect(caveats.length).toBe(CAVEATS.length);
+                const by = new Map(caveats.map((c) => [c.caveat, c.messages]));
+                expect(by.get('archive-key')).toBe(2);
+                expect(by.get('unsigned-date')).toBe(1);
+                expect(by.get('rsa-sha1')).toBe(0);
+                expect(caseReport(db).caveats.length).toBe(CAVEATS.length);
             });
         });
 
