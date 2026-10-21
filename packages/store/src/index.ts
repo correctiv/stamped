@@ -18,7 +18,13 @@ export {
     type IndexedMessage,
     type IndexEntry,
     beginBatch,
+    type BrowseOptions,
+    browseMessages,
     commitBatch,
+    type CountOptions,
+    countMessages,
+    type HashScope,
+    hashScope,
     indexedHashes,
     indexMessage,
     isIndexed,
@@ -31,7 +37,9 @@ export {
     rollbackBatch,
     SCHEMA_VERSION,
     type SearchHit,
+    searchHits,
     searchMessages,
+    type SearchOptions,
 } from './index-db.ts';
 export {
     appendLog,

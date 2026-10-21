@@ -22,12 +22,15 @@ import { CAVEATS, type MessageFinding, type Verdict, VERDICTS } from '@stamped/c
 import { decodeLatin1, encodeLatin1, summarise } from '@stamped/import';
 import {
     appendLog,
+    browseMessages,
     caseReport,
     caveatCounts,
     CASE_VERSION,
     casePaths,
+    countMessages,
     type CasePaths,
     digest,
+    hashScope,
     type ImportLogEntry,
     indexMessage,
     importSources,
@@ -43,6 +46,7 @@ import {
     readMessage,
     readRaw,
     removeMessage,
+    searchHits,
     searchMessages,
     sourceHashes,
     store,
@@ -932,6 +936,81 @@ export default async () => {
                     db.close();
                 }
                 expect(caveated(paths)).toBe(0);
+            });
+        });
+    });
+
+    await describe('paged browsing', async () => {
+        await it('pages through the case without reloading it', async () => {
+            withIndex((db) => {
+                for (let i = 0; i < 12; i++) put(db, message(`Note ${i}`, `body ${i}`), 'unsigned');
+                const first = browseMessages(db, { limit: 5, offset: 0 });
+                const second = browseMessages(db, { limit: 5, offset: 5 });
+                const third = browseMessages(db, { limit: 5, offset: 10 });
+                expect(first.length).toBe(5);
+                expect(second.length).toBe(5);
+                expect(third.length).toBe(2);
+                expect(countMessages(db)).toBe(12);
+                // No overlap between pages.
+                const hashes = new Set([...first, ...second, ...third].map((hit) => hit.hash));
+                expect(hashes.size).toBe(12);
+            });
+        });
+
+        await it('counts and browses under a verdict filter', async () => {
+            withIndex((db) => {
+                put(db, message('One', 'body one'), 'confirmed');
+                put(db, message('Two', 'body two'), 'confirmed');
+                put(db, message('Three', 'body three'), 'unverifiable');
+                expect(countMessages(db, { verdict: 'confirmed' })).toBe(2);
+                expect(countMessages(db, { verdict: 'body-altered' })).toBe(0);
+                const page = browseMessages(db, { verdict: 'confirmed', limit: 10, offset: 0 });
+                expect(page.length).toBe(2);
+                expect(page.every((hit) => hit.verdict === 'confirmed')).toBe(true);
+            });
+        });
+
+        await it('scopes a browse to the hashes one source contributed', async () => {
+            withIndex((db) => {
+                const one = put(db, message('One', 'body one'), 'confirmed');
+                put(db, message('Two', 'body two'), 'confirmed');
+                const scope = hashScope(db, new Set([one]));
+                try {
+                    expect(scope.size).toBe(1);
+                    expect(scope.has(one)).toBe(true);
+                    expect(countMessages(db, { scope })).toBe(1);
+                    const page = browseMessages(db, { scope, limit: 10, offset: 0 });
+                    expect(page.length).toBe(1);
+                    expect(page[0]?.hash).toBe(one);
+                } finally {
+                    scope.close();
+                }
+            });
+        });
+
+        await it('searchHits narrows by verdict and scope', async () => {
+            withIndex((db) => {
+                const one = put(db, message('Harbour', 'the harbour contract'), 'confirmed');
+                put(db, message('Harbour2', 'the harbour survey'), 'unverifiable');
+                const scope = hashScope(db, new Set([one]));
+                try {
+                    const hits = searchHits(db, 'harbour', { verdict: 'confirmed', scope, limit: 10 });
+                    expect(hits.length).toBe(1);
+                    expect(hits[0]?.hash).toBe(one);
+                    const all = searchHits(db, 'harbour', { limit: 10 });
+                    expect(all.length).toBe(2);
+                } finally {
+                    scope.close();
+                }
+            });
+        });
+
+        await it('hashScope is idempotent on close', async () => {
+            withIndex((db) => {
+                const scope = hashScope(db, new Set(['a'.repeat(64)]));
+                scope.close();
+                scope.close();
+                expect(true).toBe(true);
             });
         });
     });
