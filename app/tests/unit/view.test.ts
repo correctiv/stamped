@@ -21,20 +21,21 @@ import { describe, expect, it } from '@gjsify/unit';
 import { classifyMessage, describeVerdict, VERDICTS, type SignatureEvidence } from '@stamped/core';
 import type { CaseReport, KeyDemand, LogSource, SearchHit, IndexedMessage } from '@stamped/store';
 
-import { consentDialog } from '../../src/gui/view/consent.ts';
-import { signatureCards, verdictCard } from '../../src/gui/view/evidence.ts';
+import { channelLabel, consentDialog, LOOKUP_CHANNELS } from '../../src/gui/view/consent.ts';
+import { caveatsHeading, signatureCards, verdictCard } from '../../src/gui/view/evidence.ts';
 import { formatBytes, groupDigits, shortDate, shortHash } from '../../src/gui/view/format.ts';
-import { keyRows, keySummary, lookupPairs } from '../../src/gui/view/keys.ts';
-import { escapeLine, escapeMarkup } from '../../src/gui/view/markup.ts';
-import { emptyList, headerFields, messageRow } from '../../src/gui/view/message.ts';
+import { importSummary } from '../../src/gui/view/import.ts';
+import { explainKey, keyRows, keySummary, lookupPairs, lookupSummary } from '../../src/gui/view/keys.ts';
+import { escapeLine, escapeMarkup, plainText } from '../../src/gui/view/markup.ts';
+import { emptyList, headerFields, messageRow, rawHeaders } from '../../src/gui/view/message.ts';
 import {
     overviewHeadline,
     overviewNextStep,
     overviewStats,
     verdictShares,
 } from '../../src/gui/view/overview.ts';
-import { baseName, sourceRows } from '../../src/gui/view/sources.ts';
-import { verdictFilters, verdictLook } from '../../src/gui/view/verdict.ts';
+import { allSources, baseName, sourceRows } from '../../src/gui/view/sources.ts';
+import { explainVerdict, verdictFilters, verdictLook } from '../../src/gui/view/verdict.ts';
 
 /** A signature that verified cleanly, as the baseline every case below varies. */
 function good(overrides: Partial<SignatureEvidence> = {}): SignatureEvidence {
@@ -123,6 +124,15 @@ export default async () => {
 
         await it('keeps a folded header on one line', async () => {
             expect(escapeLine('Re:\n\tthe  tender')).toBe('Re: the tender');
+        });
+
+        await it('undoes exactly what it escaped, for the widgets that take no markup', async () => {
+            // `Adw.WindowTitle` renders `&amp;` literally, so a case folder named `Mail & Co`
+            // would read as `Mail &amp;amp; Co` in the header bar without this.
+            expect(plainText(escapeMarkup('Mail & Co <2024>'))).toBe('Mail & Co <2024>');
+            // `&amp;` last, so a literal `&amp;lt;` in the SOURCE text survives the round trip
+            // instead of decaying into `<`.
+            expect(plainText(escapeMarkup('&lt;'))).toBe('&lt;');
         });
     });
 
@@ -246,6 +256,45 @@ export default async () => {
             expect(hash?.monospace).toBe(true);
             expect(fields.find((field) => field.label === 'Size')?.value).toBe('4.1 kB');
         });
+
+        await it('copies the whole hash although it shows twelve characters of it', async () => {
+            // The displayed form is what fits a row; the clipboard is what goes into a note to
+            // a colleague, and a truncated hash there names no message.
+            const hash = headerFields(indexed({ hash: 'b'.repeat(64) })).find(
+                (field) => field.label === 'SHA-256',
+            );
+            expect(hash?.value).toBe('b'.repeat(12));
+            expect(hash?.copy).toBe('b'.repeat(64));
+        });
+
+        await it('copies a Message-ID unescaped, because a clipboard takes no markup', async () => {
+            const message = indexed({ messageId: '<2024-07@example.com>' });
+            const field = headerFields(message).find((f) => f.label === 'Message-ID');
+            expect(field?.value).toBe('&lt;2024-07@example.com&gt;');
+            expect(field?.copy).toBe('<2024-07@example.com>');
+        });
+
+        await it('offers no copy button on the fields that are prose', async () => {
+            const from = headerFields(indexed()).find((field) => field.label === 'From');
+            expect(from?.copy).toBe(undefined);
+        });
+    });
+
+    await describe('the raw header block', async () => {
+        await it('cuts at the first empty line, whatever the line endings', async () => {
+            const raw = 'From: ada@example.com\r\nSubject: hi\r\n\r\nBody line\r\n\r\nmore body\r\n';
+            expect(rawHeaders(raw)).toBe('From: ada@example.com\nSubject: hi');
+        });
+
+        await it('keeps a header-only message whole', async () => {
+            // No empty line means no body: the verifier sees the same thing, so the expander
+            // must not silently show nothing.
+            expect(rawHeaders('From: ada@example.com\n')).toBe('From: ada@example.com');
+        });
+
+        await it('returns the text unescaped, because a TextView takes no markup', async () => {
+            expect(rawHeaders('From: Ada <ada@example.com>\n\nbody')).toBe('From: Ada <ada@example.com>');
+        });
     });
 
     await describe('an empty message list', async () => {
@@ -352,6 +401,14 @@ export default async () => {
             expect(note.includes('<')).toBe(false);
         });
 
+        await it('counts the caveats in the expander title and never calls them problems', async () => {
+            // A caveat limits what a verified signature proves; it is not a defect. "2 caveats"
+            // invites reading them where "problems" would invite discarding a genuine message.
+            expect(caveatsHeading(1).includes('1')).toBe(true);
+            expect(caveatsHeading(2).includes('2')).toBe(true);
+            expect(caveatsHeading(2).toLowerCase().includes('problem')).toBe(false);
+        });
+
         await it('lists the caveats with the identifier a test can hold on to', async () => {
             const cards = signatureCards(classifyMessage([good({ algorithm: 'rsa-sha1' })]));
             const caveats = cards[0]?.caveats.map((caveat) => caveat.caveat) ?? [];
@@ -422,6 +479,59 @@ export default async () => {
             expect(archive.accept.includes('archive.prove.email')).toBe(true);
             expect(archive.channel).toBe('archive.prove.email');
         });
+
+        await it('has a label for every channel the lookup can use', async () => {
+            // `LOOKUP_CHANNELS` is what the window builds its menu from, so a channel added to
+            // `LookupChannel` without a label here would appear in the UI nameless.
+            expect(LOOKUP_CHANNELS.length).toBe(2);
+            for (const channel of LOOKUP_CHANNELS) {
+                expect(channelLabel(channel).length > 0).toBe(true);
+            }
+            expect(channelLabel('dns').includes('DNS')).toBe(true);
+        });
+    });
+
+    await describe('what a lookup run reports', async () => {
+        await it('reports a miss instead of swallowing it', async () => {
+            // The request DID go out: the disclosure has happened, and the person who agreed to
+            // it is owed the result even when it is "nothing published".
+            const line = lookupSummary(0, 3, 0);
+            expect(line.includes('no published record')).toBe(true);
+            expect(lookupSummary(0, 0, 0).includes('nothing was found')).toBe(true);
+        });
+
+        await it('never summarises a conflicting key as a successful fetch', async () => {
+            // A key that differs from the one the case already held is the finding the tool
+            // exists for — either a rotation the archive predates or a substitution.
+            const line = lookupSummary(2, 0, 1);
+            expect(line.includes('2')).toBe(true);
+            expect(line.includes('differs from one this case already held')).toBe(true);
+        });
+
+        await it('leaves the conflict clause out when there was none', async () => {
+            expect(lookupSummary(2, 0, 0).includes('already held')).toBe(false);
+        });
+    });
+
+    await describe('the explanations behind the ? buttons', async () => {
+        await it('escapes every verdict explanation, so a translator cannot break one', async () => {
+            // The popover's label parses markup. These paragraphs carry no `<` today, which is
+            // exactly why the escaping has to be asserted rather than eyeballed.
+            for (const verdict of VERDICTS) {
+                const text = explainVerdict(verdict);
+                expect(text.includes('<')).toBe(false);
+                expect(text.includes('\n')).toBe(false);
+            }
+            expect(explainVerdict('unverifiable').includes('fetch the key')).toBe(true);
+        });
+
+        await it('escapes the key explanation and names the DNS record it is about', async () => {
+            const row = keyRows([demand()], new Set()).find((r) => !r.have);
+            expect(row).toBeDefined();
+            const text = explainKey(row!);
+            expect(text.includes('sel._domainkey.example.com')).toBe(true);
+            expect(text.includes('<')).toBe(false);
+        });
     });
 
     await describe('the folder list', async () => {
@@ -445,6 +555,45 @@ export default async () => {
             expect(baseName('/leak/maildir/')).toBe('maildir');
             expect(baseName('inbox.mbox')).toBe('inbox.mbox');
             expect(baseName('/')).toBe('/');
+        });
+
+        await it('counts archives in the all-archives row, not messages', async () => {
+            // The message total belongs to the middle pane's header (`filterSummary`); what this
+            // row adds is whether a filtered view is one of two or one of forty.
+            const sources: LogSource[] = [
+                { source: '/leak/a.mbox', kind: 'mbox', messages: 1204, duplicates: 0 },
+                { source: '/leak/b.mbox', kind: 'mbox', messages: 7, duplicates: 0 },
+            ];
+            const all = allSources(sources);
+            expect(all.subtitle.includes('2')).toBe(true);
+            expect(all.subtitle.includes('1 204')).toBe(false);
+        });
+
+        await it('still offers the way out of a filter for an empty case', async () => {
+            expect(allSources([]).subtitle.includes('0')).toBe(true);
+        });
+    });
+
+    await describe('what an import run reports', async () => {
+        await it('reports the counts without netting the duplicates off', async () => {
+            const line = importSummary({ read: 7, stored: 4, duplicates: 2, indexed: 4, failed: 1 });
+            expect(line.includes('4')).toBe(true);
+            expect(line.includes('2')).toBe(true);
+            // The failures ARE in the case and have no verdict: a summary that dropped them
+            // would let a message vanish from every count while still being in the archive.
+            expect(line.includes('1')).toBe(true);
+            expect(line.includes('no verdict')).toBe(true);
+        });
+
+        await it('leaves out the clauses with nothing to report', async () => {
+            const line = importSummary({ read: 4, stored: 4, duplicates: 0, indexed: 4, failed: 0 });
+            expect(line.includes('already in the case')).toBe(false);
+            expect(line.includes('no verdict')).toBe(false);
+        });
+
+        await it('says an empty archive was empty instead of claiming a success', async () => {
+            const line = importSummary({ read: 0, stored: 0, duplicates: 0, indexed: 0, failed: 0 });
+            expect(line.includes('Nothing imported')).toBe(true);
         });
     });
 

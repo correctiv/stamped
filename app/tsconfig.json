@@ -9,6 +9,7 @@
     "skipLibCheck": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "allowArbitraryExtensions": true,
     "types": ["node"]
   },
   "include": ["./src/**/*", "./tests/**/*"]

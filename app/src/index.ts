@@ -64,52 +64,42 @@ function reportError(error: unknown): void {
     console.error(error instanceof Error ? error.message : String(error));
 }
 
-// yargs can throw SYNCHRONOUSLY for some validation failures even with `.fail(false)`, instead
-// of rejecting. On GJS that surfaces as "Module threw an exception" before the loop below is
-// established. Normalising it to a rejection keeps one error path.
-let parsed: Promise<unknown>;
-try {
-    parsed = parse();
-} catch (error) {
-    parsed = Promise.reject(error);
-}
-
-// The same probe the gjsify examples use, inlined so no module graph is pulled in ahead of the
-// loop.
-const runningOnGjs = typeof (globalThis as { imports?: unknown }).imports !== 'undefined';
-
-if (runningOnGjs) {
-    // GJS HAS NO ALWAYS-ON EVENT LOOP, and without one this binary printed NOTHING on a valid
-    // message while exiting 0: `verify`'s handler ran, reached its first `await`, and the process
-    // ended with the verification still in flight. A GLib main loop keeps the handler alive and
-    // pumps its I/O.
-    //
-    // Quitting when `parsed` settles is safe HERE and would not be in a program with
-    // fire-and-forget handlers: yargs awaits an async handler's promise, and every stamped
-    // command is one, so a settled `parsed` means the report has been printed.
-    //
-    // Always leave through `process.exit()` — gjsify idle-schedules `GLib.MainLoop.quit()` with
-    // it, while a bare `imports.system.exit()` from an async continuation sets GJS's exit flag
-    // without quitting the loop, and hangs.
-    const GLib = (
-        globalThis as unknown as {
-            imports: {
-                gi: { GLib: { MainLoop: new (ctx: unknown, running: boolean) => { run(): void } } };
-            };
-        }
-    ).imports.gi.GLib;
-    const loop = new GLib.MainLoop(null, false);
-    parsed.then(
-        () => process.exit(0),
-        (error: unknown) => {
-            reportError(error);
-            process.exit(2);
-        },
-    );
-    loop.run();
-} else {
-    parsed.catch((error: unknown) => {
+/**
+ * Run the CLI and return the process's exit code. Never throws.
+ *
+ * A FUNCTION, and this module runs nothing by itself, because `src/gui/main.ts` is the bundle's
+ * entry: it decides from argv whether this is a command or a window, and a module body that
+ * parsed argv on import would run the CLI during a GUI launch.
+ *
+ * NOTHING HERE PUMPS A MAIN LOOP, and that is a change from the version that did — read this
+ * before putting one back. The incident the loop was added for is real: on GJS, `verify` printed
+ * NOTHING and exited 0, because the process ended at the handler's first `await` with the
+ * verification still in flight. What keeps the handler alive now is that the entry module
+ * (`gui/main.ts`) uses TOP-LEVEL AWAIT — GJS pumps the main context until an entry module's
+ * promise settles, which is the same pump by another owner. Measured against async `Gio` I/O
+ * inside a dynamically imported module.
+ *
+ * A `GLib.MainLoop` here would now HANG instead of helping. `gui/main.ts` reaches this function
+ * through `await import(...)`, so this code runs inside a promise job, and GJS does not dispatch
+ * further promise jobs while it is draining the queue — `loop.run()` from in there blocks the
+ * drain and the `.then` that would quit the loop never fires. Measured: a 2 MB bundle that
+ * printed nothing and had to be killed.
+ */
+export async function runCli(): Promise<number> {
+    // yargs can throw SYNCHRONOUSLY for some validation failures even with `.fail(false)`,
+    // instead of rejecting. On GJS that surfaces as "Module threw an exception" rather than as a
+    // message. Normalising it to a rejection keeps one error path.
+    let parsed: Promise<unknown>;
+    try {
+        parsed = parse();
+    } catch (error) {
+        parsed = Promise.reject(error);
+    }
+    try {
+        await parsed;
+        return 0;
+    } catch (error) {
         reportError(error);
-        process.exitCode = 2;
-    });
+        return 2;
+    }
 }

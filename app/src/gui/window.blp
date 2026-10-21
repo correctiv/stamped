@@ -1,0 +1,378 @@
+using Gtk 4.0;
+using Adw 1;
+
+// The window. Three panes, and nothing in here knows what a DKIM signature is: every string the
+// panes show is computed by `gui/view/*` and set from `window.ts`. What IS here is the geometry —
+// which pane collapses when, and which widget the breakpoints move.
+//
+// Pango markup trap: `Adw.ActionRow` parses title and subtitle as markup, so a sender like
+// <ada@example.com> would render as a row with no sender. Every string set from TypeScript comes
+// out of `view/markup.ts` already escaped; nothing here may bypass that.
+template $StampedWindow: Adw.ApplicationWindow {
+  default-width: 1200;
+  default-height: 700;
+  width-request: 360;
+  height-request: 360;
+  title: _("Stamped");
+
+  // Laptop width: the case sidebar becomes an overlay the toggle pulls in, so the message list
+  // and the verification keep their full width — the two panes a reader works in.
+  Adw.Breakpoint {
+    condition ("max-width: 1100px")
+
+    setters {
+      outerSplit.collapsed: true;
+    }
+  }
+
+  // Phone width: one pane at a time, and the view switcher moves out of the header bar into a
+  // bar along the bottom, where a thumb reaches it.
+  Adw.Breakpoint {
+    condition ("max-width: 600px")
+
+    setters {
+      outerSplit.collapsed: true;
+      innerSplit.collapsed: true;
+      viewSwitcher.visible: false;
+      switcherBar.reveal: true;
+    }
+  }
+
+  content: Adw.ToastOverlay toasts {
+    child: Gtk.Stack rootStack {
+      transition-type: crossfade;
+
+      Gtk.StackPage {
+        name: "welcome";
+
+        child: Adw.ToolbarView {
+          [top]
+          Adw.HeaderBar {
+            [end]
+            Gtk.MenuButton {
+              icon-name: "open-menu-symbolic";
+              tooltip-text: _("Main menu");
+              menu-model: primaryMenu;
+              primary: true;
+            }
+          }
+
+          content: Adw.StatusPage {
+            icon-name: "mail-send-receive-symbolic";
+            title: _("Stamped");
+            description: _("Open a case folder, or import a mail archive to start one. Nothing leaves this machine.");
+
+            child: Gtk.Box {
+              orientation: horizontal;
+              spacing: 12;
+              halign: center;
+
+              Gtk.Button {
+                label: _("Open Case…");
+                action-name: "win.open-case";
+
+                styles [
+                  "pill",
+                ]
+              }
+
+              Gtk.Button {
+                label: _("Import Archive…");
+                action-name: "win.import";
+
+                styles [
+                  "pill",
+                  "suggested-action",
+                ]
+              }
+            };
+          };
+        };
+      }
+
+      Gtk.StackPage {
+        name: "case";
+
+        child: Adw.OverlaySplitView outerSplit {
+          sidebar-width-fraction: 0.22;
+          min-sidebar-width: 230;
+          max-sidebar-width: 330;
+
+          sidebar: Adw.ToolbarView {
+            [top]
+            Adw.HeaderBar {
+              [start]
+              Gtk.Button {
+                icon-name: "list-add-symbolic";
+                tooltip-text: _("Import another archive into this case");
+                action-name: "win.import";
+              }
+
+              [end]
+              Gtk.MenuButton {
+                icon-name: "open-menu-symbolic";
+                tooltip-text: _("Main menu");
+                menu-model: primaryMenu;
+                primary: true;
+              }
+
+              title-widget: Adw.WindowTitle caseTitle {
+                title: _("Case");
+              };
+            }
+
+            content: Gtk.ScrolledWindow {
+              hscrollbar-policy: never;
+
+              child: Gtk.Box {
+                orientation: vertical;
+                spacing: 2;
+                margin-bottom: 12;
+
+                Gtk.Label {
+                  label: _("Archives");
+                  xalign: 0;
+                  margin-start: 18;
+                  margin-top: 12;
+                  margin-bottom: 2;
+
+                  styles [
+                    "heading",
+                    "dimmed",
+                  ]
+                }
+
+                Gtk.ListBox sourceList {
+                  selection-mode: single;
+
+                  styles [
+                    "navigation-sidebar",
+                  ]
+                }
+
+                Gtk.Label {
+                  label: _("Verdicts");
+                  xalign: 0;
+                  margin-start: 18;
+                  margin-top: 12;
+                  margin-bottom: 2;
+
+                  styles [
+                    "heading",
+                    "dimmed",
+                  ]
+                }
+
+                Gtk.ListBox verdictList {
+                  selection-mode: single;
+
+                  styles [
+                    "navigation-sidebar",
+                  ]
+                }
+              };
+            };
+          };
+
+          content: Adw.NavigationSplitView innerSplit {
+            min-sidebar-width: 280;
+            max-sidebar-width: 440;
+            sidebar-width-fraction: 0.33;
+
+            sidebar: Adw.NavigationPage {
+              title: _("Messages");
+              tag: "messages";
+
+              child: Adw.ToolbarView {
+                [top]
+                Adw.HeaderBar {
+                  [start]
+                  Gtk.ToggleButton {
+                    icon-name: "sidebar-show-symbolic";
+                    tooltip-text: _("Show the case sidebar");
+                    active: bind outerSplit.show-sidebar bidirectional;
+                  }
+
+                  title-widget: Adw.WindowTitle listTitle {
+                    title: _("Messages");
+                  };
+                }
+
+                [top]
+                Gtk.SearchEntry searchEntry {
+                  placeholder-text: _("Search senders, subjects, bodies");
+                  margin-top: 6;
+                  margin-bottom: 6;
+                  margin-start: 12;
+                  margin-end: 12;
+                }
+
+                content: Gtk.Stack listStack {
+                  Gtk.StackPage {
+                    name: "list";
+
+                    child: Gtk.ScrolledWindow {
+                      hscrollbar-policy: never;
+                      vexpand: true;
+
+                      child: Gtk.ListBox messageList {
+                        selection-mode: single;
+
+                        styles [
+                          "navigation-sidebar",
+                        ]
+                      };
+                    };
+                  }
+
+                  Gtk.StackPage {
+                    name: "empty";
+
+                    child: Adw.StatusPage emptyState {
+                      icon-name: "folder-open-symbolic";
+                    };
+                  }
+                };
+              };
+            };
+
+            content: Adw.NavigationPage {
+              title: _("Verification");
+              tag: "detail";
+
+              child: Adw.ToolbarView {
+                [top]
+                Adw.HeaderBar {
+                  title-widget: Adw.ViewSwitcher viewSwitcher {
+                    stack: contentStack;
+                    policy: wide;
+                  };
+                }
+
+                [bottom]
+                Adw.ViewSwitcherBar switcherBar {
+                  stack: contentStack;
+                }
+
+                content: Adw.ViewStack contentStack {
+                  Adw.ViewStackPage {
+                    name: "message";
+                    title: _("Message");
+                    icon-name: "mail-read-symbolic";
+
+                    child: Gtk.Stack readerStack {
+                      Gtk.StackPage {
+                        name: "empty";
+
+                        child: Adw.StatusPage {
+                          icon-name: "mail-unread-symbolic";
+                          title: _("No message selected");
+                          description: _("Pick a message to see which of its signatures hold, and what each one covers.");
+                        };
+                      }
+
+                      Gtk.StackPage {
+                        name: "message";
+
+                        child: Gtk.ScrolledWindow {
+                          hscrollbar-policy: never;
+
+                          child: Adw.Clamp {
+                            maximum-size: 760;
+
+                            child: Gtk.Box readerBody {
+                              orientation: vertical;
+                              spacing: 18;
+                              margin-top: 18;
+                              margin-bottom: 24;
+                              margin-start: 12;
+                              margin-end: 12;
+                            };
+                          };
+                        };
+                      }
+                    };
+                  }
+
+                  Adw.ViewStackPage keysPage {
+                    name: "keys";
+                    title: _("Keys");
+                    icon-name: "dialog-password-symbolic";
+
+                    child: Gtk.ScrolledWindow {
+                      hscrollbar-policy: never;
+
+                      child: Adw.Clamp {
+                        maximum-size: 760;
+
+                        child: Gtk.Box keysBody {
+                          orientation: vertical;
+                          spacing: 18;
+                          margin-top: 18;
+                          margin-bottom: 24;
+                          margin-start: 12;
+                          margin-end: 12;
+                        };
+                      };
+                    };
+                  }
+
+                  Adw.ViewStackPage {
+                    name: "overview";
+                    title: _("Overview");
+                    icon-name: "view-list-symbolic";
+
+                    child: Gtk.ScrolledWindow {
+                      hscrollbar-policy: never;
+
+                      child: Adw.Clamp {
+                        maximum-size: 760;
+
+                        child: Gtk.Box overviewBody {
+                          orientation: vertical;
+                          spacing: 18;
+                          margin-top: 18;
+                          margin-bottom: 24;
+                          margin-start: 12;
+                          margin-end: 12;
+                        };
+                      };
+                    };
+                  }
+                };
+              };
+            };
+          };
+        };
+      }
+    };
+  };
+}
+
+menu primaryMenu {
+  section {
+    item {
+      label: _("Open Case…");
+      action: "win.open-case";
+    }
+
+    item {
+      label: _("Import Archive…");
+      action: "win.import";
+    }
+
+    // Two entries, because the file chooser cannot do both: an mbox is a FILE and a Maildir is a
+    // DIRECTORY, and a chooser that accepts files will not let a folder be picked as the result.
+    item {
+      label: _("Import Folder…");
+      action: "win.import-folder";
+    }
+  }
+
+  section {
+    item {
+      label: _("About Stamped");
+      action: "app.about";
+    }
+  }
+}

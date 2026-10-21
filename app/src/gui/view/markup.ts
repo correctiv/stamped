@@ -26,3 +26,20 @@ export function escapeMarkup(text: string): string {
 export function escapeLine(text: string): string {
     return escapeMarkup(text.replace(/\s+/g, ' ').trim());
 }
+
+/**
+ * The exact inverse of {@link escapeMarkup}, for the widgets that take NO markup.
+ *
+ * Not every label parses markup, and the ones that do not are not interchangeable with the ones
+ * that do: `Adw.WindowTitle` and a tooltip render `&amp;` literally, so a case folder named
+ * `Mail & Co` would appear as `Mail &amp;amp; Co` in the header bar. The view models all return
+ * escaped text by design, so this is how a plain-text widget is fed from them — never by building
+ * a second, unescaped version of the same string somewhere else.
+ *
+ * Only the three entities `escapeMarkup` produces, `&amp;` last so a literal `&amp;lt;` in the
+ * source text survives the round trip. A general unescaper would be a different function with
+ * different bugs.
+ */
+export function plainText(markup: string): string {
+    return markup.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
+}

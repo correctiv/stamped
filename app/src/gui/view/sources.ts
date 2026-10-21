@@ -35,6 +35,33 @@ export function baseName(path: string): string {
     return name === '' ? path : name;
 }
 
+/** The row above the archive list: the filter cleared, and how much there is to filter. */
+export interface AllSources {
+    readonly title: string;
+    readonly subtitle: string;
+    readonly icon: string;
+}
+
+/**
+ * The "all archives" row, which exists so there is always a way BACK out of a filter.
+ *
+ * It counts the archives rather than the messages: the message total is the one the middle pane's
+ * own header carries (`filterSummary`), and a second total in a second place is a second thing to
+ * keep true. What this row adds is how many sources the case was built from — the number that
+ * says whether a filtered view is one of two or one of forty.
+ */
+export function allSources(sources: readonly LogSource[]): AllSources {
+    return {
+        title: escapeLine(_('All archives')),
+        subtitle: escapeLine(
+            fmt(_n('{count} archive imported', '{count} archives imported', sources.length), {
+                count: groupDigits(sources.length),
+            }),
+        ),
+        icon: 'folder-symbolic',
+    };
+}
+
 /** An mbox is one file holding many messages; a Maildir or a loose `.eml` is one message a file. */
 function sourceIcon(kind: string): string {
     return kind === 'mbox' ? 'mail-archive-symbolic' : 'mail-unread-symbolic';

@@ -16,6 +16,33 @@ import { describeConsent, _, type KeyPair, type LookupChannel } from '@stamped/c
 
 import { escapeLine } from './markup.ts';
 
+/**
+ * The channels a lookup can go out over, in the order the menu offers them.
+ *
+ * DNS first because it is the authoritative answer, and `archive.prove.email` second because it
+ * is a third party — the order is the recommendation. Listed here rather than in `window.ts` so
+ * a channel added to `@stamped/core` is added to the menu by widening one array, and the
+ * exhaustive `switch` in {@link channelLabel} then fails to compile until it has a name.
+ */
+export const LOOKUP_CHANNELS: readonly LookupChannel[] = ['dns', 'archive.prove.email'];
+
+/**
+ * What to call a channel on the button that picks it.
+ *
+ * ONE source for the name, shared by the menu item and by the accept button of the dialog that
+ * follows it. Two literals would let the menu say "DNS" while the confirmation said something
+ * else, and in a prompt about what leaves the machine the two have to be recognisably the same
+ * thing.
+ */
+export function channelLabel(channel: LookupChannel): string {
+    switch (channel) {
+        case 'dns':
+            return _('Query the DNS');
+        case 'archive.prove.email':
+            return _('Ask archive.prove.email');
+    }
+}
+
 /** Everything an `Adw.AlertDialog` needs for the consent prompt. */
 export interface ConsentDialog {
     readonly channel: LookupChannel;
@@ -40,7 +67,7 @@ export function consentDialog(channel: LookupChannel, pairs: readonly KeyPair[])
         items: text.items.map(escapeLine),
         // Not "OK": the button says which network the request goes to, so the last thing read
         // before the click is the disclosure itself.
-        accept: escapeLine(channel === 'dns' ? _('Query the DNS') : _('Ask archive.prove.email')),
+        accept: escapeLine(channelLabel(channel)),
         cancel: escapeLine(_('Stay offline')),
         pairs,
     };

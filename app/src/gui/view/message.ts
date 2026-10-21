@@ -61,6 +61,15 @@ export interface HeaderField {
     readonly value: string;
     /** True for fields a reader may want to copy whole — the hash, the Message-ID. */
     readonly monospace: boolean;
+    /**
+     * The value as it would be pasted elsewhere: UNESCAPED, and the one string in this module
+     * that is.
+     *
+     * A clipboard takes text, not markup, so a copy button fed from {@link HeaderField.value}
+     * would put `&lt;` into the colleague's message where the reader saw `<`. Present only on
+     * the fields with a copy button, so a row cannot offer one without a value to give it.
+     */
+    readonly copy?: string;
 }
 
 /**
@@ -86,17 +95,43 @@ export function headerFields(message: IndexedMessage): HeaderField[] {
         { label: _('Date'), value: message.date || _('(none)'), monospace: false },
     );
     if (message.messageId) {
-        fields.push({ label: _('Message-ID'), value: message.messageId, monospace: true });
+        fields.push({
+            label: _('Message-ID'),
+            value: message.messageId,
+            monospace: true,
+            copy: message.messageId,
+        });
     }
     fields.push(
         { label: _('Size'), value: formatBytes(message.bytes), monospace: false },
-        { label: _('SHA-256'), value: shortHash(message.hash), monospace: true },
+        // Shortened for the row, WHOLE for the clipboard: twelve hex digits identify the message
+        // in this case, and the other fifty-two are what a colleague needs to find the same one.
+        { label: _('SHA-256'), value: shortHash(message.hash), monospace: true, copy: message.hash },
     );
     return fields.map((field) => ({
         label: escapeLine(field.label),
         value: escapeLine(field.value),
         monospace: field.monospace,
+        ...(field.copy !== undefined ? { copy: field.copy } : {}),
     }));
+}
+
+/**
+ * The header block of a raw message: everything before the first empty line.
+ *
+ * PLAIN TEXT, not markup, and the one function here that is — it fills a `Gtk.TextView` buffer,
+ * which takes no markup, so escaping it would put a literal `&lt;` in front of every address.
+ * The split is on the first empty line because that is what RFC 5322 § 2.1 says separates the
+ * header section from the body; a message with no empty line at all is all header, which is also
+ * what the verifier sees.
+ *
+ * CRLF is normalised to LF for display only. The bytes on disk keep their line endings — they
+ * are what the body hash was computed over.
+ */
+export function rawHeaders(text: string): string {
+    const normalised = text.replace(/\r\n/g, '\n');
+    const end = normalised.indexOf('\n\n');
+    return end < 0 ? normalised.replace(/\n+$/, '') : normalised.slice(0, end);
 }
 
 /** What the middle pane says when it has nothing to show. */

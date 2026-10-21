@@ -79,6 +79,18 @@ export function verdictCard(finding: MessageFinding): VerdictCard {
     };
 }
 
+/**
+ * The title of the expander that holds a signature's caveats.
+ *
+ * Counted, and never phrased as a warning. A caveat is a limit on what a verified signature
+ * proves, not a defect — "2 caveats" invites reading them, where "problems" would invite
+ * discarding a message that may be perfectly genuine. The count is in the title so a collapsed
+ * expander still says there is something under it.
+ */
+export function caveatsHeading(count: number): string {
+    return escapeLine(fmt(_n('{count} caveat', '{count} caveats', count), { count: String(count) }));
+}
+
 /** One signature's block: its own verdict, its facts, its caveats. */
 export interface SignatureCard {
     readonly heading: string;

@@ -106,9 +106,15 @@ export function verdictLook(verdict: Verdict): VerdictLook {
  * What a verdict means, in one paragraph behind the `?` next to its filter row.
  *
  * Longer than the sentence and aimed at the question the sentence provokes — "so can I use it?".
- * Plain text, no markup: it goes into a popover label.
+ * Escaped like everything else in this directory: the popover's label parses markup, and a
+ * paragraph that is safe today would still be the one place in here a translator could break by
+ * writing a `<` in it.
  */
 export function explainVerdict(verdict: Verdict): string {
+    return escapeLine(verdictExplanation(verdict));
+}
+
+function verdictExplanation(verdict: Verdict): string {
     switch (verdict) {
         case 'confirmed':
             return _(

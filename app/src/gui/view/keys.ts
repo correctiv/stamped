@@ -114,17 +114,68 @@ export function keySummary(rows: readonly KeyRow[]): string {
  *
  * Written for someone who has never heard of a selector, because that is who has to decide
  * whether to send a DNS query that tells a domain's operator they are being examined.
+ *
+ * The name is re-derived from the pair rather than taken from {@link KeyRow.name}, which is
+ * already escaped: escaping the finished paragraph is what keeps this function like every other
+ * one here, and interpolating an escaped value into it would escape that value twice.
  */
 export function explainKey(row: KeyRow): string {
-    return fmt(
-        _(
-            'A DKIM public key, published by the signing domain as the DNS TXT record {name}. Anyone may read it — it is the public half, and it only ever lets you check a signature, never make one. The catch is time: operators rotate selectors and delete the old record, so the key that signed a message from 2019 is usually gone from today’s DNS. Then it has to come from the operator, from a third-party archive of old records, or from the archive under examination — and where it came from is part of the verdict.',
+    return escapeLine(
+        fmt(
+            _(
+                'A DKIM public key, published by the signing domain as the DNS TXT record {name}. Anyone may read it — it is the public half, and it only ever lets you check a signature, never make one. The catch is time: operators rotate selectors and delete the old record, so the key that signed a message from 2019 is usually gone from today’s DNS. Then it has to come from the operator, from a third-party archive of old records, or from the archive under examination — and where it came from is part of the verdict.',
+            ),
+            { name: pairName({ domain: row.domain, selector: row.selector }) },
         ),
-        { name: row.name },
     );
 }
 
 /** The pairs a lookup would cover — the exact list the consent dialog must show. */
 export function lookupPairs(rows: readonly KeyRow[]): KeyPair[] {
     return rows.filter((row) => !row.have).map((row) => ({ domain: row.domain, selector: row.selector }));
+}
+
+/**
+ * What one lookup run produced, for the toast after it.
+ *
+ * A MISS IS REPORTED, not swallowed. "Nothing found" is the normal outcome for an old selector —
+ * operators rotate keys and delete the record — and a toast that said only "0 keys stored" would
+ * leave the reader wondering whether the request went out at all. The distinction matters because
+ * the request DID go out: the disclosure has happened, and the person who agreed to it is owed
+ * the result.
+ *
+ * A conflict is called out separately and in the strongest terms this module uses. The case
+ * already held a different key for that pair, which is either a rotation the archive predates or
+ * a key somebody substituted — and the second is the finding the tool exists for, so it may never
+ * be summarised as a successful fetch.
+ */
+export function lookupSummary(stored: number, missed: number, conflicts: number): string {
+    const parts: string[] = [];
+    if (stored > 0) {
+        parts.push(
+            fmt(_n('{count} key stored', '{count} keys stored', stored), {
+                count: groupDigits(stored),
+            }),
+        );
+    }
+    if (missed > 0) {
+        parts.push(
+            fmt(_n('{count} had no published record', '{count} had no published record', missed), {
+                count: groupDigits(missed),
+            }),
+        );
+    }
+    if (parts.length === 0) parts.push(_('nothing was found'));
+    const line = fmt(_('Lookup done: {results}.'), { results: parts.join(', ') });
+    if (conflicts === 0) return escapeLine(line);
+    return escapeLine(
+        `${line} ${fmt(
+            _n(
+                '{count} key differs from one this case already held — check which is the real one.',
+                '{count} keys differ from ones this case already held — check which are the real ones.',
+                conflicts,
+            ),
+            { count: groupDigits(conflicts) },
+        )}`,
+    );
 }

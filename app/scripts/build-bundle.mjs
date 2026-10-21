@@ -19,9 +19,12 @@ const i18nScript = fileURLToPath(new URL('../../dev/i18n.sh', import.meta.url));
 const catalogues = spawnSync(i18nScript, ['compile'], { stdio: 'inherit' });
 if (catalogues.status !== 0) process.exit(catalogues.status ?? 1);
 
+// `src/gui/main.ts`, not `src/index.ts`: ONE binary serves both frontends, and the GUI entry is
+// the dispatcher (a known subcommand in argv hands off to the CLI). Building the CLI entry instead
+// would ship a `stamped` that cannot open a window, which is what the desktop file launches.
 const result = spawnSync(
     'gjsify',
-    ['build', 'src/index.ts', '--app', target, '--outfile', `dist/stamped.${target}.mjs`],
+    ['build', 'src/gui/main.ts', '--app', target, '--outfile', `dist/stamped.${target}.mjs`],
     { stdio: 'inherit' },
 );
 process.exit(result.status ?? 1);
