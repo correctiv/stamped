@@ -121,13 +121,31 @@ export default async () => {
         await it('keeps the parts of a mailbox in the order a human reads them', async () => {
             const plan = planFolder(archive('leak'));
             const ada = plan.mailboxes.find((mailbox) => mailbox.name === 'ada@example.com');
-            // `part-02` after `part-01`, and NOT after `part-10`: a plain string sort would put
-            // the tenth part before the second, and the log of an import would then read as if
-            // the mailbox arrived out of order.
             expect(ada?.parts.map((file) => basename(file.path))).toStrictEqual([
                 'part-01.mbox',
                 'part-02.mbox',
             ]);
+        });
+
+        await it('orders the parts by their number, not by their letters', async () => {
+            // `part-10` after `part-2`: a plain string sort puts the tenth part before the
+            // second, and the log of an import would then read as if the mailbox arrived out of
+            // order.
+            const root = mkdtempSync(join(tmpdir(), 'stamped-order-'));
+            try {
+                mkdirSync(join(root, 'ada@example.com'));
+                for (const name of ['part-1.mbox', 'part-2.mbox', 'part-10.mbox']) {
+                    writeFileSync(join(root, 'ada@example.com', name), part(name));
+                }
+                const plan = planFolder(root);
+                expect(plan.mailboxes[0]?.parts.map((file) => basename(file.path))).toStrictEqual([
+                    'part-1.mbox',
+                    'part-2.mbox',
+                    'part-10.mbox',
+                ]);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
         });
 
         await it('leaves the files that are not mail alone, and says which they were', async () => {
