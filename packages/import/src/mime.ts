@@ -23,16 +23,22 @@ import { headerValue, parseHeaderFields } from './headers.ts';
 /** How deep a `multipart` nest may go before the walk stops. */
 const MAX_DEPTH = 12;
 
-/** How many characters of body text one message contributes to the index. */
-const MAX_TEXT = 1_000_000;
+/**
+ * How many characters of body text one message contributes to the index.
+ *
+ * 256 KiB: prose people write and search for sits in the first pages; beyond that is quoted
+ * history, logs or pasted dumps. Measured on the load test, the old 1 MB cap made FTS5 tokenising
+ * the dominant cost of an import (and the biggest per-message allocation) for text nobody finds
+ * by.
+ */
+const MAX_TEXT = 262_144;
 
 /**
  * The readable text of one message: every `text/*` part, decoded and joined.
  *
  * The cap is a real limit, not a round number: FTS5 indexes every token, and a single message
  * carrying a megabyte of base64 that claimed to be text would cost more index than the rest of
- * the archive. A message truncated here is still found by anything in its first megabyte, which
- * is everything anyone writes.
+ * the archive. A message truncated here is still found by anything in its first 256 KiB.
  */
 export function messageText(raw: Uint8Array): string {
     const { header, body } = splitMessage(raw);

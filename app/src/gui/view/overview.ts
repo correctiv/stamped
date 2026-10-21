@@ -137,14 +137,23 @@ export function overviewNextStep(report: CaseReport): string | undefined {
     const unverifiable = report.verdicts.find((count) => count.verdict === 'unverifiable')?.messages ?? 0;
     if (unverifiable === 0) return undefined;
     const pairs = report.keys.filter((key) => key.unverifiable > 0).length;
-    return escapeLine(
-        fmt(
-            _n(
-                '{messages} messages are waiting on {pairs} signing key. Collect it in the Keys view.',
-                '{messages} messages are waiting on {pairs} signing keys. Collect them in the Keys view.',
-                pairs,
-            ),
-            { messages: groupDigits(unverifiable), pairs: groupDigits(pairs) },
+    // Two sentences, each inflected on its own count: one sentence carrying both counts can only
+    // agree with one of them.
+    const waiting = fmt(
+        _n(
+            '{messages} message has no verdict yet.',
+            '{messages} messages have no verdict yet.',
+            unverifiable,
         ),
+        { messages: groupDigits(unverifiable) },
     );
+    const collect = fmt(
+        _n(
+            'Collect the {pairs} signing key it needs in the Keys view.',
+            'Collect the {pairs} signing keys they need in the Keys view.',
+            pairs,
+        ),
+        { pairs: groupDigits(pairs) },
+    );
+    return escapeLine(`${waiting} ${collect}`);
 }

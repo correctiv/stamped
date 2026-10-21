@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 12:02+0200\n"
+"POT-Creation-Date: 2026-10-21 13:45+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,74 +18,80 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: app/src/commands/import.ts:39
+#: app/src/commands/import.ts:40
 msgid "Read mail archives into a case folder and index them"
 msgstr ""
 
-#: app/src/commands/import.ts:44
+#: app/src/commands/import.ts:45
 msgid ""
 "The case folder (created when it does not exist), then the sources: an mbox "
 "file, a Maildir, a single .eml, or a directory of those. With --case, only "
 "the sources."
 msgstr ""
 
-#: app/src/commands/import.ts:50
+#: app/src/commands/import.ts:51
 msgid "The case folder to import into, instead of the first argument"
 msgstr ""
 
-#: app/src/commands/import.ts:55
+#: app/src/commands/import.ts:56
 msgid ""
 "A public key to verify against: <selector>._domainkey.<domain>=<TXT record, "
 "or a path to a .pem or .txt file holding one>. Repeatable."
 msgstr ""
 
-#: app/src/commands/import.ts:61
+#: app/src/commands/import.ts:62
 msgid ""
 "Which \"From \" quoting the mbox files use: mboxrd (the default) or mboxo"
 msgstr ""
 
-#: app/src/commands/import.ts:66
+#: app/src/commands/import.ts:67
 msgid ""
 "Look up missing keys after the import (asks first); --no-lookup skips it"
 msgstr ""
 
-#: app/src/commands/import.ts:71
+#: app/src/commands/import.ts:72
 msgid "Accept the key lookup without asking"
 msgstr ""
 
-#: app/src/commands/import.ts:76
+#: app/src/commands/import.ts:78
+msgid ""
+"Machine-readable progress: jsonl prints one JSON object per indexed batch on "
+"stdout, then a final one"
+msgstr ""
+
+#: app/src/commands/import.ts:83
 msgid "Print only the summary, no progress"
 msgstr ""
 
-#: app/src/commands/import.ts:82
+#: app/src/commands/import.ts:89
 msgid ""
 "Import one mbox, with no keys yet — run `stamped report` to see which are "
 "needed"
 msgstr ""
 
-#: app/src/commands/import.ts:88
+#: app/src/commands/import.ts:95
 msgid "No source given. Use `stamped import <case> <source…>`."
 msgstr ""
 
-#: app/src/commands/import.ts:104
+#: app/src/commands/import.ts:130
 msgid "{read} read, {stored} stored, {duplicates} duplicates"
 msgstr ""
 
-#: app/src/commands/import.ts:118
+#: app/src/commands/import.ts:158
 msgid "{read} message read."
 msgid_plural "{read} messages read."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/import.ts:123
+#: app/src/commands/import.ts:163
 msgid "{stored} newly stored, {duplicates} already in the case."
 msgstr ""
 
-#: app/src/commands/import.ts:128
+#: app/src/commands/import.ts:168
 msgid "{indexed} indexed."
 msgstr ""
 
-#: app/src/commands/import.ts:136
+#: app/src/commands/import.ts:176
 msgid ""
 "{failed} message could not be verified; it is stored but has no verdict."
 msgid_plural ""
@@ -93,7 +99,7 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/import.ts:144
+#: app/src/commands/import.ts:184
 msgid "Case folder: {path}"
 msgstr ""
 
@@ -319,7 +325,7 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:82 app/src/gui/window.ts:952
+#: app/src/commands/report.ts:82 app/src/gui/window.ts:956
 #: app/src/gui/window.blp:158
 msgid "Verdicts"
 msgstr ""
@@ -770,12 +776,14 @@ msgid ""
 msgstr ""
 
 #: app/src/gui/view/overview.ts:143
-msgid ""
-"{messages} messages are waiting on {pairs} signing key. Collect it in the "
-"Keys view."
-msgid_plural ""
-"{messages} messages are waiting on {pairs} signing keys. Collect them in the "
-"Keys view."
+msgid "{messages} message has no verdict yet."
+msgid_plural "{messages} messages have no verdict yet."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/overview.ts:148
+msgid "Collect the {pairs} signing key it needs in the Keys view."
+msgid_plural "Collect the {pairs} signing keys they need in the Keys view."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -885,128 +893,128 @@ msgstr ""
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
-#: app/src/gui/window.ts:477
+#: app/src/gui/window.ts:481
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 
-#: app/src/gui/window.ts:543 app/src/gui/window.blp:264
+#: app/src/gui/window.ts:547 app/src/gui/window.blp:264
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:562
+#: app/src/gui/window.ts:566
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:571
+#: app/src/gui/window.ts:575
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:587
+#: app/src/gui/window.ts:591
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:627
+#: app/src/gui/window.ts:631
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:629
+#: app/src/gui/window.ts:633
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:631
+#: app/src/gui/window.ts:635
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:663
+#: app/src/gui/window.ts:667
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:675
+#: app/src/gui/window.ts:679
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:713
+#: app/src/gui/window.ts:717
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:722
+#: app/src/gui/window.ts:726
 msgid "Copy Request…"
 msgstr ""
 
-#: app/src/gui/window.ts:723
+#: app/src/gui/window.ts:727
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 
-#: app/src/gui/window.ts:727
+#: app/src/gui/window.ts:731
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr ""
 
-#: app/src/gui/window.ts:772
+#: app/src/gui/window.ts:776
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:794
+#: app/src/gui/window.ts:798
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:796
+#: app/src/gui/window.ts:800
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:815 app/src/gui/window.ts:1011
+#: app/src/gui/window.ts:819 app/src/gui/window.ts:1015
 msgid "Cancel"
 msgstr ""
 
-#: app/src/gui/window.ts:816
+#: app/src/gui/window.ts:820
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:942
+#: app/src/gui/window.ts:946
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:954
+#: app/src/gui/window.ts:958
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:987
+#: app/src/gui/window.ts:991
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:1003
+#: app/src/gui/window.ts:1007
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:1006
+#: app/src/gui/window.ts:1010
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:1010
+#: app/src/gui/window.ts:1014
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:1038
+#: app/src/gui/window.ts:1042
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:1038
+#: app/src/gui/window.ts:1042
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:1074
+#: app/src/gui/window.ts:1078
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:1074
+#: app/src/gui/window.ts:1078
 msgid "Close"
 msgstr ""
 
@@ -1518,15 +1526,15 @@ msgstr ""
 msgid "Cannot open the index of the case folder {path}."
 msgstr ""
 
-#: packages/store/src/raw.ts:86
+#: packages/store/src/raw.ts:97
 msgid "Cannot write into the case folder {path} ({code})."
 msgstr ""
 
-#: packages/store/src/raw.ts:88
+#: packages/store/src/raw.ts:99
 msgid "unknown error"
 msgstr ""
 
-#: packages/verify/src/mailauth.ts:153
+#: packages/verify/src/mailauth.ts:158
 msgid "no key in the store"
 msgstr ""
 

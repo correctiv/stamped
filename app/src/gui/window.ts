@@ -430,6 +430,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
             // The subtitle is the sender; `noHyphens` so a wrapped address keeps its own
             // punctuation and nothing else.
             const item = new Adw.ActionRow({ title: row.title, subtitle: noHyphens(row.subtitle) });
+            // One line, ellipsized: a long address would otherwise stretch the row past the
+            // list. The tooltip carries the full text.
+            item.set_subtitle_lines(1);
+            item.set_title_lines(1);
             item.set_tooltip_markup(row.tooltip);
             item.add_suffix(badge(row.badge, row.cssClass));
             this._messageList.append(item);
