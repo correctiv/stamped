@@ -1,0 +1,249 @@
+{
+  "schema": "stamped-semantic-search-spike/1",
+  "createdAt": "2026-10-21T09:08:14.328Z",
+  "host": {
+    "platform": "linux",
+    "arch": "x64",
+    "node": "v24.19.0",
+    "cpuModel": "Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz",
+    "cpuCount": 20,
+    "totalMemBytes": 67277352960
+  },
+  "options": {
+    "models": [
+      "embeddinggemma2"
+    ],
+    "cpu": true,
+    "threads": 2,
+    "docs": 200,
+    "context": "auto"
+  },
+  "modelDirectory": "~/.cache/stamped-spike/models",
+  "runs": [
+    {
+      "model": "embeddinggemma2",
+      "label": "EmbeddingGemma 2 271M (Matryoshka-truncatable)",
+      "uri": "hf:ggml-org/embeddinggemma-2-GGUF:Q8_0",
+      "threads": 2,
+      "contextSizeRequested": "auto",
+      "backend": "cpu",
+      "gpuOffload": false,
+      "buildType": "prebuilt",
+      "llamaCppRelease": {
+        "repo": "ggml-org/llama.cpp",
+        "release": "v0.7.0"
+      },
+      "systemInfo": "CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | REPACK = 1 | ",
+      "cpuMathCores": 10,
+      "gpuDeviceNames": [],
+      "errors": [],
+      "rssBeforeModelBytes": 98598912,
+      "resolveMs": 1.177874000000088,
+      "modelPath": "~/.cache/stamped-spike/models/hf_ggml-org_embeddinggemma-2.Q8_0.gguf",
+      "modelFileBytes": 309855456,
+      "loadMs": 2119.154088,
+      "contextCreateMs": 595.418811,
+      "contextSize": 262144,
+      "trainContextSize": 262144,
+      "llamaMemoryBytes": {
+        "cpuRam": 351339840,
+        "gpuVram": 0
+      },
+      "dimensions": 768,
+      "sanity": {
+        "vectors": 40,
+        "nonFiniteValues": 0,
+        "zeroNormVectors": 0,
+        "nan": false
+      },
+      "quality": {
+        "full": {
+          "queries": 12,
+          "recallAt1": 0.75,
+          "recallAt3": 0.9166666666666666,
+          "mrr": 0.8402777777777778,
+          "ranks": [
+            1,
+            1,
+            3,
+            1,
+            1,
+            4,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 0.8333333333333334,
+              "reciprocalRank": 4.583333333333334,
+              "ranks": [
+                1,
+                1,
+                3,
+                1,
+                1,
+                4
+              ],
+              "mrr": 0.763888888888889
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 3,
+              "ranks": [
+                1,
+                1,
+                1
+              ],
+              "mrr": 1
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 1,
+              "reciprocalRank": 1.5,
+              "ranks": [
+                1,
+                2
+              ],
+              "mrr": 0.75
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        },
+        "mrl256": {
+          "queries": 12,
+          "recallAt1": 0.75,
+          "recallAt3": 0.75,
+          "mrr": 0.8009259259259259,
+          "ranks": [
+            1,
+            1,
+            4,
+            1,
+            1,
+            9,
+            1,
+            1,
+            1,
+            1,
+            4,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 0.6666666666666666,
+              "reciprocalRank": 4.361111111111111,
+              "ranks": [
+                1,
+                1,
+                4,
+                1,
+                1,
+                9
+              ],
+              "mrr": 0.7268518518518517
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 3,
+              "ranks": [
+                1,
+                1,
+                1
+              ],
+              "mrr": 1
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 0.5,
+              "reciprocalRank": 1.25,
+              "ranks": [
+                1,
+                4
+              ],
+              "mrr": 0.625
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        }
+      },
+      "queryLatencyMs": {
+        "p50": 54.10863100000006,
+        "p95": 64.57048299999951,
+        "min": 46.3154829999994,
+        "max": 64.57048299999951,
+        "mean": 55.328925666666464,
+        "all": [
+          64.46361499999966,
+          61.7649849999998,
+          53.48476800000026,
+          60.12092500000017,
+          55.439179999999396,
+          54.10863100000006,
+          46.3154829999994,
+          55.005065999999715,
+          46.737935999999536,
+          50.49129499999981,
+          64.57048299999951,
+          51.44474100000025
+        ]
+      },
+      "throughput": {
+        "docs": 200,
+        "targetWords": 180,
+        "totalTokens": 50519,
+        "totalSeconds": 137.97544451500002,
+        "tokensPerSecond": 366.14486133804644,
+        "calibration": {
+          "windowSeconds": 3,
+          "elapsedMs": 3195.997056000001,
+          "docs": 5,
+          "tokens": 1182.78337407757,
+          "tokensPerSecond": 394.2611246925233
+        },
+        "first3sTokensPerSecond": 394.2611246925233,
+        "ratio3s": 1.0767899985042213,
+        "avgTokensPerDoc": 252.595,
+        "docsPerSecond": 1.4495332898040199
+      },
+      "extrapolation": {
+        "tokensPerMail": 256,
+        "hoursFor10k": 1.9421578347772346,
+        "hoursFor100k": 19.421578347772346
+      },
+      "peakRssBytes": 1516773376,
+      "peakRssDeltaBytes": 1418174464
+    }
+  ]
+}

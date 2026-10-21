@@ -1,0 +1,10 @@
+{
+  "name": "stamped-spike-semantic-search",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Benchmark spike: can a small local embedding model do semantic search over a leaked-mail archive, offline, on a laptop?",
+  "dependencies": {
+    "node-llama-cpp": "^3.22.2"
+  }
+}

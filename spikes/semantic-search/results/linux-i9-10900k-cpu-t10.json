@@ -1,0 +1,631 @@
+{
+  "schema": "stamped-semantic-search-spike/1",
+  "createdAt": "2026-10-21T09:05:40.463Z",
+  "host": {
+    "platform": "linux",
+    "arch": "x64",
+    "node": "v24.19.0",
+    "cpuModel": "Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz",
+    "cpuCount": 20,
+    "totalMemBytes": 67277352960
+  },
+  "options": {
+    "models": [
+      "embeddinggemma2",
+      "granite278m",
+      "qwen3-0.6b"
+    ],
+    "cpu": true,
+    "threads": 10,
+    "docs": 200,
+    "context": "auto"
+  },
+  "modelDirectory": "~/.cache/stamped-spike/models",
+  "runs": [
+    {
+      "model": "embeddinggemma2",
+      "label": "EmbeddingGemma 2 271M (Matryoshka-truncatable)",
+      "uri": "hf:ggml-org/embeddinggemma-2-GGUF:Q8_0",
+      "threads": 10,
+      "contextSizeRequested": "auto",
+      "backend": "cpu",
+      "gpuOffload": false,
+      "buildType": "prebuilt",
+      "llamaCppRelease": {
+        "repo": "ggml-org/llama.cpp",
+        "release": "v0.7.0"
+      },
+      "systemInfo": "CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | REPACK = 1 | ",
+      "cpuMathCores": 10,
+      "gpuDeviceNames": [],
+      "errors": [],
+      "rssBeforeModelBytes": 98398208,
+      "resolveMs": 1.2170659999999884,
+      "modelPath": "~/.cache/stamped-spike/models/hf_ggml-org_embeddinggemma-2.Q8_0.gguf",
+      "modelFileBytes": 309855456,
+      "loadMs": 1863.21367,
+      "contextCreateMs": 571.1921769999999,
+      "contextSize": 262144,
+      "trainContextSize": 262144,
+      "llamaMemoryBytes": {
+        "cpuRam": 351339840,
+        "gpuVram": 0
+      },
+      "dimensions": 768,
+      "sanity": {
+        "vectors": 40,
+        "nonFiniteValues": 0,
+        "zeroNormVectors": 0,
+        "nan": false
+      },
+      "quality": {
+        "full": {
+          "queries": 12,
+          "recallAt1": 0.75,
+          "recallAt3": 0.9166666666666666,
+          "mrr": 0.8402777777777778,
+          "ranks": [
+            1,
+            1,
+            3,
+            1,
+            1,
+            4,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 0.8333333333333334,
+              "reciprocalRank": 4.583333333333334,
+              "ranks": [
+                1,
+                1,
+                3,
+                1,
+                1,
+                4
+              ],
+              "mrr": 0.763888888888889
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 3,
+              "ranks": [
+                1,
+                1,
+                1
+              ],
+              "mrr": 1
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 1,
+              "reciprocalRank": 1.5,
+              "ranks": [
+                1,
+                2
+              ],
+              "mrr": 0.75
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        },
+        "mrl256": {
+          "queries": 12,
+          "recallAt1": 0.75,
+          "recallAt3": 0.75,
+          "mrr": 0.8009259259259259,
+          "ranks": [
+            1,
+            1,
+            4,
+            1,
+            1,
+            9,
+            1,
+            1,
+            1,
+            1,
+            4,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 0.6666666666666666,
+              "reciprocalRank": 4.361111111111111,
+              "ranks": [
+                1,
+                1,
+                4,
+                1,
+                1,
+                9
+              ],
+              "mrr": 0.7268518518518517
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 3,
+              "ranks": [
+                1,
+                1,
+                1
+              ],
+              "mrr": 1
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 0.5,
+              "reciprocalRank": 1.25,
+              "ranks": [
+                1,
+                4
+              ],
+              "mrr": 0.625
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        }
+      },
+      "queryLatencyMs": {
+        "p50": 21.475303999999596,
+        "p95": 37.67344299999968,
+        "min": 20.10468999999921,
+        "max": 37.67344299999968,
+        "mean": 23.768752166666598,
+        "all": [
+          24.504046999999446,
+          24.87536,
+          21.471478999999817,
+          21.475303999999596,
+          21.533785000000535,
+          20.85357699999986,
+          20.10468999999921,
+          22.90852900000027,
+          20.121687000000748,
+          21.185367000000042,
+          28.517757999999958,
+          37.67344299999968
+        ]
+      },
+      "throughput": {
+        "docs": 200,
+        "targetWords": 180,
+        "totalTokens": 50519,
+        "totalSeconds": 55.401294098,
+        "tokensPerSecond": 911.8740062395717,
+        "calibration": {
+          "windowSeconds": 3,
+          "elapsedMs": 3125.569651,
+          "docs": 11,
+          "tokens": 2659.4124881708426,
+          "tokensPerSecond": 886.4708293902809
+        },
+        "first3sTokensPerSecond": 886.4708293902809,
+        "ratio3s": 0.9721417907786958,
+        "avgTokensPerDoc": 252.595,
+        "docsPerSecond": 3.610023976086509
+      },
+      "extrapolation": {
+        "tokensPerMail": 256,
+        "hoursFor10k": 0.7798348305196504,
+        "hoursFor100k": 7.798348305196505
+      },
+      "peakRssBytes": 1743278080,
+      "peakRssDeltaBytes": 1644879872
+    },
+    {
+      "model": "granite278m",
+      "label": "Granite Embedding 278M multilingual (no truncation)",
+      "uri": "hf:bartowski/granite-embedding-278m-multilingual-GGUF:Q8_0",
+      "threads": 10,
+      "contextSizeRequested": "auto",
+      "backend": "cpu",
+      "gpuOffload": false,
+      "buildType": "prebuilt",
+      "llamaCppRelease": {
+        "repo": "ggml-org/llama.cpp",
+        "release": "v0.7.0"
+      },
+      "systemInfo": "CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | REPACK = 1 | ",
+      "cpuMathCores": 10,
+      "gpuDeviceNames": [],
+      "errors": [],
+      "rssBeforeModelBytes": 1421451264,
+      "resolveMs": 0.43849600000248756,
+      "modelPath": "~/.cache/stamped-spike/models/hf_bartowski_granite-embedding-278m-multilingual.Q8_0.gguf",
+      "modelFileBytes": 303137952,
+      "loadMs": 1409.6925850000043,
+      "contextCreateMs": 663.984633,
+      "contextSize": 512,
+      "trainContextSize": 512,
+      "llamaMemoryBytes": {
+        "cpuRam": 312571264,
+        "gpuVram": 0
+      },
+      "dimensions": 768,
+      "sanity": {
+        "vectors": 40,
+        "nonFiniteValues": 0,
+        "zeroNormVectors": 0,
+        "nan": false
+      },
+      "quality": {
+        "full": {
+          "queries": 12,
+          "recallAt1": 0.75,
+          "recallAt3": 0.8333333333333334,
+          "mrr": 0.8125000000000001,
+          "ranks": [
+            1,
+            4,
+            6,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            3,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 0.6666666666666666,
+              "reciprocalRank": 4.416666666666667,
+              "ranks": [
+                1,
+                4,
+                6,
+                1,
+                1,
+                1
+              ],
+              "mrr": 0.7361111111111112
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 3,
+              "ranks": [
+                1,
+                1,
+                1
+              ],
+              "mrr": 1
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 1,
+              "reciprocalRank": 1.3333333333333333,
+              "ranks": [
+                1,
+                3
+              ],
+              "mrr": 0.6666666666666666
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        }
+      },
+      "queryLatencyMs": {
+        "p50": 9.329217000005883,
+        "p95": 11.339532000012696,
+        "min": 8.371417999995174,
+        "max": 11.339532000012696,
+        "mean": 9.510772666667132,
+        "all": [
+          10.187666999991052,
+          11.339532000012696,
+          9.329217000005883,
+          9.306601999996928,
+          10.498999999996158,
+          9.490074000001187,
+          8.77609699999448,
+          10.287553000001935,
+          8.692789000007906,
+          8.371417999995174,
+          9.333140000002459,
+          8.516182999999728
+        ]
+      },
+      "throughput": {
+        "docs": 200,
+        "targetWords": 180,
+        "totalTokens": 51164,
+        "totalSeconds": 29.119321303000003,
+        "tokensPerSecond": 1757.0464458156466,
+        "calibration": {
+          "windowSeconds": 3,
+          "elapsedMs": 3139.6970989999973,
+          "docs": 22,
+          "tokens": 5375.786226100312,
+          "tokensPerSecond": 1791.9287420334374
+        },
+        "first3sTokensPerSecond": 1791.9287420334374,
+        "ratio3s": 1.0198528025829152,
+        "avgTokensPerDoc": 255.82,
+        "docsPerSecond": 6.868291946742423
+      },
+      "extrapolation": {
+        "tokensPerMail": 256,
+        "hoursFor10k": 0.4047195865565198,
+        "hoursFor100k": 4.0471958655651985
+      },
+      "peakRssBytes": 1798361088,
+      "peakRssDeltaBytes": 376909824
+    },
+    {
+      "model": "qwen3-0.6b",
+      "label": "Qwen3 Embedding 0.6B (Matryoshka-truncatable)",
+      "uri": "hf:Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0",
+      "threads": 10,
+      "contextSizeRequested": "auto",
+      "backend": "cpu",
+      "gpuOffload": false,
+      "buildType": "prebuilt",
+      "llamaCppRelease": {
+        "repo": "ggml-org/llama.cpp",
+        "release": "v0.7.0"
+      },
+      "systemInfo": "CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | REPACK = 1 | ",
+      "cpuMathCores": 10,
+      "gpuDeviceNames": [],
+      "errors": [],
+      "rssBeforeModelBytes": 1494859776,
+      "resolveMs": 0.4084409999923082,
+      "modelPath": "~/.cache/stamped-spike/models/hf_Qwen_Qwen3-Embedding-0.6B.Q8_0.gguf",
+      "modelFileBytes": 639150592,
+      "loadMs": 634.4428099999932,
+      "contextCreateMs": 1597.7016169999988,
+      "contextSize": 32768,
+      "trainContextSize": 32768,
+      "llamaMemoryBytes": {
+        "cpuRam": 4454236512,
+        "gpuVram": 0
+      },
+      "dimensions": 1024,
+      "sanity": {
+        "vectors": 40,
+        "nonFiniteValues": 0,
+        "zeroNormVectors": 0,
+        "nan": false
+      },
+      "quality": {
+        "full": {
+          "queries": 12,
+          "recallAt1": 0.6666666666666666,
+          "recallAt3": 0.9166666666666666,
+          "mrr": 0.7847222222222222,
+          "ranks": [
+            1,
+            2,
+            1,
+            1,
+            1,
+            4,
+            1,
+            1,
+            3,
+            1,
+            3,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 0.8333333333333334,
+              "reciprocalRank": 4.75,
+              "ranks": [
+                1,
+                2,
+                1,
+                1,
+                1,
+                4
+              ],
+              "mrr": 0.7916666666666666
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 1,
+              "reciprocalRank": 2.3333333333333335,
+              "ranks": [
+                1,
+                1,
+                3
+              ],
+              "mrr": 0.7777777777777778
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 1,
+              "reciprocalRank": 1.3333333333333333,
+              "ranks": [
+                1,
+                3
+              ],
+              "mrr": 0.6666666666666666
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        },
+        "mrl256": {
+          "queries": 12,
+          "recallAt1": 0.5,
+          "recallAt3": 1,
+          "mrr": 0.736111111111111,
+          "ranks": [
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            1,
+            2,
+            1,
+            1,
+            3,
+            1
+          ],
+          "perLang": {
+            "de→de": {
+              "queries": 6,
+              "recallAt1": 0.3333333333333333,
+              "recallAt3": 1,
+              "reciprocalRank": 4,
+              "ranks": [
+                1,
+                2,
+                2,
+                1,
+                2,
+                2
+              ],
+              "mrr": 0.6666666666666666
+            },
+            "en→en": {
+              "queries": 3,
+              "recallAt1": 0.6666666666666666,
+              "recallAt3": 1,
+              "reciprocalRank": 2.5,
+              "ranks": [
+                1,
+                2,
+                1
+              ],
+              "mrr": 0.8333333333333334
+            },
+            "de→en": {
+              "queries": 2,
+              "recallAt1": 0.5,
+              "recallAt3": 1,
+              "reciprocalRank": 1.3333333333333333,
+              "ranks": [
+                1,
+                3
+              ],
+              "mrr": 0.6666666666666666
+            },
+            "en→de": {
+              "queries": 1,
+              "recallAt1": 1,
+              "recallAt3": 1,
+              "reciprocalRank": 1,
+              "ranks": [
+                1
+              ],
+              "mrr": 1
+            }
+          }
+        }
+      },
+      "queryLatencyMs": {
+        "p50": 81.64323200000217,
+        "p95": 94.03268699999899,
+        "min": 67.1718450000044,
+        "max": 94.03268699999899,
+        "mean": 78.35115891666767,
+        "all": [
+          94.03268699999899,
+          83.16917500000272,
+          72.04527699999744,
+          81.64323200000217,
+          82.55841899999359,
+          82.55709099999513,
+          67.47663400000602,
+          76.32037899999705,
+          67.1718450000044,
+          81.97588800000085,
+          82.8049430000101,
+          68.45833700000367
+        ]
+      },
+      "throughput": {
+        "docs": 200,
+        "targetWords": 180,
+        "totalTokens": 56519,
+        "totalSeconds": 144.37914850800001,
+        "tokensPerSecond": 391.4623446949356,
+        "calibration": {
+          "windowSeconds": 3,
+          "elapsedMs": 3009.9939719999966,
+          "docs": 4,
+          "tokens": 1124.2633448440397,
+          "tokensPerSecond": 374.7544482813466
+        },
+        "first3sTokensPerSecond": 374.7544482813466,
+        "ratio3s": 0.9573192756850997,
+        "avgTokensPerDoc": 282.595,
+        "docsPerSecond": 1.3852415813971783
+      },
+      "extrapolation": {
+        "tokensPerMail": 256,
+        "hoursFor10k": 1.8165504824359953,
+        "hoursFor100k": 18.165504824359953
+      },
+      "peakRssBytes": 5908819968,
+      "peakRssDeltaBytes": 4413960192
+    }
+  ]
+}
