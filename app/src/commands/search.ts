@@ -16,11 +16,12 @@ import { fmt, _, _n } from '@stamped/core';
 import { messageCount, openIndex, searchMessages } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
-import { caseOrThrow } from '../lib/case.ts';
+import { caseOrThrow, caseRoot } from '../lib/case.ts';
 
 interface SearchArgs {
-    case: string;
-    query: string;
+    case?: string;
+    first?: string;
+    second?: string;
     limit?: number;
     json?: boolean;
 }
@@ -28,22 +29,21 @@ interface SearchArgs {
 /** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
 export function searchCommand(): CommandModule<unknown, SearchArgs> {
     return {
-        command: 'search <case> <query>',
+        command: 'search [first] [second]',
         describe: _('Search the messages in a case folder'),
         builder: (yargs) =>
             yargs
-                .positional('case', {
-                    describe: _('The case folder to search'),
+                .positional('first', {
+                    describe: _('The case folder, or the query when --case is given'),
                     type: 'string',
-                    demandOption: true,
                 })
-                .positional('query', {
+                .positional('second', {
                     describe: _(
                         'What to look for. Full-text syntax: a word, "a phrase", a AND b, or subject : word',
                     ),
                     type: 'string',
-                    demandOption: true,
                 })
+                .option('case', { describe: _('The case folder to search'), type: 'string' })
                 .option('limit', {
                     describe: _('How many matches to print'),
                     type: 'number',
@@ -59,13 +59,18 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                     _('Find messages with "invoice" in the subject'),
                 ),
         handler: (args) => {
-            const paths = caseOrThrow(args.case);
+            const { root, rest } = caseRoot('search', args.case, [args.first, args.second]);
+            const query = rest[0];
+            if (query === undefined) {
+                throw new Error(_('No search query given. Use `stamped search <case> <query>`.'));
+            }
+            const paths = caseOrThrow(root);
             const db = openIndex(paths);
             try {
-                const hits = search(db, args.query, args.limit ?? 20);
+                const hits = search(db, query, args.limit ?? 20);
 
                 if (args.json) {
-                    console.log(JSON.stringify({ query: args.query, hits }, undefined, 2));
+                    console.log(JSON.stringify({ query, hits }, undefined, 2));
                     return;
                 }
                 if (hits.length === 0) {

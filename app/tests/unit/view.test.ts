@@ -97,6 +97,7 @@ function demand(overrides: Partial<KeyDemand> = {}): KeyDemand {
         messages: 10,
         unverifiable: 10,
         confirmed: 0,
+        withCaveats: 0,
         ...overrides,
     };
 }
@@ -106,6 +107,7 @@ function report(overrides: Partial<CaseReport> = {}): CaseReport {
         messages: 0,
         bytes: 0,
         verdicts: VERDICTS.map((verdict) => ({ verdict, messages: 0 })),
+        caveats: [],
         keys: [],
         ...overrides,
     };
@@ -119,7 +121,7 @@ function counted(
     const verdicts = VERDICTS.map((verdict) => ({ verdict, messages: counts[verdict] ?? 0 }));
     let messages = 0;
     for (const count of verdicts) messages += count.messages;
-    return { messages, bytes: messages * 1000, verdicts, keys };
+    return { messages, bytes: messages * 1000, verdicts, caveats: [], keys };
 }
 
 export default async () => {

@@ -16,7 +16,7 @@
 
 import type { DatabaseSync } from 'node:sqlite';
 
-import { VERDICTS, type Verdict } from '@stamped/core';
+import { CAVEATS, VERDICTS, type Caveat, type Verdict } from '@stamped/core';
 
 /** How many messages reached each verdict. Every verdict appears, including the zeroes. */
 export interface VerdictCount {
@@ -40,8 +40,16 @@ export interface KeyDemand {
     readonly messages: number;
     /** Of those, how many have no verdict yet for want of this key. */
     readonly unverifiable: number;
-    /** Of those, how many are already confirmed — i.e. the key is in the store. */
+    /** Of those, how many are already confirmed, with or without caveats — i.e. the key is in the store. */
     readonly confirmed: number;
+    /** Of the confirmed, how many carry caveats. */
+    readonly withCaveats: number;
+}
+
+/** How many messages carry one caveat. A message with two caveats counts once under each. */
+export interface CaveatCount {
+    readonly caveat: Caveat;
+    readonly messages: number;
 }
 
 /** The whole report for a case. */
@@ -49,6 +57,7 @@ export interface CaseReport {
     readonly messages: number;
     readonly bytes: number;
     readonly verdicts: readonly VerdictCount[];
+    readonly caveats: readonly CaveatCount[];
     readonly keys: readonly KeyDemand[];
     /** The earliest and latest `Date` that could be read, as epoch milliseconds. */
     readonly earliest?: number;
@@ -73,6 +82,23 @@ export function verdictCounts(db: DatabaseSync): VerdictCount[] {
 }
 
 /**
+ * Count messages per caveat, in the order {@link CAVEATS} declares, zeroes included.
+ *
+ * A caveat limits what a confirmation proves, so a case with 3,000 `archive-key` messages needs
+ * that said next to the verdicts rather than discovered one message at a time.
+ */
+export function caveatCounts(db: DatabaseSync): CaveatCount[] {
+    const rows = db
+        .prepare(
+            'SELECT j.value AS caveat, count(*) AS n FROM messages, json_each(messages.caveats) AS j GROUP BY j.value',
+        )
+        .all() as { caveat?: string; n?: number }[];
+    const counted = new Map<string, number>();
+    for (const row of rows) counted.set(String(row.caveat ?? ''), Number(row.n ?? 0));
+    return CAVEATS.map((caveat) => ({ caveat, messages: counted.get(caveat) ?? 0 }));
+}
+
+/**
  * The `(domain, selector)` pairs in the case, most mail first.
  *
  * Counted over DISTINCT messages, not over signature rows: a message signed twice by the same
@@ -91,7 +117,8 @@ export function keyDemand(db: DatabaseSync, limit = 50): KeyDemand[] {
                     s.selector AS selector,
                     count(DISTINCT s.hash) AS messages,
                     count(DISTINCT CASE WHEN m.verdict = 'unverifiable' THEN s.hash END) AS unverifiable,
-                    count(DISTINCT CASE WHEN m.verdict IN ('confirmed', 'confirmed-with-caveats') THEN s.hash END) AS confirmed
+                    count(DISTINCT CASE WHEN m.verdict IN ('confirmed', 'confirmed-with-caveats') THEN s.hash END) AS confirmed,
+                    count(DISTINCT CASE WHEN m.verdict = 'confirmed-with-caveats' THEN s.hash END) AS with_caveats
              FROM signatures s
              JOIN messages m ON m.hash = s.hash
              GROUP BY s.domain, s.selector
@@ -106,6 +133,7 @@ export function keyDemand(db: DatabaseSync, limit = 50): KeyDemand[] {
         messages: Number(row.messages ?? 0),
         unverifiable: Number(row.unverifiable ?? 0),
         confirmed: Number(row.confirmed ?? 0),
+        withCaveats: Number(row.with_caveats ?? 0),
     }));
 }
 
@@ -121,6 +149,7 @@ export function caseReport(db: DatabaseSync, keyLimit = 50): CaseReport {
         messages: Number(totals?.n ?? 0),
         bytes: Number(totals?.bytes ?? 0),
         verdicts: verdictCounts(db),
+        caveats: caveatCounts(db),
         keys: keyDemand(db, keyLimit),
         earliest: optionalNumber(totals?.earliest),
         latest: optionalNumber(totals?.latest),

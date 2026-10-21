@@ -260,6 +260,32 @@ export default async () => {
             expect(down.misses[0]?.reason.includes('503')).toBe(true);
         });
 
+        await it('looks pairs up concurrently, bounded, and reports them in pair order', async () => {
+            const pairs = Array.from({ length: 20 }, (_unused, i) => ({
+                domain: 'example.com',
+                selector: `s${i}`,
+            }));
+            let inFlight = 0;
+            let peak = 0;
+            const result = await lookupDns(
+                { channel: 'dns', pairs },
+                pairs,
+                async (name) => {
+                    inFlight++;
+                    peak = Math.max(peak, inFlight);
+                    // later pairs answer first, so completion order differs from pair order
+                    const index = Number(name.split('.')[0]?.slice(1));
+                    await new Promise((resolve) => setTimeout(resolve, 20 - index));
+                    inFlight--;
+                    throw new Error(name);
+                },
+                4,
+            );
+            expect(peak > 1).toBe(true);
+            expect(peak <= 4).toBe(true);
+            expect(result.misses.map((m) => m.pair.selector)).toStrictEqual(pairs.map((p) => p.selector));
+        });
+
         await it('refuses to send anything the consent does not list', async () => {
             const calls: string[] = [];
             const consent: LookupConsent = { channel: 'archive.prove.email', pairs: [pair] };

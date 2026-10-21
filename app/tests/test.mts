@@ -4,6 +4,7 @@
 import { run } from '@gjsify/unit';
 
 import autokeys from './unit/autokeys.test.ts';
+import cli from './unit/cli.test.ts';
 import classify from './unit/classify.test.ts';
 import keys from './unit/keys.test.ts';
 import keyvault from './unit/keyvault.test.ts';
@@ -16,6 +17,7 @@ import view from './unit/view.test.ts';
 
 run({
     autokeys,
+    cli,
     classify,
     keys,
     keyvault,

@@ -82,9 +82,11 @@ export {
     ARCHIVE_ENDPOINT,
     type FetchLike,
     type FoundKey,
+    LOOKUP_CONCURRENCY,
     lookupArchive,
     lookupDns,
     type LookupResult,
+    mapPool,
     type TxtResolver,
 } from './keylookup.ts';
 
