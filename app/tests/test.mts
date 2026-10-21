@@ -15,6 +15,7 @@ import report from './unit/report.test.ts';
 import fts5 from './unit/fts5.test.ts';
 import importSuite from './unit/import.test.ts';
 import store from './unit/store.test.ts';
+import throughput from './unit/throughput.test.ts';
 import view from './unit/view.test.ts';
 import semantic from './unit/semantic.test.ts';
 import llamaPrompts from './unit/llama-prompts.test.ts';
@@ -32,6 +33,7 @@ run({
     fts5,
     import: importSuite,
     store,
+    throughput,
     view,
     semantic,
     llamaPrompts,
