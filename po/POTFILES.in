@@ -90,6 +90,7 @@ packages/semantic/src/probe.ts
 packages/semantic/src/prompts.ts
 packages/semantic/src/rrf.ts
 packages/semantic/src/vector-db.ts
+packages/store/src/activity-status.ts
 packages/store/src/addresses-db.ts
 packages/store/src/case.ts
 packages/store/src/document-source.ts

@@ -7,7 +7,14 @@
  */
 
 import { fmt, _, _n } from '@stamped/core';
-import { addressesComplete, backfillAll, openIndex, peopleList } from '@stamped/store';
+import {
+    addressesComplete,
+    backfillAll,
+    beginActivityStatus,
+    messageCount,
+    openIndex,
+    peopleList,
+} from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
@@ -39,7 +46,17 @@ export function peopleCommand(): CommandModule<unknown, PeopleArgs> {
             const paths = caseOrThrow(caseRoot('people', args.case, [args.folder]).root);
             const db = openIndex(paths);
             try {
-                if (!addressesComplete(db)) backfillAll(db);
+                if (!addressesComplete(db)) {
+                    const activity = beginActivityStatus(paths, 'people');
+                    try {
+                        const total = messageCount(db);
+                        backfillAll(db, (processed) => activity.update(processed, total));
+                    } catch (error) {
+                        activity.fail();
+                        throw error;
+                    }
+                    activity.finish();
+                }
                 const people = peopleList(db, {
                     limit: args.limit ?? 50,
                     ...(args.search !== undefined ? { search: args.search } : {}),

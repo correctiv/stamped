@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 17:51+0200\n"
+"POT-Creation-Date: 2026-10-22 19:27+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -132,7 +132,7 @@ msgstr[1] ""
 "{failed} Nachrichten konnten nicht geprüft werden; sie sind gespeichert, "
 "haben aber keinen Befund."
 
-#: app/src/commands/import.ts:224 app/src/commands/status.ts:82
+#: app/src/commands/import.ts:224 app/src/commands/status.ts:85
 msgid "Case folder: {path}"
 msgstr "Fallordner: {path}"
 
@@ -180,11 +180,11 @@ msgstr "  4. Live-DNS (verrät es der Domain):     stamped keys fetch --dns"
 msgid "Expected <selector>._domainkey.<domain>, got: {name}"
 msgstr "Erwartet <Selektor>._domainkey.<Domain>, erhalten: {name}"
 
-#: app/src/commands/keys.ts:88 app/src/lib/autofetch.ts:180
+#: app/src/commands/keys.ts:88 app/src/lib/autofetch.ts:201
 msgid "  error   {name}: {reason}"
 msgstr "  Fehler  {name}: {reason}"
 
-#: app/src/commands/keys.ts:92 app/src/lib/autofetch.ts:185
+#: app/src/commands/keys.ts:92 app/src/lib/autofetch.ts:206
 msgid "  no key  {name}: {reason}"
 msgstr "  kein Schlüssel  {name}: {reason}"
 
@@ -205,8 +205,8 @@ msgid "List stored keys, and with --pairs the ones still missing"
 msgstr "Gespeicherte Schlüssel auflisten, mit --pairs auch die noch fehlenden"
 
 #: app/src/commands/keys.ts:127 app/src/commands/keys.ts:223
-#: app/src/commands/keys.ts:276 app/src/commands/people.ts:30
-#: app/src/commands/people.ts:31 app/src/commands/reverify.ts:24
+#: app/src/commands/keys.ts:276 app/src/commands/people.ts:37
+#: app/src/commands/people.ts:38 app/src/commands/reverify.ts:24
 #: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
 msgid "The case folder"
 msgstr "Der Fallordner"
@@ -329,7 +329,7 @@ msgstr ""
 msgid "Every listed key is already stored."
 msgstr "Alle genannten Schlüssel sind bereits gespeichert."
 
-#: app/src/commands/keys.ts:349 app/src/lib/autofetch.ts:173
+#: app/src/commands/keys.ts:349 app/src/lib/autofetch.ts:194
 msgid "Skipped; nothing was sent."
 msgstr "Übersprungen; es wurde nichts gesendet."
 
@@ -337,7 +337,7 @@ msgstr "Übersprungen; es wurde nichts gesendet."
 msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr "  gespeichert  {name}: {algorithm}, {bits} Bit, über {origin}{flag}"
 
-#: app/src/commands/keys.ts:375 app/src/lib/autofetch.ts:167
+#: app/src/commands/keys.ts:375 app/src/lib/autofetch.ts:183
 msgid ", DIFFERS from a stored key"
 msgstr ", WEICHT von einem gespeicherten Schlüssel ab"
 
@@ -359,30 +359,30 @@ msgstr "Ein oder mehrere Selektoren"
 msgid "When the messages were sent, e.g. \"March 2019\""
 msgstr "Wann die Nachrichten gesendet wurden, z. B. \"März 2019\""
 
-#: app/src/commands/people.ts:27
+#: app/src/commands/people.ts:34
 msgid ""
 "List the addresses of a case folder by how much mail they sent and received"
 msgstr ""
 "Die Adressen eines Fallordners nach gesendeten und empfangenen Mails "
 "auflisten"
 
-#: app/src/commands/people.ts:33
+#: app/src/commands/people.ts:40
 msgid "Only addresses or names containing this text"
 msgstr "Nur Adressen oder Namen, die diesen Text enthalten"
 
-#: app/src/commands/people.ts:36
+#: app/src/commands/people.ts:43
 msgid "How many addresses to list"
 msgstr "Wie viele Adressen aufgelistet werden"
 
-#: app/src/commands/people.ts:37
+#: app/src/commands/people.ts:44
 msgid "Print the list as JSON"
 msgstr "Die Liste als JSON ausgeben"
 
-#: app/src/commands/people.ts:54
+#: app/src/commands/people.ts:71
 msgid "{count} {address}{name} ({sent} sent, {received} received)"
 msgstr "{count} {address}{name} ({sent} gesendet, {received} empfangen)"
 
-#: app/src/commands/people.ts:64
+#: app/src/commands/people.ts:81
 msgid "{n} address listed."
 msgid_plural "{n} addresses listed."
 msgstr[0] "{n} Adresse aufgelistet."
@@ -1964,49 +1964,49 @@ msgstr "stamped <Befehl> [Optionen]"
 msgid "Pick a command. Try `stamped verify --help`."
 msgstr "Bitte einen Befehl wählen, etwa `stamped verify --help`."
 
-#: app/src/lib/autofetch.ts:63
+#: app/src/lib/autofetch.ts:64
 msgid "{count} keys stored from archive.prove.email"
 msgstr "{count} Schlüssel aus archive.prove.email gespeichert"
 
-#: app/src/lib/autofetch.ts:64
+#: app/src/lib/autofetch.ts:65
 msgid "{count} keys stored from the DNS"
 msgstr "{count} Schlüssel aus dem DNS gespeichert"
 
-#: app/src/lib/autofetch.ts:65
+#: app/src/lib/autofetch.ts:66
 msgid "{count} keys not found"
 msgstr "{count} Schlüssel nicht gefunden"
 
-#: app/src/lib/autofetch.ts:69
+#: app/src/lib/autofetch.ts:70
 msgid "{count} lookups failed (rate limit or outage). Retry later."
 msgstr ""
 "{count} Abfragen fehlgeschlagen (Begrenzung oder Ausfall). Später erneut "
 "versuchen."
 
-#: app/src/lib/autofetch.ts:74
+#: app/src/lib/autofetch.ts:75
 msgid "{count} differ from a key already stored. Compare them."
 msgstr ""
 "{count} weichen von einem bereits gespeicherten Schlüssel ab. Bitte "
 "vergleichen."
 
-#: app/src/lib/autofetch.ts:88
+#: app/src/lib/autofetch.ts:89
 msgid "{count} message re-verified, {changed} verdict changed."
 msgid_plural "{count} messages re-verified, {changed} verdicts changed."
 msgstr[0] "{count} Nachricht erneut geprüft, {changed} Befund geändert."
 msgstr[1] "{count} Nachrichten erneut geprüft, {changed} Befunde geändert."
 
-#: app/src/lib/autofetch.ts:100
+#: app/src/lib/autofetch.ts:101
 msgid "! {name} holds different keys; its messages were left as they are."
 msgstr ""
 "! {name} enthält verschiedene Schlüssel; die zugehörigen Nachrichten blieben "
 "unverändert."
 
-#: app/src/lib/autofetch.ts:107
+#: app/src/lib/autofetch.ts:108
 msgid "{failed} message could not be re-verified."
 msgid_plural "{failed} messages could not be re-verified."
 msgstr[0] "{failed} Nachricht konnte nicht erneut geprüft werden."
 msgstr[1] "{failed} Nachrichten konnten nicht erneut geprüft werden."
 
-#: app/src/lib/autofetch.ts:144
+#: app/src/lib/autofetch.ts:155
 msgid ""
 "{count} key is missing. No terminal and no --yes, so nothing was looked up; "
 "run `stamped keys fetch --case {path}`."
@@ -2020,7 +2020,7 @@ msgstr[1] ""
 "{count} Schlüssel fehlen. Kein Terminal und kein --yes, daher wurde nichts "
 "abgefragt; führe `stamped keys fetch --case {path}` aus."
 
-#: app/src/lib/autofetch.ts:164
+#: app/src/lib/autofetch.ts:180
 msgid "  stored  {name} via {origin}{flag}"
 msgstr "  gespeichert  {name} über {origin}{flag}"
 
@@ -2314,6 +2314,66 @@ msgstr "Gestartet {started}, letzte Aktualisierung {updated}."
 #: app/src/lib/status.ts:141
 msgid "No import has run in {path}."
 msgstr "In {path} wurde noch kein Import ausgeführt."
+
+#: app/src/lib/status.ts:177
+msgid "The address listing was interrupted."
+msgstr "Die Adresserfassung wurde unterbrochen."
+
+#: app/src/lib/status.ts:179
+msgid "The key lookup was interrupted."
+msgstr "Die Schlüsselabfrage wurde unterbrochen."
+
+#: app/src/lib/status.ts:181
+msgid "The re-verification was interrupted."
+msgstr "Die Neuprüfung wurde unterbrochen."
+
+#: app/src/lib/status.ts:188
+msgid "Listing addresses: {done} of {total} messages."
+msgstr "Adressen werden erfasst: {done} von {total} Nachrichten."
+
+#: app/src/lib/status.ts:190
+msgid "The last address listing finished."
+msgstr "Die letzte Adresserfassung wurde abgeschlossen."
+
+#: app/src/lib/status.ts:192
+msgid "The last address listing failed."
+msgstr "Die letzte Adresserfassung ist fehlgeschlagen."
+
+#: app/src/lib/status.ts:194
+msgid "The last address listing was cancelled."
+msgstr "Die letzte Adresserfassung wurde abgebrochen."
+
+#: app/src/lib/status.ts:200
+msgid "Looking up keys: {done} of {total} stored."
+msgstr "Schlüssel werden abgefragt: {done} von {total} gespeichert."
+
+#: app/src/lib/status.ts:202
+msgid "The last key lookup finished."
+msgstr "Die letzte Schlüsselabfrage wurde abgeschlossen."
+
+#: app/src/lib/status.ts:204
+msgid "The last key lookup failed."
+msgstr "Die letzte Schlüsselabfrage ist fehlgeschlagen."
+
+#: app/src/lib/status.ts:206
+msgid "The last key lookup was cancelled."
+msgstr "Die letzte Schlüsselabfrage wurde abgebrochen."
+
+#: app/src/lib/status.ts:212
+msgid "Re-verifying: {done} of {total} messages."
+msgstr "Neuprüfung: {done} von {total} Nachrichten."
+
+#: app/src/lib/status.ts:214
+msgid "The last re-verification finished."
+msgstr "Die letzte Neuprüfung wurde abgeschlossen."
+
+#: app/src/lib/status.ts:216
+msgid "The last re-verification failed."
+msgstr "Die letzte Neuprüfung ist fehlgeschlagen."
+
+#: app/src/lib/status.ts:218
+msgid "The last re-verification was cancelled."
+msgstr "Die letzte Neuprüfung wurde abgebrochen."
 
 #: app/src/lib/vault.ts:25
 msgid "Cannot use {path}: {reason}"

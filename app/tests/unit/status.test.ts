@@ -255,7 +255,7 @@ export default async () => {
                 const text = await runStatus({ case: paths.root });
                 expect(text).toStrictEqual([noStatusLine(paths.root)]);
                 const json = JSON.parse((await runStatus({ case: paths.root, json: true })).join('\n'));
-                expect(json).toStrictEqual({ state: 'none', orphaned: false });
+                expect(json).toStrictEqual({ state: 'none', orphaned: false, activities: [] });
             });
         });
 

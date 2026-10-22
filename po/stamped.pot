@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 17:51+0200\n"
+"POT-Creation-Date: 2026-10-22 19:27+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -113,7 +113,7 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/import.ts:224 app/src/commands/status.ts:82
+#: app/src/commands/import.ts:224 app/src/commands/status.ts:85
 msgid "Case folder: {path}"
 msgstr ""
 
@@ -153,11 +153,11 @@ msgstr ""
 msgid "Expected <selector>._domainkey.<domain>, got: {name}"
 msgstr ""
 
-#: app/src/commands/keys.ts:88 app/src/lib/autofetch.ts:180
+#: app/src/commands/keys.ts:88 app/src/lib/autofetch.ts:201
 msgid "  error   {name}: {reason}"
 msgstr ""
 
-#: app/src/commands/keys.ts:92 app/src/lib/autofetch.ts:185
+#: app/src/commands/keys.ts:92 app/src/lib/autofetch.ts:206
 msgid "  no key  {name}: {reason}"
 msgstr ""
 
@@ -178,8 +178,8 @@ msgid "List stored keys, and with --pairs the ones still missing"
 msgstr ""
 
 #: app/src/commands/keys.ts:127 app/src/commands/keys.ts:223
-#: app/src/commands/keys.ts:276 app/src/commands/people.ts:30
-#: app/src/commands/people.ts:31 app/src/commands/reverify.ts:24
+#: app/src/commands/keys.ts:276 app/src/commands/people.ts:37
+#: app/src/commands/people.ts:38 app/src/commands/reverify.ts:24
 #: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
 msgid "The case folder"
 msgstr ""
@@ -284,7 +284,7 @@ msgstr ""
 msgid "Every listed key is already stored."
 msgstr ""
 
-#: app/src/commands/keys.ts:349 app/src/lib/autofetch.ts:173
+#: app/src/commands/keys.ts:349 app/src/lib/autofetch.ts:194
 msgid "Skipped; nothing was sent."
 msgstr ""
 
@@ -292,7 +292,7 @@ msgstr ""
 msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr ""
 
-#: app/src/commands/keys.ts:375 app/src/lib/autofetch.ts:167
+#: app/src/commands/keys.ts:375 app/src/lib/autofetch.ts:183
 msgid ", DIFFERS from a stored key"
 msgstr ""
 
@@ -312,28 +312,28 @@ msgstr ""
 msgid "When the messages were sent, e.g. \"March 2019\""
 msgstr ""
 
-#: app/src/commands/people.ts:27
+#: app/src/commands/people.ts:34
 msgid ""
 "List the addresses of a case folder by how much mail they sent and received"
 msgstr ""
 
-#: app/src/commands/people.ts:33
+#: app/src/commands/people.ts:40
 msgid "Only addresses or names containing this text"
 msgstr ""
 
-#: app/src/commands/people.ts:36
+#: app/src/commands/people.ts:43
 msgid "How many addresses to list"
 msgstr ""
 
-#: app/src/commands/people.ts:37
+#: app/src/commands/people.ts:44
 msgid "Print the list as JSON"
 msgstr ""
 
-#: app/src/commands/people.ts:54
+#: app/src/commands/people.ts:71
 msgid "{count} {address}{name} ({sent} sent, {received} received)"
 msgstr ""
 
-#: app/src/commands/people.ts:64
+#: app/src/commands/people.ts:81
 msgid "{n} address listed."
 msgid_plural "{n} addresses listed."
 msgstr[0] ""
@@ -1751,43 +1751,43 @@ msgstr ""
 msgid "Pick a command. Try `stamped verify --help`."
 msgstr ""
 
-#: app/src/lib/autofetch.ts:63
+#: app/src/lib/autofetch.ts:64
 msgid "{count} keys stored from archive.prove.email"
 msgstr ""
 
-#: app/src/lib/autofetch.ts:64
+#: app/src/lib/autofetch.ts:65
 msgid "{count} keys stored from the DNS"
 msgstr ""
 
-#: app/src/lib/autofetch.ts:65
+#: app/src/lib/autofetch.ts:66
 msgid "{count} keys not found"
 msgstr ""
 
-#: app/src/lib/autofetch.ts:69
+#: app/src/lib/autofetch.ts:70
 msgid "{count} lookups failed (rate limit or outage). Retry later."
 msgstr ""
 
-#: app/src/lib/autofetch.ts:74
+#: app/src/lib/autofetch.ts:75
 msgid "{count} differ from a key already stored. Compare them."
 msgstr ""
 
-#: app/src/lib/autofetch.ts:88
+#: app/src/lib/autofetch.ts:89
 msgid "{count} message re-verified, {changed} verdict changed."
 msgid_plural "{count} messages re-verified, {changed} verdicts changed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/autofetch.ts:100
+#: app/src/lib/autofetch.ts:101
 msgid "! {name} holds different keys; its messages were left as they are."
 msgstr ""
 
-#: app/src/lib/autofetch.ts:107
+#: app/src/lib/autofetch.ts:108
 msgid "{failed} message could not be re-verified."
 msgid_plural "{failed} messages could not be re-verified."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/autofetch.ts:144
+#: app/src/lib/autofetch.ts:155
 msgid ""
 "{count} key is missing. No terminal and no --yes, so nothing was looked up; "
 "run `stamped keys fetch --case {path}`."
@@ -1797,7 +1797,7 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/autofetch.ts:164
+#: app/src/lib/autofetch.ts:180
 msgid "  stored  {name} via {origin}{flag}"
 msgstr ""
 
@@ -2077,6 +2077,66 @@ msgstr ""
 
 #: app/src/lib/status.ts:141
 msgid "No import has run in {path}."
+msgstr ""
+
+#: app/src/lib/status.ts:177
+msgid "The address listing was interrupted."
+msgstr ""
+
+#: app/src/lib/status.ts:179
+msgid "The key lookup was interrupted."
+msgstr ""
+
+#: app/src/lib/status.ts:181
+msgid "The re-verification was interrupted."
+msgstr ""
+
+#: app/src/lib/status.ts:188
+msgid "Listing addresses: {done} of {total} messages."
+msgstr ""
+
+#: app/src/lib/status.ts:190
+msgid "The last address listing finished."
+msgstr ""
+
+#: app/src/lib/status.ts:192
+msgid "The last address listing failed."
+msgstr ""
+
+#: app/src/lib/status.ts:194
+msgid "The last address listing was cancelled."
+msgstr ""
+
+#: app/src/lib/status.ts:200
+msgid "Looking up keys: {done} of {total} stored."
+msgstr ""
+
+#: app/src/lib/status.ts:202
+msgid "The last key lookup finished."
+msgstr ""
+
+#: app/src/lib/status.ts:204
+msgid "The last key lookup failed."
+msgstr ""
+
+#: app/src/lib/status.ts:206
+msgid "The last key lookup was cancelled."
+msgstr ""
+
+#: app/src/lib/status.ts:212
+msgid "Re-verifying: {done} of {total} messages."
+msgstr ""
+
+#: app/src/lib/status.ts:214
+msgid "The last re-verification finished."
+msgstr ""
+
+#: app/src/lib/status.ts:216
+msgid "The last re-verification failed."
+msgstr ""
+
+#: app/src/lib/status.ts:218
+msgid "The last re-verification was cancelled."
 msgstr ""
 
 #: app/src/lib/vault.ts:25

@@ -82,7 +82,13 @@ export function openIndex(paths: CasePaths): DatabaseSync {
     // WAL + NORMAL: the index is a cache that `raw/` can refill, so a power cut costing the last
     // few commits is harmless, while a sync per commit is what made indexing I/O-bound. Best
     // effort: a backend that refuses a pragma still indexes, just slower.
-    for (const pragma of ['PRAGMA journal_mode=WAL', 'PRAGMA synchronous=NORMAL']) {
+    // busy_timeout first: a second writer (the window beside a CLI run) waits up to 5 s for the
+    // lock instead of failing at once, and the journal_mode switch itself needs the lock too.
+    for (const pragma of [
+        'PRAGMA busy_timeout=5000',
+        'PRAGMA journal_mode=WAL',
+        'PRAGMA synchronous=NORMAL',
+    ]) {
         try {
             db.exec(pragma);
         } catch {

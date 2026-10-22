@@ -152,7 +152,7 @@ export function orphanedImport(status: ImportStatus, now: number = Date.now()): 
  * as "alive", never "gone": a wrong "gone" would call every running import interrupted, and the
  * staleness check still catches a dead one within a minute.
  */
-function processAlive(pid: number): boolean {
+export function processAlive(pid: number): boolean {
     if (!Number.isInteger(pid) || pid <= 0) return false;
     try {
         if (existsSync('/proc/self')) return existsSync(`/proc/${pid}`);

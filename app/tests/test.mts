@@ -19,6 +19,7 @@ import store from './unit/store.test.ts';
 import throughput from './unit/throughput.test.ts';
 import people from './unit/people.test.ts';
 import status from './unit/status.test.ts';
+import activityStatus from './unit/activity-status.test.ts';
 import view from './unit/view.test.ts';
 import reading from './unit/reading.test.ts';
 import openCopy from './unit/open-copy.test.ts';
@@ -48,6 +49,7 @@ run({
     throughput,
     people,
     status,
+    activityStatus,
     view,
     reading,
     openCopy,
