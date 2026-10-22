@@ -41,8 +41,10 @@ export function caseRoot(
     const list = positional.filter((value) => value !== undefined).map(String);
     if (given !== undefined) return { root: given, rest: list };
     const [first, ...rest] = list;
-    if (first !== undefined) return { root: first, rest };
-    if (fallback !== undefined) return { root: fallback, rest: [] };
+    // An empty first argument is an unset shell variable, not a folder: it resolves to the
+    // working directory, and an import then writes the case into whatever that is.
+    if (first !== undefined && first !== '') return { root: first, rest };
+    if (first === undefined && fallback !== undefined) return { root: fallback, rest: [] };
     throw new Error(
         fmt(_('No case folder given. Use `stamped {command} <case> …` or `--case <dir>`.'), { command }),
     );
