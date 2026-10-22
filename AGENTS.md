@@ -159,7 +159,7 @@ caveat* instead of refusing to look. Stamped applies policy on top; mailauth app
 ## Run / build / test
 
 - Deps: **`gjsify install`** — NEVER `npm install`, it prunes gjsify deps.
-- All `@gjsify/*` packages are pinned to the **same exact version** (0.64.2). gjsify ships as one
+- All `@gjsify/*` packages are pinned to the **same exact version** (0.64.4). gjsify ships as one
   release train; a CLI ↔ libs skew produces silently broken bundles. Bump them together.
 - `typescript` is pinned `^6.0.3`, **not** 7: `gjsify tsc` runs a bundle with TypeScript 6.0.3
   baked in, so a local 7 would give a different diagnostic set than CI.

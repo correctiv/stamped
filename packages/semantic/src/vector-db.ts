@@ -36,59 +36,18 @@ export interface VectorSearchHit {
 export const VECTOR_SCHEMA_VERSION = 1;
 
 /**
- * CAN THIS RUNTIME HAND A BLOB BACK AS BYTES?
- *
- * MEASURED, and the two runtimes differ: Node returns a `Uint8Array`; GJS returns a boxed
- * `Gda_Binary` whose `get_data()` is null — the bytes ARE in the file (`hex(vector)` shows
- * them, `length(vector)` is right), but gjsify's `node:sqlite` has no path to them. That is a
- * gap in gjsify, not in this code, and it is reported as such.
- *
- * So under GJS the bytes come from SQLite's own `hex()` function instead, and the search
- * statement is built for whichever the runtime can serve. One probe per process, so the
- * search does not pay for a try-and-catch per row.
- */
-// gjsify gap (unfixed, gjsify/gjsify#2332): @gjsify/sqlite convertValue drops Gda_Binary bytes.
-let blobsAreBytes: boolean | undefined;
-
-function runtimeHandsBackBytes(): boolean {
-    if (blobsAreBytes === undefined) {
-        const probe = new DatabaseSync(':memory:');
-        try {
-            probe.exec('CREATE TABLE probe (b BLOB)');
-            probe.prepare('INSERT INTO probe VALUES (?)').run(new Uint8Array([1, 2, 3, 4]));
-            const row = probe.prepare('SELECT b FROM probe').get() as { b?: unknown } | undefined;
-            blobsAreBytes = row?.b instanceof Uint8Array && row.b.length === 4;
-        } catch {
-            blobsAreBytes = false;
-        } finally {
-            probe.close();
-        }
-    }
-    return blobsAreBytes;
-}
-
-/**
  * The bytes of a blob column.
  *
- * On Node the value arrives as a `Uint8Array`. On GJS it arrives as a `Gda_Binary` — the
- * search statement asks for `hex(vector)` there, so the value is a hex string, and this
- * decodes it.
+ * Fixed upstream in gjsify 0.64.4 (gjsify/gjsify#2332): `@gjsify/sqlite` hands BLOB columns
+ * back as `Uint8Array` on both runtimes, where GJS used to return a boxed `Gda_Binary` whose
+ * bytes only `hex(vector)` could reach. The bump re-measures that under GJS (issue #45 step 5);
+ * if a runtime ever hands something else back, `blobBytes` says so.
  */
 function blobBytes(value: unknown): Uint8Array {
     if (value instanceof Uint8Array) return value;
     if (value instanceof ArrayBuffer) return new Uint8Array(value);
     if (Array.isArray(value)) return new Uint8Array(value as number[]);
-    if (typeof value === 'string') return decodeHex(value);
     throw new Error('This runtime cannot read a vector blob.');
-}
-
-/** Hexadecimal to bytes. SQLite's `hex()` gives upper case. */
-function decodeHex(hex: string): Uint8Array {
-    const bytes = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < bytes.length; i++) {
-        bytes[i] = Number.parseInt(hex.substr(i * 2, 2), 16);
-    }
-    return bytes;
 }
 
 /**
@@ -267,9 +226,7 @@ function cosine(a: Float32Array, b: Float32Array): number {
  */
 export function searchVectors(db: DatabaseSync, query: Float32Array, limit: number): VectorSearchHit[] {
     if (limit <= 0) return [];
-    // `hex(vector)` where the runtime cannot hand back bytes; `vector` where it can.
-    const column = runtimeHandsBackBytes() ? 'vector' : 'hex(vector)';
-    const rows = db.prepare(`SELECT hash, ${column} AS vector FROM vectors`).all() as Array<{
+    const rows = db.prepare(`SELECT hash, vector FROM vectors`).all() as Array<{
         hash: string;
         vector: unknown;
     }>;
