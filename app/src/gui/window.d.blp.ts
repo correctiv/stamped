@@ -25,8 +25,8 @@ export declare const InternalChildren: [
     'toasts',
     'rootStack',
     'outerSplit',
-    'sourceList',
     'verdictList',
+    'sourceList',
     'caseTitle',
     'innerSplit',
     'listStack',
@@ -54,8 +54,8 @@ export interface Children {
     _toasts: Adw.ToastOverlay;
     _rootStack: Gtk.Stack;
     _outerSplit: Adw.OverlaySplitView;
-    _sourceList: Gtk.ListBox;
     _verdictList: Gtk.ListBox;
+    _sourceList: Gtk.ListBox;
     _caseTitle: Adw.WindowTitle;
     _innerSplit: Adw.NavigationSplitView;
     _listStack: Gtk.Stack;

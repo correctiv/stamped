@@ -52,7 +52,11 @@ export type EvidenceKey = (typeof EVIDENCE_KEYS)[number];
 /** One fact of the chain: what it is, and what it was. */
 export interface EvidenceField {
     readonly key: EvidenceKey;
-    /** Lower case, so it reads as a label and not as a heading. Translated. */
+    /**
+     * Sentence case: first word capitalised, the rest left alone unless the language capitalises
+     * it anyway. German nouns and adjectives do, so the two catalogues cannot share one rule —
+     * they share only the position of the capital. Translated.
+     */
     readonly label: string;
     readonly value: string;
 }
@@ -93,48 +97,52 @@ export function signatureHeading(finding: SignatureFinding, position: number, to
 export function evidenceFields(finding: SignatureFinding): EvidenceField[] {
     const evidence = finding.evidence;
     const fields: EvidenceField[] = [
-        { key: 'domain', label: _('domain'), value: evidence.domain || _('(none)') },
+        { key: 'domain', label: _('Domain'), value: evidence.domain || _('(none)') },
         {
             key: 'author-domain',
-            label: _('author domain'),
+            label: _('Author domain'),
             value: evidence.authorDomain || _('(unknown)'),
         },
-        { key: 'aligned', label: _('aligned'), value: evidence.aligned ? _('yes') : _('no') },
-        { key: 'selector', label: _('selector'), value: evidence.selector || _('(none)') },
-        { key: 'algorithm', label: _('algorithm'), value: evidence.algorithm || _('(none)') },
+        { key: 'aligned', label: _('Aligned'), value: evidence.aligned ? _('yes') : _('no') },
+        { key: 'selector', label: _('Selector'), value: evidence.selector || _('(none)') },
+        { key: 'algorithm', label: _('Algorithm'), value: evidence.algorithm || _('(none)') },
         {
             key: 'canonicalization',
-            label: _('canonicalization'),
+            label: _('Canonicalization'),
             value: evidence.canonicalization || _('(none)'),
         },
-        { key: 'key', label: _('key'), value: keyLine(evidence) },
+        { key: 'key', label: _('Key'), value: keyLine(evidence) },
         {
             key: 'signed-headers',
-            label: _('signed headers'),
+            label: _('Signed headers'),
             value: evidence.signedHeaders.join(':') || _('(none)'),
         },
-        { key: 'body-hash', label: _('body hash'), value: bodyHashLine(evidence) },
+        { key: 'body-hash', label: _('Body hash'), value: bodyHashLine(evidence) },
         {
             key: 'signature',
-            label: _('signature'),
+            label: _('Signature'),
             value: evidence.signatureOk ? _('verified') : _('not verified'),
         },
     ];
 
     if (evidence.lengthLimit !== undefined) {
-        fields.push({ key: 'length-limit', label: _('l= limit'), value: lengthLimitLine(evidence) });
+        fields.push({
+            key: 'length-limit',
+            label: _('Length limit (l=)'),
+            value: lengthLimitLine(evidence),
+        });
     }
     if (evidence.unverifiableBecause) {
         fields.push({
             key: 'reason',
-            label: _('reason'),
+            label: _('Reason'),
             value: describeUnverifiableReason(evidence.unverifiableBecause),
         });
     }
     // The verifier's own wording, kept for the record: it is the one line that distinguishes two
     // findings this tool maps onto the same reason, and a bug report without it is unactionable.
     if (evidence.note) {
-        fields.push({ key: 'verifier-note', label: _('verifier says'), value: evidence.note });
+        fields.push({ key: 'verifier-note', label: _('Verifier says'), value: evidence.note });
     }
     return fields;
 }

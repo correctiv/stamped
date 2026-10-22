@@ -137,27 +137,9 @@ template $StampedWindow: Adw.ApplicationWindow {
                 spacing: 2;
                 margin-bottom: 12;
 
-                Gtk.Label {
-                  label: _("Archives");
-                  xalign: 0;
-                  margin-start: 18;
-                  margin-top: 12;
-                  margin-bottom: 2;
-
-                  styles [
-                    "heading",
-                    "dimmed",
-                  ]
-                }
-
-                Gtk.ListBox sourceList {
-                  selection-mode: single;
-
-                  styles [
-                    "navigation-sidebar",
-                  ]
-                }
-
+                // The verdicts come FIRST, in every breakpoint, because this is the one sidebar
+                // the window has. A journalist opens a case to see what the archive is made of,
+                // and the archive a message came from is the second question, not the first.
                 Gtk.Label {
                   label: _("Verdicts");
                   xalign: 0;
@@ -172,6 +154,27 @@ template $StampedWindow: Adw.ApplicationWindow {
                 }
 
                 Gtk.ListBox verdictList {
+                  selection-mode: single;
+
+                  styles [
+                    "navigation-sidebar",
+                  ]
+                }
+
+                Gtk.Label {
+                  label: _("Archives");
+                  xalign: 0;
+                  margin-start: 18;
+                  margin-top: 12;
+                  margin-bottom: 2;
+
+                  styles [
+                    "heading",
+                    "dimmed",
+                  ]
+                }
+
+                Gtk.ListBox sourceList {
                   selection-mode: single;
 
                   styles [

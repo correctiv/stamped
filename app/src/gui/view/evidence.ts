@@ -20,6 +20,7 @@ import {
     _n,
     type KeyPair,
     type MessageFinding,
+    pairName,
     type Verdict,
 } from '@stamped/core';
 
@@ -41,6 +42,23 @@ export interface CaveatRow {
     readonly text: string;
 }
 
+/**
+ * What the card shows when the only thing between this message and a verdict is a key.
+ *
+ * ONE LINE, NOT TWO PARAGRAPHS. `unverifiable` plus `explainMessage` is roughly sixty words about
+ * what a public key is, on top of the card that claims the verdict — and the reader of this card
+ * has exactly one thing to do, which is fetch the key. So the card says which key is missing and
+ * offers to go and get it; the sixty words stay, behind the ⓘ, for the reader who wants them.
+ */
+export interface NoKeyPrompt {
+    /** The domain and the selector, because what the card offers is a lookup and a lookup takes a pair. */
+    readonly pair: KeyPair;
+    /** `Key t2048._domainkey.example.com is missing.`, escaped. */
+    readonly line: string;
+    /** The two paragraphs the line replaces, for the popover. */
+    readonly explanation: string;
+}
+
 /** The card at the top of the reader: what Stamped says about this message. */
 export interface VerdictCard {
     readonly verdict: Verdict;
@@ -60,13 +78,11 @@ export interface VerdictCard {
     /** Why the verdict is what it is, in one sentence; absent when there is nothing to explain. */
     readonly why?: string;
     /**
-     * The key this message is waiting for, when that is the whole reason it has no verdict.
-     *
-     * The domain and the selector rather than the DNS name, because what the card does with it
-     * is offer a lookup, and a lookup takes the pair. Present for `no-key` alone: every other
-     * unverifiable reason is something a fetch would not fix.
+     * Set for `no-key` alone, and then it REPLACES `sentence` and `why` on the card. Every other
+     * unverifiable reason is something a fetch would not fix, so no other verdict gets the short
+     * form: there is nothing short to say.
      */
-    readonly missingKey?: KeyPair;
+    readonly noKey?: NoKeyPrompt;
 }
 
 export function verdictCard(finding: MessageFinding): VerdictCard {
@@ -77,18 +93,29 @@ export function verdictCard(finding: MessageFinding): VerdictCard {
         finding.basis && finding.caveats.includes('signer-not-author')
             ? escapeLine(describeCaveat('signer-not-author', finding.basis.evidence))
             : undefined;
-    const missingKey = missingKeyOf(finding);
+    // The badge above the sentence already says `Unverifiable`, so the sentence does not say it a
+    // second time. This drops a duplicate label; it never rewrites the finding.
+    const sentence = escapeLine(withoutVerdictPrefix(describeVerdict(finding.verdict)));
+    const pair = missingKeyOf(finding);
+    const noKey =
+        pair === undefined
+            ? undefined
+            : {
+                  pair,
+                  line: escapeLine(fmt(_('Key {name} is missing.'), { name: pairName(pair) })),
+                  // The long form the line stands in for, kept whole rather than re-written for
+                  // the popover: a second wording of the same finding is a second finding.
+                  explanation: [sentence, ...(why ? [escapeLine(why.sentence)] : [])].join(' '),
+              };
     return {
         verdict: finding.verdict,
         badge: escapeLine(look.label),
         cssClass: look.cssClass,
         icon: look.icon,
-        // The badge above the sentence already says `Unverifiable`, so the sentence does not say
-        // it a second time. This drops a duplicate label; it never rewrites the finding.
-        sentence: escapeLine(withoutVerdictPrefix(describeVerdict(finding.verdict))),
+        sentence,
         ...(note !== undefined ? { note } : {}),
         ...(why ? { why: escapeLine(why.sentence) } : {}),
-        ...(missingKey !== undefined ? { missingKey } : {}),
+        ...(noKey !== undefined ? { noKey } : {}),
         summary: escapeLine(
             count === 0
                 ? _('No DKIM signature was found in this message.')
