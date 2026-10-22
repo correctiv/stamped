@@ -169,21 +169,21 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
     let summary;
     try {
         summary = await fetchKeys(vault, missing, {
-        channels: options.channels ?? DEFAULT_CHANNELS,
-        confirm: (text) => askConsent(text, options.yes),
-        fetch: (url) => fetch(url),
-        resolveTxt,
-        onStored: (s) => {
-            activity.update(++stored, missing.length);
-            saveVault(paths.root, vault);
-            console.log(
-                fmt(_('  stored  {name} via {origin}{flag}'), {
-                    name: pairName(s.pair),
-                    origin: s.origin,
-                    flag: s.conflict ? _(', DIFFERS from a stored key') : '',
-                }),
-            );
-        },
+            channels: options.channels ?? DEFAULT_CHANNELS,
+            confirm: (text) => askConsent(text, options.yes),
+            fetch: (url) => fetch(url),
+            resolveTxt,
+            onStored: (s) => {
+                activity.update(++stored, missing.length);
+                saveVault(paths.root, vault);
+                console.log(
+                    fmt(_('  stored  {name} via {origin}{flag}'), {
+                        name: pairName(s.pair),
+                        origin: s.origin,
+                        flag: s.conflict ? _(', DIFFERS from a stored key') : '',
+                    }),
+                );
+            },
         });
     } catch (error) {
         activity.fail();
