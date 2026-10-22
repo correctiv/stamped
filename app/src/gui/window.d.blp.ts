@@ -73,7 +73,7 @@ export interface Children {
     _peopleBody: Gtk.Box;
     _timelineBody: Gtk.Box;
     _overviewBody: Gtk.Box;
-    _viewSwitcher: Adw.ViewSwitcher;
+    _viewSwitcher: Adw.InlineViewSwitcher;
     _activityButton: Gtk.MenuButton;
     _switcherBar: Adw.ViewSwitcherBar;
 }
