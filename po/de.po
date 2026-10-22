@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 09:53+0200\n"
+"POT-Creation-Date: 2026-10-22 10:01+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -264,7 +264,7 @@ msgstr "<Selektor>._domainkey.<Domain>"
 msgid "The key text, or a path to a file holding it"
 msgstr "Der Schlüsseltext oder der Pfad zu einer Datei damit"
 
-#: app/src/commands/keys.ts:230 app/src/gui/session.ts:486
+#: app/src/commands/keys.ts:230 app/src/gui/session.ts:487
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
@@ -426,8 +426,8 @@ msgstr[1] "{count} Nachrichten, {bytes} Bytes."
 msgid "Dated {earliest} to {latest}."
 msgstr "Datiert von {earliest} bis {latest}."
 
-#: app/src/commands/report.ts:82 app/src/gui/window.ts:1530
-#: app/src/gui/window.blp:171
+#: app/src/commands/report.ts:82 app/src/gui/window.ts:1580
+#: app/src/gui/window.blp:162
 msgid "Verdicts"
 msgstr "Befunde"
 
@@ -660,6 +660,23 @@ msgstr "Eine Nachricht gegen einen Schlüssel prüfen, der lokal vorliegt"
 msgid "Cannot read {path}."
 msgstr "{path} kann nicht gelesen werden."
 
+#: app/src/gui/activity.ts:33 app/src/gui/window.ts:1104
+msgid "Details"
+msgstr "Details"
+
+#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1044
+#: app/src/gui/window.ts:1391 app/src/gui/window.ts:1655
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: app/src/gui/activity.ts:38
+msgid "Dismiss"
+msgstr "Verwerfen"
+
+#: app/src/gui/activity.ts:132
+msgid "Nothing is running in the background."
+msgstr "Im Hintergrund läuft nichts."
+
 #: app/src/gui/main.ts:83
 msgctxt "application name"
 msgid "Stamped"
@@ -676,11 +693,11 @@ msgstr ""
 "stammen aus einem Speicher, den Sie selbst füllen, also geht beim Ansehen "
 "einer Nachricht keine Abfrage an die signierende Domain."
 
-#: app/src/gui/session.ts:515
+#: app/src/gui/session.ts:516
 msgid "That key was already stored."
 msgstr "Dieser Schlüssel war bereits gespeichert."
 
-#: app/src/gui/session.ts:518
+#: app/src/gui/session.ts:519
 msgid ""
 "Stored — but this case already held a DIFFERENT key for that selector. "
 "Either the domain rotated it, or one of the two is not theirs. Check both "
@@ -691,9 +708,183 @@ msgstr ""
 "beiden stammt nicht von ihr. Prüfen Sie beide, bevor Sie sich auf die neuen "
 "Befunde verlassen."
 
-#: app/src/gui/session.ts:521
+#: app/src/gui/session.ts:522
 msgid "Key stored."
 msgstr "Schlüssel gespeichert."
+
+#: app/src/gui/view/activity.ts:57
+msgid "Import"
+msgstr "Import"
+
+#: app/src/gui/view/activity.ts:59
+msgid "Key lookup"
+msgstr "Schlüsselabfrage"
+
+#: app/src/gui/view/activity.ts:61
+msgid "Re-verification"
+msgstr "Neuprüfung"
+
+#: app/src/gui/view/activity.ts:63
+msgid "People and timeline"
+msgstr "Personen und Zeitachse"
+
+#: app/src/gui/view/activity.ts:68
+msgid "DNS"
+msgstr "DNS"
+
+#: app/src/gui/view/activity.ts:73
+msgid "{n} s"
+msgstr "{n} s"
+
+#: app/src/gui/view/activity.ts:74
+msgid "{n} min"
+msgstr "{n} min"
+
+#: app/src/gui/view/activity.ts:83
+msgid "Importing mail…"
+msgstr "E-Mails werden importiert…"
+
+#: app/src/gui/view/activity.ts:84
+msgid "Importing mail — {percent}%"
+msgstr "E-Mails werden importiert – {percent} %"
+
+#: app/src/gui/view/activity.ts:87
+msgid "Looking up keys — {done} of {total}"
+msgstr "Schlüssel werden abgefragt – {done} von {total}"
+
+#: app/src/gui/view/activity.ts:92
+msgid "Re-verifying messages — {done} of {total}"
+msgstr "Nachrichten werden neu geprüft – {done} von {total}"
+
+#: app/src/gui/view/activity.ts:97
+msgid "Building the people list…"
+msgstr "Personenliste wird erstellt…"
+
+#: app/src/gui/view/activity.ts:107
+msgid "{count} task failed"
+msgid_plural "{count} tasks failed"
+msgstr[0] "{count} Aufgabe fehlgeschlagen"
+msgstr[1] "{count} Aufgaben fehlgeschlagen"
+
+#: app/src/gui/view/activity.ts:110 app/src/gui/window.blp:266
+msgid "No background work"
+msgstr "Keine Hintergrundarbeit"
+
+#: app/src/gui/view/activity.ts:110
+msgid "Background work finished"
+msgstr "Hintergrundarbeit abgeschlossen"
+
+#: app/src/gui/view/activity.ts:126 app/src/lib/status.ts:106
+msgid "Mailbox: {mailbox}"
+msgstr "Postfach: {mailbox}"
+
+#: app/src/gui/view/activity.ts:127 app/src/lib/status.ts:108
+msgid "Sources: {sources}"
+msgstr "Quellen: {sources}"
+
+#: app/src/gui/view/activity.ts:129
+msgid "{read} of {total} read"
+msgstr "{read} von {total} gelesen"
+
+#: app/src/gui/view/activity.ts:136
+msgid "{count} message has no verdict"
+msgid_plural "{count} messages have no verdict"
+msgstr[0] "{count} Nachricht hat keinen Befund"
+msgstr[1] "{count} Nachrichten haben keinen Befund"
+
+#: app/src/gui/view/activity.ts:146
+msgid "Interrupted — its process is gone. Run the import again to resume."
+msgstr ""
+"Unterbrochen – der Prozess ist beendet. Starten Sie den Import erneut, um "
+"fortzusetzen."
+
+#: app/src/gui/view/activity.ts:148
+msgid "Cancelled — run it again to resume"
+msgstr "Abgebrochen – starten Sie ihn erneut, um fortzusetzen"
+
+#: app/src/gui/view/activity.ts:150
+msgid "The import failed"
+msgstr "Der Import ist fehlgeschlagen"
+
+#: app/src/gui/view/activity.ts:152
+msgid "Finished — {count} message"
+msgid_plural "Finished — {count} messages"
+msgstr[0] "Abgeschlossen – {count} Nachricht"
+msgstr[1] "Abgeschlossen – {count} Nachrichten"
+
+#: app/src/gui/view/activity.ts:160 app/src/gui/view/sources.ts:116
+msgid "{count} message"
+msgid_plural "{count} messages"
+msgstr[0] "{count} Nachricht"
+msgstr[1] "{count} Nachrichten"
+
+#: app/src/gui/view/activity.ts:166
+msgid "{rate} messages/s, {bytes}/s"
+msgstr "{rate} Nachrichten/s, {bytes}/s"
+
+#: app/src/gui/view/activity.ts:172
+msgid "about {time} left"
+msgstr "noch etwa {time}"
+
+#: app/src/gui/view/activity.ts:186
+msgid "{count} found"
+msgstr "{count} gefunden"
+
+#: app/src/gui/view/activity.ts:187
+msgid "{count} not found"
+msgstr "{count} nicht gefunden"
+
+#: app/src/gui/view/activity.ts:191
+msgid "{count} error"
+msgid_plural "{count} errors"
+msgstr[0] "{count} Fehler"
+msgstr[1] "{count} Fehler"
+
+#: app/src/gui/view/activity.ts:197
+msgid "{done} of {total} · {channel}"
+msgstr "{done} von {total} · {channel}"
+
+#: app/src/gui/view/activity.ts:203
+msgid "The lookup failed"
+msgstr "Die Abfrage ist fehlgeschlagen"
+
+#: app/src/gui/view/activity.ts:204
+msgid "Finished · {channel}"
+msgstr "Abgeschlossen · {channel}"
+
+#: app/src/gui/view/activity.ts:214
+msgid "{count} verdict changed"
+msgid_plural "{count} verdicts changed"
+msgstr[0] "{count} Befund geändert"
+msgstr[1] "{count} Befunde geändert"
+
+#: app/src/gui/view/activity.ts:219
+msgid "{done} of {total} messages"
+msgstr "{done} von {total} Nachrichten"
+
+#: app/src/gui/view/activity.ts:224
+msgid "The re-verification failed"
+msgstr "Die Neuprüfung ist fehlgeschlagen"
+
+#: app/src/gui/view/activity.ts:225
+msgid "{count} message checked"
+msgid_plural "{count} messages checked"
+msgstr[0] "{count} Nachricht geprüft"
+msgstr[1] "{count} Nachrichten geprüft"
+
+#: app/src/gui/view/activity.ts:239
+msgid "{count} message indexed"
+msgid_plural "{count} messages indexed"
+msgstr[0] "{count} Nachricht indiziert"
+msgstr[1] "{count} Nachrichten indiziert"
+
+#: app/src/gui/view/activity.ts:243
+msgid "Indexing stopped"
+msgstr "Indizierung angehalten"
+
+#: app/src/gui/view/activity.ts:244
+msgid "Finished"
+msgstr "Abgeschlossen"
 
 #: app/src/gui/view/consent.ts:40
 msgid "Query the DNS"
@@ -747,72 +938,47 @@ msgstr "{n} GB"
 msgid "{n} TB"
 msgstr "{n} TB"
 
-#: app/src/gui/view/import.ts:24
+#: app/src/gui/view/import.ts:23
 msgid "Nothing imported: no messages were found in it."
 msgstr "Nichts importiert: Es wurden keine Nachrichten darin gefunden."
 
-#: app/src/gui/view/import.ts:27
+#: app/src/gui/view/import.ts:26
 msgid "{count} new message"
 msgid_plural "{count} new messages"
 msgstr[0] "{count} neue Nachricht"
 msgstr[1] "{count} neue Nachrichten"
 
-#: app/src/gui/view/import.ts:34
+#: app/src/gui/view/import.ts:33
 msgid "{count} was already in the case"
 msgid_plural "{count} were already in the case"
 msgstr[0] "{count} war schon im Fall"
 msgstr[1] "{count} waren schon im Fall"
 
-#: app/src/gui/view/import.ts:43
+#: app/src/gui/view/import.ts:42
 msgid "{count} could not be verified and has no verdict"
 msgid_plural "{count} could not be verified and have no verdict"
 msgstr[0] "{count} konnte nicht geprüft werden und hat keinen Befund"
 msgstr[1] "{count} konnten nicht geprüft werden und haben keinen Befund"
 
-#: app/src/gui/view/import.ts:67
-msgid ""
-"Import interrupted — its process is gone. Run the import again to resume."
-msgstr ""
-"Import unterbrochen – sein Prozess ist beendet. Starten Sie den Import "
-"erneut, um fortzusetzen."
-
-#: app/src/gui/view/import.ts:71
-msgid "{percent}% · {done} message"
-msgid_plural "{percent}% · {done} messages"
-msgstr[0] "{percent} % · {done} Nachricht"
-msgstr[1] "{percent} % · {done} Nachrichten"
-
-#: app/src/gui/view/import.ts:78
-msgid "about {time} left"
-msgstr "noch etwa {time}"
-
-#: app/src/gui/view/import.ts:85
-msgid "{n} s"
-msgstr "{n} s"
-
-#: app/src/gui/view/import.ts:86
-msgid "{n} min"
-msgstr "{n} min"
-
-#: app/src/gui/view/import.ts:119
+#: app/src/gui/view/import.ts:61
 msgid "The import stopped without finishing. Run it again to resume."
 msgstr ""
 "Der Import wurde nicht abgeschlossen. Starten Sie ihn erneut, um "
 "fortzusetzen."
 
-#: app/src/gui/view/import.ts:123
+#: app/src/gui/view/import.ts:65
 msgid "Import finished."
 msgstr "Import abgeschlossen."
 
-#: app/src/gui/view/import.ts:125
+#: app/src/gui/view/import.ts:67
 msgid "The import failed."
 msgstr "Der Import ist fehlgeschlagen."
 
-#: app/src/gui/view/import.ts:127
+#: app/src/gui/view/import.ts:69
 msgid "Import cancelled. Run it again to resume."
 msgstr "Import abgebrochen. Starten Sie ihn erneut, um fortzusetzen."
 
-#: app/src/gui/view/import.ts:129
+#: app/src/gui/view/import.ts:71
 msgid "Import running."
 msgstr "Import läuft."
 
@@ -948,11 +1114,11 @@ msgstr "(kein Absender)"
 msgid "From"
 msgstr "Von"
 
-#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:958
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:960
 msgid "To"
 msgstr "An"
 
-#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:959
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:961
 msgid "Cc"
 msgstr "Kopie"
 
@@ -1002,8 +1168,8 @@ msgstr "Nichts in dieser Ansicht"
 msgid "No message has the verdict you filtered for."
 msgstr "Keine Nachricht hat den Befund, nach dem Sie gefiltert haben."
 
-#: app/src/gui/view/overview.ts:108 app/src/gui/window.blp:200
-#: app/src/gui/window.blp:214
+#: app/src/gui/view/overview.ts:108 app/src/gui/window.blp:191
+#: app/src/gui/window.blp:205
 msgid "Messages"
 msgstr "Nachrichten"
 
@@ -1213,12 +1379,6 @@ msgid_plural "{count} archives imported"
 msgstr[0] "{count} Archiv importiert"
 msgstr[1] "{count} Archive importiert"
 
-#: app/src/gui/view/sources.ts:116
-msgid "{count} message"
-msgid_plural "{count} messages"
-msgstr[0] "{count} Nachricht"
-msgstr[1] "{count} Nachrichten"
-
 #: app/src/gui/view/sources.ts:122
 msgid "{read}, one of them already in the case"
 msgid_plural "{read}, {duplicates} of them already in the case"
@@ -1316,57 +1476,57 @@ msgstr "Alle Nachrichten"
 msgid "{shown} of {total} shown"
 msgstr "{shown} von {total} angezeigt"
 
-#: app/src/gui/window.ts:256
+#: app/src/gui/window.ts:247
 msgid "All files"
 msgstr "Alle Dateien"
 
-#: app/src/gui/window.ts:258
+#: app/src/gui/window.ts:249
 msgid "Mail archives"
 msgstr "Mail-Archive"
 
-#: app/src/gui/window.ts:456
+#: app/src/gui/window.ts:452
 msgid "{path} is not a Stamped case folder."
 msgstr "{path} ist kein Poststempel-Fallordner."
 
-#: app/src/gui/window.ts:857
+#: app/src/gui/window.ts:859
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 "Die gespeicherte Kopie dieser Nachricht fehlt im Datenspeicher des Falls."
 
-#: app/src/gui/window.ts:934
+#: app/src/gui/window.ts:936
 msgid "Open With…"
 msgstr "Öffnen mit…"
 
-#: app/src/gui/window.ts:935
+#: app/src/gui/window.ts:937
 msgid "Open a read-only copy in the program you choose"
 msgstr "Eine schreibgeschützte Kopie im gewählten Programm öffnen"
 
-#: app/src/gui/window.ts:965
+#: app/src/gui/window.ts:967
 msgid "The stored copy could not be read."
 msgstr "Die gespeicherte Kopie konnte nicht gelesen werden."
 
-#: app/src/gui/window.ts:976
+#: app/src/gui/window.ts:978
 msgid "(no text)"
 msgstr "(kein Text)"
 
-#: app/src/gui/window.ts:981
+#: app/src/gui/window.ts:983
 msgid "Shown as text; the HTML was not rendered."
 msgstr "Als Text angezeigt; das HTML wurde nicht dargestellt."
 
-#: app/src/gui/window.ts:982
+#: app/src/gui/window.ts:984
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 "Der Text ist hier abgeschnitten; die gespeicherte Nachricht ist länger."
 
-#: app/src/gui/window.ts:994
+#: app/src/gui/window.ts:996
 msgid "(unnamed)"
 msgstr "(ohne Namen)"
 
-#: app/src/gui/window.ts:1024
+#: app/src/gui/window.ts:1026
 msgid "Open in a mail program?"
 msgstr "Im Mailprogramm öffnen?"
 
-#: app/src/gui/window.ts:1026
+#: app/src/gui/window.ts:1028
 msgid ""
 "A mail program may load remote content. Only the verdict proves a message "
 "genuine."
@@ -1374,11 +1534,11 @@ msgstr ""
 "Das Mailprogramm kann externe Inhalte nachladen. Nur das Urteil belegt die "
 "Echtheit."
 
-#: app/src/gui/window.ts:1031
+#: app/src/gui/window.ts:1033
 msgid "What does that mean?"
 msgstr "Was bedeutet das?"
 
-#: app/src/gui/window.ts:1036
+#: app/src/gui/window.ts:1038
 msgid ""
 "A mail program that loads remote content tells the sender’s server that "
 "someone is reading this message right now. How a program displays a message "
@@ -1390,57 +1550,47 @@ msgstr ""
 "Nachricht darstellt, beweist nichts über sie; das DKIM-Urteil schon. Das "
 "Programm erhält eine schreibgeschützte Kopie außerhalb des Falls."
 
-#: app/src/gui/window.ts:1042 app/src/gui/window.ts:1389
-#: app/src/gui/window.ts:1605 app/src/gui/window.ts:1679
-#: app/src/gui/window.blp:109
-msgid "Cancel"
-msgstr "Abbrechen"
-
-#: app/src/gui/window.ts:1043
+#: app/src/gui/window.ts:1045
 msgid "Open"
 msgstr "Öffnen"
 
-#: app/src/gui/window.ts:1052
+#: app/src/gui/window.ts:1054
 msgid "The stored copy of this message is missing."
 msgstr "Die gespeicherte Kopie dieser Nachricht fehlt."
 
-#: app/src/gui/window.ts:1060
+#: app/src/gui/window.ts:1062
 msgid "Could not open the message: {reason}"
 msgstr "Die Nachricht konnte nicht geöffnet werden: {reason}"
 
-#: app/src/gui/window.ts:1102
-msgid "Details"
-msgstr "Details"
-
-#: app/src/gui/window.ts:1117 app/src/gui/window.blp:285
+#: app/src/gui/window.ts:1119 app/src/gui/window.blp:283
 msgid "Message"
 msgstr "Nachricht"
 
-#: app/src/gui/window.ts:1136
+#: app/src/gui/window.ts:1138
 msgid "Copy"
 msgstr "Kopieren"
 
-#: app/src/gui/window.ts:1145
+#: app/src/gui/window.ts:1147
 msgid "Copied."
 msgstr "Kopiert."
 
-#: app/src/gui/window.ts:1161
+#: app/src/gui/window.ts:1163
 msgid "Evidence"
 msgstr "Belege"
 
-#: app/src/gui/window.ts:1201
+#: app/src/gui/window.ts:1203
 msgid "Raw message"
 msgstr "Rohnachricht"
 
-#: app/src/gui/window.ts:1203
+#: app/src/gui/window.ts:1205
 msgid "Copy the whole message, headers and body, as stored"
 msgstr "Die ganze Nachricht kopieren, Kopfzeilen und Text, wie gespeichert"
 
-#: app/src/gui/window.ts:1205
+#: app/src/gui/window.ts:1207
 msgid "Header block, as stored"
 msgstr "Kopfzeilenblock, wie gespeichert"
 
-#: app/src/gui/window.ts:1237
+#: app/src/gui/window.ts:1239
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
@@ -1448,37 +1598,37 @@ msgstr ""
 "Poststempel bleibt offline, bis Sie etwas anderes sagen, und zeigt Ihnen "
 "genau, was es senden würde."
 
-#: app/src/gui/window.ts:1249
+#: app/src/gui/window.ts:1251
 msgid "Signing keys this case needs"
 msgstr "Signaturschlüssel, die dieser Fall braucht"
 
-#: app/src/gui/window.ts:1287
+#: app/src/gui/window.ts:1289
 msgid "Paste Key…"
 msgstr "Schlüssel einfügen…"
 
-#: app/src/gui/window.ts:1296
+#: app/src/gui/window.ts:1298
 msgid "Copy Request…"
 msgstr "Anfrage kopieren…"
 
-#: app/src/gui/window.ts:1297
+#: app/src/gui/window.ts:1299
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 "Eine Anfrage kopieren, die Sie an den Betreiber der signierenden Domain "
 "schicken können"
 
-#: app/src/gui/window.ts:1301
+#: app/src/gui/window.ts:1303
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr "Anfrage kopiert. Fügen Sie sie in eine Mail an den Betreiber ein."
 
-#: app/src/gui/window.ts:1346
+#: app/src/gui/window.ts:1348
 msgid "Look Up Missing Keys…"
 msgstr "Fehlende Schlüssel abfragen…"
 
-#: app/src/gui/window.ts:1368
+#: app/src/gui/window.ts:1370
 msgid "Paste the key for {name}"
 msgstr "Den Schlüssel für {name} einfügen"
 
-#: app/src/gui/window.ts:1370
+#: app/src/gui/window.ts:1372
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
@@ -1488,19 +1638,23 @@ msgstr ""
 "Wert. Poststempel erkennt selbst, was es ist. Ein leeres p= ist ein "
 "Widerruf, kein Schlüssel, und wird abgelehnt."
 
-#: app/src/gui/window.ts:1390
+#: app/src/gui/window.ts:1392
 msgid "Store Key"
 msgstr "Schlüssel speichern"
 
-#: app/src/gui/window.ts:1478
+#: app/src/gui/window.ts:1507
 msgid "Looking up keys…"
 msgstr "Schlüssel werden abgefragt…"
 
-#: app/src/gui/window.ts:1523
+#: app/src/gui/window.ts:1539
+msgid "Key lookup failed: {reason}"
+msgstr "Schlüsselabfrage fehlgeschlagen: {reason}"
+
+#: app/src/gui/window.ts:1573
 msgid "The case"
 msgstr "Der Fall"
 
-#: app/src/gui/window.ts:1532
+#: app/src/gui/window.ts:1582
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
@@ -1509,15 +1663,15 @@ msgstr ""
 "Ergebnis, und die Zeile, die am häufigsten auf null steht, ist die, die "
 "sagt, dass keine Manipulation gefunden wurde."
 
-#: app/src/gui/window.ts:1581
+#: app/src/gui/window.ts:1631
 msgid "Open Case Folder"
 msgstr "Fallordner öffnen"
 
-#: app/src/gui/window.ts:1597
+#: app/src/gui/window.ts:1647
 msgid "Create a new case here?"
 msgstr "Hier einen neuen Fall anlegen?"
 
-#: app/src/gui/window.ts:1600
+#: app/src/gui/window.ts:1650
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
@@ -1526,27 +1680,27 @@ msgstr ""
 "ein Speicher für die Rohnachrichten und ein Suchindex hineingeschrieben. Es "
 "wird nichts irgendwohin gesendet."
 
-#: app/src/gui/window.ts:1604
+#: app/src/gui/window.ts:1654
 msgid "Create Case"
 msgstr "Fall anlegen"
 
-#: app/src/gui/window.ts:1629
+#: app/src/gui/window.ts:1679
 msgid "Imported."
 msgstr "Importiert."
 
-#: app/src/gui/window.ts:1710
+#: app/src/gui/window.ts:1755
 msgid "Import a Mail Folder"
 msgstr "Einen Mail-Ordner importieren"
 
-#: app/src/gui/window.ts:1710
+#: app/src/gui/window.ts:1755
 msgid "Import Mail Archives"
 msgstr "Mail-Archive importieren"
 
-#: app/src/gui/window.ts:1744
+#: app/src/gui/window.ts:1789
 msgid "That did not work"
 msgstr "Das hat nicht geklappt"
 
-#: app/src/gui/window.ts:1744
+#: app/src/gui/window.ts:1789
 msgid "Close"
 msgstr "Schließen"
 
@@ -1572,7 +1726,9 @@ msgstr "{count} Schlüssel nicht gefunden"
 
 #: app/src/lib/autofetch.ts:69
 msgid "{count} lookups failed (rate limit or outage). Retry later."
-msgstr "{count} Abfragen fehlgeschlagen (Begrenzung oder Ausfall). Später erneut versuchen."
+msgstr ""
+"{count} Abfragen fehlgeschlagen (Begrenzung oder Ausfall). Später erneut "
+"versuchen."
 
 #: app/src/lib/autofetch.ts:74
 msgid "{count} differ from a key already stored — compare them"
@@ -1829,14 +1985,6 @@ msgid "{done} message read ({percent}% of {size})."
 msgid_plural "{done} messages read ({percent}% of {size})."
 msgstr[0] "{done} Nachricht gelesen ({percent} % von {size})."
 msgstr[1] "{done} Nachrichten gelesen ({percent} % von {size})."
-
-#: app/src/lib/status.ts:106
-msgid "Mailbox: {mailbox}"
-msgstr "Postfach: {mailbox}"
-
-#: app/src/lib/status.ts:108
-msgid "Sources: {sources}"
-msgstr "Quellen: {sources}"
 
 #: app/src/lib/status.ts:110
 msgid "{rate} messages/s, {bytes}/s."
@@ -2462,7 +2610,7 @@ msgstr "kein Schlüssel im Speicher"
 msgid "Stamped"
 msgstr "Poststempel"
 
-#: app/src/gui/window.blp:58 app/src/gui/window.blp:131
+#: app/src/gui/window.blp:58 app/src/gui/window.blp:122
 msgid "Main menu"
 msgstr "Hauptmenü"
 
@@ -2474,80 +2622,94 @@ msgstr ""
 "Öffnen Sie einen Fallordner oder importieren Sie ein Mail-Archiv, um einen "
 "anzulegen. Nichts verlässt diesen Rechner."
 
-#: app/src/gui/window.blp:75 app/src/gui/window.blp:440
+#: app/src/gui/window.blp:75 app/src/gui/window.blp:438
 msgid "Open Case…"
 msgstr "Fall öffnen…"
 
-#: app/src/gui/window.blp:84 app/src/gui/window.blp:445
+#: app/src/gui/window.blp:84 app/src/gui/window.blp:443
 msgid "Import Archive…"
 msgstr "Archiv importieren…"
 
-#: app/src/gui/window.blp:124
+#: app/src/gui/window.blp:115
 msgid "Import another archive into this case"
 msgstr "Ein weiteres Archiv in diesen Fall importieren"
 
-#: app/src/gui/window.blp:137
+#: app/src/gui/window.blp:128
 msgid "Case"
 msgstr "Fall"
 
-#: app/src/gui/window.blp:150
+#: app/src/gui/window.blp:141
 msgid "Archives"
 msgstr "Archive"
 
-#: app/src/gui/window.blp:209
+#: app/src/gui/window.blp:200
 msgid "Show the case sidebar"
 msgstr "Die Fall-Seitenleiste anzeigen"
 
-#: app/src/gui/window.blp:220
+#: app/src/gui/window.blp:211
 msgid "Search senders, subjects, bodies"
 msgstr "Absender, Betreffs, Texte durchsuchen"
 
-#: app/src/gui/window.blp:232
+#: app/src/gui/window.blp:223
 msgid "Clear filter"
 msgstr "Filter zurücksetzen"
 
-#: app/src/gui/window.blp:265
+#: app/src/gui/window.blp:256
 msgid "Verification"
 msgstr "Prüfung"
 
-#: app/src/gui/window.blp:294
+#: app/src/gui/window.blp:292
 msgid "No message selected"
 msgstr "Keine Nachricht ausgewählt"
 
-#: app/src/gui/window.blp:295
+#: app/src/gui/window.blp:293
 msgid ""
 "Pick a message to see which of its signatures hold, and what each one covers."
 msgstr ""
 "Wählen Sie eine Nachricht, um zu sehen, welche ihrer Signaturen halten und "
 "was jede abdeckt."
 
-#: app/src/gui/window.blp:324
+#: app/src/gui/window.blp:322
 msgid "Keys"
 msgstr "Schlüssel"
 
-#: app/src/gui/window.blp:347
+#: app/src/gui/window.blp:345
 msgid "People"
 msgstr "Personen"
 
-#: app/src/gui/window.blp:354
+#: app/src/gui/window.blp:352
 msgid "Search names and addresses"
 msgstr "Namen und Adressen suchen"
 
-#: app/src/gui/window.blp:383
+#: app/src/gui/window.blp:381
 msgid "Timeline"
 msgstr "Zeitleiste"
 
-#: app/src/gui/window.blp:406
+#: app/src/gui/window.blp:404
 msgid "Overview"
 msgstr "Überblick"
 
-#: app/src/gui/window.blp:452
+#: app/src/gui/window.blp:450
 msgid "Import Folder…"
 msgstr "Ordner importieren…"
 
-#: app/src/gui/window.blp:459
+#: app/src/gui/window.blp:457
 msgid "About Stamped"
 msgstr "Über Poststempel"
+
+#~ msgid ""
+#~ "Import interrupted — its process is gone. Run the import again to resume."
+#~ msgstr ""
+#~ "Import unterbrochen – sein Prozess ist beendet. Starten Sie den Import "
+#~ "erneut, um fortzusetzen."
+
+#~ msgid "{percent}% · {done} message"
+#~ msgid_plural "{percent}% · {done} messages"
+#~ msgstr[0] "{percent} % · {done} Nachricht"
+#~ msgstr[1] "{percent} % · {done} Nachrichten"
+
+#~ msgid "Open a read-only copy in your mail program"
+#~ msgstr "Eine schreibgeschützte Kopie im Mailprogramm öffnen"
 
 #~ msgid "Open in Mail Program"
 #~ msgstr "Im Mailprogramm öffnen"

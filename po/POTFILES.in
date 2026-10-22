@@ -7,6 +7,7 @@ app/src/commands/search.ts
 app/src/commands/status.ts
 app/src/commands/timeline.ts
 app/src/commands/verify.ts
+app/src/gui/activity.ts
 app/src/gui/blp.d.ts
 app/src/gui/help-button.blp
 app/src/gui/help-button.d.blp.ts
@@ -14,6 +15,7 @@ app/src/gui/help-button.ts
 app/src/gui/i18n-init.ts
 app/src/gui/main.ts
 app/src/gui/session.ts
+app/src/gui/view/activity.ts
 app/src/gui/view/consent.ts
 app/src/gui/view/evidence.ts
 app/src/gui/view/format.ts
@@ -29,6 +31,7 @@ app/src/gui/window.blp
 app/src/gui/window.d.blp.ts
 app/src/gui/window.ts
 app/src/index.ts
+app/src/lib/activity.ts
 app/src/lib/autofetch.ts
 app/src/lib/case.ts
 app/src/lib/consent.ts
