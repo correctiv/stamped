@@ -81,10 +81,18 @@ export async function probeEmbedder(
     options: { now?: () => number } = {},
 ): Promise<ProbeResult> {
     if (documents.length === 0) {
-        return { sampled: 0, seconds: 0, docsPerSecond: 0, tokensPerSecond: 0, estimatedSeconds: 0, recommendation: 'on' };
+        return {
+            sampled: 0,
+            seconds: 0,
+            docsPerSecond: 0,
+            tokensPerSecond: 0,
+            estimatedSeconds: 0,
+            recommendation: 'on',
+        };
     }
     const now = options.now ?? Date.now;
-    const toEmbed = (docs: readonly SourceDocument[]) => docs.map((doc) => ({ subject: doc.subject, body: doc.body }));
+    const toEmbed = (docs: readonly SourceDocument[]) =>
+        docs.map((doc) => ({ subject: doc.subject, body: doc.body }));
 
     let timed = documents;
     if (documents.length >= 3) {

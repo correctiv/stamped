@@ -30,5 +30,11 @@ export type {
 } from './indexer.ts';
 export { createIndexer, DEFAULT_BATCH_SIZE, DEFAULT_PAGE_SIZE, DEFAULT_POLL_MS } from './indexer.ts';
 export type { ProbeResult } from './probe.ts';
-export { estimateTokens, probeEmbedder, PROBE_MAX_ARCHIVE_HOURS, PROBE_SAMPLE_SIZE, sampleForProbe } from './probe.ts';
+export {
+    estimateTokens,
+    probeEmbedder,
+    PROBE_MAX_ARCHIVE_HOURS,
+    PROBE_SAMPLE_SIZE,
+    sampleForProbe,
+} from './probe.ts';
 export { onBattery } from './power.ts';

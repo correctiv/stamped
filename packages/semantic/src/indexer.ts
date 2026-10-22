@@ -113,7 +113,9 @@ function assertCompatible(vectors: DatabaseSync, embedder: Embedder): void {
     let model: string | undefined;
     let dimensions: number | undefined;
     try {
-        const rows = vectors.prepare("SELECT key, value FROM meta WHERE key IN ('modelId', 'dimensions')").all() as {
+        const rows = vectors
+            .prepare("SELECT key, value FROM meta WHERE key IN ('modelId', 'dimensions')")
+            .all() as {
             key: string;
             value: string;
         }[];
@@ -126,7 +128,7 @@ function assertCompatible(vectors: DatabaseSync, embedder: Embedder): void {
     }
     if (model !== embedder.modelId || dimensions !== embedder.dimensions) {
         throw new Error(
-            'The vector database was not opened for this embedder. Open it with openVectorDb and the embedder\'s model id and dimensions.',
+            "The vector database was not opened for this embedder. Open it with openVectorDb and the embedder's model id and dimensions.",
         );
     }
 }
@@ -238,11 +240,14 @@ export function createIndexer(options: IndexerOptions): Indexer {
     };
 
     const embedAll = async (docs: readonly SourceDocument[]): Promise<[string, Float32Array][]> => {
-        const out = await embedder.embedDocuments(docs.map((doc) => ({ subject: doc.subject, body: doc.body })));
+        const out = await embedder.embedDocuments(
+            docs.map((doc) => ({ subject: doc.subject, body: doc.body })),
+        );
         if (out.length !== docs.length) throw new Error('embedder returned the wrong number of vectors');
         return docs.map((doc, i) => {
             const vector = out[i];
-            if (vector.length !== embedder.dimensions) throw new Error('embedder returned a vector of the wrong size');
+            if (vector.length !== embedder.dimensions)
+                throw new Error('embedder returned a vector of the wrong size');
             checkVector(vector);
             return [doc.hash, vector] as [string, Float32Array];
         });
@@ -295,7 +300,9 @@ export function createIndexer(options: IndexerOptions): Indexer {
             );
             if (missing.length === 0) continue;
             const byHash = new Map(source.read(missing).map((doc) => [doc.hash, doc] as const));
-            const docs = missing.map((hash) => byHash.get(hash)).filter((doc): doc is SourceDocument => doc !== undefined);
+            const docs = missing
+                .map((hash) => byHash.get(hash))
+                .filter((doc): doc is SourceDocument => doc !== undefined);
 
             for (let i = 0; i < docs.length; i += batchSize) {
                 await gate();

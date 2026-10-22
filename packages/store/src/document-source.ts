@@ -84,7 +84,8 @@ export function indexDocumentSource(db: DatabaseSync, paths: CasePaths): IndexDo
         count: () => countMessages(db),
         next(after, limit) {
             const size = Math.max(1, Math.min(1000, Math.trunc(limit) || 1));
-            const rows: SourceRow[] = after === undefined || after.sentAt !== undefined ? datedPage(db, after, size) : [];
+            const rows: SourceRow[] =
+                after === undefined || after.sentAt !== undefined ? datedPage(db, after, size) : [];
             // A page the dated half could not fill is the proof that it is exhausted, so the rest
             // comes from the tail — continuing after the cursor when the cursor is already in it.
             if (rows.length < size) {
