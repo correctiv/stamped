@@ -1839,6 +1839,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // No modal dialog: the banner shows the run from the status file, a CLI-started one too.
         this.importCancellable = new Gio.Cancellable();
         const cancellable = this.importCancellable;
+        this.importWatcher.expect();
         const proc = Gio.Subprocess.new(
             argv,
             Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,

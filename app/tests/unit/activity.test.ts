@@ -124,6 +124,18 @@ export default async () => {
             expect(registry.list().length).toBe(0);
         });
 
+        await it('reports a run the window started even if it never saw it running', () => {
+            const registry = new ActivityRegistry();
+            const watcher = new ImportWatcher(registry);
+            const old = status({ state: 'finished', startedAt: '2026-10-21T09:00:00.000Z' });
+            watcher.expect('2026-10-21T10:00:00.000Z');
+            expect(watcher.poll(old, false)).toBe(undefined);
+            const ended = watcher.poll(status({ state: 'finished' }), false);
+            expect(ended?.status.state).toBe('finished');
+            expect(registry.get('import')?.state).toBe('done');
+            expect(watcher.poll(status({ state: 'finished' }), false)).toBe(undefined);
+        });
+
         await it('shows an interrupted run as failed, and does not bring a dismissed one back', () => {
             const registry = new ActivityRegistry();
             const watcher = new ImportWatcher(registry);

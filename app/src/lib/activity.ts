@@ -215,6 +215,7 @@ export function importRunning(status: ImportStatus | undefined): boolean {
 export class ImportWatcher {
     private readonly registry: ActivityRegistry;
     private reported: string | undefined;
+    private ownSince: string | undefined;
 
     constructor(registry: ActivityRegistry) {
         this.registry = registry;
@@ -223,7 +224,17 @@ export class ImportWatcher {
     /** Forget the case: the next one starts from a clean slate. */
     reset(): void {
         this.reported = undefined;
+        this.ownSince = undefined;
         this.registry.dismiss('import');
+    }
+
+    /**
+     * The window is about to start a run. A small archive imports between two polls, so the
+     * window never sees it `running`; without this mark its finished result would look like an
+     * old one and the list would never reload. Any run that started at or after `at` is ours.
+     */
+    expect(at: string = new Date().toISOString()): void {
+        this.ownSince = at;
     }
 
     /**
@@ -239,12 +250,11 @@ export class ImportWatcher {
             return undefined;
         }
         if (status.startedAt === this.reported) return undefined;
-        const ours = this.registry.get('import')?.state === 'running';
-        if (!ours && !data.orphaned) {
-            this.reported = status.startedAt;
-            return undefined;
-        }
+        const started = this.ownSince !== undefined && status.startedAt >= this.ownSince;
+        const ours = started || this.registry.get('import')?.state === 'running';
         this.reported = status.startedAt;
+        if (!ours && !data.orphaned) return undefined;
+        if (started) this.ownSince = undefined;
         if (data.orphaned || status.state === 'failed') this.registry.fail(data);
         else this.registry.finish(data, status.state === 'cancelled' ? 'cancelled' : 'done');
         return data;
