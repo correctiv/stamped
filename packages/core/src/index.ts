@@ -40,6 +40,30 @@ export {
 } from './verdict.ts';
 
 export {
+    checkTime,
+    describeTimeCheck,
+    describeTimeProtection,
+    describeTimeResult,
+    describeTimeUnavailable,
+    formatTimeSpan,
+    parseMailDate,
+    parseReceivedTime,
+    TIME_CHECKS,
+    TIME_TOLERANCES,
+    TIME_UNAVAILABLE_REASONS,
+    TIME_RESULTS,
+    type TimeCheck,
+    type TimeCheckKind,
+    type TimeFinding,
+    type TimeInput,
+    type TimeResult,
+    timeResultLabel,
+    type TimeUnavailableReason,
+    type TimeValue,
+    type TimeValueKind,
+} from './timecheck.ts';
+
+export {
     type Explanation,
     explainMessage,
     explainSignature,
