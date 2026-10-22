@@ -56,6 +56,24 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.2.0" date="2026-10-22">
+      <description>
+        <p>Stamped now runs on macOS, and it reads a leaked archive the way it usually arrives: a folder per mailbox, each split into parts.</p>
+        <p xml:lang="de">Stamped läuft jetzt auf macOS und liest ein geleaktes Archiv so, wie es meist ankommt: ein Ordner pro Postfach, jedes in Teile zerlegt.</p>
+        <ul>
+          <li>A key store that you fill from the archive, from files or, only if you ask, from DNS</li>
+          <li xml:lang="de">Ein Schlüsselspeicher, den man aus dem Archiv, aus Dateien oder, nur auf Wunsch, aus dem DNS füllt</li>
+          <li>Every verdict explained in plain language</li>
+          <li xml:lang="de">Jeder Befund in Alltagssprache erklärt</li>
+          <li>People and Timeline views of a case</li>
+          <li xml:lang="de">Ansichten Personen und Zeitleiste für einen Fall</li>
+          <li>A status button that shows imports and key lookups while you keep working</li>
+          <li xml:lang="de">Ein Statusknopf zeigt Importe und Schlüsselabfragen, während man weiterarbeitet</li>
+        </ul>
+        <p>Known limits: on a very large archive the window can stop responding for a while. The Windows builds have not been tested.</p>
+        <p xml:lang="de">Bekannte Grenzen: Bei einem sehr großen Archiv kann das Fenster eine Weile nicht reagieren. Die Windows-Pakete sind ungetestet.</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-10-20">
       <description>
         <p>First release. Open a mail archive as a case, search it, and read each message next to its verdict and the evidence behind it. The stamped command line tool does the same without a window.</p>
