@@ -1138,6 +1138,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 leftMargin: 0,
                 rightMargin: 0,
             });
+            // `GtkTextView`'s main node carries the `.view` style class, the same one a list or
+            // tree view has — it paints a flat theme colour that in dark mode sits noticeably
+            // darker than the card around it, reading as a selection rect rather than as body
+            // text. Dropping the class lets the body show through the sheet's own `card`
+            // background instead, in both themes.
+            view.remove_css_class('view');
             view.get_buffer().set_text(body.text === '' ? _('(no text)') : body.text, -1);
             inner.append(
                 new BodyScroller({
