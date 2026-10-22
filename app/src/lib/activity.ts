@@ -16,7 +16,13 @@
  */
 
 import type { LookupChannel } from '@stamped/core';
-import { orphanedImport, type ImportStatus } from '@stamped/store';
+import {
+    ACTIVITY_KINDS,
+    orphanedActivity,
+    orphanedImport,
+    type ActivityStatus,
+    type ImportStatus,
+} from '@stamped/store';
 
 import type { SemanticState } from './semantic-state.ts';
 import { percent } from './status.ts';
@@ -304,5 +310,122 @@ export class ImportWatcher {
         if (data.orphaned || status.state === 'failed') this.registry.fail(data);
         else this.registry.finish(data, status.state === 'cancelled' ? 'cancelled' : 'done');
         return data;
+    }
+}
+
+/** A run that is no longer live; a `running` file in that case was interrupted, which is a failure. */
+function endedState(state: ActivityStatus['state']): ActivityState {
+    if (state === 'finished') return 'done';
+    if (state === 'running') return 'failed';
+    return state;
+}
+
+/**
+ * Reads the activity status files of a case into the registry, for the kinds a background run of
+ * another process writes: `people`, `keys`, `reverify` — the CLI's own work.
+ *
+ * The window started those runs through a file rather than through the registry (an in-process run
+ * of the same kinds writes the registry directly), so this is the window's half of the seam with a
+ * subprocess: one tick reads the case's files and puts live runs into the activity view, and the
+ * poll reports the run that ended with the tick so the caller can reload the case and say so. The
+ * contract mirrors the import watcher: a `running` file whose process is gone or whose last update
+ * is old reads as interrupted, never as running. A task the window holds itself is not a file, so
+ * the watcher never sees it and only ever updates what it put there.
+ */
+export class ActivityWatcher {
+    private readonly registry: ActivityRegistry;
+    private readonly kinds: readonly ActivityKind[];
+    private readonly reported = new Map<ActivityKind, string>();
+    private readonly now: () => number;
+    private since: number;
+
+    constructor(
+        registry: ActivityRegistry,
+        kinds: readonly ActivityKind[] = ACTIVITY_KINDS,
+        now: () => number = Date.now,
+    ) {
+        this.registry = registry;
+        this.kinds = kinds;
+        this.now = now;
+        this.since = now();
+    }
+
+    /** Forget the case: the next one starts from a clean slate. */
+    reset(): void {
+        this.since = this.now();
+        for (const kind of this.kinds) {
+            this.reported.delete(kind);
+            this.registry.dismiss(kind);
+        }
+    }
+
+    /**
+     * One tick: read the case's activity status files into the registry.
+     *
+     * @returns the run that ENDED with this tick (or was found interrupted), so the caller can
+     *   reload the case and say so — `undefined` while nothing changed state.
+     */
+    poll(statuses: readonly ActivityStatus[]): ActivityTask | undefined {
+        let ended: ActivityTask | undefined;
+        for (const status of statuses) {
+            const live = status.state === 'running' && !orphanedActivity(status);
+            const task = this.taskOf(status, live);
+            if (live) {
+                this.reported.delete(status.kind);
+                const current = this.registry.get(status.kind);
+                if (current === undefined) this.registry.start(task.data);
+                else if (current.state === 'running') this.registry.update(task.data);
+                continue;
+            }
+            if (this.reported.get(status.kind) === status.startedAt) continue;
+            this.reported.set(status.kind, status.startedAt);
+            // A run that ended before this case was opened is history, not news: only an
+            // interrupted one is worth a row, as with the import watcher.
+            const interrupted = status.state === 'running';
+            if (!interrupted && Date.parse(status.updatedAt) < this.since) continue;
+            ended = task;
+            if (task.state === 'failed') this.registry.fail(task.data, task.reason);
+            else this.registry.finish(task.data, task.state === 'cancelled' ? 'cancelled' : 'done');
+        }
+        return ended;
+    }
+
+    private taskOf(status: ActivityStatus, live: boolean): ActivityTask {
+        const data = this.dataOf(status);
+        return {
+            kind: status.kind,
+            state: live ? 'running' : endedState(status.state),
+            data,
+            fraction: progressOf(data),
+            reason: undefined,
+            startedAt: Date.parse(status.startedAt),
+            endedAt: live ? undefined : Date.parse(status.updatedAt),
+        };
+    }
+
+    private dataOf(status: ActivityStatus): ActivityData {
+        switch (status.kind) {
+            case 'people':
+                return { kind: 'people', processed: status.done };
+            case 'keys': {
+                const current = this.registry.get(status.kind);
+                const carried =
+                    current !== undefined && current.data.kind === 'keys' ? current.data : undefined;
+                return {
+                    kind: 'keys',
+                    // A run this window started carries its channel in the task it holds; one that
+                    // another process started is read off the status, whose numbers are not the
+                    // channel's — the task of the last run of this kind keeps it.
+                    channel: carried?.channel ?? 'archive.prove.email',
+                    done: status.done,
+                    total: status.total,
+                    found: carried?.found ?? 0,
+                    notFound: carried?.notFound ?? 0,
+                    errors: carried?.errors ?? 0,
+                };
+            }
+            case 'reverify':
+                return { kind: 'reverify', checked: status.done, total: status.total, changed: 0 };
+        }
     }
 }
