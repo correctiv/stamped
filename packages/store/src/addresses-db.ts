@@ -18,6 +18,8 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import { parseAddressList } from '@stamped/import';
 
+import { statementFor } from './statements.ts';
+
 /** What the writers need of a message: the three header strings as the index stores them. */
 export interface AddressHeaders {
     readonly from: string;
@@ -101,7 +103,8 @@ function hasTable(db: DatabaseSync): boolean {
 /** Write the address rows of one message. A no-op when the table could not be created. */
 export function writeAddresses(db: DatabaseSync, hash: string, headers: AddressHeaders): void {
     if (!hasTable(db)) return;
-    const insert = db.prepare(
+    const insert = statementFor(
+        db,
         'INSERT INTO addresses (hash, address, name, sent, received) VALUES (?, ?, ?, ?, ?)',
     );
     for (const row of addressRows(headers)) insert.run(hash, row.address, row.name, row.sent, row.received);
@@ -110,7 +113,7 @@ export function writeAddresses(db: DatabaseSync, hash: string, headers: AddressH
 /** Forget the address rows of one message. */
 export function deleteAddresses(db: DatabaseSync, hash: string): void {
     if (!hasTable(db)) return;
-    db.prepare('DELETE FROM addresses WHERE hash = ?').run(hash);
+    statementFor(db, 'DELETE FROM addresses WHERE hash = ?').run(hash);
 }
 
 function metaValue(db: DatabaseSync, key: string): string | undefined {

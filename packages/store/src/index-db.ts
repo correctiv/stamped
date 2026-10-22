@@ -24,6 +24,7 @@ import type { MessageSummary } from '@stamped/import';
 
 import { deleteAddresses, ensureAddresses, writeAddresses } from './addresses-db.ts';
 import type { CasePaths } from './case.ts';
+import { statementFor } from './statements.ts';
 
 /**
  * Bumped whenever a column changes. A database at another version is DROPPED and rebuilt rather
@@ -258,7 +259,7 @@ function ensureIndexes(db: DatabaseSync): void {
 
 /** Is this message in the index already? The question that makes indexing resumable. */
 export function isIndexed(db: DatabaseSync, hash: string): boolean {
-    const row = db.prepare('SELECT 1 AS n FROM messages WHERE hash = ?').get(hash);
+    const row = statementFor(db, 'SELECT 1 AS n FROM messages WHERE hash = ?').get(hash);
     return row !== undefined;
 }
 
@@ -282,15 +283,16 @@ export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fre
     // before/now table in the report. A legacy row (NULL) stays NULL.
     let firstVerdict: string | null = entry.finding.verdict;
     if (!options.fresh) {
-        const previous = db.prepare('SELECT first_verdict FROM messages WHERE hash = ?').get(entry.hash) as
-            | { first_verdict?: string | null }
-            | undefined;
+        const previous = statementFor(db, 'SELECT first_verdict FROM messages WHERE hash = ?').get(
+            entry.hash,
+        ) as { first_verdict?: string | null } | undefined;
         if (previous) firstVerdict = previous.first_verdict ?? null;
         removeMessage(db, entry.hash);
     }
     const summary = entry.summary;
 
-    db.prepare(
+    statementFor(
+        db,
         `INSERT INTO messages (
             hash, message_id, sender, recipients, cc, subject, date, sent_at,
             in_reply_to, refs, from_domain, verdict, first_verdict, caveats, bytes
@@ -313,7 +315,8 @@ export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fre
         entry.bytes,
     );
 
-    db.prepare(
+    statementFor(
+        db,
         `INSERT INTO messages_fts (hash, ${FTS_COLUMNS.join(', ')})
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
@@ -331,7 +334,8 @@ export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fre
 
     writeAddresses(db, entry.hash, { from: summary.from, to: summary.to, cc: summary.cc });
 
-    const signature = db.prepare(
+    const signature = statementFor(
+        db,
         `INSERT INTO signatures (hash, position, domain, selector, algorithm, verdict, aligned, reason)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     );
@@ -351,9 +355,9 @@ export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fre
 
 /** Forget one message. Used before re-indexing it; the raw store is untouched either way. */
 export function removeMessage(db: DatabaseSync, hash: string): void {
-    db.prepare('DELETE FROM messages WHERE hash = ?').run(hash);
-    db.prepare('DELETE FROM messages_fts WHERE hash = ?').run(hash);
-    db.prepare('DELETE FROM signatures WHERE hash = ?').run(hash);
+    statementFor(db, 'DELETE FROM messages WHERE hash = ?').run(hash);
+    statementFor(db, 'DELETE FROM messages_fts WHERE hash = ?').run(hash);
+    statementFor(db, 'DELETE FROM signatures WHERE hash = ?').run(hash);
     deleteAddresses(db, hash);
 }
 
