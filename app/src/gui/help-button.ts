@@ -1,11 +1,14 @@
 /**
- * `<StampedHelpButton>` — a small "?" beside a label that explains the term behind it.
+ * `<StampedHelpButton>` — a small ⓘ beside a label that explains the term behind it.
  *
  * This app is full of words a journalist has every right not to know: selector, alignment, body
  * hash, `l=`. The badge cannot carry that explanation and a tooltip is not readable at length, so
  * every such label gets one of these, with the paragraph `explainVerdict` / `explainKey` already
- * wrote. The widget holds no text of its own — it must not become a second place where the
+ * wrote. The widget holds no text of its own. It must not become a second place where the
  * product's vocabulary is defined.
+ *
+ * The icon is ⓘ and not "?", because "?" is the icon this app gives the `unverifiable` verdict.
+ * A help button carrying it would read as a claim about the message beside it.
  */
 
 import GObject from '@girs/gobject-2.0';

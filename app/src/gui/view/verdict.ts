@@ -16,7 +16,7 @@
  * read as "forged" — the mistake that gets a true story spiked.
  */
 
-import { describeVerdict, type Verdict, VERDICTS, fmt, _ } from '@stamped/core';
+import { describeVerdict, type Verdict, verdictLabel, VERDICTS, fmt, _ } from '@stamped/core';
 import type { VerdictCount } from '@stamped/store';
 
 import { escapeLine } from './markup.ts';
@@ -32,29 +32,6 @@ export interface VerdictLook {
     readonly icon: string;
     /** The full finding, from `@stamped/core`. Never rephrased. */
     readonly sentence: string;
-}
-
-/**
- * The badge label for a verdict.
- *
- * Short on purpose: it sits in a list row next to a subject, where the sentence would not fit.
- * The sentence is always one `?`-popover or one pane away, never replaced by the badge.
- */
-function verdictLabel(verdict: Verdict): string {
-    switch (verdict) {
-        case 'confirmed':
-            return _('Confirmed');
-        case 'confirmed-with-caveats':
-            return _('With caveats');
-        case 'body-altered':
-            return _('Body altered');
-        case 'headers-altered':
-            return _('Headers altered');
-        case 'unverifiable':
-            return _('Unverifiable');
-        case 'unsigned':
-            return _('Unsigned');
-    }
 }
 
 /** The style class. See the module note on why `unverifiable` is not an error colour. */
@@ -110,6 +87,25 @@ export function verdictLook(verdict: Verdict): VerdictLook {
 }
 
 /**
+ * `describeVerdict`'s sentence without the verdict name it opens with.
+ *
+ * Every one of the six reads `<verdict name>: <what was found>`, which is right for a printed
+ * report and wrong on a card that already shows the name as a badge two centimetres above. The
+ * card then said "Unverifiable" twice before saying anything.
+ *
+ * It DROPS A LABEL, it does not rephrase a finding — the words after the colon are untouched, and
+ * a sentence without one is returned as it came. Only the first letter is raised, because English
+ * continues in lower case after the colon where German does not.
+ */
+export function withoutVerdictPrefix(sentence: string): string {
+    const at = sentence.indexOf(': ');
+    // A colon this late is punctuation inside the finding, not the label in front of it.
+    if (at < 0 || at > 40) return sentence;
+    const rest = sentence.slice(at + 2);
+    return rest.charAt(0).toLocaleUpperCase() + rest.slice(1);
+}
+
+/**
  * What a verdict means, in one paragraph behind the `?` next to its filter row.
  *
  * Longer than the sentence and aimed at the question the sentence provokes — "so can I use it?".
@@ -129,7 +125,7 @@ function verdictExplanation(verdict: Verdict): string {
             );
         case 'confirmed-with-caveats':
             return _(
-                'The cryptography checked out, but something limits what that proves — a weak algorithm, an unsigned Subject, or a key that came from the archive itself. Read the caveats before you quote the message.',
+                'The cryptography checked out, but something limits what that proves. A weak algorithm, an unsigned Subject, or a key that came from the archive itself. Read the caveats before you quote the message.',
             );
         case 'body-altered':
             return _(
@@ -137,7 +133,7 @@ function verdictExplanation(verdict: Verdict): string {
             );
         case 'headers-altered':
             return _(
-                'The body is as signed, but one of the signed header fields is not. A changed Subject, From or Date — which can matter more than the body does.',
+                'The body is as signed, but one of the signed header fields is not. A changed Subject, From or Date can matter more than the body does.',
             );
         case 'unverifiable':
             return _(

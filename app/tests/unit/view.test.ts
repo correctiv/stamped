@@ -60,7 +60,12 @@ import {
     verdictShares,
 } from '../../src/gui/view/overview.ts';
 import { allSources, baseName, shortPath, sourceRows } from '../../src/gui/view/sources.ts';
-import { explainVerdict, verdictFilters, verdictLook } from '../../src/gui/view/verdict.ts';
+import {
+    explainVerdict,
+    verdictFilters,
+    verdictLook,
+    withoutVerdictPrefix,
+} from '../../src/gui/view/verdict.ts';
 
 /** A signature that verified cleanly, as the baseline every case below varies. */
 function good(overrides: Partial<SignatureEvidence> = {}): SignatureEvidence {
@@ -440,7 +445,7 @@ export default async () => {
     await describe('the verdict card and the evidence chain', async () => {
         await it('shows the verdict sentence and how many signatures were looked at', async () => {
             const card = verdictCard(classifyMessage([good(), good({ domain: 'lists.example.org' })]));
-            expect(card.sentence).toBe(escapeLine(describeVerdict('confirmed')));
+            expect(card.sentence).toBe(escapeLine(withoutVerdictPrefix(describeVerdict('confirmed'))));
             expect(card.summary.includes('2')).toBe(true);
             expect(card.note).toBe(undefined);
         });
