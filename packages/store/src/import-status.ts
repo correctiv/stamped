@@ -146,18 +146,24 @@ export function orphanedImport(status: ImportStatus, now: number = Date.now()): 
 /**
  * Is a process alive?
  *
- * `/proc` rather than `kill(pid, 0)`: asking the kernel through the process directory needs no
- * signal semantics on either runtime. Where there is no `/proc` (macOS, Windows) the answer is
- * "alive", never "gone" — a missing directory would otherwise call every running import
- * interrupted, and the staleness check still catches a dead one within a minute.
+ * `/proc` first: asking the kernel through the process directory needs no signal semantics. Where
+ * there is no `/proc` (macOS), `kill(pid, 0)` asks instead — only `ESRCH` means "gone"; `EPERM`
+ * is a live process of another user. Any other failure (Windows, a runtime without `kill`) reads
+ * as "alive", never "gone": a wrong "gone" would call every running import interrupted, and the
+ * staleness check still catches a dead one within a minute.
  */
 function processAlive(pid: number): boolean {
     if (!Number.isInteger(pid) || pid <= 0) return false;
     try {
-        if (!existsSync('/proc/self')) return true;
-        return existsSync(`/proc/${pid}`);
+        if (existsSync('/proc/self')) return existsSync(`/proc/${pid}`);
     } catch {
         return true;
+    }
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch (error) {
+        return (error as { code?: unknown } | null)?.code !== 'ESRCH';
     }
 }
 
