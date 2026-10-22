@@ -72,6 +72,7 @@ packages/core/src/keymaterial.ts
 packages/core/src/keys.ts
 packages/core/src/keytemplate.ts
 packages/core/src/keyvault.ts
+packages/core/src/timecheck.ts
 packages/core/src/verdict.ts
 packages/import/src/addresses.ts
 packages/import/src/bytes.ts

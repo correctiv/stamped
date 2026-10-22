@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 21:53+0200\n"
+"POT-Creation-Date: 2026-10-22 22:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -599,7 +599,7 @@ msgid "Check one message against a key you have on disk"
 msgstr ""
 
 #: app/src/commands/verify.ts:83 packages/import/src/folder.ts:128
-#: packages/import/src/source.ts:219 packages/store/src/importer.ts:465
+#: packages/import/src/source.ts:219 packages/store/src/importer.ts:466
 msgid "Cannot read {path}."
 msgstr ""
 
@@ -2502,153 +2502,262 @@ msgstr ""
 msgid "Pair list line {line}: expected domain and selector."
 msgstr ""
 
-#: packages/core/src/verdict.ts:263
-msgid "Confirmed"
+#: packages/core/src/timecheck.ts:468
+msgid "Consistent"
 msgstr ""
 
-#: packages/core/src/verdict.ts:265
-msgid "With caveats"
+#: packages/core/src/timecheck.ts:470
+msgid "Inconsistent"
+msgstr ""
+
+#: packages/core/src/timecheck.ts:472
+msgid "Not checkable"
+msgstr ""
+
+#: packages/core/src/timecheck.ts:480
+msgid ""
+"Time: consistent. The time values of this message agree within the "
+"tolerances."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:483
+msgid ""
+"Time: inconsistent. Time values of this message disagree beyond the "
+"tolerances. The signature verdict is unaffected."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:486
+msgid "Time: not checkable. This message has too few usable time values."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:505
+msgid "The message has no Date header."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:507
+msgid "The Date header cannot be read as a date."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:509
+msgid "No verified signature carries a signing time (t=)."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:511
+msgid ""
+"No verified signature carries both a signing time (t=) and an expiry (x=)."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:513
+msgid "There are too few Received headers to compare."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:515
+msgid "The Received headers carry too few readable timestamps."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:534
+msgid ""
+"The Date header agrees with the signing time (t=) of a verified signature "
+"(difference {deviation}, tolerance {tolerance})."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:537
+msgid ""
+"The Date header differs from the signing time (t=) of a verified signature "
+"by {deviation}, beyond the tolerance of {tolerance}."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:544
+msgid "The signature expires (x=) after it was made (t=), by {deviation}."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:545
+msgid "The signature expires (x=) before it was made (t=): {deviation}."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:552
+msgid ""
+"The Received headers run in time order (largest step backwards {deviation}, "
+"tolerance {tolerance})."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:555
+msgid ""
+"A lower Received header is dated {deviation} after the one above it, beyond "
+"the tolerance of {tolerance}."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:563
+msgid ""
+"The Date header is not later than the first Received header (difference "
+"{deviation}, tolerance {tolerance})."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:566
+msgid ""
+"The Date header is {deviation} later than the first Received header, beyond "
+"the tolerance of {tolerance}."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:576
+msgid ""
+"Every compared value is covered by a verified signature, so this result "
+"weighs more."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:578
+msgid ""
+"At least one compared value is not covered by a verified signature and could "
+"have been written by anyone."
 msgstr ""
 
 #: packages/core/src/verdict.ts:267
-msgid "Body altered"
+msgid "Confirmed"
 msgstr ""
 
 #: packages/core/src/verdict.ts:269
-msgid "Headers altered"
+msgid "With caveats"
 msgstr ""
 
 #: packages/core/src/verdict.ts:271
-msgid "Unverifiable"
+msgid "Body altered"
 msgstr ""
 
 #: packages/core/src/verdict.ts:273
+msgid "Headers altered"
+msgstr ""
+
+#: packages/core/src/verdict.ts:275
+msgid "Unverifiable"
+msgstr ""
+
+#: packages/core/src/verdict.ts:277
 msgid "Unsigned"
 msgstr ""
 
-#: packages/core/src/verdict.ts:286
+#: packages/core/src/verdict.ts:290
 msgid "Confirmed: a valid signature covers this message as it stands."
 msgstr ""
 
-#: packages/core/src/verdict.ts:288
+#: packages/core/src/verdict.ts:292
 msgid ""
 "Confirmed with caveats: the signature is valid but covers less than it "
 "appears to."
 msgstr ""
 
-#: packages/core/src/verdict.ts:290
+#: packages/core/src/verdict.ts:294
 msgid "Body altered: the body is not the body that was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:292
+#: packages/core/src/verdict.ts:296
 msgid "Headers altered: a signed header field is not what was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:294
+#: packages/core/src/verdict.ts:298
 msgid "Unverifiable: a signature is present, but nothing here can check it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:296
+#: packages/core/src/verdict.ts:300
 msgid ""
 "Unsigned: no DKIM signature. This says nothing about the message either way."
 msgstr ""
 
-#: packages/core/src/verdict.ts:309
+#: packages/core/src/verdict.ts:313
 msgid ""
 "Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
 "carry a valid signature (RFC 8301)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:312
+#: packages/core/src/verdict.ts:316
 msgid ""
 "The RSA key is shorter than 1024 bits and can be factored with ordinary "
 "resources."
 msgstr ""
 
-#: packages/core/src/verdict.ts:315
+#: packages/core/src/verdict.ts:319
 msgid ""
 "An l= tag limits the signature to the start of the body. Anything appended "
 "after that is unsigned."
 msgstr ""
 
-#: packages/core/src/verdict.ts:318
+#: packages/core/src/verdict.ts:322
 msgid ""
 "Subject is not signed: the subject line could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:320
+#: packages/core/src/verdict.ts:324
 msgid "To is not signed: the recipient could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:322
+#: packages/core/src/verdict.ts:326
 msgid "Date is not signed: the date could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:325
+#: packages/core/src/verdict.ts:329
 msgid ""
 "The public key came from the archive itself, so it proves consistency rather "
 "than authenticity."
 msgstr ""
 
-#: packages/core/src/verdict.ts:329
+#: packages/core/src/verdict.ts:333
 msgid ""
 "The key was first seen after this message was sent. The selector may have "
 "been rotated, so this failure may come from a wrong key rather than an edit."
 msgstr ""
 
-#: packages/core/src/verdict.ts:335
+#: packages/core/src/verdict.ts:339
 msgid ""
 "The signature is from {signer}, but the message claims to be from {author}. "
 "It proves only that {signer} handled the message, not that {author} sent it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:337
+#: packages/core/src/verdict.ts:341
 msgid "(unknown domain)"
 msgstr ""
 
-#: packages/core/src/verdict.ts:340
+#: packages/core/src/verdict.ts:344
 msgid ""
 "The signing domain is not the From domain, so the signature does not vouch "
 "for the author."
 msgstr ""
 
-#: packages/core/src/verdict.ts:349
+#: packages/core/src/verdict.ts:353
 msgid "No public key for this selector and domain."
 msgstr ""
 
-#: packages/core/src/verdict.ts:351
+#: packages/core/src/verdict.ts:355
 msgid "The public key record is unusable."
 msgstr ""
 
-#: packages/core/src/verdict.ts:353
+#: packages/core/src/verdict.ts:357
 msgid "The DKIM-Signature header does not parse."
 msgstr ""
 
-#: packages/core/src/verdict.ts:355
+#: packages/core/src/verdict.ts:359
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:357
+#: packages/core/src/verdict.ts:361
 msgid "The signature is expired or its timestamp lies in the future."
 msgstr ""
 
-#: packages/core/src/verdict.ts:359
+#: packages/core/src/verdict.ts:363
 msgid "The key lookup failed and may succeed later."
 msgstr ""
 
-#: packages/core/src/verdict.ts:362
+#: packages/core/src/verdict.ts:366
 msgid ""
 "The key does not match the signature (different size or type), so it cannot "
 "have produced it. The selector was probably rotated."
 msgstr ""
 
-#: packages/core/src/verdict.ts:365
+#: packages/core/src/verdict.ts:369
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 
-#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:443
+#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:444
 msgid "{path} is not a folder."
 msgstr ""
 
@@ -2656,11 +2765,11 @@ msgstr ""
 msgid "The case folder {path} was written by a newer version of Stamped."
 msgstr ""
 
-#: packages/store/src/importer.ts:337
+#: packages/store/src/importer.ts:338
 msgid "{path} holds no messages."
 msgstr ""
 
-#: packages/store/src/importer.ts:453
+#: packages/store/src/importer.ts:454
 msgid "{path} holds no mail files."
 msgstr ""
 
