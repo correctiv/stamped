@@ -1532,6 +1532,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 done: text.pairs.length,
                 found: outcome.stored,
                 notFound: outcome.missed,
+                errors: outcome.errors,
             });
             const applied = await this.applyTracked(session, outcome.pairs);
             showToast(

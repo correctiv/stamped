@@ -554,6 +554,8 @@ export interface LookupProgress {
     readonly total: number;
     readonly found: number;
     readonly notFound: number;
+    /** Pairs the lookup could not answer for so far. */
+    readonly errors: number;
 }
 
 /** Pairs per slice of a lookup — a few rounds of the core's own concurrency. */
@@ -587,11 +589,12 @@ export async function runLookup(
     const consent: LookupConsent = { channel, pairs };
     // In slices, so the window can show how far a long list is: each slice is checked against the
     // same consent and runs at the lookup's own concurrency, the join between slices is the cost.
-    const result: { found: LookupResult['found'][number][]; misses: LookupResult['misses'][number][] } = {
-        found: [],
-        misses: [],
-    };
-    onProgress?.({ done: 0, total: pairs.length, found: 0, notFound: 0 });
+    const result: {
+        found: LookupResult['found'][number][];
+        misses: LookupResult['misses'][number][];
+        errors: LookupResult['errors'][number][];
+    } = { found: [], misses: [], errors: [] };
+    onProgress?.({ done: 0, total: pairs.length, found: 0, notFound: 0, errors: 0 });
     for (let at = 0; at < pairs.length; at += LOOKUP_SLICE) {
         const slice = pairs.slice(at, at + LOOKUP_SLICE);
         const part =
@@ -600,11 +603,13 @@ export async function runLookup(
                 : await lookupArchive(consent, slice, (url) => fetch(url));
         result.found.push(...part.found);
         result.misses.push(...part.misses);
+        result.errors.push(...part.errors);
         onProgress?.({
             done: Math.min(pairs.length, at + slice.length),
             total: pairs.length,
             found: result.found.length,
             notFound: result.misses.length,
+            errors: result.errors.length,
         });
     }
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 10:01+0200\n"
+"POT-Creation-Date: 2026-10-22 10:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -373,7 +373,7 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:82 app/src/gui/window.ts:1580
+#: app/src/commands/report.ts:82 app/src/gui/window.ts:1588
 #: app/src/gui/window.blp:162
 msgid "Verdicts"
 msgstr ""
@@ -593,12 +593,12 @@ msgstr ""
 msgid "Cannot read {path}."
 msgstr ""
 
-#: app/src/gui/activity.ts:33 app/src/gui/window.ts:1104
+#: app/src/gui/activity.ts:33 app/src/gui/window.ts:1111
 msgid "Details"
 msgstr ""
 
-#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1044
-#: app/src/gui/window.ts:1391 app/src/gui/window.ts:1655
+#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1051
+#: app/src/gui/window.ts:1398 app/src/gui/window.ts:1663
 msgid "Cancel"
 msgstr ""
 
@@ -1022,11 +1022,11 @@ msgstr ""
 msgid "From"
 msgstr ""
 
-#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:960
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:967
 msgid "To"
 msgstr ""
 
-#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:961
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:968
 msgid "Cc"
 msgstr ""
 
@@ -1353,57 +1353,57 @@ msgstr ""
 msgid "Mail archives"
 msgstr ""
 
-#: app/src/gui/window.ts:452
+#: app/src/gui/window.ts:459
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
-#: app/src/gui/window.ts:859
+#: app/src/gui/window.ts:866
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 
-#: app/src/gui/window.ts:936
+#: app/src/gui/window.ts:943
 msgid "Open With…"
 msgstr ""
 
-#: app/src/gui/window.ts:937
+#: app/src/gui/window.ts:944
 msgid "Open a read-only copy in the program you choose"
 msgstr ""
 
-#: app/src/gui/window.ts:967
+#: app/src/gui/window.ts:974
 msgid "The stored copy could not be read."
 msgstr ""
 
-#: app/src/gui/window.ts:978
+#: app/src/gui/window.ts:985
 msgid "(no text)"
 msgstr ""
 
-#: app/src/gui/window.ts:983
+#: app/src/gui/window.ts:990
 msgid "Shown as text; the HTML was not rendered."
 msgstr ""
 
-#: app/src/gui/window.ts:984
+#: app/src/gui/window.ts:991
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 
-#: app/src/gui/window.ts:996
+#: app/src/gui/window.ts:1003
 msgid "(unnamed)"
 msgstr ""
 
-#: app/src/gui/window.ts:1026
+#: app/src/gui/window.ts:1033
 msgid "Open in a mail program?"
 msgstr ""
 
-#: app/src/gui/window.ts:1028
+#: app/src/gui/window.ts:1035
 msgid ""
 "A mail program may load remote content. Only the verdict proves a message "
 "genuine."
 msgstr ""
 
-#: app/src/gui/window.ts:1033
+#: app/src/gui/window.ts:1040
 msgid "What does that mean?"
 msgstr ""
 
-#: app/src/gui/window.ts:1038
+#: app/src/gui/window.ts:1045
 msgid ""
 "A mail program that loads remote content tells the sender’s server that "
 "someone is reading this message right now. How a program displays a message "
@@ -1411,144 +1411,144 @@ msgid ""
 "copy outside the case."
 msgstr ""
 
-#: app/src/gui/window.ts:1045
+#: app/src/gui/window.ts:1052
 msgid "Open"
 msgstr ""
 
-#: app/src/gui/window.ts:1054
+#: app/src/gui/window.ts:1061
 msgid "The stored copy of this message is missing."
 msgstr ""
 
-#: app/src/gui/window.ts:1062
+#: app/src/gui/window.ts:1069
 msgid "Could not open the message: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:1119 app/src/gui/window.blp:283
+#: app/src/gui/window.ts:1126 app/src/gui/window.blp:283
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:1138
+#: app/src/gui/window.ts:1145
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:1147
+#: app/src/gui/window.ts:1154
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:1163
+#: app/src/gui/window.ts:1170
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:1203
+#: app/src/gui/window.ts:1210
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:1205
+#: app/src/gui/window.ts:1212
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:1207
+#: app/src/gui/window.ts:1214
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:1239
+#: app/src/gui/window.ts:1246
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:1251
+#: app/src/gui/window.ts:1258
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:1289
+#: app/src/gui/window.ts:1296
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:1298
+#: app/src/gui/window.ts:1305
 msgid "Copy Request…"
 msgstr ""
 
-#: app/src/gui/window.ts:1299
+#: app/src/gui/window.ts:1306
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 
-#: app/src/gui/window.ts:1303
+#: app/src/gui/window.ts:1310
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr ""
 
-#: app/src/gui/window.ts:1348
+#: app/src/gui/window.ts:1355
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:1370
+#: app/src/gui/window.ts:1377
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:1372
+#: app/src/gui/window.ts:1379
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:1392
+#: app/src/gui/window.ts:1399
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:1507
+#: app/src/gui/window.ts:1514
 msgid "Looking up keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:1539
+#: app/src/gui/window.ts:1547
 msgid "Key lookup failed: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:1573
+#: app/src/gui/window.ts:1581
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:1582
+#: app/src/gui/window.ts:1590
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:1631
+#: app/src/gui/window.ts:1639
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:1647
+#: app/src/gui/window.ts:1655
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:1650
+#: app/src/gui/window.ts:1658
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:1654
+#: app/src/gui/window.ts:1662
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:1679
+#: app/src/gui/window.ts:1687
 msgid "Imported."
 msgstr ""
 
-#: app/src/gui/window.ts:1755
+#: app/src/gui/window.ts:1763
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:1755
+#: app/src/gui/window.ts:1763
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:1789
+#: app/src/gui/window.ts:1797
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:1789
+#: app/src/gui/window.ts:1797
 msgid "Close"
 msgstr ""
 

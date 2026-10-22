@@ -185,5 +185,15 @@ export default async () => {
             registry.update(keys({ done: 5, found: 3, notFound: 1, errors: 1 }));
             expect(rowView(registry.get('keys')!).stats.endsWith('1 error')).toBe(true);
         });
+
+        await it('keeps the error count and the reason on a failed key lookup', () => {
+            const registry = new ActivityRegistry();
+            registry.start(keys({ done: 2, found: 1, notFound: 0, errors: 3 }));
+            registry.fail(keys({ done: 2, found: 1, notFound: 0, errors: 3 }), 'the archive is down');
+            const row = rowView(registry.get('keys')!);
+            expect(row.subtitle).toBe('the archive is down');
+            expect(row.stats).toBe('1 found · 0 not found · 3 errors');
+            expect(registry.summary().failed).toBe(1);
+        });
     });
 };
