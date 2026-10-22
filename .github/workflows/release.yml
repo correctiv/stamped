@@ -24,7 +24,15 @@ jobs:
           git tar xz findutils gh
           gjs libsoup3 json-glib gnutls libnghttp2
           libgda libgda-sqlite
-          gettext glib2 msitools zip unzip
+          gettext glib2 msitools zip unzip file
+
+      # No distribution packages appimagetool, so pin the release by its checksum.
+      - name: Install appimagetool
+        run: |
+          curl -fsSL -o /usr/local/bin/appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage
+          echo "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0  /usr/local/bin/appimagetool" | sha256sum -c -
+          chmod +x /usr/local/bin/appimagetool
 
       - uses: actions/checkout@v4
 
