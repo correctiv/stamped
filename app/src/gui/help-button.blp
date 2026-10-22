@@ -1,7 +1,13 @@
 using Gtk 4.0;
 
-// The "?" button and its popover. Entirely static: the only thing TypeScript sets is the label,
+// The ⓘ button and its popover. Entirely static: the only thing TypeScript sets is the label,
 // which is one of the explanations the view models already produce.
+//
+// An INFO icon, never a question mark. A "?" is already the icon of the `unverifiable` verdict,
+// so a "?" offering help next to a verdict badge reads as a verdict.
+//
+// `help-about-symbolic` is the ⓘ, and `dialog-information-symbolic` is NOT: in Adwaita it draws a
+// lightbulb. Checked in a screenshot, not in the name.
 template $StampedHelpButton: Gtk.MenuButton {
   icon-name: "help-about-symbolic";
   valign: center;

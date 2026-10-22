@@ -24,8 +24,14 @@ import {
 
 import { caveatTexts, evidenceFields, signatureHeading } from './evidence.ts';
 
-/** How wide the label column is. Wide enough for the longest label in `evidenceFields`, plus a space. */
-const LABEL_WIDTH = 17;
+/**
+ * The least width at which the column still reads as a column.
+ *
+ * The real width is measured from the labels of the block being printed, because the labels are
+ * TRANSLATED: a constant wide enough for "Signed headers" leaves the German "Signierte
+ * Kopfzeilen" touching its own value, and nothing in the English test run would show it.
+ */
+const MIN_LABEL_WIDTH = 18;
 
 /** The whole report for one message: the verdict, then one block per signature. */
 export function reportLines(finding: MessageFinding): string[] {
@@ -50,8 +56,10 @@ export function signatureLines(finding: SignatureFinding, position: number, tota
         lines.push(`  ${why.sentence}`);
         for (const { label, value } of why.details) lines.push(`    ${label}: ${value}`);
     }
-    for (const { label, value } of evidenceFields(finding)) {
-        lines.push(`  ${label.padEnd(LABEL_WIDTH)}${value}`);
+    const fields = evidenceFields(finding);
+    const width = Math.max(MIN_LABEL_WIDTH, ...fields.map((field) => field.label.length + 2));
+    for (const { label, value } of fields) {
+        lines.push(`  ${label.padEnd(width)}${value}`);
     }
     for (const { text } of caveatTexts(finding)) {
         lines.push(fmt(_('  caveat: {text}'), { text }));

@@ -107,7 +107,7 @@ export function keysCommand(): CommandModule<unknown, CaseArgs> {
                 .command(addCommand())
                 .command(fetchCommand())
                 .command(templateCommand())
-                .demandCommand(1, _('Pick a subcommand — try `stamped keys --help`.'))
+                .demandCommand(1, _('Pick a subcommand. Try `stamped keys --help`.'))
                 .epilog(explain()),
         handler: () => undefined,
     };
@@ -168,7 +168,7 @@ function listCommand(): CommandModule<CaseArgs, ListArgs> {
             }
             for (const pair of vault.conflicts()) {
                 console.log(
-                    fmt(_('! {name} holds different keys — a key rotation, or a forgery. Compare them.'), {
+                    fmt(_('! {name} holds different keys. A key rotation, or a forgery. Compare them.'), {
                         name: pairName(pair),
                     }),
                 );
@@ -372,7 +372,7 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                             algorithm: f.key.algorithm,
                             bits: f.key.bits,
                             origin: f.origin,
-                            flag: outcome.status === 'conflict' ? _(' — DIFFERS from a stored key') : '',
+                            flag: outcome.status === 'conflict' ? _(', DIFFERS from a stored key') : '',
                         }),
                     );
                 }

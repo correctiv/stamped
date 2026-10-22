@@ -141,5 +141,5 @@ export function timelineNote(timeline: Timeline): string {
 
 /** What the people view says while the address table is still being filled for an older case. */
 export function peopleIncompleteNote(): string {
-    return escapeLine(_('Reading the addresses of this case — the list is not complete yet.'));
+    return escapeLine(_('Reading the addresses of this case. The list is not complete yet.'));
 }

@@ -70,7 +70,7 @@ export function statusHeadline(status: ImportStatus): string {
     if (status.state === 'running') {
         return orphanedImport(status)
             ? _(
-                  'An import is marked running, but its process is gone or it has not reported for a while — it was interrupted.',
+                  'An import is marked running, but its process is gone or it has not reported for a while. It was interrupted.',
               )
             : _('An import is running in this case.');
     }

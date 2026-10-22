@@ -69,6 +69,7 @@ import {
 import { LOOKUP_CHANNELS, channelLabel, consentDialog } from './view/consent.ts';
 import {
     caveatsHeading,
+    explainDkim,
     signatureCards,
     verdictCard,
     type SignatureCard,
@@ -151,10 +152,33 @@ function nextTurn(): Promise<void> {
  */
 const SEARCH_DELAY_MS = 180;
 
+/**
+ * The screenshot hooks, read once.
+ *
+ * `dev/screenshots.sh` has to reach states that only a click reaches, and clicking at hard-coded
+ * coordinates photographs whichever widget sits there after the header bar shifts by a few
+ * pixels. `STAMPED_SHOT_VERDICT` opens the first message of one verdict — a confirmed one for the
+ * evidence chain, an unverifiable one for the missing-key card — and `STAMPED_SHOT_EVIDENCE` pops
+ * the ⓘ of that numbered fact row open. Both are null in every normal run.
+ */
+const SHOT_VERDICT = GLib.getenv('STAMPED_SHOT_VERDICT');
+const SHOT_EVIDENCE = GLib.getenv('STAMPED_SHOT_EVIDENCE');
+
 /** True when the person closed a portal or chooser dialog rather than it failing. */
 function isDismissed(error: unknown): boolean {
     const gerror = error as { matches?: (domain: number, code: number) => boolean };
     return gerror.matches?.(Gtk.dialog_error_quark(), Gtk.DialogError.DISMISSED) === true;
+}
+
+/** Scroll `widget`'s nearest scrolling ancestor until the widget is in the middle of it. */
+function scrollInto(widget: Gtk.Widget): void {
+    const scroller = widget.get_ancestor(Gtk.ScrolledWindow.$gtype) as Gtk.ScrolledWindow | null;
+    const child = scroller?.get_child();
+    if (!scroller || !child) return;
+    const [known, bounds] = widget.compute_bounds(child);
+    if (!known) return;
+    const adjustment = scroller.get_vadjustment();
+    adjustment.set_value(bounds.origin.y - adjustment.get_page_size() / 2);
 }
 
 /** Children of a `Gtk.Box`, removed. Every pane rebuilds from scratch rather than diffing. */
@@ -339,6 +363,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * the handler that set the filter the rebuild exists to show — and reset it.
      */
     private rebuilding = false;
+    /**
+     * The screenshot hook's grip on the first signature's evidence chain.
+     *
+     * Kept from the render rather than looked up afterwards: the ⓘ of a fact row sits three
+     * widgets deep inside an `Adw.ExpanderRow`, and walking there from the window would
+     * photograph whatever the tree happens to put in that position. Only ever set when
+     * {@link SHOT_EVIDENCE} is.
+     */
+    private shotEvidence?: { expander: Adw.ExpanderRow; help: readonly Gtk.MenuButton[] };
     /** The pending search debounce, or 0. */
     private searchTimer = 0;
     /** The pending people-search debounce, and the idle source filling the address table. */
@@ -439,6 +472,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
         if (GLib.getenv('STAMPED_SHOT_POPOVER') !== null) {
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
                 this._activityButton.popup();
+                return GLib.SOURCE_REMOVE;
+            });
+        }
+        // Set before the idle `refresh` reaches its `fillList` step, so the sidebar comes up with
+        // the matching filter row selected rather than on "All messages".
+        if (SHOT_VERDICT !== null) {
+            this.verdict = SHOT_VERDICT as Verdict;
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
+                this._messageList.select_row(this._messageList.get_row_at_index(0));
                 return GLib.SOURCE_REMOVE;
             });
         }
@@ -744,6 +786,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.filters = [];
         for (const filter of verdictFilters(report.verdicts)) {
             const item = navRow(filter.title, undefined, filter.icon);
+            // ONE LINE, ellipsized, with the full label in the tooltip. A wrapping title let Pango
+            // hyphenate inside the word — "Mit Einschränku-ngen" — which reads as a typo in the
+            // product's own vocabulary. The archive rows below keep wrapping: their titles are
+            // mailbox names, which break at a hyphen that is really in them.
+            item.set_title_lines(1);
+            item.set_tooltip_markup(filter.title);
             item.add_suffix(countLabel(filter.count));
             if (filter.explanation !== undefined) {
                 item.add_suffix(new StampedHelpButton(filter.explanation));
@@ -882,17 +930,42 @@ export class StampedWindow extends Adw.ApplicationWindow {
         body: ReadableBody | undefined,
     ): void {
         clearBox(this._readerBody);
+        this.shotEvidence = undefined;
         const card = verdictCard(finding);
         this._readerBody.append(
-            this.mailSheet(mailHead(message, { locale: this.readerLocale() }), card, body, message.hash),
+            this.mailSheet(mailHead(message, { locale: this.readerLocale() }), body, message.hash),
         );
-        this._readerBody.append(this.verdictCardWidget(verdictCard(finding)));
+        this._readerBody.append(this.verdictCardWidget(card));
         this._readerBody.append(this.headerGroup(headerFields(message)));
         for (const card of signatureCards(finding)) {
             this._readerBody.append(this.signatureGroup(card));
         }
         if (raw !== '') this._readerBody.append(this.sourceGroup(raw));
         this._readerStack.set_visible_child_name('message');
+        if (SHOT_EVIDENCE !== null) this.popEvidenceShot(Number(SHOT_EVIDENCE));
+    }
+
+    /** The evidence chain expanded and one fact's ⓘ open, for {@link SHOT_EVIDENCE}. */
+    private popEvidenceShot(index: number): void {
+        const target = this.shotEvidence;
+        if (target === undefined) return;
+        target.expander.set_expanded(true);
+        // After the expander has animated open: a popover pointed at a row that is still sliding
+        // into place anchors itself where the row was.
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 700, () => {
+            const row = target.help[index];
+            if (row === undefined) return GLib.SOURCE_REMOVE;
+            // A popover whose row is scrolled out of the pane is clamped to the window edge, which
+            // photographs an explanation floating over the sidebar instead of beside its line.
+            // Measured rather than focused: a `grab_focus` on the row succeeds without the
+            // scrolled window following it, and the row then sits 1000 px below the viewport.
+            scrollInto(row);
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
+                row.popup();
+                return GLib.SOURCE_REMOVE;
+            });
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     /** The reader's locale as a BCP 47 tag, or nothing for `Intl`'s own default. */
@@ -903,19 +976,18 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /**
-     * The mail "sheet": what a mail program shows above the body, with the verdict as its stamp
-     * and the open action in its header.
+     * The mail "sheet": what a mail program shows above the body, with the open action in its
+     * header.
+     *
+     * NO VERDICT BADGE HERE. The sheet used to carry one beside the subject, which put the same
+     * pill twice in one pane — the card above it is where the verdict is claimed, and a second
+     * copy reads as a second finding.
      *
      * Everything shown here is decoded for reading and nothing in it is evidence — the verdict
      * card, the header group and the raw block below still quote the message as it stands.
      * HTML is never rendered, so opening a message here fetches nothing.
      */
-    private mailSheet(
-        head: MailHead,
-        card: VerdictCard,
-        body: ReadableBody | undefined,
-        hash: string,
-    ): Gtk.Widget {
+    private mailSheet(head: MailHead, body: ReadableBody | undefined, hash: string): Gtk.Widget {
         const sheet = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 12 });
         sheet.add_css_class('card');
         const inner = new Gtk.Box({
@@ -933,9 +1005,6 @@ export class StampedWindow extends Adw.ApplicationWindow {
         title.set_hexpand(true);
         title.set_selectable(true);
         top.append(title);
-        const stamp = badge(card.badge, card.cssClass);
-        stamp.set_valign(Gtk.Align.START);
-        top.append(stamp);
         // The header action, where a mail program puts reply and forward. ONE button and always
         // the chooser: the second, "direct" button ended in the same app picker on Linux anyway,
         // so it offered a distinction the desktop never made.
@@ -1073,10 +1142,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /**
      * The verdict card.
      *
-     * Badge, then the sentence, then how many signatures it rests on — and the `?` holds the
-     * paragraph that answers "so can I use it?". The caveat note sits HERE rather than only in
-     * the signature block below, because `signer-not-author` is what decides whether a mail that
-     * looks like the CEO's reads as the CEO's.
+     * Badge, then the sentence, then how many signatures it rests on. The caveat note sits HERE
+     * rather than only in the signature block below, because `signer-not-author` is what decides
+     * whether a mail that looks like the CEO's reads as the CEO's.
+     *
+     * NOTHING IS FOLDED AWAY AND NOTHING IS LABELLED TWICE. The card used to carry a ⓘ beside the
+     * badge and a `Details` expander under the sentence, over four short lines of evidence that
+     * are also listed in full in the signature block below. What each verdict means stays one
+     * click away in the sidebar filter row and in the overview, where it is read before a message
+     * is opened rather than on top of the claim about this one.
      */
     private verdictCardWidget(card: VerdictCard): Gtk.Widget {
         const frame = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
@@ -1097,20 +1171,29 @@ export class StampedWindow extends Adw.ApplicationWindow {
         head.append(icon);
         head.append(badge(card.badge, card.cssClass));
         head.append(new Gtk.Box({ hexpand: true }));
-        head.append(new StampedHelpButton(explainVerdict(card.verdict)));
         body.append(head);
 
-        body.append(wrapLabel(card.sentence));
-        if (card.note !== undefined) body.append(wrapLabel(card.note, 'warning'));
-        if (card.why !== undefined) {
-            body.append(wrapLabel(card.why));
-            const details = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 });
-            for (const fact of card.whyDetails) {
-                details.append(wrapLabel(`${fact.label}: ${fact.value}`, 'caption', 'monospace'));
-            }
-            const expander = new Gtk.Expander({ label: _('Details') });
-            expander.set_child(details);
-            body.append(expander);
+        // A MISSING KEY GETS THE SHORT FORM. The reader of this card has one thing to do, so the
+        // card names the key in a single sentence and offers to fetch it. The two paragraphs it
+        // replaces sit behind the ⓘ, unchanged. Every other verdict keeps the sentence and the
+        // why, because for those there is nothing short to say.
+        if (card.noKey !== undefined) {
+            // A WRAP BOX, NOT A BOX. A horizontal `Gtk.Box` asks for the SUM of its children's
+            // minimum widths, and neither child here can give any of it back: the label's minimum
+            // is `t2048._domainkey.example.com`, one word with nowhere to break, and a button's is
+            // its whole label. Measured in German that sum is 1028 px against the 1000 px window,
+            // and the card ran out past the edge. A wrap box asks for the WIDEST child instead and
+            // moves the button onto its own line when the sentence has taken the first — which at
+            // this pane width is both languages, so the card reads the same in either.
+            const line = new Adw.WrapBox({ childSpacing: 6, lineSpacing: 6 });
+            line.append(wrapLabel(card.noKey.line));
+            line.append(new StampedHelpButton(card.noKey.explanation, Gtk.ArrowType.LEFT));
+            line.append(this.lookupButton([card.noKey.pair], _('Look Up Key…'), false));
+            body.append(line);
+        } else {
+            body.append(wrapLabel(card.sentence));
+            if (card.note !== undefined) body.append(wrapLabel(card.note, 'warning'));
+            if (card.why !== undefined) body.append(wrapLabel(card.why));
         }
         body.append(wrapLabel(card.summary, 'dimmed', 'caption'));
         return frame;
@@ -1169,6 +1252,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
         const facts = new Adw.ExpanderRow({ title: _('Evidence') });
         facts.add_prefix(new Gtk.Image({ iconName: 'view-list-bullet-symbolic' }));
+        // The question goes on the expander and not in the group header, whose suffix is the
+        // verdict badge. It is the one general explanation the chain needs: the per-row ⓘ below
+        // each assume the reader knows roughly what a signature over a mail is.
+        facts.add_suffix(this.dkimHelpButton());
+        const help: Gtk.MenuButton[] = [];
         for (const fact of card.facts) {
             // A fact's value is a domain, a selector, an algorithm or a base64 hash — none of them
             // text a hyphen may be inserted into. See `noHyphens`.
@@ -1178,9 +1266,21 @@ export class StampedWindow extends Adw.ApplicationWindow {
             // fact a reader can check by hand against the message.
             row.set_subtitle_lines(0);
             row.set_subtitle_selectable(true);
+            // The explanation sits on the line it explains. A reader of this chain is looking at
+            // ONE line, usually the one that broke, and a paragraph above the list covering all
+            // thirteen terms is a paragraph nobody reads. See `explainEvidenceField`.
+            //
+            // It opens LEFTWARDS, into the pane. This row suffix is the furthest-right widget in
+            // the window, and a popover centred under it left the window on the right.
+            const info = new StampedHelpButton(fact.explanation, Gtk.ArrowType.LEFT);
+            row.add_suffix(info);
+            help.push(info);
             facts.add_row(row);
         }
         group.add(facts);
+        if (SHOT_EVIDENCE !== null && this.shotEvidence === undefined) {
+            this.shotEvidence = { expander: facts, help };
+        }
 
         if (card.caveats.length > 0) {
             const caveats = new Adw.ExpanderRow({ title: caveatsHeading(card.caveats.length) });
@@ -1196,6 +1296,43 @@ export class StampedWindow extends Adw.ApplicationWindow {
             group.add(caveats);
         }
         return group;
+    }
+
+    /**
+     * "How does DKIM work?", with the answer in its popover.
+     *
+     * The QUESTION is on the button, where a bare ⓘ would only say that there is something to
+     * read. It is the one place in the reader where the thing the whole pane is about gets named,
+     * and a reader who does not know what DKIM is cannot use any of the thirteen fields below it.
+     *
+     * The label is written here, as every static heading in this file is; the answer comes from
+     * `explainDkim` in the view model, already escaped.
+     */
+    private dkimHelpButton(): Gtk.MenuButton {
+        const label = new Gtk.Label({
+            label: noHyphens(explainDkim()),
+            useMarkup: true,
+            wrap: true,
+            xalign: 0,
+            maxWidthChars: 44,
+            marginTop: 10,
+            marginBottom: 10,
+            marginStart: 12,
+            marginEnd: 12,
+        });
+        const popover = new Gtk.Popover();
+        popover.set_child(label);
+
+        const button = new Gtk.MenuButton({
+            label: _('How does DKIM work?'),
+            valign: Gtk.Align.CENTER,
+            // Leftwards, for the reason in `help-button.ts`: this is a row suffix at the right
+            // edge of the pane, and GTK clips a popover to the monitor, not to the window.
+            direction: Gtk.ArrowType.LEFT,
+        });
+        button.add_css_class('flat');
+        button.set_popover(popover);
+        return button;
     }
 
     /**
@@ -1279,7 +1416,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const icon = new Gtk.Image({ iconName: row.icon });
         icon.add_css_class(row.cssClass);
         item.add_prefix(icon);
-        item.add_suffix(new StampedHelpButton(explainKey(row)));
+        item.add_suffix(new StampedHelpButton(explainKey(row), Gtk.ArrowType.LEFT));
 
         const body = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
@@ -1327,8 +1464,17 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * A menu rather than one button, because the two channels disclose to different parties and
      * the choice is the person's. Nothing goes out from here: every entry opens the consent
      * dialog, which is the only place a lookup can be agreed to.
+     *
+     * The key pane's button and the verdict card's button are the SAME widget with a different
+     * label, so the card cannot grow a second path to the network that skips the consent dialog.
+     * The card's is not a pill: it offers one key beside a sentence, where the key pane's is the
+     * pane's primary action over every pair the case still wants.
      */
-    private lookupButton(pairs: readonly KeyPair[]): Gtk.MenuButton {
+    private lookupButton(
+        pairs: readonly KeyPair[],
+        label = _('Look Up Missing Keys…'),
+        pill = true,
+    ): Gtk.MenuButton {
         const popover = new Gtk.Popover();
         const box = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
@@ -1352,9 +1498,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
         popover.set_child(box);
 
-        const button = new Gtk.MenuButton({ label: _('Look Up Missing Keys…') });
-        button.add_css_class('pill');
-        button.add_css_class('suggested-action');
+        const button = new Gtk.MenuButton({ label });
+        if (pill) {
+            button.add_css_class('pill');
+            button.add_css_class('suggested-action');
+        }
         button.set_popover(popover);
         return button;
     }
@@ -1607,7 +1755,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             const count = new Gtk.Label({ label: share.count, useMarkup: true });
             count.add_css_class('numeric');
             row.add_suffix(count);
-            row.add_suffix(new StampedHelpButton(explainVerdict(share.verdict)));
+            row.add_suffix(new StampedHelpButton(explainVerdict(share.verdict), Gtk.ArrowType.LEFT));
             // The bar and the count are decoration on one filterable row: tapping it shows the
             // messages behind the number, which is the whole reason the count is there.
             row.connect('activated', () => this.applyFilter({ verdict: share.verdict }));

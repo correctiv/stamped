@@ -60,7 +60,12 @@ import {
     verdictShares,
 } from '../../src/gui/view/overview.ts';
 import { allSources, baseName, shortPath, sourceRows } from '../../src/gui/view/sources.ts';
-import { explainVerdict, verdictFilters, verdictLook } from '../../src/gui/view/verdict.ts';
+import {
+    explainVerdict,
+    verdictFilters,
+    verdictLook,
+    withoutVerdictPrefix,
+} from '../../src/gui/view/verdict.ts';
 
 /** A signature that verified cleanly, as the baseline every case below varies. */
 function good(overrides: Partial<SignatureEvidence> = {}): SignatureEvidence {
@@ -440,7 +445,7 @@ export default async () => {
     await describe('the verdict card and the evidence chain', async () => {
         await it('shows the verdict sentence and how many signatures were looked at', async () => {
             const card = verdictCard(classifyMessage([good(), good({ domain: 'lists.example.org' })]));
-            expect(card.sentence).toBe(escapeLine(describeVerdict('confirmed')));
+            expect(card.sentence).toBe(escapeLine(withoutVerdictPrefix(describeVerdict('confirmed'))));
             expect(card.summary.includes('2')).toBe(true);
             expect(card.note).toBe(undefined);
         });
@@ -468,6 +473,31 @@ export default async () => {
             );
             expect(unverifiable.verdict).toBe('unverifiable');
             expect(unverifiable.cssClass).toBe('accent');
+        });
+
+        await it('names the missing key in one line and keeps the long form for the ⓘ', async () => {
+            // The card a journalist sees most often, and the only one with something to do on
+            // it. One line and a button, not sixty words about what a public key is.
+            const card = verdictCard(
+                classifyMessage([
+                    good({ signatureOk: false, bodyHashOk: false, unverifiableBecause: 'no-key' }),
+                ]),
+            );
+            expect(card.noKey?.pair).toStrictEqual({ domain: 'example.com', selector: 'sel' });
+            expect(card.noKey?.line).toBe('Key sel._domainkey.example.com is missing.');
+            // The paragraphs the line stands in for are kept, word for word, behind the ⓘ.
+            expect(card.noKey?.explanation.includes(card.sentence)).toBe(true);
+            expect((card.noKey?.explanation.length ?? 0) > (card.noKey?.line.length ?? 0)).toBe(true);
+        });
+
+        await it('offers no short form for an unverifiable a fetch cannot answer', async () => {
+            // `bad-key` and `unsupported` are not waiting for anything, so there is nothing
+            // short to say and the card keeps the sentence.
+            const card = verdictCard(
+                classifyMessage([good({ signatureOk: false, unverifiableBecause: 'bad-key' })]),
+            );
+            expect(card.verdict).toBe('unverifiable');
+            expect(card.noKey).toBe(undefined);
         });
 
         await it('gives every signature its own card, numbered and with its own verdict', async () => {
@@ -498,14 +528,14 @@ export default async () => {
             );
             const facts = cards[0]?.facts ?? [];
             const value = (label: string) => facts.find((fact) => fact.label === label)?.value ?? '';
-            expect(value('domain')).toBe('example.com');
-            expect(value('selector')).toBe('sel');
-            expect(value('algorithm')).toBe('rsa-sha256');
-            expect(value('signed headers')).toBe('from:to:subject:date');
-            expect(value('key').includes('2048')).toBe(true);
+            expect(value('Domain')).toBe('example.com');
+            expect(value('Selector')).toBe('sel');
+            expect(value('Algorithm')).toBe('rsa-sha256');
+            expect(value('Signed headers')).toBe('from:to:subject:date');
+            expect(value('Key').includes('2048')).toBe(true);
             // Both hashes, or the reader is asked to take Stamped's word for it.
-            expect(value('body hash').includes('whatThisMessageHashesTo=')).toBe(true);
-            expect(value('body hash').includes('whatTheSignerCommittedTo=')).toBe(true);
+            expect(value('Body hash').includes('whatThisMessageHashesTo=')).toBe(true);
+            expect(value('Body hash').includes('whatTheSignerCommittedTo=')).toBe(true);
         });
 
         await it('escapes a verifier note that contains markup', async () => {
@@ -518,7 +548,7 @@ export default async () => {
                     }),
                 ]),
             );
-            const note = cards[0]?.facts.find((fact) => fact.label === 'verifier says')?.value ?? '';
+            const note = cards[0]?.facts.find((fact) => fact.label === 'Verifier says')?.value ?? '';
             expect(note.includes('&lt;sel._domainkey.example.com&gt;')).toBe(true);
             expect(note.includes('<')).toBe(false);
         });

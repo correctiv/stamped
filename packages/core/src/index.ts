@@ -35,6 +35,7 @@ export {
     UNVERIFIABLE_REASONS,
     type Verdict,
     VERDICTS,
+    verdictLabel,
     verdictRank,
 } from './verdict.ts';
 

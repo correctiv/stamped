@@ -64,11 +64,31 @@ jobs:
       # must be the SAME version the deps pin — a global-CLI ↔ pinned-libs skew produces silently
       # broken bundles. Read it out of app/package.json rather than repeating it here: hardcoded,
       # it falls behind the moment the pin moves.
+      #
+      # `--before` PINS THE CLI'S OWN TREE, and pinning the CLI alone is not enough. Its
+      # dependencies are caret ranges, so `npm install -g @gjsify/cli@0.64.2` installs whatever
+      # `@gjsify/*` npm published since — and gjsify ships as one release train, so those are
+      # written against each other, not against our lock. Measured on 2026-10-22: the 0.64.4
+      # train put `resolve-npm@0.64.4` on npm before `web-globals@0.64.4`, the newer
+      # globals-map maps `self` to `@gjsify/web-globals/register/self`, and the 0.64.2
+      # web-globals our lock installs does not export that subpath. Every build died on
+      # `cannot resolve the workspace package`, on a commit that had been green an hour
+      # earlier and with nothing of ours changed.
+      #
+      # So resolve the CLI's publish time and install the registry AS IT WAS THEN: the whole
+      # bootstrap tree is the one the pinned CLI was released with. Nothing is hardcoded, so a
+      # pin bump carries its own date with it.
       - name: Bootstrap the gjsify CLI
         run: |
           VERSION=$(node -p "require('./app/package.json').devDependencies['@gjsify/cli']")
-          echo "Bootstrapping @gjsify/cli@$VERSION (from app/package.json)"
-          npm install -g "@gjsify/cli@$VERSION"
+          PUBLISHED=$(npm view "@gjsify/cli@$VERSION" time --json \
+            | node -e 'const t=JSON.parse(require("fs").readFileSync(0,"utf8"));const m=Array.isArray(t)?t[0]:t;process.stdout.write(m[process.argv[1]]||"");' "$VERSION")
+          if [ -z "$PUBLISHED" ]; then
+            echo "could not read the publish time of @gjsify/cli@$VERSION" >&2
+            exit 1
+          fi
+          echo "Bootstrapping @gjsify/cli@$VERSION (from app/package.json), registry as of $PUBLISHED"
+          npm install -g "@gjsify/cli@$VERSION" --before="$PUBLISHED"
 
       - name: Install dependencies (gjsify install --immutable)
         # From here on the PINNED CLI, not the bootstrap one: `npm install -g` resolves the

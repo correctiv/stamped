@@ -251,6 +251,30 @@ export const CAVEAT_BY_UNSIGNED_HEADER: ReadonlyMap<string, Caveat> = new Map([
 ]);
 
 /**
+ * The short name of a verdict, for a badge or a heading.
+ *
+ * Beside {@link describeVerdict} and for the same reason: the name is part of the finding. It also
+ * keeps the verdict IDENTIFIER out of anything a person reads. A German report saying "Signatur 1
+ * von 1, confirmed" is this function not being called.
+ */
+export function verdictLabel(verdict: Verdict): string {
+    switch (verdict) {
+        case 'confirmed':
+            return _('Confirmed');
+        case 'confirmed-with-caveats':
+            return _('With caveats');
+        case 'body-altered':
+            return _('Body altered');
+        case 'headers-altered':
+            return _('Headers altered');
+        case 'unverifiable':
+            return _('Unverifiable');
+        case 'unsigned':
+            return _('Unsigned');
+    }
+}
+
+/**
  * One line a reader can act on, for each verdict.
  *
  * Translated here rather than at the frontends: the sentence IS the finding, and two frontends

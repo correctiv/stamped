@@ -516,7 +516,7 @@ function addedMessage(status: 'added' | 'unchanged' | 'conflict'): string {
             return _('That key was already stored.');
         case 'conflict':
             return _(
-                'Stored — but this case already held a DIFFERENT key for that selector. Either the domain rotated it, or one of the two is not theirs. Check both before you rely on the new verdicts.',
+                'Stored, but this case already held a DIFFERENT key for that selector. Either the domain rotated it, or one of the two is not theirs. Check both before you rely on the new verdicts.',
             );
         case 'added':
             return _('Key stored.');

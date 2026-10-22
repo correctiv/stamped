@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 10:04+0200\n"
+"POT-Creation-Date: 2026-10-22 13:27+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -73,8 +73,8 @@ msgstr ""
 
 #: app/src/commands/import.ts:113
 msgid ""
-"Import one mbox, with no keys yet — run `stamped report` to see which are "
-"needed"
+"Import one mbox, with no keys yet. Run `stamped report` to see which are "
+"needed."
 msgstr ""
 
 #: app/src/commands/import.ts:117
@@ -170,7 +170,7 @@ msgid "The case folder holding keys.json (default: .stamped)"
 msgstr ""
 
 #: app/src/commands/keys.ts:110
-msgid "Pick a subcommand — try `stamped keys --help`."
+msgid "Pick a subcommand. Try `stamped keys --help`."
 msgstr ""
 
 #: app/src/commands/keys.ts:124
@@ -202,7 +202,7 @@ msgstr[1] ""
 
 #: app/src/commands/keys.ts:171
 msgid ""
-"! {name} holds different keys — a key rotation, or a forgery. Compare them."
+"! {name} holds different keys. A key rotation, or a forgery. Compare them."
 msgstr ""
 
 #: app/src/commands/keys.ts:180
@@ -293,7 +293,7 @@ msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr ""
 
 #: app/src/commands/keys.ts:375 app/src/lib/autofetch.ts:170
-msgid " — DIFFERS from a stored key"
+msgid ", DIFFERS from a stored key"
 msgstr ""
 
 #: app/src/commands/keys.ts:402
@@ -373,8 +373,8 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:82 app/src/gui/window.ts:1588
-#: app/src/gui/window.blp:162
+#: app/src/commands/report.ts:82 app/src/gui/window.ts:1736
+#: app/src/gui/window.blp:144
 msgid "Verdicts"
 msgstr ""
 
@@ -511,9 +511,9 @@ msgstr ""
 #: app/src/commands/search.ts:90 app/src/commands/search.ts:91
 #: app/src/commands/search.ts:92 app/src/gui/view/message.ts:88
 #: app/src/gui/view/message.ts:89 app/src/gui/view/message.ts:95
-#: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:66
-#: app/src/lib/evidence.ts:69 app/src/lib/evidence.ts:70
-#: app/src/lib/evidence.ts:71 app/src/lib/evidence.ts:73
+#: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:100
+#: app/src/lib/evidence.ts:107 app/src/lib/evidence.ts:108
+#: app/src/lib/evidence.ts:112 app/src/lib/evidence.ts:118
 #: packages/core/src/explain.ts:58
 msgid "(none)"
 msgstr ""
@@ -593,12 +593,12 @@ msgstr ""
 msgid "Cannot read {path}."
 msgstr ""
 
-#: app/src/gui/activity.ts:33 app/src/gui/window.ts:1111
+#: app/src/gui/activity.ts:33
 msgid "Details"
 msgstr ""
 
-#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1051
-#: app/src/gui/window.ts:1398 app/src/gui/window.ts:1663
+#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1120
+#: app/src/gui/window.ts:1546 app/src/gui/window.ts:1811
 msgid "Cancel"
 msgstr ""
 
@@ -606,7 +606,7 @@ msgstr ""
 msgid "Dismiss"
 msgstr ""
 
-#: app/src/gui/activity.ts:132
+#: app/src/gui/activity.ts:136
 msgid "Nothing is running in the background."
 msgstr ""
 
@@ -628,9 +628,9 @@ msgstr ""
 
 #: app/src/gui/session.ts:519
 msgid ""
-"Stored — but this case already held a DIFFERENT key for that selector. "
-"Either the domain rotated it, or one of the two is not theirs. Check both "
-"before you rely on the new verdicts."
+"Stored, but this case already held a DIFFERENT key for that selector. Either "
+"the domain rotated it, or one of the two is not theirs. Check both before "
+"you rely on the new verdicts."
 msgstr ""
 
 #: app/src/gui/session.ts:522
@@ -670,15 +670,15 @@ msgid "Importing mail…"
 msgstr ""
 
 #: app/src/gui/view/activity.ts:84
-msgid "Importing mail — {percent}%"
+msgid "Importing mail, {percent}%"
 msgstr ""
 
 #: app/src/gui/view/activity.ts:87
-msgid "Looking up keys — {done} of {total}"
+msgid "Looking up keys, {done} of {total}"
 msgstr ""
 
 #: app/src/gui/view/activity.ts:92
-msgid "Re-verifying messages — {done} of {total}"
+msgid "Re-verifying messages, {done} of {total}"
 msgstr ""
 
 #: app/src/gui/view/activity.ts:97
@@ -691,7 +691,7 @@ msgid_plural "{count} tasks failed"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:110 app/src/gui/window.blp:266
+#: app/src/gui/view/activity.ts:110 app/src/gui/window.blp:269
 msgid "No background work"
 msgstr ""
 
@@ -718,11 +718,11 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: app/src/gui/view/activity.ts:146
-msgid "Interrupted — its process is gone. Run the import again to resume."
+msgid "Interrupted. Its process is gone. Run the import again to resume."
 msgstr ""
 
 #: app/src/gui/view/activity.ts:148
-msgid "Cancelled — run it again to resume"
+msgid "Cancelled. Run it again to resume."
 msgstr ""
 
 #: app/src/gui/view/activity.ts:150
@@ -730,8 +730,8 @@ msgid "The import failed"
 msgstr ""
 
 #: app/src/gui/view/activity.ts:152
-msgid "Finished — {count} message"
-msgid_plural "Finished — {count} messages"
+msgid "Finished, {count} message"
+msgid_plural "Finished, {count} messages"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -821,17 +821,120 @@ msgstr ""
 msgid "Stay offline"
 msgstr ""
 
-#: app/src/gui/view/evidence.ts:85
+#: app/src/gui/view/evidence.ts:105
+msgid "Key {name} is missing."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:121
 msgid "No DKIM signature was found in this message."
 msgstr ""
 
-#: app/src/gui/view/evidence.ts:86
+#: app/src/gui/view/evidence.ts:122
 msgid "{count} signature examined."
 msgid_plural "{count} signatures examined."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/evidence.ts:102
+#: app/src/gui/view/evidence.ts:163
+msgid ""
+"The domain that signed this message, taken from the signature itself. It is "
+"the domain whose published key has to check out, and it is not necessarily "
+"the domain in the From line."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:167
+msgid ""
+"The domain in the From line, which is what a reader sees as the sender. A "
+"signature from a different domain proves only that the other domain handled "
+"the message."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:171
+msgid ""
+"Whether the signing domain and the From domain are the same. Aligned means "
+"the sender signed for itself. Not aligned means somebody else did, such as a "
+"mailing list or a mail provider."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:175
+msgid ""
+"Which of a domain’s keys signed this message. A domain publishes several and "
+"names each one, so the selector plus the domain is the address of the public "
+"key."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:179
+msgid ""
+"The hash and the signature algorithm used, such as rsa-sha256. SHA-1 is "
+"broken, so a signature made with rsa-sha1 carries a caveat even when it "
+"verifies."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:183
+msgid ""
+"How much harmless reformatting the signature tolerates. Relaxed forgives "
+"rewrapped whitespace, simple forgives nothing, and mail servers reformat "
+"messages in transit all the time."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:187
+msgid ""
+"The public key that checked the signature: its size, and where this case got "
+"it. A key that came from the archive under examination proves the archive is "
+"consistent with itself, not that the message is genuine."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:191
+msgid ""
+"The header fields the signature covers. Any field not in this list could "
+"have been changed or added afterwards without breaking the signature, and "
+"Subject, To and Date are the ones that matter."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:195
+msgid ""
+"The fingerprint of the body the sender signed, against the fingerprint this "
+"message’s body produces. Both are shown when they differ, so somebody else "
+"can repeat the comparison by hand."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:199
+msgid ""
+"Whether the signature itself checks out against the public key. This covers "
+"the header fields listed above; the body is covered by the body hash."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:203
+msgid ""
+"An l= tag, which signs only the first so many bytes of the body. Everything "
+"after that is unsigned and can be appended by anyone without breaking the "
+"signature."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:207
+msgid ""
+"Why no verdict was possible. Almost always a missing public key, which says "
+"nothing against the message: fetch the key and it gets a verdict."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:211
+msgid ""
+"The wording of the library that did the cryptography, kept as it came. It is "
+"the line that separates two findings Stamped reports under the same reason, "
+"and a bug report without it cannot be acted on."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:231
+msgid ""
+"DKIM lets a domain sign the messages it sends. The sending server hashes the "
+"body and some of the headers, signs the result with a private key, and "
+"publishes the matching public key in the DNS. Anyone holding that public key "
+"can check that the signed parts are unchanged. A signature that verifies "
+"proves the message left that domain in this form. It does not prove who "
+"wrote it, and it says nothing about the parts the signature does not cover."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:245
 msgid "{count} caveat"
 msgid_plural "{count} caveats"
 msgstr[0] ""
@@ -960,12 +1063,12 @@ msgstr[1] ""
 #: app/src/gui/view/keys.ts:179
 msgid ""
 "A DKIM public key, published by the signing domain as the DNS TXT record "
-"{name}. Anyone may read it — it is the public half, and it only ever lets "
-"you check a signature, never make one. The catch is time: operators rotate "
+"{name}. Anyone may read it. It is the public half, and it only ever lets you "
+"check a signature, never make one. The catch is time. Operators rotate "
 "selectors and delete the old record, so the key that signed a message from "
 "2019 is usually gone from today’s DNS. Then it has to come from the "
 "operator, from a third-party archive of old records, or from the archive "
-"under examination — and where it came from is part of the verdict."
+"under examination, and where it came from is part of the verdict."
 msgstr ""
 
 #: app/src/gui/view/keys.ts:224
@@ -990,10 +1093,10 @@ msgstr ""
 
 #: app/src/gui/view/keys.ts:247
 msgid ""
-"{count} key differs from one this case already held — check which is the "
-"real one."
+"{count} key differs from one this case already held. Check which is the real "
+"one."
 msgid_plural ""
-"{count} keys differ from ones this case already held — check which are the "
+"{count} keys differ from ones this case already held. Check which are the "
 "real ones."
 msgstr[0] ""
 msgstr[1] ""
@@ -1022,11 +1125,11 @@ msgstr ""
 msgid "From"
 msgstr ""
 
-#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:967
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:1036
 msgid "To"
 msgstr ""
 
-#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:968
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:1037
 msgid "Cc"
 msgstr ""
 
@@ -1074,8 +1177,8 @@ msgstr ""
 msgid "No message has the verdict you filtered for."
 msgstr ""
 
-#: app/src/gui/view/overview.ts:108 app/src/gui/window.blp:191
-#: app/src/gui/window.blp:205
+#: app/src/gui/view/overview.ts:108 app/src/gui/window.blp:194
+#: app/src/gui/window.blp:208
 msgid "Messages"
 msgstr ""
 
@@ -1254,7 +1357,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: app/src/gui/view/people.ts:144
-msgid "Reading the addresses of this case — the list is not complete yet."
+msgid "Reading the addresses of this case. The list is not complete yet."
 msgstr ""
 
 #: app/src/gui/view/sources.ts:76
@@ -1273,137 +1376,113 @@ msgid_plural "{read}, {duplicates} of them already in the case"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/verdict.ts:46
-msgid "Confirmed"
-msgstr ""
-
-#: app/src/gui/view/verdict.ts:48
-msgid "With caveats"
-msgstr ""
-
-#: app/src/gui/view/verdict.ts:50
-msgid "Body altered"
-msgstr ""
-
-#: app/src/gui/view/verdict.ts:52
-msgid "Headers altered"
-msgstr ""
-
-#: app/src/gui/view/verdict.ts:54
-msgid "Unverifiable"
-msgstr ""
-
-#: app/src/gui/view/verdict.ts:56
-msgid "Unsigned"
-msgstr ""
-
-#: app/src/gui/view/verdict.ts:128
+#: app/src/gui/view/verdict.ts:124
 msgid ""
 "A signature from the sender’s own domain verified against a key you trust, "
 "and it covers the fields that matter. The message is byte for byte what was "
 "signed."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:132
+#: app/src/gui/view/verdict.ts:128
 msgid ""
-"The cryptography checked out, but something limits what that proves — a weak "
+"The cryptography checked out, but something limits what that proves. A weak "
 "algorithm, an unsigned Subject, or a key that came from the archive itself. "
 "Read the caveats before you quote the message."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:136
+#: app/src/gui/view/verdict.ts:132
 msgid ""
 "The signature is intact and the body does not match the hash it committed "
 "to. Somebody changed the text after it was signed. This is a finding, not a "
 "failure of the check."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:140
+#: app/src/gui/view/verdict.ts:136
 msgid ""
 "The body is as signed, but one of the signed header fields is not. A changed "
-"Subject, From or Date — which can matter more than the body does."
+"Subject, From or Date can matter more than the body does."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:144
+#: app/src/gui/view/verdict.ts:140
 msgid ""
 "A signature is present and nothing here could check it, almost always "
 "because the public key is missing. This says nothing against the message: "
 "fetch the key and it will get a verdict."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:148
+#: app/src/gui/view/verdict.ts:144
 msgid ""
 "The message carries no DKIM signature at all. Most mail before the mid-2010s "
 "does not. It is neither evidence for nor against authenticity."
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:182
+#: app/src/gui/view/verdict.ts:178
 msgid "All messages"
 msgstr ""
 
-#: app/src/gui/view/verdict.ts:204
+#: app/src/gui/view/verdict.ts:200
 msgid "{shown} of {total} shown"
 msgstr ""
 
-#: app/src/gui/window.ts:247
+#: app/src/gui/window.ts:271
 msgid "All files"
 msgstr ""
 
-#: app/src/gui/window.ts:249
+#: app/src/gui/window.ts:273
 msgid "Mail archives"
 msgstr ""
 
-#: app/src/gui/window.ts:459
+#: app/src/gui/window.ts:501
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
-#: app/src/gui/window.ts:866
+#: app/src/gui/window.ts:914
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 
-#: app/src/gui/window.ts:943
+#: app/src/gui/window.ts:1012
 msgid "Open With…"
 msgstr ""
 
-#: app/src/gui/window.ts:944
+#: app/src/gui/window.ts:1013
 msgid "Open a read-only copy in the program you choose"
 msgstr ""
 
-#: app/src/gui/window.ts:974
+#: app/src/gui/window.ts:1043
 msgid "The stored copy could not be read."
 msgstr ""
 
-#: app/src/gui/window.ts:985
+#: app/src/gui/window.ts:1054
 msgid "(no text)"
 msgstr ""
 
-#: app/src/gui/window.ts:990
+#: app/src/gui/window.ts:1059
 msgid "Shown as text; the HTML was not rendered."
 msgstr ""
 
-#: app/src/gui/window.ts:991
+#: app/src/gui/window.ts:1060
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 
-#: app/src/gui/window.ts:1003
+#: app/src/gui/window.ts:1072
 msgid "(unnamed)"
 msgstr ""
 
-#: app/src/gui/window.ts:1033
+#: app/src/gui/window.ts:1102
 msgid "Open in a mail program?"
 msgstr ""
 
-#: app/src/gui/window.ts:1035
+#: app/src/gui/window.ts:1104
 msgid ""
 "A mail program may load remote content. Only the verdict proves a message "
 "genuine."
 msgstr ""
 
-#: app/src/gui/window.ts:1040
+#: app/src/gui/window.ts:1109
 msgid "What does that mean?"
 msgstr ""
 
-#: app/src/gui/window.ts:1045
+#: app/src/gui/window.ts:1114
 msgid ""
 "A mail program that loads remote content tells the sender’s server that "
 "someone is reading this message right now. How a program displays a message "
@@ -1411,144 +1490,152 @@ msgid ""
 "copy outside the case."
 msgstr ""
 
-#: app/src/gui/window.ts:1052
+#: app/src/gui/window.ts:1121
 msgid "Open"
 msgstr ""
 
-#: app/src/gui/window.ts:1061
+#: app/src/gui/window.ts:1130
 msgid "The stored copy of this message is missing."
 msgstr ""
 
-#: app/src/gui/window.ts:1069
+#: app/src/gui/window.ts:1138
 msgid "Could not open the message: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:1126 app/src/gui/window.blp:283
+#: app/src/gui/window.ts:1191
+msgid "Look Up Key…"
+msgstr ""
+
+#: app/src/gui/window.ts:1209 app/src/gui/window.blp:293
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:1145
+#: app/src/gui/window.ts:1228
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:1154
+#: app/src/gui/window.ts:1237
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:1170
+#: app/src/gui/window.ts:1253
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:1210
+#: app/src/gui/window.ts:1327
+msgid "How does DKIM work?"
+msgstr ""
+
+#: app/src/gui/window.ts:1347
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:1212
+#: app/src/gui/window.ts:1349
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:1214
+#: app/src/gui/window.ts:1351
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:1246
+#: app/src/gui/window.ts:1383
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:1258
+#: app/src/gui/window.ts:1395
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:1296
+#: app/src/gui/window.ts:1433
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:1305
+#: app/src/gui/window.ts:1442
 msgid "Copy Request…"
 msgstr ""
 
-#: app/src/gui/window.ts:1306
+#: app/src/gui/window.ts:1443
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 
-#: app/src/gui/window.ts:1310
+#: app/src/gui/window.ts:1447
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr ""
 
-#: app/src/gui/window.ts:1355
+#: app/src/gui/window.ts:1475
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:1377
+#: app/src/gui/window.ts:1525
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:1379
+#: app/src/gui/window.ts:1527
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:1399
+#: app/src/gui/window.ts:1547
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:1514
+#: app/src/gui/window.ts:1662
 msgid "Looking up keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:1547
+#: app/src/gui/window.ts:1695
 msgid "Key lookup failed: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:1581
+#: app/src/gui/window.ts:1729
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:1590
+#: app/src/gui/window.ts:1738
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:1639
+#: app/src/gui/window.ts:1787
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:1655
+#: app/src/gui/window.ts:1803
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:1658
+#: app/src/gui/window.ts:1806
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:1662
+#: app/src/gui/window.ts:1810
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:1687
+#: app/src/gui/window.ts:1835
 msgid "Imported."
 msgstr ""
 
-#: app/src/gui/window.ts:1763
+#: app/src/gui/window.ts:1911
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:1763
+#: app/src/gui/window.ts:1911
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:1797
+#: app/src/gui/window.ts:1945
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:1797
+#: app/src/gui/window.ts:1945
 msgid "Close"
 msgstr ""
 
@@ -1557,7 +1644,7 @@ msgid "stamped <command> [options]"
 msgstr ""
 
 #: app/src/index.ts:53
-msgid "Pick a command — try `stamped verify --help`."
+msgid "Pick a command. Try `stamped verify --help`."
 msgstr ""
 
 #: app/src/lib/autofetch.ts:63
@@ -1577,7 +1664,7 @@ msgid "{count} lookups failed (rate limit or outage). Retry later."
 msgstr ""
 
 #: app/src/lib/autofetch.ts:74
-msgid "{count} differ from a key already stored — compare them"
+msgid "{count} differ from a key already stored. Compare them."
 msgstr ""
 
 #: app/src/lib/autofetch.ts:88
@@ -1628,123 +1715,123 @@ msgstr ""
 msgid "Took {duration}."
 msgstr ""
 
-#: app/src/lib/evidence.ts:48
-msgid "Signature {position} of {total} — {verdict}"
+#: app/src/lib/evidence.ts:82
+msgid "Signature {position} of {total}, {verdict}"
 msgstr ""
 
-#: app/src/lib/evidence.ts:66
-msgid "domain"
+#: app/src/lib/evidence.ts:100
+msgid "Domain"
 msgstr ""
 
-#: app/src/lib/evidence.ts:67
-msgid "author domain"
+#: app/src/lib/evidence.ts:103
+msgid "Author domain"
 msgstr ""
 
-#: app/src/lib/evidence.ts:67
+#: app/src/lib/evidence.ts:104
 msgid "(unknown)"
 msgstr ""
 
-#: app/src/lib/evidence.ts:68
-msgid "aligned"
+#: app/src/lib/evidence.ts:106
+msgid "Aligned"
 msgstr ""
 
-#: app/src/lib/evidence.ts:68
+#: app/src/lib/evidence.ts:106
 msgid "yes"
 msgstr ""
 
-#: app/src/lib/evidence.ts:68
+#: app/src/lib/evidence.ts:106
 msgid "no"
 msgstr ""
 
-#: app/src/lib/evidence.ts:69
-msgid "selector"
+#: app/src/lib/evidence.ts:107
+msgid "Selector"
 msgstr ""
 
-#: app/src/lib/evidence.ts:70
-msgid "algorithm"
-msgstr ""
-
-#: app/src/lib/evidence.ts:71
-msgid "canonicalization"
-msgstr ""
-
-#: app/src/lib/evidence.ts:72
-msgid "key"
-msgstr ""
-
-#: app/src/lib/evidence.ts:73
-msgid "signed headers"
-msgstr ""
-
-#: app/src/lib/evidence.ts:74
-msgid "body hash"
-msgstr ""
-
-#: app/src/lib/evidence.ts:75
-msgid "signature"
-msgstr ""
-
-#: app/src/lib/evidence.ts:75
-msgid "verified"
-msgstr ""
-
-#: app/src/lib/evidence.ts:75
-msgid "not verified"
-msgstr ""
-
-#: app/src/lib/evidence.ts:79 packages/core/src/explain.ts:105
-msgid "l= limit"
-msgstr ""
-
-#: app/src/lib/evidence.ts:83
-msgid "reason"
-msgstr ""
-
-#: app/src/lib/evidence.ts:90
-msgid "verifier says"
-msgstr ""
-
-#: app/src/lib/evidence.ts:105
-msgid "none fetched"
+#: app/src/lib/evidence.ts:108
+msgid "Algorithm"
 msgstr ""
 
 #: app/src/lib/evidence.ts:111
-msgid "{bits} bit, {source}"
+msgid "Canonicalization"
 msgstr ""
 
-#: app/src/lib/evidence.ts:118
-msgid "from the DNS"
+#: app/src/lib/evidence.ts:114
+msgid "Key"
+msgstr ""
+
+#: app/src/lib/evidence.ts:117
+msgid "Signed headers"
 msgstr ""
 
 #: app/src/lib/evidence.ts:120
+msgid "Body hash"
+msgstr ""
+
+#: app/src/lib/evidence.ts:123
+msgid "Signature"
+msgstr ""
+
+#: app/src/lib/evidence.ts:124
+msgid "verified"
+msgstr ""
+
+#: app/src/lib/evidence.ts:124
+msgid "not verified"
+msgstr ""
+
+#: app/src/lib/evidence.ts:131
+msgid "Length limit (l=)"
+msgstr ""
+
+#: app/src/lib/evidence.ts:138
+msgid "Reason"
+msgstr ""
+
+#: app/src/lib/evidence.ts:145 packages/core/src/explain.ts:175
+msgid "Verifier says"
+msgstr ""
+
+#: app/src/lib/evidence.ts:160
+msgid "none fetched"
+msgstr ""
+
+#: app/src/lib/evidence.ts:166
+msgid "{bits} bit, {source}"
+msgstr ""
+
+#: app/src/lib/evidence.ts:173
+msgid "from the DNS"
+msgstr ""
+
+#: app/src/lib/evidence.ts:175
 msgid "supplied by you"
 msgstr ""
 
-#: app/src/lib/evidence.ts:122
+#: app/src/lib/evidence.ts:177
 msgid "from the archive itself"
 msgstr ""
 
-#: app/src/lib/evidence.ts:136
+#: app/src/lib/evidence.ts:191
 msgid "matches ({hash})"
 msgstr ""
 
-#: app/src/lib/evidence.ts:137
+#: app/src/lib/evidence.ts:192
 msgid "matches"
 msgstr ""
 
-#: app/src/lib/evidence.ts:140
-msgid "differs — signed {expected}, message hashes to {actual}"
+#: app/src/lib/evidence.ts:195
+msgid "differs. Signed {expected}, message hashes to {actual}"
 msgstr ""
 
-#: app/src/lib/evidence.ts:145
+#: app/src/lib/evidence.ts:200
 msgid "not checked"
 msgstr ""
 
-#: app/src/lib/evidence.ts:152
+#: app/src/lib/evidence.ts:207
 msgid "{limit} bytes of the body are signed"
 msgstr ""
 
-#: app/src/lib/evidence.ts:154
+#: app/src/lib/evidence.ts:209
 msgid "{limit} bytes of the body are signed, {unsigned} are not"
 msgstr ""
 
@@ -1782,14 +1869,14 @@ msgstr ""
 msgid "Pair file {path}: {reason}"
 msgstr ""
 
-#: app/src/lib/report.ts:57
+#: app/src/lib/report.ts:65
 msgid "  caveat: {text}"
 msgstr ""
 
 #: app/src/lib/status.ts:73
 msgid ""
 "An import is marked running, but its process is gone or it has not reported "
-"for a while — it was interrupted."
+"for a while. It was interrupted."
 msgstr ""
 
 #: app/src/lib/status.ts:75
@@ -1851,8 +1938,8 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: packages/core/src/autokeys.ts:48
-msgid "{name} — {count} message"
-msgid_plural "{name} — {count} messages"
+msgid "{name}, {count} message"
+msgid_plural "{name}, {count} messages"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -1896,6 +1983,10 @@ msgstr ""
 
 #: packages/core/src/explain.ts:103
 msgid "Body hash of this message"
+msgstr ""
+
+#: packages/core/src/explain.ts:105
+msgid "l= limit"
 msgstr ""
 
 #: packages/core/src/explain.ts:110 packages/core/src/explain.ts:142
@@ -1965,10 +2056,6 @@ msgstr ""
 msgid "Key name"
 msgstr ""
 
-#: packages/core/src/explain.ts:175
-msgid "Verifier says"
-msgstr ""
-
 #: packages/core/src/explain.ts:176
 msgid ""
 "This is not evidence of tampering; it only means no verdict is possible."
@@ -2034,8 +2121,8 @@ msgstr[1] ""
 
 #: packages/core/src/keyconsent.ts:43
 msgid ""
-"The query goes to the signing domain’s own name servers, so the domain’s "
-"operator — and anyone watching your resolver — can see which selector you "
+"The query goes to the signing domain’s own name servers. The domain’s "
+"operator, and anyone watching your resolver, can see which selector you "
 "asked for and when. That reveals interest in that domain."
 msgstr ""
 
@@ -2172,125 +2259,149 @@ msgstr ""
 msgid "Pair list line {line}: expected domain and selector."
 msgstr ""
 
-#: packages/core/src/verdict.ts:262
+#: packages/core/src/verdict.ts:263
+msgid "Confirmed"
+msgstr ""
+
+#: packages/core/src/verdict.ts:265
+msgid "With caveats"
+msgstr ""
+
+#: packages/core/src/verdict.ts:267
+msgid "Body altered"
+msgstr ""
+
+#: packages/core/src/verdict.ts:269
+msgid "Headers altered"
+msgstr ""
+
+#: packages/core/src/verdict.ts:271
+msgid "Unverifiable"
+msgstr ""
+
+#: packages/core/src/verdict.ts:273
+msgid "Unsigned"
+msgstr ""
+
+#: packages/core/src/verdict.ts:286
 msgid "Confirmed: a valid signature covers this message as it stands."
 msgstr ""
 
-#: packages/core/src/verdict.ts:264
+#: packages/core/src/verdict.ts:288
 msgid ""
 "Confirmed with caveats: the signature is valid but covers less than it "
 "appears to."
 msgstr ""
 
-#: packages/core/src/verdict.ts:266
+#: packages/core/src/verdict.ts:290
 msgid "Body altered: the body is not the body that was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:268
+#: packages/core/src/verdict.ts:292
 msgid "Headers altered: a signed header field is not what was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:270
+#: packages/core/src/verdict.ts:294
 msgid "Unverifiable: a signature is present, but nothing here can check it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:272
+#: packages/core/src/verdict.ts:296
 msgid ""
 "Unsigned: no DKIM signature. This says nothing about the message either way."
 msgstr ""
 
-#: packages/core/src/verdict.ts:285
+#: packages/core/src/verdict.ts:309
 msgid ""
 "Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
 "carry a valid signature (RFC 8301)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:288
+#: packages/core/src/verdict.ts:312
 msgid ""
 "The RSA key is shorter than 1024 bits and can be factored with ordinary "
 "resources."
 msgstr ""
 
-#: packages/core/src/verdict.ts:291
+#: packages/core/src/verdict.ts:315
 msgid ""
 "An l= tag limits the signature to the start of the body. Anything appended "
 "after that is unsigned."
 msgstr ""
 
-#: packages/core/src/verdict.ts:294
+#: packages/core/src/verdict.ts:318
 msgid ""
 "Subject is not signed: the subject line could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:296
+#: packages/core/src/verdict.ts:320
 msgid "To is not signed: the recipient could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:298
+#: packages/core/src/verdict.ts:322
 msgid "Date is not signed: the date could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:301
+#: packages/core/src/verdict.ts:325
 msgid ""
 "The public key came from the archive itself, so it proves consistency rather "
 "than authenticity."
 msgstr ""
 
-#: packages/core/src/verdict.ts:305
+#: packages/core/src/verdict.ts:329
 msgid ""
 "The key was first seen after this message was sent. The selector may have "
 "been rotated, so this failure may come from a wrong key rather than an edit."
 msgstr ""
 
-#: packages/core/src/verdict.ts:311
+#: packages/core/src/verdict.ts:335
 msgid ""
 "The signature is from {signer}, but the message claims to be from {author}. "
 "It proves only that {signer} handled the message, not that {author} sent it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:313
+#: packages/core/src/verdict.ts:337
 msgid "(unknown domain)"
 msgstr ""
 
-#: packages/core/src/verdict.ts:316
+#: packages/core/src/verdict.ts:340
 msgid ""
 "The signing domain is not the From domain, so the signature does not vouch "
 "for the author."
 msgstr ""
 
-#: packages/core/src/verdict.ts:325
+#: packages/core/src/verdict.ts:349
 msgid "No public key for this selector and domain."
 msgstr ""
 
-#: packages/core/src/verdict.ts:327
+#: packages/core/src/verdict.ts:351
 msgid "The public key record is unusable."
 msgstr ""
 
-#: packages/core/src/verdict.ts:329
+#: packages/core/src/verdict.ts:353
 msgid "The DKIM-Signature header does not parse."
 msgstr ""
 
-#: packages/core/src/verdict.ts:331
+#: packages/core/src/verdict.ts:355
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:333
+#: packages/core/src/verdict.ts:357
 msgid "The signature is expired or its timestamp lies in the future."
 msgstr ""
 
-#: packages/core/src/verdict.ts:335
+#: packages/core/src/verdict.ts:359
 msgid "The key lookup failed and may succeed later."
 msgstr ""
 
-#: packages/core/src/verdict.ts:338
+#: packages/core/src/verdict.ts:362
 msgid ""
 "The key does not match the signature (different size or type), so it cannot "
 "have produced it. The selector was probably rotated."
 msgstr ""
 
-#: packages/core/src/verdict.ts:341
+#: packages/core/src/verdict.ts:365
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 
@@ -2310,7 +2421,7 @@ msgstr ""
 msgid "{path} holds no mail files."
 msgstr ""
 
-#: packages/store/src/index-db.ts:79
+#: packages/store/src/index-db.ts:80
 msgid "Cannot open the index of the case folder {path}."
 msgstr ""
 
@@ -2340,11 +2451,11 @@ msgid ""
 "this machine."
 msgstr ""
 
-#: app/src/gui/window.blp:75 app/src/gui/window.blp:438
+#: app/src/gui/window.blp:75 app/src/gui/window.blp:451
 msgid "Open Case…"
 msgstr ""
 
-#: app/src/gui/window.blp:84 app/src/gui/window.blp:443
+#: app/src/gui/window.blp:84 app/src/gui/window.blp:456
 msgid "Import Archive…"
 msgstr ""
 
@@ -2356,59 +2467,59 @@ msgstr ""
 msgid "Case"
 msgstr ""
 
-#: app/src/gui/window.blp:141
+#: app/src/gui/window.blp:165
 msgid "Archives"
 msgstr ""
 
-#: app/src/gui/window.blp:200
+#: app/src/gui/window.blp:203
 msgid "Show the case sidebar"
 msgstr ""
 
-#: app/src/gui/window.blp:211
+#: app/src/gui/window.blp:214
 msgid "Search senders, subjects, bodies"
 msgstr ""
 
-#: app/src/gui/window.blp:223
+#: app/src/gui/window.blp:226
 msgid "Clear filter"
 msgstr ""
 
-#: app/src/gui/window.blp:256
+#: app/src/gui/window.blp:259
 msgid "Verification"
 msgstr ""
 
-#: app/src/gui/window.blp:292
+#: app/src/gui/window.blp:302
 msgid "No message selected"
 msgstr ""
 
-#: app/src/gui/window.blp:293
+#: app/src/gui/window.blp:303
 msgid ""
 "Pick a message to see which of its signatures hold, and what each one covers."
 msgstr ""
 
-#: app/src/gui/window.blp:322
+#: app/src/gui/window.blp:332
 msgid "Keys"
 msgstr ""
 
-#: app/src/gui/window.blp:345
+#: app/src/gui/window.blp:355
 msgid "People"
 msgstr ""
 
-#: app/src/gui/window.blp:352
+#: app/src/gui/window.blp:362
 msgid "Search names and addresses"
 msgstr ""
 
-#: app/src/gui/window.blp:381
+#: app/src/gui/window.blp:391
 msgid "Timeline"
 msgstr ""
 
-#: app/src/gui/window.blp:404
+#: app/src/gui/window.blp:417
 msgid "Overview"
 msgstr ""
 
-#: app/src/gui/window.blp:450
+#: app/src/gui/window.blp:463
 msgid "Import Folder…"
 msgstr ""
 
-#: app/src/gui/window.blp:457
+#: app/src/gui/window.blp:470
 msgid "About Stamped"
 msgstr ""
