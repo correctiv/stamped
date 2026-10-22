@@ -154,6 +154,45 @@ function nextTurn(): Promise<void> {
 const SEARCH_DELAY_MS = 180;
 
 /**
+ * How tall the mail body may grow before it scrolls on its own.
+ *
+ * A mail thread quoted twenty times is thousands of pixels of text, and shown whole it pushes
+ * the verdict card and the evidence off the bottom of the pane — the two things this window
+ * exists to show. `propagate-natural-height` keeps a three-line note three lines tall, so the
+ * cap costs a short message nothing.
+ */
+const BODY_MAX_HEIGHT = 360;
+
+/**
+ * The mail body's scroller: as tall as its text wants, up to {@link BODY_MAX_HEIGHT}.
+ *
+ * A plain `Gtk.ScrolledWindow` with `max-content-height` does NOT do this inside the reader.
+ * Measured: with `propagate-natural-height` the natural height is right (360 for a long thread,
+ * 54 for a three-liner) but the MINIMUM stays 46 — a scroller can always shrink — and the
+ * reader's own scroller hands its column the minimum. The body collapsed to two lines.
+ *
+ * So the minimum is reported as the natural height. The scrolling still happens, because
+ * `max-content-height` caps the natural height first; this only stops the parent from squeezing
+ * the result. `sourceView` solves the same problem with a fixed `min-content-height`, which the
+ * body cannot use: a short mail would then be padded out to a height it has no text for.
+ */
+const BodyScroller = GObject.registerClass(
+    class BodyScroller extends Gtk.ScrolledWindow {
+        vfunc_get_request_mode(): Gtk.SizeRequestMode {
+            return Gtk.SizeRequestMode.HEIGHT_FOR_WIDTH;
+        }
+
+        vfunc_measure(orientation: Gtk.Orientation, forSize: number): [number, number, number, number] {
+            const [min, nat, minBaseline, natBaseline] = super.vfunc_measure(orientation, forSize);
+            if (orientation !== Gtk.Orientation.VERTICAL) return [min, nat, minBaseline, natBaseline];
+            // Baselines are dropped on purpose: `ScrolledWindow` reports one here, and passing it
+            // back through a HEIGHT_FOR_WIDTH measure makes GTK warn about a horizontal baseline.
+            return [nat, nat, -1, -1];
+        }
+    },
+);
+
+/**
  * The screenshot hooks, read once.
  *
  * `dev/screenshots.sh` has to reach states that only a click reaches, and clicking at hard-coded
@@ -295,6 +334,19 @@ function pathsOf(files: Gio.ListModel | null): string[] {
         if (path) paths.push(path);
     }
     return paths;
+}
+
+/**
+ * Where the case chooser starts: `~/Cases` when it exists, otherwise beside the archive.
+ *
+ * A suggestion, never a directory this creates on its own — a chooser that opens in a folder
+ * nobody made is a chooser that opens nowhere. Both candidates put the case next to something
+ * the person already recognises, which is what the second chooser of an import needs.
+ */
+function caseStart(archive: string): string {
+    const cases = GLib.build_filenamev([GLib.get_home_dir(), 'Cases']);
+    if (GLib.file_test(cases, GLib.FileTest.IS_DIR)) return cases;
+    return GLib.path_get_dirname(archive);
 }
 
 /**
@@ -469,6 +521,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // produces a picture of the wrong page when the header bar shifts by a few pixels.
         const view = GLib.getenv('STAMPED_SHOT_VIEW');
         if (view !== null) this._contentStack.set_visible_child_name(view);
+        // Same for the root pages. The loading one is up only for as long as an open takes, and
+        // `openAtStart` above finishes AFTER this line runs — setting the page here is undone by
+        // the `adopt` that ends the open. So the shot parks the window on it once that is over.
+        const page = GLib.getenv('STAMPED_SHOT_PAGE');
+        if (page !== null) {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+                this._rootStack.set_visible_child_name(page);
+                return GLib.SOURCE_REMOVE;
+            });
+        }
         // Same hook for the status popover: it opens only on a click, which a screenshot cannot make.
         if (GLib.getenv('STAMPED_SHOT_POPOVER') !== null) {
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
@@ -496,7 +558,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
      */
     private openAtStart(root: string): void {
         if (isCaseFolder(root)) {
-            this.adopt(openSession(root));
+            this.loadCase(() => openSession(root)).catch((error: unknown) => void this.fail(error));
             return;
         }
         showToast(escapeLine(fmt(_('{path} is not a Stamped case folder.'), { path: root })));
@@ -594,6 +656,30 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private stopImportPoll(): void {
         if (this.importPoll !== 0) GLib.source_remove(this.importPoll);
         this.importPoll = 0;
+    }
+
+    /**
+     * Open a case with the loading page up, so the window does not sit frozen while it works.
+     *
+     * Opening one is synchronous disk work: the index handle, then the first report query and the
+     * sidebar behind it. Those took long enough on the tester's machine that the window stopped
+     * repainting, which reads as a crash rather than as work. The {@link nextTurn} between the
+     * page and the load is what makes the spinner appear at all — GTK paints on an idle of higher
+     * priority, so one turn of the main loop is one rendered frame.
+     *
+     * The previous page comes back when `open` throws: a folder that cannot be opened must leave
+     * the person where they were, not on a spinner for a case that will never arrive.
+     */
+    private async loadCase(open: () => CaseSession): Promise<void> {
+        const previous = this._rootStack.get_visible_child_name() ?? 'welcome';
+        this._rootStack.set_visible_child_name('loading');
+        await nextTurn();
+        try {
+            this.adopt(open());
+        } catch (error) {
+            this._rootStack.set_visible_child_name(previous);
+            throw error;
+        }
     }
 
     /** Take over a case: the old one is closed, the filters are dropped, the panes rebuild. */
@@ -1053,7 +1139,14 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 rightMargin: 0,
             });
             view.get_buffer().set_text(body.text === '' ? _('(no text)') : body.text, -1);
-            inner.append(view);
+            inner.append(
+                new BodyScroller({
+                    child: view,
+                    hscrollbarPolicy: Gtk.PolicyType.NEVER,
+                    maxContentHeight: BODY_MAX_HEIGHT,
+                    propagateNaturalHeight: true,
+                }),
+            );
             // The reading notes belong to the body they describe — not to a row of buttons far
             // below it, where they read as an afterthought about the whole message.
             const notes: string[] = [];
@@ -1783,35 +1876,54 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * and only `openCase` makes one, and that asymmetry matters more behind a file chooser than
      * on a command line: a chooser makes it easy to land one directory above the case and would
      * otherwise silently start a second, empty one there.
+     *
+     * @param archive The first archive an import just picked. It changes what both the chooser
+     *   and the question say, because at that point the person has already chosen one folder and
+     *   a second chooser with the same wording reads as the app asking twice for the same thing.
+     *   It also gives the chooser somewhere to start.
      */
-    private async chooseCase(): Promise<void> {
-        const dialog = new Gtk.FileDialog({ title: _('Open Case Folder') });
-        let path: string | null;
+    private async chooseCase(archive?: string): Promise<void> {
+        const forImport = archive !== undefined;
+        const dialog = new Gtk.FileDialog({
+            title: forImport ? _('Folder for the Case') : _('Open Case Folder'),
+        });
+        if (archive !== undefined) {
+            dialog.set_initial_folder(Gio.File.new_for_path(caseStart(archive)));
+        }
+        let picked: string | null;
         try {
-            path = (await dialog.select_folder(this, null))?.get_path() ?? null;
+            picked = (await dialog.select_folder(this, null))?.get_path() ?? null;
         } catch (error) {
             if (!dismissed(error)) await this.fail(error);
             return;
         }
-        if (path === null) return;
+        if (picked === null) return;
+        const path = picked;
 
         try {
             if (isCaseFolder(path)) {
-                this.adopt(openSession(path));
+                await this.loadCase(() => openSession(path));
                 return;
             }
             const create = await confirmDialog(this, {
-                heading: _('Create a new case here?'),
-                body: fmt(
-                    _(
-                        '{path} is not a Stamped case yet. Creating one writes a case file, a store for the raw messages and a search index into it. Nothing is sent anywhere.',
-                    ),
-                    { path },
-                ),
+                heading: forImport ? _('Create the case here?') : _('Create a new case here?'),
+                body: forImport
+                    ? fmt(
+                          _(
+                              'Stamped creates the case in {path}. It holds the working copy of the messages and the search index. The archive stays where it is.',
+                          ),
+                          { path },
+                      )
+                    : fmt(
+                          _(
+                              '{path} is not a Stamped case yet. Creating one writes a case file, a store for the raw messages and a search index into it. Nothing is sent anywhere.',
+                          ),
+                          { path },
+                      ),
                 confirmLabel: _('Create Case'),
                 cancelLabel: _('Cancel'),
             });
-            if (create) this.adopt(createSession(path));
+            if (create) await this.loadCase(() => createSession(path));
         } catch (error) {
             await this.fail(error);
         }
@@ -1890,23 +2002,17 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /**
-     * Import archives into the open case, asking for a case first if there is none.
+     * Import archives, asking where the case goes when none is open.
+     *
+     * The archive is asked for first. It used to be the case folder, which put two folder
+     * choosers in a row in front of someone who had asked to import an archive, and the user
+     * test could not tell which chooser wanted what. Picking the archive first makes the second
+     * question answerable, and {@link chooseCase} then names the archive it is asking about.
      *
      * Two entry points because the chooser cannot do both: an mbox is a FILE and a Maildir is a
      * DIRECTORY, and a chooser that accepts files will not return a folder.
-     *
-     * KNOWN LIMITATION: the import runs to completion before the window repaints, so a large
-     * archive freezes it for as long as it takes. `importSources` reports progress and nothing
-     * here consumes it yet — a progress bar needs the import off the main loop, which is its own
-     * change.
      */
     private async importFrom(kind: 'files' | 'folder'): Promise<void> {
-        if (!this.session) {
-            await this.chooseCase();
-            if (!this.session) return;
-        }
-        const session = this.session;
-
         const dialog = new Gtk.FileDialog({
             title: kind === 'folder' ? _('Import a Mail Folder') : _('Import Mail Archives'),
         });
@@ -1925,6 +2031,14 @@ export class StampedWindow extends Adw.ApplicationWindow {
             return;
         }
         if (paths.length === 0) return;
+
+        if (!this.session) {
+            await this.chooseCase(paths[0]!);
+            // Cancelled at either step of `chooseCase` — the chooser or the question. There is
+            // no case to import into, and the archive the person picked is left untouched.
+            if (!this.session) return;
+        }
+        const session = this.session;
 
         try {
             await this.runImportSubprocess(session, paths);
