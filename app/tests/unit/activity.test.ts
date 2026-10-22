@@ -4,10 +4,11 @@
  */
 
 import { describe, expect, it } from '@gjsify/unit';
-import type { ImportStatus } from '@stamped/store';
+import type { ActivityStatus, ImportStatus } from '@stamped/store';
 
 import {
     ActivityRegistry,
+    ActivityWatcher,
     ImportWatcher,
     importRunning,
     type ImportActivity,
@@ -32,6 +33,20 @@ function status(over: Partial<ImportStatus> = {}): ImportStatus {
         bytesRate: 2500,
         eta: 150,
         errors: 0,
+        ...over,
+    };
+}
+
+function run(over: Partial<ActivityStatus> = {}): ActivityStatus {
+    return {
+        version: 1,
+        kind: 'people',
+        state: 'running',
+        pid: process.pid,
+        startedAt: '2026-10-21T10:00:00.000Z',
+        updatedAt: new Date().toISOString(),
+        done: 10,
+        total: 100,
         ...over,
     };
 }
@@ -145,6 +160,61 @@ export default async () => {
             registry.dismiss('import');
             expect(watcher.poll(dead, false)).toBe(undefined);
             expect(registry.get('import')).toBe(undefined);
+        });
+    });
+
+    await describe('activity watcher', async () => {
+        await it('shows a live CLI run, updates it, and reports its end once', () => {
+            const registry = new ActivityRegistry();
+            const watcher = new ActivityWatcher(registry);
+            expect(watcher.poll([run()])).toBe(undefined);
+            expect(registry.get('people')?.state).toBe('running');
+            watcher.poll([run({ done: 40 })]);
+            const data = registry.get('people')?.data;
+            expect(data?.kind === 'people' ? data.processed : -1).toBe(40);
+            const ended = watcher.poll([run({ state: 'finished', done: 100 })]);
+            expect(ended?.state).toBe('done');
+            expect(registry.get('people')?.state).toBe('done');
+            expect(watcher.poll([run({ state: 'finished', done: 100 })])).toBe(undefined);
+        });
+
+        await it('does not bring back a row the person dismissed', () => {
+            const registry = new ActivityRegistry();
+            const watcher = new ActivityWatcher(registry);
+            watcher.poll([run()]);
+            watcher.poll([run({ state: 'finished' })]);
+            registry.dismiss('people');
+            expect(watcher.poll([run({ state: 'finished' })])).toBe(undefined);
+            expect(registry.get('people')).toBe(undefined);
+        });
+
+        await it('reads a run whose process is gone as interrupted', () => {
+            const registry = new ActivityRegistry();
+            const watcher = new ActivityWatcher(registry);
+            const dead = run({ kind: 'reverify', pid: 2 ** 22 + 12345 });
+            expect(watcher.poll([dead])?.state).toBe('failed');
+            expect(registry.get('reverify')?.state).toBe('failed');
+            const stale = run({ kind: 'keys', updatedAt: '2026-10-21T09:00:00.000Z' });
+            expect(watcher.poll([stale])?.kind).toBe('keys');
+            expect(registry.get('keys')?.state).toBe('failed');
+        });
+
+        await it('does not show a run that ended before the case was opened', () => {
+            const registry = new ActivityRegistry();
+            const watcher = new ActivityWatcher(registry, undefined, () =>
+                Date.parse('2026-10-21T12:00:00.000Z'),
+            );
+            const old = run({ state: 'finished', updatedAt: '2026-10-21T11:00:00.000Z' });
+            expect(watcher.poll([old])).toBe(undefined);
+            expect(registry.list().length).toBe(0);
+        });
+
+        await it('forgets the case on reset', () => {
+            const registry = new ActivityRegistry();
+            const watcher = new ActivityWatcher(registry);
+            watcher.poll([run()]);
+            watcher.reset();
+            expect(registry.get('people')).toBe(undefined);
         });
     });
 

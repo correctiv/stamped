@@ -30,10 +30,12 @@ import {
     type Verdict,
 } from '@stamped/core';
 import type { CaseReport, IndexedMessage, ReverifyResult, SearchHit } from '@stamped/store';
+import { liveActivity, readActivityStatuses } from '@stamped/store';
 import type { ReadableBody } from '@stamped/import';
 import { onBattery, type Embedder } from '@stamped/semantic';
 
 import {
+    ActivityWatcher,
     importRunning,
     ImportWatcher,
     syncSemanticActivity,
@@ -413,6 +415,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** The poll source reading the status file, and whether the last tick saw a live run. */
     private importPoll = 0;
     private importWasRunning = false;
+    /** The poll source reading the case's activity files, and the watcher feeding the rows. */
+    private activityPoll = 0;
+    private activityWatcher!: ActivityWatcher;
     /** The header bar's status button, and what turns the status file into its import row. */
     private activity!: ActivityController;
     private importWatcher!: ImportWatcher;
@@ -540,6 +545,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             (control) => (control === 'pause' ? this.semantic?.pause() : this.semantic?.resume()),
         );
         this.importWatcher = new ImportWatcher(this.activity.registry);
+        this.activityWatcher = new ActivityWatcher(this.activity.registry);
 
         // The index handle is a connection held open on the case folder, and a folder with an
         // open connection cannot be unmounted — which is where a working copy of a leak lives.
@@ -550,6 +556,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.peopleTimer = 0;
             this.cancelQueries();
             this.stopImportPoll();
+            this.stopActivityPoll();
             this.activity.dispose();
             this.endSemantic();
             if (this.session) closeSession(this.session);
@@ -701,6 +708,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.importPoll = 0;
     }
 
+    private stopActivityPoll(): void {
+        if (this.activityPoll !== 0) GLib.source_remove(this.activityPoll);
+        this.activityPoll = 0;
+    }
+
     /** Give up on every query chain in flight: whatever answers now may not paint. */
     private cancelQueries(): void {
         this.refreshGeneration++;
@@ -763,6 +775,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.importWasRunning = false;
         this.importWatcher.reset();
         this.importPoll = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => this.pollImport());
+        this.activityWatcher.reset();
+        this.activityPoll = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => this.pollActivity());
         this.text = '';
         this.verdict = undefined;
         this.source = undefined;
@@ -868,6 +882,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // The run's end refreshes the window, and the refresh starts the backfill again.
         if (importRunning(importStatusOf(session))) return;
         if (await peopleComplete(session)) return;
+        // A background run of this kind that another process started is live: the window must not
+        // start its own backfill beside it, two writers must not meet on the same index.
+        if (liveActivity(session.paths, 'people')) return;
         if (!current()) return;
         const registry = this.activity.registry;
         let processed = 0;
@@ -2183,6 +2200,19 @@ export class StampedWindow extends Adw.ApplicationWindow {
             showToast(importOutcome(status, ended.orphaned), failed ? 0 : 5);
         }
         this.importWasRunning = running;
+        return GLib.SOURCE_CONTINUE;
+    }
+
+    /** One tick: read the case's activity status files into the registry, reload when a run ends. */
+    private pollActivity(): boolean {
+        const session = this.session;
+        if (!session) return GLib.SOURCE_CONTINUE;
+        const ended = this.activityWatcher.poll(readActivityStatuses(session.paths));
+        if (ended !== undefined) {
+            // A background run ended (or read as interrupted): the panes it fed are stale until
+            // they reload, exactly as after an import.
+            this.track(this.refresh());
+        }
         return GLib.SOURCE_CONTINUE;
     }
 
