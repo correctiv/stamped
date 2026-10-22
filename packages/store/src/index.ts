@@ -90,6 +90,12 @@ export {
     verdictHashes,
 } from './index-db.ts';
 export {
+    indexDocumentSource,
+    type IndexDocumentSource,
+    type IndexSourceDocument,
+    type IndexSourceEntry,
+} from './document-source.ts';
+export {
     appendLog,
     digest,
     eachLogEntry,
