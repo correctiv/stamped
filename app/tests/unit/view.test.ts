@@ -769,6 +769,31 @@ export default async () => {
             expect(rows[1]?.subtitle.includes('already in the case')).toBe(false);
         });
 
+        await it('prefixes the mailbox name, so two parts named alike are not identical rows', async () => {
+            const sources: LogSource[] = [
+                {
+                    source: '/leak/ada@example.com/part-01.mbox',
+                    kind: 'mbox',
+                    messages: 3,
+                    duplicates: 0,
+                    mailbox: 'ada@example.com',
+                },
+                {
+                    source: '/leak/grace@example.net/part-01.mbox',
+                    kind: 'mbox',
+                    messages: 1,
+                    duplicates: 0,
+                    mailbox: 'grace@example.net',
+                },
+            ];
+            const rows = sourceRows(sources);
+            expect(rows[0]?.title).toBe('part-01.mbox');
+            expect(rows[1]?.title).toBe('part-01.mbox');
+            expect(rows[0]?.subtitle.startsWith('ada@example.com')).toBe(true);
+            expect(rows[1]?.subtitle.startsWith('grace@example.net')).toBe(true);
+            expect(rows[0]?.subtitle).not.toBe(rows[1]?.subtitle);
+        });
+
         await it('finds the last segment of a path without node:path', async () => {
             expect(baseName('/leak/inbox.mbox')).toBe('inbox.mbox');
             expect(baseName('/leak/maildir/')).toBe('maildir');

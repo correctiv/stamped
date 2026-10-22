@@ -116,13 +116,22 @@ function sourceLine(source: LogSource): string {
     const read = fmt(_n('{count} message', '{count} messages', source.messages), {
         count: groupDigits(source.messages),
     });
-    if (source.duplicates === 0) return read;
-    return fmt(
-        _n(
-            '{read}, one of them already in the case',
-            '{read}, {duplicates} of them already in the case',
-            source.duplicates,
-        ),
-        { read, duplicates: groupDigits(source.duplicates) },
-    );
+    const line =
+        source.duplicates === 0
+            ? read
+            : fmt(
+                  _n(
+                      '{read}, one of them already in the case',
+                      '{read}, {duplicates} of them already in the case',
+                      source.duplicates,
+                  ),
+                  { read, duplicates: groupDigits(source.duplicates) },
+              );
+    // A folder import's part files are all named the same way inside each mailbox
+    // (`part-01.mbox`), so the row's title alone cannot tell two mailboxes apart. The mailbox
+    // name is provenance from the import log (see `AGENTS.md`); prefixing it here is the only
+    // place the sidebar can still say which mailbox a `part-01.mbox` row came out of.
+    return source.mailbox === undefined
+        ? line
+        : fmt(_('{mailbox} — {line}'), { mailbox: source.mailbox, line });
 }
