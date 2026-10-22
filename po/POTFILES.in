@@ -92,6 +92,7 @@ packages/store/src/raw.ts
 packages/store/src/report.ts
 packages/store/src/reverify.ts
 packages/store/src/siblings.ts
+packages/store/src/statements.ts
 packages/verify/src/evidence.ts
 packages/verify/src/index.ts
 packages/verify/src/mailauth.ts
