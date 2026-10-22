@@ -260,6 +260,25 @@ export default async () => {
             });
         });
 
+        await it('stop() from inside the paused progress ends the run', async () => {
+            await withDb(async (path) => {
+                const db = openVectorDb(path, { modelId: 'fake/model', dimensions: 4 });
+                const indexer = createIndexer({
+                    embedder: fakeEmbedder(),
+                    source: listSource(3),
+                    vectors: db,
+                    onProgress: (p) => {
+                        if (p.state === 'paused') indexer.stop();
+                    },
+                });
+                indexer.pause();
+                const result = await indexer.run();
+                expect(result.state).toBe('stopped');
+                expect(countVectors(db)).toBe(0);
+                db.close();
+            });
+        });
+
         await it('skips a message the embedder refuses and reports it', async () => {
             await withDb(async (path) => {
                 const db = openVectorDb(path, { modelId: 'fake/model', dimensions: 4 });

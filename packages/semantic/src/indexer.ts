@@ -143,6 +143,14 @@ export function createIndexer(options: IndexerOptions): Indexer {
     let manualPause = false;
     let stopRequested = false;
     let wake: (() => void) | undefined;
+    /**
+     * A `stop()` or `resume()` that arrives while nobody is waiting must not be lost. The gate
+     * emits progress SYNCHRONOUSLY on its way into a pause, so a listener — a window wiring its
+     * Stop button to the paused state is the obvious one — can call either between the gate's
+     * last look at the flags and the wait that follows it. Without this the run parks on a wake
+     * that has already happened and never comes back.
+     */
+    let wakePending = false;
 
     let baseline = 0;
     let total = 0;
@@ -179,15 +187,26 @@ export function createIndexer(options: IndexerOptions): Indexer {
         emit();
     };
 
-    /** Sleep until `wake()` or, when given, `ms` have passed. */
+    /** Wake whoever is waiting, and remember the wake for whoever is about to. */
+    const signalWake = (): void => {
+        wakePending = true;
+        wake?.();
+    };
+
+    /** Sleep until `signalWake()` or, when given, `ms` have passed. */
     const waitWake = (ms?: number): Promise<void> =>
         new Promise<void>((resolve) => {
             let timer: ReturnType<typeof setTimeout> | undefined;
             const done = (): void => {
                 if (timer !== undefined) clearTimeout(timer);
                 wake = undefined;
+                wakePending = false;
                 resolve();
             };
+            if (wakePending) {
+                done();
+                return;
+            }
             wake = done;
             if (ms !== undefined) timer = setTimeout(done, ms);
         });
@@ -301,6 +320,7 @@ export function createIndexer(options: IndexerOptions): Indexer {
             assertCompatible(vectors, embedder);
             running = true;
             stopRequested = false;
+            wakePending = false;
             embedded = 0;
             workMs = 0;
             failures = 0;
@@ -325,11 +345,11 @@ export function createIndexer(options: IndexerOptions): Indexer {
         },
         resume(): void {
             manualPause = false;
-            wake?.();
+            signalWake();
         },
         stop(): void {
             stopRequested = true;
-            wake?.();
+            signalWake();
         },
     };
 }
