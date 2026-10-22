@@ -20,7 +20,9 @@ import type {
     KeysActivity,
     PeopleActivity,
     ReverifyActivity,
+    SemanticActivity,
 } from '../../lib/activity.ts';
+import { remainingTime } from '../../lib/semantic-status.ts';
 import { percent } from '../../lib/status.ts';
 import { formatBytes, groupDigits } from './format.ts';
 
@@ -49,6 +51,8 @@ export interface RowView {
     /** The expander's lines; empty means no expander. */
     readonly details: readonly string[];
     readonly cancellable: boolean;
+    /** The hold button of a row that can be held: Pause while it works, Resume while the person held it. */
+    readonly control: 'pause' | 'resume' | undefined;
 }
 
 function taskTitle(kind: ActivityKind): string {
@@ -61,6 +65,8 @@ function taskTitle(kind: ActivityKind): string {
             return _('Re-verification');
         case 'people':
             return _('People and timeline');
+        case 'semantic':
+            return _('Semantic search');
     }
 }
 
@@ -72,6 +78,17 @@ function channelName(channel: LookupChannel): string {
 function shortEta(seconds: number): string {
     if (seconds < 60) return fmt(_('{n} s'), { n: String(Math.max(0, Math.round(seconds))) });
     return fmt(_('{n} min'), { n: String(Math.round(seconds / 60)) });
+}
+
+function semanticRunningLine(data: SemanticActivity): string {
+    const state = data.state;
+    if (state.kind === 'indexing' || state.kind === 'paused') {
+        const counts = { done: groupDigits(state.done), total: groupDigits(state.total) };
+        return state.kind === 'indexing'
+            ? fmt(_('Indexing for semantic search, {done} of {total}'), counts)
+            : fmt(_('Semantic indexing paused, {done} of {total}'), counts);
+    }
+    return _('Measuring this machine for semantic search…');
 }
 
 /** What a running task is doing, for the button's tooltip. */
@@ -95,6 +112,8 @@ function runningLine(task: ActivityTask): string {
             });
         case 'people':
             return _('Building the people list…');
+        case 'semantic':
+            return semanticRunningLine(task.data);
     }
 }
 
@@ -177,6 +196,7 @@ function importRow(task: ActivityTask, data: ImportActivity): Omit<RowView, 'kin
         stats: stats.join(' · '),
         details,
         cancellable: running && data.own,
+        control: undefined,
     };
 }
 
@@ -206,6 +226,7 @@ function keysRow(task: ActivityTask, data: KeysActivity): Omit<RowView, 'kind' |
         stats: tally.join(' · '),
         details: [],
         cancellable: false,
+        control: undefined,
     };
 }
 
@@ -229,6 +250,7 @@ function reverifyRow(task: ActivityTask, data: ReverifyActivity): Omit<RowView, 
         stats: changed,
         details: [],
         cancellable: false,
+        control: undefined,
     };
 }
 
@@ -246,7 +268,55 @@ function peopleRow(task: ActivityTask, data: PeopleActivity): Omit<RowView, 'kin
         stats: '',
         details: [],
         cancellable: false,
+        control: undefined,
     };
+}
+
+function semanticRow(task: ActivityTask, data: SemanticActivity): Omit<RowView, 'kind' | 'state' | 'title'> {
+    const state = data.state;
+    const row = (subtitle: string, stats = '', control: RowView['control'] = undefined) => ({
+        subtitle,
+        fraction: task.state === 'running' ? task.fraction : undefined,
+        stats,
+        details: [],
+        cancellable: false,
+        control,
+    });
+    switch (state.kind) {
+        case 'probing':
+            return row(_('Measuring how fast this machine is'));
+        case 'indexing':
+            return row(
+                fmt(_n('{done} of {total} message', '{done} of {total} messages', state.total), {
+                    done: groupDigits(state.done),
+                    total: groupDigits(state.total),
+                }),
+                state.remainingSeconds === undefined
+                    ? ''
+                    : fmt(_('about {time} left'), { time: remainingTime(state.remainingSeconds) }),
+                'pause',
+            );
+        case 'paused': {
+            // The two holds are different facts: the battery lets go by itself, the person's does not.
+            const counts = fmt(_n('{done} of {total} message', '{done} of {total} messages', state.total), {
+                done: groupDigits(state.done),
+                total: groupDigits(state.total),
+            });
+            return state.reason === 'battery'
+                ? row(_('Paused while on battery'), counts)
+                : row(_('Paused'), counts, 'resume');
+        }
+        case 'ready':
+            return row(
+                fmt(_n('Finished, {count} message', 'Finished, {count} messages', state.done), {
+                    count: groupDigits(state.done),
+                }),
+            );
+        case 'failed':
+            return row(task.reason ?? state.message);
+        default:
+            return row('');
+    }
 }
 
 /** One popover row. */
@@ -261,5 +331,7 @@ export function rowView(task: ActivityTask): RowView {
             return { ...head, ...reverifyRow(task, task.data) };
         case 'people':
             return { ...head, ...peopleRow(task, task.data) };
+        case 'semantic':
+            return { ...head, ...semanticRow(task, task.data) };
     }
 }

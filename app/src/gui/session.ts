@@ -72,7 +72,10 @@ import {
 } from '@stamped/store';
 import { verifyMessage } from '@stamped/verify';
 
+import { openVectorDbForSearch, type Embedder } from '@stamped/semantic';
+
 import { caseOrThrow } from '../lib/case.ts';
+import { hybridSearch, type HybridHit } from '../lib/hybrid-search.ts';
 import { resolveTxt } from '../lib/dns.ts';
 import { loadVault, saveVault } from '../lib/vault.ts';
 
@@ -319,6 +322,40 @@ export function pageOf(session: CaseSession, query: Query, offset = 0): SearchHi
         limit: PAGE_SIZE,
     };
     return searchHits(session.db, text, searchOptions).slice(offset, offset + PAGE_SIZE);
+}
+
+/**
+ * The first page of a text query with the meaning's hits merged in, or `undefined` when there is
+ * nothing to merge (no query, no vectors). The caller keeps the text page it already has.
+ */
+export async function hybridPageOf(
+    session: CaseSession,
+    query: Query,
+    embedder: Embedder,
+): Promise<HybridHit[] | undefined> {
+    const text = query.text?.trim() ?? '';
+    if (text === '') return undefined;
+    const vectors = openVectorDbForSearch(session.paths.vectors, {
+        modelId: embedder.modelId,
+        dimensions: embedder.dimensions,
+    });
+    if (vectors === undefined) return undefined;
+    try {
+        const scope = scopeOf(session, query);
+        return await hybridSearch({
+            index: session.db,
+            vectors,
+            embedder,
+            query: text,
+            options: {
+                ...(query.verdict ? { verdict: query.verdict } : {}),
+                ...(scope ? { scope } : {}),
+                limit: PAGE_SIZE,
+            },
+        });
+    } finally {
+        vectors.close();
+    }
 }
 
 /** How many messages a filter admits — the length of the list behind {@link pageOf}. */

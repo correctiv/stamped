@@ -45,6 +45,7 @@ import {
     SEMANTIC_STATUS_VERSION,
     type CasePaths,
     type SemanticPauseReason,
+    type SemanticProbeRecord,
     type SemanticRunState,
     type SemanticRunStatus,
     type SemanticSetting,
@@ -97,8 +98,15 @@ export interface SemanticController {
     enable(): Promise<SemanticState>;
     /** Switch it off: the run stops, the vectors stay. */
     disable(): Promise<SemanticState>;
+    /**
+     * Measure the machine and keep the result in the setting, WITHOUT switching anything on and
+     * without indexing: the estimate has to be on screen before the person decides.
+     */
+    probeOnly(): Promise<SemanticSetting | undefined>;
     /** Start or continue the indexing — also what a restart does when the setting says on. */
     start(): Promise<SemanticState>;
+    /** End the run, e.g. for a closing window; the setting stays as it is. */
+    stop(): Promise<void>;
     /** Hold the run at the next batch boundary. */
     pause(): void;
     /** Go on after a pause. */
@@ -209,6 +217,43 @@ export function createSemanticController(options: SemanticControllerOptions): Se
         }
     };
 
+    /** Time the embedder on a few real messages; the record is what the setting keeps. */
+    const measure = async (embedder: Embedder, pending: number): Promise<SemanticProbeRecord> => {
+        const sample = sampleForProbe(options.source);
+        const probe = await probeEmbedder(embedder, sample, pending, { now });
+        return {
+            modelId: embedder.modelId,
+            tokensPerSecond: probe.tokensPerSecond,
+            estimatedHours: probe.estimatedSeconds / 3600,
+            recommendation: probe.recommendation,
+            measuredAt: new Date(now()).toISOString(),
+        };
+    };
+
+    const probeOnly = async (): Promise<SemanticSetting | undefined> => {
+        // A run that is going has measured already, and a second model load would compete with it.
+        if (running !== undefined) return setting;
+        const total = options.source.count();
+        if (total === 0) return setting;
+        try {
+            const embedder = await options.createEmbedder();
+            // Quiet: no model here means no estimate, not a failure to report.
+            if (embedder === undefined) return setting;
+            if (setting?.probe?.modelId === embedder.modelId) return setting;
+            const probe = await measure(embedder, total);
+            setting = {
+                ...(setting ?? { version: SEMANTIC_SETTING_VERSION, enabled: false }),
+                modelId: embedder.modelId,
+                dimensions: embedder.dimensions,
+                probe,
+            };
+            writeSemanticSetting(options.paths, setting);
+        } catch {
+            // A model that will not load or a probe that broke leaves the setting as it was.
+        }
+        return setting;
+    };
+
     const start = async (): Promise<SemanticState> => {
         const current = setting;
         if (current === undefined || !current.enabled) return state();
@@ -247,18 +292,8 @@ export function createSemanticController(options: SemanticControllerOptions): Se
         if (!measured && total > done) {
             setRun({ state: 'probing', done, total }, true);
             try {
-                const sample = sampleForProbe(options.source);
-                const probe = await probeEmbedder(embedder, sample, total - done, { now });
-                next = {
-                    ...next,
-                    probe: {
-                        modelId: embedder.modelId,
-                        tokensPerSecond: probe.tokensPerSecond,
-                        estimatedHours: probe.estimatedSeconds / 3600,
-                        recommendation: probe.recommendation,
-                        measuredAt: new Date(now()).toISOString(),
-                    },
-                };
+                const probe = await measure(embedder, total - done);
+                next = { ...next, probe };
             } catch (error) {
                 // The measurement itself broke: the embedder is not working, and that is the
                 // answer the case gets.
@@ -341,6 +376,12 @@ export function createSemanticController(options: SemanticControllerOptions): Se
         return state();
     };
 
+    const stop = async (): Promise<void> => {
+        indexer?.stop();
+        const pending = running;
+        if (pending !== undefined) await pending;
+    };
+
     const pause = (): void => {
         userPaused = true;
         indexer?.pause();
@@ -370,7 +411,9 @@ export function createSemanticController(options: SemanticControllerOptions): Se
         setting: () => setting,
         enable,
         disable,
+        probeOnly,
         start,
+        stop,
         pause,
         resume,
         settled,

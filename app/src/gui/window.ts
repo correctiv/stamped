@@ -29,18 +29,34 @@ import {
     type MessageFinding,
     type Verdict,
 } from '@stamped/core';
-import { type CaseReport, type IndexedMessage, type ReverifyResult, type SearchHit } from '@stamped/store';
+import {
+    indexDocumentSource,
+    type CaseReport,
+    type IndexedMessage,
+    type ReverifyResult,
+    type SearchHit,
+} from '@stamped/store';
 import type { ReadableBody } from '@stamped/import';
+import { onBattery, type Embedder } from '@stamped/semantic';
 
-import { importRunning, ImportWatcher, type ReverifyActivity } from '../lib/activity.ts';
+import {
+    importRunning,
+    ImportWatcher,
+    syncSemanticActivity,
+    type ReverifyActivity,
+} from '../lib/activity.ts';
+import { createGuiEmbedder } from '../lib/semantic-embedder.ts';
+import { createSemanticController, type SemanticController } from '../lib/semantic.ts';
 import { openCopy } from '../lib/open-copy.ts';
 import { selfArgv } from '../lib/self-argv.ts';
 import { ActivityController } from './activity.ts';
+import { presentSemanticSettings } from './semantic-dialog.ts';
 import { StampedHelpButton } from './help-button.ts';
 import {
     addKey,
     applyKeys,
     closeSession,
+    hybridPageOf,
     createSession,
     dropFilterCaches,
     importInto,
@@ -88,6 +104,8 @@ import {
     type KeyRow,
 } from './view/keys.ts';
 import { escapeLine, noHyphens, plainText } from './view/markup.ts';
+import { matchBadge } from './view/semantic.ts';
+import type { MatchKind } from '../lib/hybrid-search.ts';
 import {
     emptyList,
     headerFields,
@@ -370,6 +388,11 @@ export interface StampedWindow extends Children {}
 export class StampedWindow extends Adw.ApplicationWindow {
     /** The open case. Undefined is the welcome page: a window with no case is not an error. */
     private session?: CaseSession;
+    /** The semantic index of the open case, and the embedder searches share (loaded once). */
+    private semantic?: SemanticController;
+    private queryEmbedder?: Promise<Embedder | undefined>;
+    /** How the meaning found a hit, by hash; empty for a plain text list. */
+    private matches = new Map<string, MatchKind>();
 
     /** The filters of the query, kept apart so each can be cleared on its own. */
     private text = '';
@@ -450,6 +473,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.addAction('open-case', () => void this.chooseCase());
         this.addAction('import', () => void this.importFrom('files'));
         this.addAction('import-folder', () => void this.importFrom('folder'));
+        this.addAction('semantic-settings', () => {
+            if (this.semantic) presentSemanticSettings(this, this.semantic, this.total);
+        });
 
         this._searchEntry.connect('search-changed', () => this.onSearchChanged());
         this._peopleSearch.connect('search-changed', () => {
@@ -493,7 +519,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // verdicts, and a mailbox, a signer or one key is neither. Its button clears exactly
         // what the banner says, so a verdict chosen afterwards stays chosen.
         this._filterBanner.connect('button-clicked', () => this.clearScope());
-        this.activity = new ActivityController(this._activityButton, () => this.cancelImport());
+        this.activity = new ActivityController(
+            this._activityButton,
+            () => this.cancelImport(),
+            (control) => (control === 'pause' ? this.semantic?.pause() : this.semantic?.resume()),
+        );
         this.importWatcher = new ImportWatcher(this.activity.registry);
 
         // The index handle is a connection held open on the case folder, and a folder with an
@@ -509,6 +539,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.refreshSource = 0;
             this.stopImportPoll();
             this.activity.dispose();
+            this.endSemantic();
             if (this.session) closeSession(this.session);
             this.session = undefined;
             return false;
@@ -684,6 +715,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
     /** Take over a case: the old one is closed, the filters are dropped, the panes rebuild. */
     private adopt(session: CaseSession): void {
+        this.endSemantic();
         if (this.session) closeSession(this.session);
         this.stopImportPoll();
         this.session = session;
@@ -703,7 +735,33 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this._caseTitle.set_title(baseName(session.root));
         this._caseTitle.set_subtitle(shortPath(session.root, GLib.get_home_dir()));
         this._rootStack.set_visible_child_name('case');
+        this.startSemantic(session);
         this.refresh();
+    }
+
+    /**
+     * One controller per open case. It starts only when the person switched the feature on, and
+     * every failure stays inside it: a case without a model runtime is a text-search case.
+     */
+    private startSemantic(session: CaseSession): void {
+        const controller = createSemanticController({
+            paths: session.paths,
+            createEmbedder: createGuiEmbedder,
+            source: indexDocumentSource(session.db, session.paths),
+            onBattery,
+            onProgress: (state) => syncSemanticActivity(this.activity.registry, state),
+        });
+        this.semantic = controller;
+        if (controller.setting()?.enabled === true) void controller.start().catch(() => undefined);
+    }
+
+    /** Stop the index before the database it reads is closed. */
+    private endSemantic(): void {
+        const controller = this.semantic;
+        this.semantic = undefined;
+        this.matches = new Map();
+        this.activity.registry.dismiss('semantic');
+        if (controller) void controller.stop().catch(() => undefined);
     }
 
     /**
@@ -921,7 +979,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         clearList(this._messageList);
         this.rebuilding = false;
 
+        this.matches = new Map();
         this.loadMore(query, true);
+        void this.mergeMeaning(query);
 
         // Plain text, not markup: see `adopt` on `Adw.WindowTitle`.
         if (this.hits.length === 0) {
@@ -948,20 +1008,55 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.hits = [];
             clearList(this._messageList);
         }
-        for (const row of messageRows(page)) {
-            const item = new Adw.ActionRow({ title: row.title, subtitle: noHyphens(row.subtitle) });
-            item.set_subtitle_lines(1);
-            item.set_title_lines(1);
-            item.set_tooltip_markup(row.tooltip);
-            item.add_suffix(badge(row.badge, row.cssClass));
-            this._messageList.append(item);
-        }
+        this.appendRows(page);
         this.rebuilding = false;
         this.hits = replace ? page : this.hits.concat(page);
         this.listOffset += page.length;
         this.hasMore = page.length === PAGE_SIZE && this.listOffset < this.filteredTotal;
         this.loadingMore = false;
         this._listTitle.set_subtitle(filterSummary(this.hits.length, this.filteredTotal));
+    }
+
+    private appendRows(page: readonly SearchHit[]): void {
+        for (const row of messageRows(page)) {
+            const item = new Adw.ActionRow({ title: row.title, subtitle: noHyphens(row.subtitle) });
+            item.set_subtitle_lines(1);
+            item.set_title_lines(1);
+            item.set_tooltip_markup(row.tooltip);
+            const found = matchBadge(this.matches.get(row.hash) ?? 'text');
+            if (found !== undefined) item.add_suffix(badge(escapeLine(found), 'dimmed'));
+            item.add_suffix(badge(row.badge, row.cssClass));
+            this._messageList.append(item);
+        }
+    }
+
+    /**
+     * Add what the meaning found to the first page, once the text page is already on screen.
+     * Only with a finished or running index and an embedder; any failure leaves the text list.
+     */
+    private async mergeMeaning(query: Query): Promise<void> {
+        const session = this.session;
+        const kind = this.semantic?.state().kind;
+        if (!session || query.text === undefined || (kind !== 'ready' && kind !== 'indexing')) return;
+        try {
+            this.queryEmbedder ??= createGuiEmbedder();
+            const embedder = await this.queryEmbedder;
+            if (!embedder) return;
+            const merged = await hybridPageOf(session, query, embedder);
+            if (!merged || session !== this.session || query.text !== this.currentQuery().text) return;
+            if (!merged.some((hit) => hit.match !== 'text')) return;
+            this.matches = new Map(merged.map((hit) => [hit.hash, hit.match]));
+            this.rebuilding = true;
+            clearList(this._messageList);
+            this.rebuilding = false;
+            this.appendRows(merged);
+            this.hits = merged;
+            this.listOffset = merged.length;
+            this.hasMore = false;
+            this._listTitle.set_subtitle(filterSummary(this.hits.length, this.filteredTotal));
+        } catch {
+            // Text search already answered.
+        }
     }
 
     /** Triggered by the scroller: pull the next page when the bottom comes into view. */
