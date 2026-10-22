@@ -27,8 +27,14 @@ const args = process.argv.slice(2);
 let appPath = null;
 let noLaunch = false;
 for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--no-launch') { noLaunch = true; continue; }
-    if (args[i] === '--app') { appPath = args[++i]; continue; }
+    if (args[i] === '--no-launch') {
+        noLaunch = true;
+        continue;
+    }
+    if (args[i] === '--app') {
+        appPath = args[++i];
+        continue;
+    }
     if (!appPath) appPath = args[i];
 }
 if (!appPath) {
@@ -43,9 +49,17 @@ if (!existsSync(appPath) || !statSync(appPath).isDirectory()) {
 
 let failed = 0;
 let warned = 0;
-function pass(msg) { console.log(`PASS  ${msg}`); }
-function fail(msg) { console.log(`FAIL  ${msg}`); failed++; }
-function warn(msg) { console.log(`WARN  ${msg}`); warned++; }
+function pass(msg) {
+    console.log(`PASS  ${msg}`);
+}
+function fail(msg) {
+    console.log(`FAIL  ${msg}`);
+    failed++;
+}
+function warn(msg) {
+    console.log(`WARN  ${msg}`);
+    warned++;
+}
 
 // --- helpers ---------------------------------------------------------------
 
@@ -67,7 +81,9 @@ function isMachO(file) {
         if (b.length < 4) return false;
         const magic = b.readUInt32LE(0);
         return MACHO_MAGICS.has(magic);
-    } catch { return false; }
+    } catch {
+        return false;
+    }
 }
 
 function otoolLines(file, flag) {
@@ -91,7 +107,10 @@ for (const m of machos) {
         const match = line.match(/^\s*(\/\S+)/);
         if (!match) continue;
         const dep = match[1];
-        if (dep.startsWith('/') && underPrefix(dep)) { hardLoads++; fail(`hard-linked host path in ${m}: ${dep}`); }
+        if (dep.startsWith('/') && underPrefix(dep)) {
+            hardLoads++;
+            fail(`hard-linked host path in ${m}: ${dep}`);
+        }
     }
     // LC_RPATH: a search path, reported not failed (see header).
     for (const line of otoolLines(m, '-l')) {
@@ -110,15 +129,18 @@ if (hostRpaths > 0) console.log(`      (${hostRpaths} host rpath entries, all no
 const prebuildsRoot = join(appPath, 'Contents', 'Resources', 'native', 'node-gi', 'prebuilds');
 const prebuildDirs = existsSync(prebuildsRoot)
     ? readdirSync(prebuildsRoot)
-        .filter((n) => /^darwin-(arm64|x64)$/.test(n))
-        .map((n) => join(prebuildsRoot, n))
-        .filter((p) => statSync(p).isDirectory())
+          .filter((n) => /^darwin-(arm64|x64)$/.test(n))
+          .map((n) => join(prebuildsRoot, n))
+          .filter((p) => statSync(p).isDirectory())
     : [];
 
 let fontsChecked = 0;
 for (const d of prebuildDirs) {
     const conf = join(d, 'gtk', 'etc', 'fonts', 'fonts.conf');
-    if (!existsSync(conf)) { fail(`missing ${conf}`); continue; }
+    if (!existsSync(conf)) {
+        fail(`missing ${conf}`);
+        continue;
+    }
     const text = readFileSync(conf, 'utf8');
     fontsChecked++;
     if (HOST_PREFIXES.some((p) => text.includes(p))) fail(`fonts.conf names a host prefix: ${conf}`);
@@ -145,14 +167,22 @@ if (noLaunch) {
 // --- runtime: sandboxed launch --------------------------------------------
 
 const execs = walk(join(appPath, 'Contents', 'MacOS')).filter((p) => statSync(p).isFile());
-if (execs.length === 0) { fail('no executable in Contents/MacOS'); process.exit(1); }
+if (execs.length === 0) {
+    fail('no executable in Contents/MacOS');
+    process.exit(1);
+}
 // `gjsify ship` places a `node` binary beside the real launcher; the launcher is the
 // one named after the app (or the only other file).
 const execPath = execs.find((p) => !p.endsWith('/node')) || execs[0];
 
 const home = mkdtempSync(join(tmpdir(), 'stamped-check-home-'));
 const profile = join(home, 'nobrew.sb');
-writeFileSync(profile, '(version 1)\n(allow default)\n' + HOST_PREFIXES.map((p) => `(deny file-read* (subpath "${p}"))`).join('\n') + '\n');
+writeFileSync(
+    profile,
+    '(version 1)\n(allow default)\n' +
+        HOST_PREFIXES.map((p) => `(deny file-read* (subpath "${p}"))`).join('\n') +
+        '\n',
+);
 
 const env = {
     ...process.env,
@@ -162,16 +192,21 @@ const env = {
     XDG_CACHE_HOME: join(home, '.cache'),
     LANG: 'de_DE.UTF-8',
 };
-const stderrFile = join(home, 'stderr.log');
 const child = spawn('sandbox-exec', ['-f', profile, execPath], {
-    env, detached: true, stdio: ['ignore', 'ignore', 'pipe'],
+    env,
+    detached: true,
+    stdio: ['ignore', 'ignore', 'pipe'],
 });
 let stderr = '';
-child.stderr.on('data', (c) => { stderr += c.toString(); });
+child.stderr.on('data', (c) => {
+    stderr += c.toString();
+});
 
 // wait for the node process that actually runs the bundle
 function findBundlePid() {
-    const r = spawnSync('pgrep', ['-f', `${appPath}/Contents/Resources/lib/stamped.node.mjs`], { encoding: 'utf8' });
+    const r = spawnSync('pgrep', ['-f', `${appPath}/Contents/Resources/lib/stamped.node.mjs`], {
+        encoding: 'utf8',
+    });
     return r.stdout.trim().split('\n').filter(Boolean).pop() || null;
 }
 
@@ -193,25 +228,50 @@ if (bundlePid) {
 
 // kill everything
 function killAll() {
-    try { process.kill(-child.pid, 'SIGTERM'); } catch {}
-    try { child.kill('SIGTERM'); } catch {}
+    try {
+        process.kill(-child.pid, 'SIGTERM');
+    } catch {}
+    try {
+        child.kill('SIGTERM');
+    } catch {}
     // kill any leftover bundle process
     const p = findBundlePid();
-    if (p) try { process.kill(Number(p), 'SIGTERM'); } catch {}
+    if (p)
+        try {
+            process.kill(Number(p), 'SIGTERM');
+        } catch {}
 }
 process.on('exit', killAll);
-process.on('SIGINT', () => { killAll(); process.exit(130); });
+process.on('SIGINT', () => {
+    killAll();
+    process.exit(130);
+});
 
 if (!bundlePid) {
     fail('app did not start a bundle process within 20 s');
 } else {
-    const opened = lsofOut.split('\n').map((l) => l.trim().split(/\s+/).pop()).filter(Boolean);
+    const opened = lsofOut
+        .split('\n')
+        .map((l) => l.trim().split(/\s+/).pop())
+        .filter(Boolean);
     const bad = opened.filter((p) => HOST_PREFIXES.some((pref) => p === pref || p.startsWith(pref + '/')));
     if (bad.length === 0) pass(`no file under ${HOST_PREFIXES.join(', ')} opened (pid ${bundlePid})`);
-    else { fail(`${bad.length} host-prefix files opened`); bad.slice(0, 5).forEach((p) => console.log(`      ${p}`)); }
-    const fonts = new Set(opened.map((p) => p.split('/').pop()).filter((n) => /^AdwaitaSans.*\.ttf$/i.test(n)));
+    else {
+        fail(`${bad.length} host-prefix files opened`);
+        bad.slice(0, 5).forEach((p) => console.log(`      ${p}`));
+    }
+    const fonts = new Set(
+        opened.map((p) => p.split('/').pop()).filter((n) => /^AdwaitaSans.*\.ttf$/i.test(n)),
+    );
     if (fonts.size > 0) pass(`AdwaitaSans mapped: ${[...fonts].join(', ')}`);
     else fail('no AdwaitaSans*.ttf mapped');
+    // GTK and libadwaita bind their catalogs to the build host's prefix at init, so a
+    // catalog present in the bundle proves nothing until the process has it mapped.
+    for (const domain of ['gtk40', 'libadwaita']) {
+        const mapped = opened.some((p) => p.endsWith(`/gtk/share/locale/de/LC_MESSAGES/${domain}.mo`));
+        if (mapped) pass(`${domain}.mo mapped from the bundle`);
+        else fail(`${domain}.mo not mapped from the bundle`);
+    }
     if (/Fontconfig error/i.test(stderr)) fail('stderr contains "Fontconfig error"');
     else pass('no Fontconfig error on stderr');
 }
