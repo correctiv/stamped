@@ -155,6 +155,9 @@ them. Synthetic like everything else: reserved example domains, invented bodies.
 - [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md) holds what was measured before it
   was decided: why mailauth and not an own verifier, how it is configured and why, FTS5 under
   gjsify.
+- [docs/spikes/query-worker.md](docs/spikes/query-worker.md) holds the same for the worker thread
+  that answers every index query: what a Worker can and cannot do under gjsify, and how long the
+  window stopped repainting before it existed.
 - [AGENTS.md](AGENTS.md) holds the conventions, for humans and AI agents both.
 
 ## Licence

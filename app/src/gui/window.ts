@@ -29,13 +29,7 @@ import {
     type MessageFinding,
     type Verdict,
 } from '@stamped/core';
-import {
-    indexDocumentSource,
-    type CaseReport,
-    type IndexedMessage,
-    type ReverifyResult,
-    type SearchHit,
-} from '@stamped/store';
+import type { CaseReport, IndexedMessage, ReverifyResult, SearchHit } from '@stamped/store';
 import type { ReadableBody } from '@stamped/import';
 import { onBattery, type Embedder } from '@stamped/semantic';
 
@@ -66,6 +60,7 @@ import {
     markImportCancelled,
     filteredCount,
     messageOf,
+    openSemanticSource,
     openSession,
     backfillStep,
     peopleComplete,
@@ -82,6 +77,7 @@ import {
     type CaseSession,
     type Query,
     type ScopeRef,
+    type SemanticSource,
 } from './session.ts';
 import { LOOKUP_CHANNELS, channelLabel, consentDialog } from './view/consent.ts';
 import {
@@ -152,10 +148,15 @@ Gio._promisify(Gtk.FileLauncher.prototype, 'launch', 'launch_finish');
 Gio._promisify(Gio.DataInputStream.prototype, 'read_line_async', 'read_line_finish');
 Gio._promisify(Gio.Subprocess.prototype, 'wait_check_async', 'wait_check_finish');
 
-/** Settles on the next idle turn: lets the window repaint inside a long async loop. */
-function nextTurn(): Promise<void> {
+/**
+ * Settles on the next idle turn: lets the window repaint inside a long async loop.
+ *
+ * `priority` is what makes the address backfill a background job: at `PRIORITY_LOW` its turn
+ * comes after everything the person can see, so a batch between two frames never costs a frame.
+ */
+function nextTurn(priority = GLib.PRIORITY_DEFAULT_IDLE): Promise<void> {
     return new Promise((resolve) => {
-        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+        GLib.idle_add(priority, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
         });
@@ -390,6 +391,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private session?: CaseSession;
     /** The semantic index of the open case, and the embedder searches share (loaded once). */
     private semantic?: SemanticController;
+    /** The connection that controller walks the case through — closed after it stops. */
+    private semanticSource?: SemanticSource;
     private queryEmbedder?: Promise<Embedder | undefined>;
     /** How the meaning found a hit, by hash; empty for a plain text list. */
     private matches = new Map<string, MatchKind>();
@@ -450,11 +453,23 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private shotEvidence?: { expander: Adw.ExpanderRow; help: readonly Gtk.MenuButton[] };
     /** The pending search debounce, or 0. */
     private searchTimer = 0;
-    /** The pending people-search debounce, and the idle source filling the address table. */
+    /** The pending people-search debounce. */
     private peopleTimer = 0;
-    private backfillSource = 0;
-    /** The idle source stepping through {@link refresh}, and whether a key lookup is running. */
-    private refreshSource = 0;
+    /**
+     * Which run of each async chain counts as the current one.
+     *
+     * Every step of {@link refresh}, {@link fillList}, {@link fillPeople} and the address
+     * backfill is now a round trip to the query worker, so none of them is a GLib source that
+     * can be removed any more: an idle callback cannot await a reply. Cancelling one is
+     * therefore a counter that its own continuation no longer matches — every place that used to
+     * call `GLib.source_remove` bumps the number instead, and every continuation checks it before
+     * it touches a widget.
+     */
+    private refreshGeneration = 0;
+    private listGeneration = 0;
+    private peopleGeneration = 0;
+    private backfillGeneration = 0;
+    /** Whether a key lookup is running. */
     private lookupBusy = false;
 
     static {
@@ -482,7 +497,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             if (this.peopleTimer !== 0) GLib.source_remove(this.peopleTimer);
             this.peopleTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SEARCH_DELAY_MS, () => {
                 this.peopleTimer = 0;
-                this.fillPeople();
+                this.track(this.fillPeople());
                 return false;
             });
         });
@@ -490,7 +505,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this._messageList.connect('row-selected', (_list, row) => {
             if (this.rebuilding || row === null) return;
             const hit = this.hits[row.get_index()];
-            if (hit) this.showMessage(hit.hash);
+            if (hit) this.track(this.showMessage(hit.hash));
         });
 
         // Lazy loading: fetch the next page when the scroller nears the bottom, so a case of
@@ -506,13 +521,13 @@ export class StampedWindow extends Adw.ApplicationWindow {
             // An archive and a scope are the same question — "where did these messages come
             // from" — and a list narrowed by both would be a set nobody picked a number for.
             this.scope = undefined;
-            this.fillList();
+            this.track(this.fillList());
         });
 
         this._verdictList.connect('row-selected', (_list, row) => {
             if (this.rebuilding || row === null) return;
             this.verdict = this.filters[row.get_index()];
-            this.fillList();
+            this.track(this.fillList());
         });
 
         // The banner is the only place a scope is visible: the sidebar knows archives and
@@ -533,10 +548,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.searchTimer = 0;
             if (this.peopleTimer !== 0) GLib.source_remove(this.peopleTimer);
             this.peopleTimer = 0;
-            if (this.backfillSource !== 0) GLib.source_remove(this.backfillSource);
-            this.backfillSource = 0;
-            if (this.refreshSource !== 0) GLib.source_remove(this.refreshSource);
-            this.refreshSource = 0;
+            this.cancelQueries();
             this.stopImportPoll();
             this.activity.dispose();
             this.endSemantic();
@@ -616,7 +628,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.searchTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SEARCH_DELAY_MS, () => {
             this.searchTimer = 0;
             this.text = this._searchEntry.get_text();
-            this.fillList();
+            this.track(this.fillList());
             return GLib.SOURCE_REMOVE;
         });
     }
@@ -632,7 +644,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private clearScope(): void {
         if (this.scope === undefined) return;
         this.scope = undefined;
-        this.fillList();
+        this.track(this.fillList());
     }
 
     /**
@@ -658,7 +670,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // The tap came from the overview pane, and what it asked for is a list of messages —
         // so the window turns to it instead of leaving the person on the page they tapped.
         this._contentStack.set_visible_child_name('message');
-        this.fillList();
+        this.track(this.fillList());
     }
 
     /** The overview as rows: a tap applies its filter, children make it an expander. */
@@ -689,6 +701,28 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.importPoll = 0;
     }
 
+    /** Give up on every query chain in flight: whatever answers now may not paint. */
+    private cancelQueries(): void {
+        this.refreshGeneration++;
+        this.listGeneration++;
+        this.peopleGeneration++;
+        this.backfillGeneration++;
+    }
+
+    /**
+     * Run one pane fill started from a synchronous handler, and report what it fails with.
+     *
+     * The session is captured at the call. Closing or replacing a case rejects everything that
+     * was in flight on it — that is the shutdown doing its job, not an error to put in front of
+     * the person, so a rejection from a case that is no longer open is dropped.
+     */
+    private track(work: Promise<unknown>, session = this.session): void {
+        void work.catch((error: unknown) => {
+            if (this.session !== session) return;
+            void this.fail(error);
+        });
+    }
+
     /**
      * Open a case with the loading page up, so the window does not sit frozen while it works.
      *
@@ -713,9 +747,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
     }
 
-    /** Take over a case: the old one is closed, the filters are dropped, the panes rebuild. */
+    /**
+     * Take over a case: the old one is closed, the filters are dropped, the panes rebuild.
+     *
+     * Stays synchronous although the rebuild is not. {@link loadCase} restores the page it came
+     * from when this throws, and awaiting the rebuild here would make a query that failed on a
+     * case that DID open look like a case that could not be opened.
+     */
     private adopt(session: CaseSession): void {
         this.endSemantic();
+        this.cancelQueries();
         if (this.session) closeSession(this.session);
         this.stopImportPoll();
         this.session = session;
@@ -736,7 +777,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this._caseTitle.set_subtitle(shortPath(session.root, GLib.get_home_dir()));
         this._rootStack.set_visible_child_name('case');
         this.startSemantic(session);
-        this.refresh();
+        this.track(this.refresh());
     }
 
     /**
@@ -744,68 +785,68 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * every failure stays inside it: a case without a model runtime is a text-search case.
      */
     private startSemantic(session: CaseSession): void {
+        const reader = openSemanticSource(session);
         const controller = createSemanticController({
             paths: session.paths,
             createEmbedder: createGuiEmbedder,
-            source: indexDocumentSource(session.db, session.paths),
+            source: reader.source,
             onBattery,
             onProgress: (state) => syncSemanticActivity(this.activity.registry, state),
         });
         this.semantic = controller;
+        this.semanticSource = reader;
         if (controller.setting()?.enabled === true) void controller.start().catch(() => undefined);
     }
 
-    /** Stop the index before the database it reads is closed. */
+    /** Stop the index before the connection it reads through is closed — in that order. */
     private endSemantic(): void {
         const controller = this.semantic;
+        const reader = this.semanticSource;
         this.semantic = undefined;
+        this.semanticSource = undefined;
         this.matches = new Map();
         this.activity.registry.dismiss('semantic');
-        if (controller) void controller.stop().catch(() => undefined);
+        if (!controller) {
+            reader?.close();
+            return;
+        }
+        void controller.stop().then(
+            () => reader?.close(),
+            () => reader?.close(),
+        );
     }
 
     /**
      * Everything that depends on the case. One report query feeds all three panes.
      *
      * One step per idle turn, so the main loop repaints and handles input between the queries:
-     * on a slow disk each is a synchronous round trip to the database thread, and all of them in
-     * one turn is what the shell reports as "not responding".
+     * each step is a round trip to the worker that owns the index, and an await alone would let
+     * the panes arrive in one burst at the end. A turn of the main loop between them is one
+     * rendered frame, so the window fills in visibly rather than sitting blank and then jumping.
      */
-    private refresh(): void {
+    private async refresh(): Promise<void> {
         const session = this.session;
         if (!session) return;
-        if (this.refreshSource !== 0) GLib.source_remove(this.refreshSource);
-        let report: CaseReport | undefined;
-        const steps: (() => void)[] = [
-            () => {
-                report = reportOf(session);
-                this.total = report.messages;
-            },
-            () => this.fillSidebar(session, report!),
+        const generation = ++this.refreshGeneration;
+        const current = (): boolean => this.session === session && this.refreshGeneration === generation;
+        const report = await reportOf(session);
+        if (!current()) return;
+        this.total = report.messages;
+        const steps: (() => Promise<void> | void)[] = [
+            () => this.fillSidebar(session, report),
             () => this.fillList(),
-            () => this.fillKeys(session, report!),
-            () => this.fillOverview(report!),
+            () => this.fillKeys(session, report),
+            () => this.fillOverview(report),
             () => this.fillPeople(),
             () => this.fillTimeline(),
             () => this.startBackfill(session),
         ];
-        let next = 0;
-        this.refreshSource = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-            if (this.session !== session) {
-                this.refreshSource = 0;
-                return GLib.SOURCE_REMOVE;
-            }
-            try {
-                steps[next++]!();
-            } catch (error) {
-                this.refreshSource = 0;
-                void this.fail(error);
-                return GLib.SOURCE_REMOVE;
-            }
-            if (next < steps.length) return GLib.SOURCE_CONTINUE;
-            this.refreshSource = 0;
-            return GLib.SOURCE_REMOVE;
-        });
+        for (const step of steps) {
+            await nextTurn();
+            if (!current()) return;
+            await step();
+            if (!current()) return;
+        }
     }
 
     /**
@@ -813,53 +854,76 @@ export class StampedWindow extends Adw.ApplicationWindow {
      *
      * Short transactions between frames: the window stays usable and an import subprocess can
      * write in between. A busy database just stops the run; the next open resumes from the cursor.
+     *
+     * The batch itself runs in the worker, so the loop here waits rather than works — but it
+     * still yields at {@link GLib.PRIORITY_LOW} between batches, because the reply handling and
+     * the people pane it ends with are this thread's, and they come after anything the person is
+     * doing right now.
      */
-    private startBackfill(session: CaseSession): void {
-        if (this.backfillSource !== 0) GLib.source_remove(this.backfillSource);
-        this.backfillSource = 0;
+    private async startBackfill(session: CaseSession): Promise<void> {
+        const generation = ++this.backfillGeneration;
+        const current = (): boolean =>
+            this.session === session && this.backfillGeneration === generation && !this.importWasRunning;
         // An import writes this case: stepping the backfill beside it only makes both slower.
         // The run's end refreshes the window, and the refresh starts the backfill again.
         if (importRunning(importStatusOf(session))) return;
-        if (peopleComplete(session)) return;
+        if (await peopleComplete(session)) return;
+        if (!current()) return;
         const registry = this.activity.registry;
         let processed = 0;
         registry.start({ kind: 'people', processed });
-        this.backfillSource = GLib.idle_add(GLib.PRIORITY_LOW, () => {
-            if (this.importWasRunning || this.session !== session) {
-                this.backfillSource = 0;
+        for (;;) {
+            await nextTurn(GLib.PRIORITY_LOW);
+            if (!current()) {
                 registry.dismiss('people');
-                return false;
+                return;
             }
             let done = true;
             try {
-                const step = backfillStep(session);
+                const step = await backfillStep(session);
                 done = step.done;
                 processed += step.processed;
             } catch {
                 // a busy database just stops the run; the next open resumes from the cursor
                 done = true;
             }
+            if (!current()) {
+                registry.dismiss('people');
+                return;
+            }
             if (done) {
-                this.backfillSource = 0;
                 registry.finish({ kind: 'people', processed });
-                this.fillPeople();
-                return false;
+                await this.fillPeople();
+                return;
             }
             registry.update({ kind: 'people', processed });
-            return true;
-        });
+        }
     }
 
-    /** The people list: one row per address, a tap filters the messages to that address. */
-    private fillPeople(): void {
+    /**
+     * The people list: one row per address, a tap filters the messages to that address.
+     *
+     * The box is cleared only once both answers are in. Clearing first would blank the pane for
+     * as long as the two queries take, and a typed letter in the search entry starts another run
+     * — so the person would watch the list they are filtering disappear between keystrokes.
+     */
+    private async fillPeople(): Promise<void> {
         const session = this.session;
+        if (!session) {
+            clearBox(this._peopleBody);
+            return;
+        }
+        const generation = ++this.peopleGeneration;
+        const complete = await peopleComplete(session);
+        const people = await peopleOf(session, this._peopleSearch.get_text());
+        if (this.session !== session || this.peopleGeneration !== generation) return;
+
         clearBox(this._peopleBody);
-        if (!session) return;
-        if (!peopleComplete(session)) {
+        if (!complete) {
             this._peopleBody.append(wrapLabel(peopleIncompleteNote(), 'dimmed'));
         }
         const group = new Adw.PreferencesGroup();
-        for (const person of personRows(peopleOf(session, this._peopleSearch.get_text()))) {
+        for (const person of personRows(people)) {
             const row = new Adw.ActionRow({ title: person.title, subtitle: person.subtitle });
             row.set_activatable(true);
             row.add_suffix(this.segmentBar(person.segments));
@@ -873,11 +937,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /** The timeline: one bar per month (or day), a tap filters the messages to that period. */
-    private fillTimeline(): void {
+    private async fillTimeline(): Promise<void> {
         const session = this.session;
+        if (!session) {
+            clearBox(this._timelineBody);
+            return;
+        }
+        const data = await timelineOf(session);
+        if (this.session !== session) return;
         clearBox(this._timelineBody);
-        if (!session) return;
-        const data = timelineOf(session);
         this._timelineBody.append(wrapLabel(timelineNote(data), 'dimmed'));
         const group = new Adw.PreferencesGroup();
         for (const bucket of timelineRows(data)) {
@@ -911,10 +979,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
         return box;
     }
 
-    private fillSidebar(session: CaseSession, report: CaseReport): void {
+    private async fillSidebar(session: CaseSession, report: CaseReport): Promise<void> {
+        const sources = await sourcesOf(session);
+        if (this.session !== session) return;
         this.rebuilding = true;
 
-        const sources = sourcesOf(session);
         clearList(this._sourceList);
         const all = allSources(sources);
         this._sourceList.append(navRow(all.title, all.subtitle, all.icon));
@@ -964,23 +1033,29 @@ export class StampedWindow extends Adw.ApplicationWindow {
         list.select_row(list.get_row_at_index(index < 0 ? 0 : index));
     }
 
-    private fillList(): void {
+    /**
+     * Rebuild the message list from the filters as they stand now.
+     *
+     * The empty state is decided after the first page has landed, not before: the count and the
+     * page are two round trips to the worker, and the answer to "is this list empty" is the page.
+     * A list that is only being refilled keeps its rows until then, so the pane does not blink.
+     */
+    private async fillList(): Promise<void> {
         const session = this.session;
         if (!session) return;
+        const generation = ++this.listGeneration;
         const query = this.currentQuery();
         this.updateFilterBanner();
-        this.hits = [];
         this.listOffset = 0;
         this.loadingMore = false;
         this.hasMore = true;
-        this.filteredTotal = filteredCount(session, query);
-
-        this.rebuilding = true;
-        clearList(this._messageList);
-        this.rebuilding = false;
+        const total = await filteredCount(session, query);
+        if (this.session !== session || this.listGeneration !== generation) return;
+        this.filteredTotal = total;
 
         this.matches = new Map();
-        this.loadMore(query, true);
+        await this.loadMore(query, true);
+        if (this.session !== session || this.listGeneration !== generation) return;
         void this.mergeMeaning(query);
 
         // Plain text, not markup: see `adopt` on `Adw.WindowTitle`.
@@ -997,12 +1072,24 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
     }
 
-    /** Fetch one more page and append it, unless there is nothing left or a fetch is in flight. */
-    private loadMore(query: Query = this.currentQuery(), replace = false): void {
+    /**
+     * Fetch one more page and append it, unless there is nothing left or a fetch is in flight.
+     *
+     * `loadingMore` is set before the await and cleared after it, so the scroller's handler
+     * cannot start a second fetch for the same offset while this one is out at the worker.
+     */
+    private async loadMore(query: Query = this.currentQuery(), replace = false): Promise<void> {
         const session = this.session;
         if (!session || this.loadingMore || !this.hasMore) return;
+        const generation = this.listGeneration;
         this.loadingMore = true;
-        const page = pageOf(session, query, this.listOffset);
+        let page: SearchHit[];
+        try {
+            page = await pageOf(session, query, this.listOffset);
+        } finally {
+            this.loadingMore = false;
+        }
+        if (this.session !== session || this.listGeneration !== generation) return;
         this.rebuilding = true;
         if (replace) {
             this.hits = [];
@@ -1013,7 +1100,6 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.hits = replace ? page : this.hits.concat(page);
         this.listOffset += page.length;
         this.hasMore = page.length === PAGE_SIZE && this.listOffset < this.filteredTotal;
-        this.loadingMore = false;
         this._listTitle.set_subtitle(filterSummary(this.hits.length, this.filteredTotal));
     }
 
@@ -1066,7 +1152,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         if (scroller === null) return;
         const adj = scroller.get_vadjustment();
         if (adj.get_value() + adj.get_page_size() >= adj.get_upper() - 200) {
-            this.loadMore();
+            this.track(this.loadMore());
         }
     }
 
@@ -1076,32 +1162,26 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * The verdict is computed again here instead of read off the row: the row carries what the
      * index cached at import time, and a key collected since then changes the answer. So a click
      * costs a verification, and the pane that shows the evidence chain is never stale.
+     *
+     * `reading` is set before the first await and re-checked after every one of them. Clicking
+     * down a list starts a row's index lookup and its verification, and they can finish out of
+     * order — only the message still selected may paint, or a slow one lands on top of a faster
+     * later one and the pane shows another message's evidence.
      */
-    private showMessage(hash: string): void {
+    private async showMessage(hash: string): Promise<void> {
         const session = this.session;
         if (!session) return;
-        const message = messageOf(session, hash);
+        this.reading = hash;
+        const message = await messageOf(session, hash);
+        if (this.session !== session || this.reading !== hash) return;
         if (!message) return;
 
-        this.reading = hash;
-        verifyStored(session, hash).then(
-            (finding) => {
-                // Clicking down a list starts a verification per row and they can finish out of
-                // order. Only the message still selected may paint — otherwise a slow one lands
-                // on top of a faster later one and the pane shows another message's evidence.
-                if (this.reading !== hash) return;
-                if (finding === undefined) {
-                    void this.fail(
-                        new Error(
-                            _('The stored copy of this message is missing from the case’s blob store.'),
-                        ),
-                    );
-                    return;
-                }
-                this.renderMessage(message, finding, rawTextOf(session, hash) ?? '', bodyOf(session, hash));
-            },
-            (error: unknown) => void this.fail(error),
-        );
+        const finding = await verifyStored(session, hash);
+        if (this.session !== session || this.reading !== hash) return;
+        if (finding === undefined) {
+            throw new Error(_('The stored copy of this message is missing from the case’s blob store.'));
+        }
+        this.renderMessage(message, finding, rawTextOf(session, hash) ?? '', bodyOf(session, hash));
     }
 
     /** The reader, top to bottom: what Stamped claims, the headers, the evidence, the bytes. */
@@ -1756,7 +1836,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             // A conflict means the case held a DIFFERENT key for this selector, so its toast is
             // sticky: that is a finding to read, not a confirmation to watch go by.
             showToast(escapeLine(outcome.message) + this.appliedSentence(applied), outcome.conflict ? 0 : 5);
-            this.refresh();
+            await this.refresh();
         } catch (error) {
             await this.fail(error);
         }
@@ -1883,7 +1963,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
                     this.appliedSentence(applied),
                 outcome.conflicts > 0 ? 0 : 5,
             );
-            this.refresh();
+            await this.refresh();
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
             registry.fail(keys, reason);
@@ -2045,7 +2125,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         if (argv === null) {
             await importInto(session, paths);
             showToast(_('Imported.'), 5);
-            this.refresh();
+            await this.refresh();
             return;
         }
 
@@ -2093,8 +2173,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const ended = this.importWatcher.poll(status, this.importProc !== undefined);
         const running = importRunning(status);
         if (ended !== undefined && status !== undefined) {
-            dropFilterCaches(session);
-            this.refresh();
+            // One chain, not two requests: the stale scope tables have to be gone before the
+            // refresh queries through them, or the first list after an import is the old one.
+            this.track(
+                dropFilterCaches(session).then(() => this.refresh()),
+                session,
+            );
             const failed = ended.orphaned || status.state === 'failed';
             showToast(importOutcome(status, ended.orphaned), failed ? 0 : 5);
         }

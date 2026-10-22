@@ -23,6 +23,7 @@
     "dev": "gjsify run build:gjs && gjsify run start",
     "fixtures": "node ../tools/make-fixtures.mjs",
     "bench": "node ../tools/bench-gjs.mjs",
+    "bench:stall": "gjsify build scripts/bench-stall.ts --app gjs --outfile dist/bench-stall.gjs.mjs && gjsify run dist/bench-stall.gjs.mjs",
     "test": "LC_ALL=C LANGUAGE= gjsify test",
     "test:embedder": "node --experimental-strip-types tests/embedder.integration.mts",
     "check:macos-app": "node tests/macos/check-app.mjs"

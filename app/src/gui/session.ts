@@ -9,6 +9,13 @@
  *
  * The other half of the split is that none of this knows a widget. Everything below takes data
  * and returns data, so a change to the flow can be reasoned about without a display.
+ *
+ * EVERY INDEX QUERY IS ASYNC, and that is the point rather than a detail. The main thread holds
+ * no index connection at all: the questions go to a worker thread ({@link QueryClient}) that owns
+ * the only one, because a SQLite query over a six-figure archive takes seconds and a second on
+ * the GTK main thread is a window that has stopped repainting. The functions below are therefore
+ * one-line awaits over a protocol, and the queries themselves live in `lib/queries.ts` — shared,
+ * so the worker and a test run the same code.
  */
 
 import {
@@ -24,77 +31,61 @@ import {
     type LookupChannel,
     type LookupConsent,
     type MessageFinding,
-    type UnverifiableReason,
-    type Verdict,
 } from '@stamped/core';
 import { readableBody, type ReadableBody } from '@stamped/import';
 import {
     beginImportStatus,
-    browseMessages,
     cancelImportStatus,
-    caseReport,
-    countMessages,
-    addressesComplete,
-    backfillAddresses,
-    hashScope,
-    peopleList,
-    timeline,
-    periodScope,
-    personScope,
     importSources,
+    indexDocumentSource,
     isCase,
-    logSources,
-    mailboxHashes,
     openCase,
     openIndex,
     readImportStatus,
-    readMessage,
     readRaw,
     reverifyPairs,
-    searchHits,
-    signatureHashes,
-    sourceHashes,
-    verdictHashes,
-    type BrowseOptions,
     type CasePaths,
     type CaseReport,
-    type HashScope,
     type ImportProgress,
     type ImportResult,
     type ImportStatus,
+    type IndexDocumentSource,
     type IndexedMessage,
     type LogSource,
     type Person,
+    type SearchHit,
     type Timeline,
     type ReverifyResult,
-    type SearchHit,
-    type SearchOptions,
 } from '@stamped/store';
 import { verifyMessage } from '@stamped/verify';
 
-import { openVectorDbForSearch, type Embedder } from '@stamped/semantic';
+import { checkVector, type Embedder } from '@stamped/semantic';
 
 import { caseOrThrow } from '../lib/case.ts';
-import { hybridSearch, type HybridHit } from '../lib/hybrid-search.ts';
+import { asksForMeaning, type HybridHit } from '../lib/hybrid-search.ts';
 import { resolveTxt } from '../lib/dns.ts';
+import type { Query } from '../lib/queries.ts';
 import { loadVault, saveVault } from '../lib/vault.ts';
+import { workerChannel } from './query-channel.ts';
+import { QueryClient } from './query-client.ts';
 
-/** An open case: its paths, its index handle, and the keys gathered for it so far. */
+export { PAGE_SIZE, type Query, type ScopeRef } from '../lib/queries.ts';
+
+/** An open case: its paths, the thread that reads its index, and the keys gathered for it so far. */
 export interface CaseSession {
     readonly root: string;
     readonly paths: CasePaths;
-    /** The `node:sqlite` handle `@stamped/store` hands out. Opaque here on purpose. */
-    readonly db: ReturnType<typeof openIndex>;
+    /**
+     * The worker that owns the index connection — this thread has none.
+     *
+     * Not a `DatabaseSync` any more, and that is the whole change: a handle here is a query here,
+     * and a query here is a frozen window. The scope caches went with the connection, because a
+     * `HashScope` is a temp table on it.
+     */
+    readonly query: QueryClient;
     /** Mutable: `addKey` and `runLookup` grow it, and the reader re-verifies against it. */
     vault: KeyVault;
-    /** Cached source filter, rebuilt when the chosen archive changes. */
-    sourceScope?: { source: string; scope: HashScope };
-    /** Cached scope filter, rebuilt when the tapped overview number changes. Its key, not its ref. */
-    scopeFilter?: { key: string; scope: HashScope };
 }
-
-/** How many rows one page of the message list holds. */
-export const PAGE_SIZE = 200;
 
 /**
  * Open a case folder that already is one.
@@ -105,26 +96,25 @@ export const PAGE_SIZE = 200;
  */
 export function openSession(root: string): CaseSession {
     const paths = caseOrThrow(root);
-    return { root, paths, db: openIndex(paths), vault: loadVault(root) };
+    return { root, paths, query: new QueryClient(paths, workerChannel), vault: loadVault(root) };
 }
 
 /** Create the case folder at `root` and open it. Only ever from an explicit confirmation. */
 export function createSession(root: string): CaseSession {
     const paths = openCase(root);
-    return { root, paths, db: openIndex(paths), vault: loadVault(root) };
+    return { root, paths, query: new QueryClient(paths, workerChannel), vault: loadVault(root) };
 }
 
 /**
- * Let go of a case: close the index handle before another one is opened.
+ * Let go of a case: end the reader thread before another one is opened.
  *
- * Opening a second case without this leaks the first SQLite connection for as long as the window
- * lives, and a connection held on a case folder on removable or encrypted storage is a folder
- * that cannot be unmounted — which is how a journalist's working copy of a leak is supposed to
- * live.
+ * Opening a second case without this leaks the first SQLite connection — and the thread holding
+ * it — for as long as the window lives, and a connection held on a case folder on removable or
+ * encrypted storage is a folder that cannot be unmounted, which is how a journalist's working
+ * copy of a leak is supposed to live.
  */
 export function closeSession(session: CaseSession): void {
-    dropFilterCaches(session);
-    session.db.close();
+    session.query.close();
 }
 
 /**
@@ -132,14 +122,11 @@ export function closeSession(session: CaseSession): void {
  *
  * An import writes new rows, and a mailbox scope built before it does not contain the messages
  * that import just added: the list would go on showing the old selection and say nothing about
- * it. Both caches are temp tables on OUR connection, so dropping them here is all the repair
- * there is.
+ * it. Both caches are temp tables on the WORKER's connection, so this is a request like any
+ * other — and the repair it asks for is all the repair there is.
  */
-export function dropFilterCaches(session: CaseSession): void {
-    session.sourceScope?.scope.close();
-    session.sourceScope = undefined;
-    session.scopeFilter?.scope.close();
-    session.scopeFilter = undefined;
+export async function dropFilterCaches(session: CaseSession): Promise<void> {
+    await session.query.ask('dropScopes', {});
 }
 
 /** Does this folder hold a case? The question the file chooser's result is put to first. */
@@ -152,176 +139,15 @@ export function knownKeyNames(vault: KeyVault): Set<string> {
     return new Set(vault.all().map((entry) => pairName(entry)));
 }
 
-/** How a message list is asked for: a search term, a verdict, an archive, a scope, or nothing at all. */
-export interface Query {
-    readonly text?: string;
-    readonly verdict?: BrowseOptions['verdict'];
-    /** A `LogSource.source` — the path an import read the messages out of. */
-    readonly source?: string;
-    /**
-     * A set of messages named by what is true of them — what tapping an overview number sets.
-     *
-     * The same "where from" axis as `source`, so the two never stand together: a mailbox, a
-     * signer, a key and an archive all answer "which of these messages", and a list narrowed by
-     * both would be a set nobody asked for.
-     */
-    readonly scope?: ScopeRef;
-}
-
-/**
- * A set of messages, named by what the index can enumerate about it.
- *
- * NOT by a hash list: a scope is rebuilt whenever the query runs (a page of a scrolled list, the
- * counter under it, a search), and the hashes behind it are only reachable through the log and
- * the signature rows — so the REFERENCE is what travels, and {@link scopeFor} turns it into a
- * temporary table once per filter.
- */
-export type ScopeRef =
-    /** The messages a mailbox of a folder import contributed. */
-    | { readonly kind: 'mailbox'; readonly mailbox: string }
-    /** Several verdicts at once, for a row that counts two of them together. */
-    | { readonly kind: 'verdicts'; readonly verdicts: readonly Verdict[] }
-    /** Everything carrying a signature from this `d=`. */
-    | { readonly kind: 'signer'; readonly domain: string }
-    /** Everything carrying this `s=` — with `missingOnly` for the messages still waiting on it. */
-    | {
-          readonly kind: 'key';
-          readonly domain: string;
-          readonly selector: string;
-          readonly missingOnly?: boolean;
-      }
-    /** The messages with no verdict because of this reason. */
-    | { readonly kind: 'reason'; readonly reason: UnverifiableReason }
-    /** Every message one address appears in, in any role. */
-    | { readonly kind: 'person'; readonly address: string }
-    /** The messages of one timeline bucket: `2024-03`, `2024-03-05` or `undated`. */
-    | { readonly kind: 'period'; readonly period: string };
-
-/**
- * The hashes one scope names, from wherever they live.
- *
- * Mailbox provenance is the import log's (see {@link mailboxHashes}); every other scope is a
- * question about signature rows. Both answers are RAW hash sets — the same thing the index is
- * keyed by, so a scope table can join it directly.
- */
-function hashesFor(session: CaseSession, ref: ScopeRef): Set<string> {
-    switch (ref.kind) {
-        case 'person':
-        case 'period':
-            // built inside SQLite by scopeFor; never reaches here
-            return new Set();
-        case 'mailbox':
-            return mailboxHashes(session.paths).get(ref.mailbox) ?? new Set();
-        case 'verdicts':
-            return verdictHashes(session.db, ref.verdicts);
-        case 'signer':
-            return signatureHashes(session.db, { domain: ref.domain });
-        case 'key':
-            return signatureHashes(session.db, {
-                domain: ref.domain,
-                selector: ref.selector,
-                ...(ref.missingOnly === true ? { reason: 'no-key' } : {}),
-            });
-        case 'reason':
-            return signatureHashes(session.db, {
-                reason: ref.reason,
-                messageVerdict: 'unverifiable',
-            });
-    }
-}
-
-/** One string per scope, so "is this still the filter from last page?" is a string comparison. */
-function scopeKey(ref: ScopeRef): string {
-    switch (ref.kind) {
-        case 'mailbox':
-            return `mailbox:${ref.mailbox}`;
-        case 'verdicts':
-            return `verdicts:${[...ref.verdicts].sort().join(',')}`;
-        case 'signer':
-            return `signer:${ref.domain.toLowerCase()}`;
-        case 'key':
-            return `key:${ref.domain.toLowerCase()}:${ref.selector.toLowerCase()}:${ref.missingOnly === true ? 'missing' : 'any'}`;
-        case 'reason':
-            return `reason:${ref.reason}`;
-        case 'person':
-            return `person:${ref.address.toLowerCase()}`;
-        case 'period':
-            return `period:${ref.period}`;
-    }
-}
-
-/**
- * The hashes one scope names, as a table the index can join.
- *
- * Built once per chosen scope and kept on the session, exactly like {@link sourceScopeFor} and
- * for the same reason: the mailbox scope of a 400,000-message mailbox is 400,000 inserts, and
- * re-inserting them on every scrolled page would turn a scroll into an import.
- */
-function scopeFor(session: CaseSession, ref: ScopeRef): HashScope {
-    const key = scopeKey(ref);
-    if (session.scopeFilter?.key === key) return session.scopeFilter.scope;
-    session.scopeFilter?.scope.close();
-    const scope =
-        ref.kind === 'person'
-            ? personScope(session.db, ref.address)
-            : ref.kind === 'period'
-              ? periodScope(session.db, ref.period)
-              : hashScope(session.db, hashesFor(session, ref));
-    session.scopeFilter = { key, scope };
-    return scope;
-}
-
-/** The filter a query asks with: a scope when it has one, an archive when it has that. */
-function scopeOf(session: CaseSession, query: Query): HashScope | undefined {
-    if (query.scope !== undefined) return scopeFor(session, query.scope);
-    if (query.source !== undefined) return sourceScopeFor(session, query.source);
-    return undefined;
-}
-
-/**
- * The hashes one archive contributed, as a scope the index can join.
- *
- * Built once per chosen archive and kept on the session: rebuilding it on every page would
- * re-insert a hundred thousand rows each time the person scrolled. The scope outlives a single
- * query by design — see {@link HashScope}.
- */
-function sourceScopeFor(session: CaseSession, source: string): HashScope {
-    if (session.sourceScope?.source === source) return session.sourceScope.scope;
-    session.sourceScope?.scope.close();
-    const scope = hashScope(session.db, sourceHashes(session.paths, source));
-    session.sourceScope = { source, scope };
-    return scope;
-}
-
 /**
  * One page of the message list.
  *
  * Search and browse are two different queries and stay two different functions in
- * `@stamped/store`; this picks between them. With a search term the order is FTS5 relevance,
- * without one it is newest first — and the verdict filter is applied in TypeScript for a search,
- * because narrowing the ranked hits is not the same query as ranking the narrowed set, and the
- * second would silently return other messages than the first.
- *
- * Paged: `offset` selects which page. The default keeps the first page, so callers that never
- * ask for more keep working.
+ * `@stamped/store`; `lib/queries.ts` picks between them, on the worker's thread. Paged:
+ * `offset` selects which page, and the default keeps the first one.
  */
-export function pageOf(session: CaseSession, query: Query, offset = 0): SearchHit[] {
-    const scope = scopeOf(session, query);
-    const text = query.text?.trim() ?? '';
-    if (text === '') {
-        return browseMessages(session.db, {
-            ...(query.verdict ? { verdict: query.verdict } : {}),
-            ...(scope ? { scope } : {}),
-            limit: PAGE_SIZE,
-            offset,
-        });
-    }
-    const searchOptions: SearchOptions = {
-        ...(query.verdict ? { verdict: query.verdict } : {}),
-        ...(scope ? { scope } : {}),
-        limit: PAGE_SIZE,
-    };
-    return searchHits(session.db, text, searchOptions).slice(offset, offset + PAGE_SIZE);
+export async function pageOf(session: CaseSession, query: Query, offset = 0): Promise<SearchHit[]> {
+    return session.query.ask('page', { query, offset });
 }
 
 /**
@@ -334,86 +160,95 @@ export async function hybridPageOf(
     embedder: Embedder,
 ): Promise<HybridHit[] | undefined> {
     const text = query.text?.trim() ?? '';
-    if (text === '') return undefined;
-    const vectors = openVectorDbForSearch(session.paths.vectors, {
-        modelId: embedder.modelId,
-        dimensions: embedder.dimensions,
-    });
-    if (vectors === undefined) return undefined;
-    try {
-        const scope = scopeOf(session, query);
-        return await hybridSearch({
-            index: session.db,
-            vectors,
-            embedder,
-            query: text,
-            options: {
-                ...(query.verdict ? { verdict: query.verdict } : {}),
-                ...(scope ? { scope } : {}),
-                limit: PAGE_SIZE,
-            },
-        });
-    } finally {
-        vectors.close();
-    }
+    if (text === '' || !asksForMeaning(text)) return undefined;
+    // The ONE step that stays here: the model runtime was loaded in this process and a worker
+    // cannot borrow it. Everything the vector is then used for — the vector table, the FTS5
+    // half, the rows behind both — happens over there.
+    const vector = await embedder.embedQuery(text);
+    checkVector(vector);
+    const model = { modelId: embedder.modelId, dimensions: embedder.dimensions };
+    const merged = await session.query.ask('hybrid', { query, vector: Array.from(vector), model });
+    return merged ?? undefined;
+}
+
+/**
+ * A second index connection, for the semantic indexer's walk over the case.
+ *
+ * NOT the worker's, and deliberately so. The indexer is not a question the window asks and waits
+ * for: it walks every message in the case in background slices, a cursor page between two model
+ * calls, for as long as the indexing runs. Those pages are small and seek directly (see
+ * `indexDocumentSource`), but there are tens of thousands of them, and putting them through the
+ * one channel the list also uses would queue every scroll behind the indexer. SQLite takes
+ * concurrent readers and `openIndex` sets `busy_timeout`, so the two connections wait for each
+ * other at most briefly and only around a write.
+ *
+ * The caller owns it and must {@link SemanticSource.close} it when the case closes — a second
+ * handle on the case folder keeps it just as unmountable as the first.
+ */
+export interface SemanticSource {
+    readonly source: IndexDocumentSource;
+    close(): void;
+}
+
+export function openSemanticSource(session: CaseSession): SemanticSource {
+    const db = openIndex(session.paths);
+    return { source: indexDocumentSource(db, session.paths), close: () => db.close() };
 }
 
 /** How many messages a filter admits — the length of the list behind {@link pageOf}. */
-export function filteredCount(session: CaseSession, query: Query): number {
-    const scope = scopeOf(session, query);
-    const text = query.text?.trim() ?? '';
-    if (text === '') {
-        return countMessages(session.db, {
-            ...(query.verdict ? { verdict: query.verdict } : {}),
-            ...(scope ? { scope } : {}),
-        });
-    }
-    const searchOptions: SearchOptions = {
-        ...(query.verdict ? { verdict: query.verdict } : {}),
-        ...(scope ? { scope } : {}),
-        limit: 5000,
-    };
-    return searchHits(session.db, text, searchOptions).length;
+export async function filteredCount(session: CaseSession, query: Query): Promise<number> {
+    return session.query.ask('count', { query });
 }
 
 /** The people of the case, most mail first, narrowed by a name/address search. */
-export function peopleOf(session: CaseSession, search: string, limit = 100): Person[] {
-    return peopleList(session.db, { search, limit });
+export async function peopleOf(session: CaseSession, search: string, limit = 100): Promise<Person[]> {
+    return session.query.ask('people', { search, limit });
 }
 
 /** Mails per month (or day), plus the count without a date. */
-export function timelineOf(session: CaseSession): Timeline {
-    return timeline(session.db);
+export async function timelineOf(session: CaseSession): Promise<Timeline> {
+    return session.query.ask('timeline', {});
 }
 
 /** Is the address table complete for this case? */
-export function peopleComplete(session: CaseSession): boolean {
-    return addressesComplete(session.db);
+export async function peopleComplete(session: CaseSession): Promise<boolean> {
+    return session.query.ask('peopleComplete', {});
 }
 
-/** One short backfill batch for a case that predates the address table. */
-export function backfillStep(session: CaseSession): { done: boolean; processed: number } {
-    return backfillAddresses(session.db, 1000);
+/**
+ * One short backfill batch for a case that predates the address table.
+ *
+ * A WRITE, and the one on this path — it runs in the worker like every read, because the
+ * connection it writes through is the worker's and because a batch of a thousand messages is
+ * exactly as long a stall as a query.
+ */
+export async function backfillStep(session: CaseSession): Promise<{ done: boolean; processed: number }> {
+    return session.query.ask('backfillStep', {});
 }
 
 /** How many messages the case holds, whatever the filters — the denominator of every count. */
-export function totalMessages(session: CaseSession): number {
-    return countMessages(session.db);
+export async function totalMessages(session: CaseSession): Promise<number> {
+    return session.query.ask('total', {});
 }
 
 /** The archives this case was imported from, read out of the import log. */
-export function sourcesOf(session: CaseSession): LogSource[] {
-    return logSources(session.paths);
+export async function sourcesOf(session: CaseSession): Promise<LogSource[]> {
+    return session.query.ask('sources', {});
 }
 
 /** What the whole case adds up to. The same query `stamped report` prints. */
-export function reportOf(session: CaseSession): CaseReport {
-    return caseReport(session.db, { paths: session.paths, keyLimit: 10_000 });
+export async function reportOf(session: CaseSession): Promise<CaseReport> {
+    return session.query.ask('report', {});
 }
 
-/** The indexed row for one message — the header block, and nothing a verdict rests on. */
-export function messageOf(session: CaseSession, hash: string): IndexedMessage | undefined {
-    return readMessage(session.db, hash);
+/**
+ * The indexed row for one message — the header block, and nothing a verdict rests on.
+ *
+ * The worker answers `null` for a hash it does not know, because JSON has no `undefined`; the
+ * callers here are GUI code and expect the absence they always had.
+ */
+export async function messageOf(session: CaseSession, hash: string): Promise<IndexedMessage | undefined> {
+    return (await session.query.ask('message', { hash })) ?? undefined;
 }
 
 /**

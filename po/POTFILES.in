@@ -14,6 +14,9 @@ app/src/gui/help-button.d.blp.ts
 app/src/gui/help-button.ts
 app/src/gui/i18n-init.ts
 app/src/gui/main.ts
+app/src/gui/query-channel.ts
+app/src/gui/query-client.ts
+app/src/gui/query-worker.ts
 app/src/gui/semantic-dialog.ts
 app/src/gui/session.ts
 app/src/gui/view/activity.ts
@@ -49,6 +52,7 @@ app/src/lib/model-path.ts
 app/src/lib/open-copy.ts
 app/src/lib/pairs.ts
 app/src/lib/progress.ts
+app/src/lib/queries.ts
 app/src/lib/report.ts
 app/src/lib/self-argv.ts
 app/src/lib/semantic-embedder.ts
