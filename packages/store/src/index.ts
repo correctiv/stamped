@@ -14,6 +14,23 @@
 
 export { casePaths, type CasePaths, CASE_VERSION, isCase, openCase } from './case.ts';
 export {
+    ACTIVITY_KINDS,
+    ACTIVITY_STATUS_VERSION,
+    type ActivityKind,
+    type ActivityState,
+    type ActivityStatus,
+    type ActivityStatusHandle,
+    type ActivityStatusOptions,
+    activityStatusFile,
+    activityStatusName,
+    beginActivityStatus,
+    liveActivity,
+    orphanedActivity,
+    readActivityStatus,
+    readActivityStatuses,
+    writeActivityStatus,
+} from './activity-status.ts';
+export {
     beginImportStatus,
     cancelImportStatus,
     IMPORT_STATUS_NAME,
