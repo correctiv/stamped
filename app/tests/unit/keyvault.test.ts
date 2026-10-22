@@ -280,7 +280,7 @@ export default async () => {
                     };
                 },
                 8,
-                { sleep: async (ms) => void waits.push(ms) },
+                { sleep: async (ms) => void waits.push(ms), now: () => 0 },
             );
             expect(calls).toBe(2);
             expect(waits[0]).toBe(3000);
