@@ -50,7 +50,7 @@ function parse(): Promise<unknown> {
             .command(timelineCommand())
             .command(reverifyCommand())
             .command(statusCommand())
-            .demandCommand(1, _('Pick a command — try `stamped verify --help`.'))
+            .demandCommand(1, _('Pick a command. Try `stamped verify --help`.'))
             .strict()
             .version('0.1.0')
             .help()

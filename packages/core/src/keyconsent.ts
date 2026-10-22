@@ -40,7 +40,7 @@ export function describeConsent(channel: LookupChannel, pairs: readonly KeyPair[
                 { count },
             ),
             warning: _(
-                'The query goes to the signing domain’s own name servers, so the domain’s operator — and anyone watching your resolver — can see which selector you asked for and when. That reveals interest in that domain.',
+                'The query goes to the signing domain’s own name servers. The domain’s operator, and anyone watching your resolver, can see which selector you asked for and when. That reveals interest in that domain.',
             ),
             items,
         };

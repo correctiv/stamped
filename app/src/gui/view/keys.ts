@@ -176,7 +176,7 @@ export function explainKey(row: KeyRow): string {
     return escapeLine(
         fmt(
             _(
-                'A DKIM public key, published by the signing domain as the DNS TXT record {name}. Anyone may read it — it is the public half, and it only ever lets you check a signature, never make one. The catch is time: operators rotate selectors and delete the old record, so the key that signed a message from 2019 is usually gone from today’s DNS. Then it has to come from the operator, from a third-party archive of old records, or from the archive under examination — and where it came from is part of the verdict.',
+                'A DKIM public key, published by the signing domain as the DNS TXT record {name}. Anyone may read it. It is the public half, and it only ever lets you check a signature, never make one. The catch is time. Operators rotate selectors and delete the old record, so the key that signed a message from 2019 is usually gone from today’s DNS. Then it has to come from the operator, from a third-party archive of old records, or from the archive under examination, and where it came from is part of the verdict.',
             ),
             { name: pairName({ domain: row.domain, selector: row.selector }) },
         ),
@@ -244,8 +244,8 @@ export function lookupSummary(stored: number, missed: number, conflicts: number,
     return escapeLine(
         `${line} ${fmt(
             _n(
-                '{count} key differs from one this case already held — check which is the real one.',
-                '{count} keys differ from ones this case already held — check which are the real ones.',
+                '{count} key differs from one this case already held. Check which is the real one.',
+                '{count} keys differ from ones this case already held. Check which are the real ones.',
                 conflicts,
             ),
             { count: groupDigits(conflicts) },

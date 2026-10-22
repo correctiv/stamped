@@ -45,7 +45,7 @@ export function describeAutoConsent(
         items: pairs.map((pair) =>
             pair.mails === undefined
                 ? pairName(pair)
-                : fmt(_n('{name} — {count} message', '{name} — {count} messages', pair.mails), {
+                : fmt(_n('{name}, {count} message', '{name}, {count} messages', pair.mails), {
                       name: pairName(pair),
                       count: pair.mails,
                   }),

@@ -81,15 +81,15 @@ function runningLine(task: ActivityTask): string {
             const pct = task.fraction === undefined ? undefined : Math.floor(task.fraction * 100);
             return pct === undefined
                 ? _('Importing mail…')
-                : fmt(_('Importing mail — {percent}%'), { percent: String(pct) });
+                : fmt(_('Importing mail, {percent}%'), { percent: String(pct) });
         }
         case 'keys':
-            return fmt(_('Looking up keys — {done} of {total}'), {
+            return fmt(_('Looking up keys, {done} of {total}'), {
                 done: groupDigits(task.data.done),
                 total: groupDigits(task.data.total),
             });
         case 'reverify':
-            return fmt(_('Re-verifying messages — {done} of {total}'), {
+            return fmt(_('Re-verifying messages, {done} of {total}'), {
                 done: groupDigits(task.data.checked),
                 total: groupDigits(task.data.total),
             });
@@ -143,13 +143,13 @@ function importRow(task: ActivityTask, data: ImportActivity): Omit<RowView, 'kin
     if (running) {
         subtitle = status.mailbox === undefined ? `${pct}%` : `${pct}% · ${status.mailbox}`;
     } else if (data.orphaned) {
-        subtitle = _('Interrupted — its process is gone. Run the import again to resume.');
+        subtitle = _('Interrupted. Its process is gone. Run the import again to resume.');
     } else if (status.state === 'cancelled') {
-        subtitle = _('Cancelled — run it again to resume');
+        subtitle = _('Cancelled. Run it again to resume.');
     } else if (status.state === 'failed') {
         subtitle = _('The import failed');
     } else {
-        subtitle = fmt(_n('Finished — {count} message', 'Finished — {count} messages', status.mailsDone), {
+        subtitle = fmt(_n('Finished, {count} message', 'Finished, {count} messages', status.mailsDone), {
             count: groupDigits(status.mailsDone),
         });
     }

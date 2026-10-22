@@ -71,7 +71,7 @@ export function tallyLines(tally: FetchTally): string[] {
     }
     if (tally.conflicts > 0) {
         lines.push(
-            fmt(_('{count} differ from a key already stored — compare them'), { count: tally.conflicts }),
+            fmt(_('{count} differ from a key already stored. Compare them.'), { count: tally.conflicts }),
         );
     }
     return lines;
@@ -167,7 +167,7 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
                 fmt(_('  stored  {name} via {origin}{flag}'), {
                     name: pairName(s.pair),
                     origin: s.origin,
-                    flag: s.conflict ? _(' — DIFFERS from a stored key') : '',
+                    flag: s.conflict ? _(', DIFFERS from a stored key') : '',
                 }),
             );
         }

@@ -110,7 +110,7 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
                 })
                 .example(
                     'stamped import ./case ~/archive/inbox.mbox',
-                    _('Import one mbox, with no keys yet — run `stamped report` to see which are needed'),
+                    _('Import one mbox, with no keys yet. Run `stamped report` to see which are needed.'),
                 )
                 .example(
                     'stamped import --case ./case ~/leak',
