@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 16:25+0200\n"
+"POT-Creation-Date: 2026-10-22 16:26+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -519,15 +519,15 @@ msgstr "Der Fallordner (Standard: .stamped)"
 msgid "No stored key applies to an unverified message."
 msgstr "Kein gespeicherter Schlüssel betrifft eine ungeprüfte Nachricht."
 
-#: app/src/commands/search.ts:46
+#: app/src/commands/search.ts:44
 msgid "Search the messages in a case folder"
 msgstr "Die Nachrichten in einem Fallordner durchsuchen"
 
-#: app/src/commands/search.ts:50
+#: app/src/commands/search.ts:48
 msgid "The case folder, or the query when --case is given"
 msgstr "Der Fallordner, oder die Suchanfrage, wenn --case angegeben ist"
 
-#: app/src/commands/search.ts:55
+#: app/src/commands/search.ts:53
 msgid ""
 "What to look for. Full-text syntax: a word, \"a phrase\", a AND b, or "
 "subject : word"
@@ -535,42 +535,42 @@ msgstr ""
 "Wonach gesucht wird. Volltextsyntax: ein Wort, \"eine Wendung\", a AND b "
 "oder subject : Wort"
 
-#: app/src/commands/search.ts:59
+#: app/src/commands/search.ts:57
 msgid "The case folder to search"
 msgstr "Der zu durchsuchende Fallordner"
 
-#: app/src/commands/search.ts:61
+#: app/src/commands/search.ts:59
 msgid "How many matches to print"
 msgstr "Wie viele Treffer ausgegeben werden"
 
-#: app/src/commands/search.ts:66
+#: app/src/commands/search.ts:64
 msgid "Print the matches as JSON"
 msgstr "Die Treffer als JSON ausgeben"
 
-#: app/src/commands/search.ts:72
+#: app/src/commands/search.ts:70
 msgid "Find messages with \"invoice\" in the subject"
 msgstr "Nachrichten mit \"invoice\" im Betreff finden"
 
-#: app/src/commands/search.ts:78
+#: app/src/commands/search.ts:76
 msgid "No search query given. Use `stamped search <case> <query>`."
 msgstr "Keine Suchanfrage angegeben. Nutze `stamped search <Fall> <Anfrage>`."
 
-#: app/src/commands/search.ts:97
+#: app/src/commands/search.ts:101
 msgid "No match."
 msgstr "Kein Treffer."
 
-#: app/src/commands/search.ts:101 app/src/gui/view/message.ts:212
+#: app/src/commands/search.ts:105 app/src/gui/view/message.ts:212
 msgid "The case holds {total} message."
 msgid_plural "The case holds {total} messages."
 msgstr[0] "Der Fall enthält {total} Nachricht."
 msgstr[1] "Der Fall enthält {total} Nachrichten."
 
-#: app/src/commands/search.ts:109
+#: app/src/commands/search.ts:113
 msgid "  from    {from}"
 msgstr "  von     {from}"
 
-#: app/src/commands/search.ts:109 app/src/commands/search.ts:110
-#: app/src/commands/search.ts:111 app/src/gui/view/message.ts:88
+#: app/src/commands/search.ts:113 app/src/commands/search.ts:114
+#: app/src/commands/search.ts:115 app/src/gui/view/message.ts:88
 #: app/src/gui/view/message.ts:89 app/src/gui/view/message.ts:95
 #: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:100
 #: app/src/lib/evidence.ts:107 app/src/lib/evidence.ts:108
@@ -579,29 +579,29 @@ msgstr "  von     {from}"
 msgid "(none)"
 msgstr "(keine)"
 
-#: app/src/commands/search.ts:110
+#: app/src/commands/search.ts:114
 msgid "  date    {date}"
 msgstr "  Datum   {date}"
 
-#: app/src/commands/search.ts:111
+#: app/src/commands/search.ts:115
 msgid "  subject {subject}"
 msgstr "  Betreff {subject}"
 
-#: app/src/commands/search.ts:119
+#: app/src/commands/search.ts:123
 msgid "{count} match."
 msgid_plural "{count} matches."
 msgstr[0] "{count} Treffer."
 msgstr[1] "{count} Treffer."
 
-#: app/src/commands/search.ts:143
+#: app/src/commands/search.ts:147
 msgid "  semantic match"
 msgstr "  semantischer Treffer"
 
-#: app/src/commands/search.ts:144
+#: app/src/commands/search.ts:148
 msgid "  text and semantic match"
 msgstr "  Treffer nach Text und Bedeutung"
 
-#: app/src/commands/search.ts:201
+#: app/src/commands/search.ts:175
 msgid ""
 "Cannot read the search {query}. Put a phrase in double quotes, and use "
 "`column : word` to search one field."

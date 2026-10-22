@@ -17,6 +17,7 @@
  * to float32's decimal representation.
  */
 
+import { existsSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 export interface VectorDbOptions {
@@ -63,6 +64,32 @@ export function openVectorDb(path: string, options: VectorDbOptions): DatabaseSy
         throw new Error(`Cannot open the vector database at ${path}.`);
     }
     if (needsRebuild(db, options)) createSchema(db, options);
+    return db;
+}
+
+/**
+ * Open the case's vector database for a search, or give back nothing.
+ *
+ * NEVER REBUILDS: {@link openVectorDb} drops a table made by another model, which is right for
+ * the indexer and wrong for a search — a build with a changed model would wipe hours of
+ * indexing just by being asked a question. A table this build cannot read is left as it is,
+ * and the search goes on without it. Nor does it create the file: a search must not leave
+ * anything behind in a case folder.
+ *
+ * The caller closes it.
+ */
+export function openVectorDbForSearch(path: string, options: VectorDbOptions): DatabaseSync | undefined {
+    if (!existsSync(path)) return undefined;
+    let db: DatabaseSync;
+    try {
+        db = new DatabaseSync(path);
+    } catch {
+        return undefined;
+    }
+    if (needsRebuild(db, options)) {
+        db.close();
+        return undefined;
+    }
     return db;
 }
 

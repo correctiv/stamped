@@ -125,6 +125,7 @@ export async function hybridSearch(request: HybridSearchRequest): Promise<Hybrid
 async function semanticHitsFor(request: HybridSearchRequest, candidates: number): Promise<SearchHit[]> {
     const { vectors, embedder } = request;
     if (!vectors || !embedder) return [];
+    if (!asksForMeaning(request.query)) return [];
     try {
         // An empty table is not an error: the case is simply not indexed yet.
         if (countVectors(vectors) === 0) return [];
@@ -147,6 +148,26 @@ async function semanticHitsFor(request: HybridSearchRequest, candidates: number)
     } catch {
         return [];
     }
+}
+
+/**
+ * Does the query ask for a meaning, or for an exact string?
+ *
+ * THE VECTOR SEARCH ALWAYS ANSWERS: it returns the nearest messages whether or not any of them
+ * is near. For a question in words that is the point. For an address, a domain, a message id,
+ * a quoted phrase or an FTS5 expression it is noise — the person asked for exactly this string,
+ * and RRF would slot the closest unrelated mail in at rank two. So those stay text searches.
+ */
+export function asksForMeaning(query: string): boolean {
+    const trimmed = query.trim();
+    if (trimmed === '') return false;
+    // An address, a message id, a quoted phrase, a prefix search, a column filter.
+    if (/[@"*:<>]/.test(trimmed)) return false;
+    // FTS5's own operators: whoever writes them is writing a query, not a question.
+    if (/(^|\s)(AND|OR|NOT|NEAR)(\s|\(|$)/.test(trimmed)) return false;
+    // A lone domain or file name: `firma.de`, `vertrag.pdf`.
+    if (/^[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)+$/u.test(trimmed)) return false;
+    return true;
 }
 
 /** How a hash was found. */

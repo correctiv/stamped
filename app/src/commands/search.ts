@@ -18,11 +18,9 @@
  * by a word is a different kind of answer and must be recognisable as one.
  */
 
-import { existsSync } from 'node:fs';
-
 import { fmt, _, _n } from '@stamped/core';
 import type { Embedder } from '@stamped/semantic';
-import { openVectorDb } from '@stamped/semantic';
+import { openVectorDbForSearch } from '@stamped/semantic';
 import { messageCount, openIndex } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
@@ -80,11 +78,17 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
             const paths = caseOrThrow(root);
             const db = openIndex(paths);
             // The embedder FIRST: without one there is nothing to search the vectors with, and
-            // the vector database is not even opened — see `openVectors` for why that matters.
+            // the vector database is not even opened — see `openVectorDbForSearch`.
             // A MODEL THAT WILL NOT LOAD IS NOT A REASON TO REFUSE THE SEARCH: the text search
             // is there, and the case stays searchable.
             const embedder = await createEmbedder().catch(() => undefined);
-            const vectors = embedder === undefined ? undefined : openVectors(paths.vectors, embedder);
+            const vectors =
+                embedder === undefined
+                    ? undefined
+                    : openVectorDbForSearch(paths.vectors, {
+                          modelId: embedder.modelId,
+                          dimensions: embedder.dimensions,
+                      });
             try {
                 const hits = await runSearch(db, vectors, embedder, query, args.limit ?? 20);
 
@@ -146,36 +150,6 @@ export function matchMarker(match: MatchKind): string | undefined {
 }
 
 /**
- * The case's vector database, or nothing.
- *
- * A SEARCH MUST NOT CREATE ANYTHING. `openVectorDb` makes the file and lays out the table when
- * they are not there, so a search that opened a case's vectors unconditionally would leave a
- * `vectors.db` behind in every case folder it ever touched — and a folder that grows files by
- * being looked at is a folder nobody trusts. So the file has to be there already.
- *
- * The model id and the dimension count come from the embedder, because they are what the table
- * was built with: `openVectorDb` DROPS a table built by another model, and a vector from one
- * model means nothing in another. That is the right rule for the indexer — a new model means a
- * new indexing run — but it is worth knowing that a search opens the table with the model this
- * build would use, so a build whose model changed rebuilds the vectors on the next search
- * rather than silently mixing them.
- *
- * A database that will not open is not a reason to refuse the search: the text search is still
- * there, and a semantic half that cannot answer must not take the text half down with it.
- */
-function openVectors(path: string, embedder: Embedder) {
-    if (!existsSync(path)) return undefined;
-    try {
-        return openVectorDb(path, {
-            modelId: embedder.modelId,
-            dimensions: embedder.dimensions,
-        });
-    } catch {
-        return undefined;
-    }
-}
-
-/**
  * Run the query, turning an FTS5 syntax error into a sentence about the query.
  *
  * SQLite says `fts5: syntax error near "…"`, which names the character but not what the syntax
@@ -187,7 +161,7 @@ function openVectors(path: string, embedder: Embedder) {
  */
 async function runSearch(
     db: ReturnType<typeof openIndex>,
-    vectors: ReturnType<typeof openVectors>,
+    vectors: ReturnType<typeof openVectorDbForSearch>,
     embedder: Embedder | undefined,
     query: string,
     limit: number,

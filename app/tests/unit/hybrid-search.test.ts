@@ -26,7 +26,7 @@ import type { EmbedDocument, Embedder } from '@stamped/semantic';
 import { digest, hashScope, indexMessage, openCase, openIndex, type CasePaths } from '@stamped/store';
 
 import { matchMarker, searchCommand } from '../../src/commands/search.ts';
-import { hybridSearch } from '../../src/lib/hybrid-search.ts';
+import { asksForMeaning, hybridSearch } from '../../src/lib/hybrid-search.ts';
 
 /** How many buckets the fake hashes its words into — the model's dimension count. */
 const DIMENSIONS = 768;
@@ -414,6 +414,29 @@ export default async () => {
                     expect(hits[0].match).toBe('both');
                 });
             });
+        });
+    });
+
+    await describe('which queries ask for a meaning', async () => {
+        await it('treats a question in words as one', async () => {
+            expect(asksForMeaning('wer hat das Geld überwiesen')).toBe(true);
+            expect(asksForMeaning('lighthouse')).toBe(true);
+        });
+
+        await it('keeps addresses, domains and FTS5 expressions as text searches', async () => {
+            for (const query of [
+                'chef@firma.de',
+                'firma.de',
+                'vertrag.pdf',
+                '"exact phrase"',
+                'angeb*',
+                'subject:invoice',
+                'invoice AND payment',
+                '<abc@mail.example>',
+                '   ',
+            ]) {
+                expect(asksForMeaning(query)).toBe(false);
+            }
         });
     });
 
