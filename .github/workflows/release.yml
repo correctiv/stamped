@@ -124,8 +124,9 @@ jobs:
           ls -la
           version=$(node -p "require('$GITHUB_WORKSPACE/app/package.json').version")
           for f in \
-            "stamped_${version}-1_all.deb" \
-            "stamped-${version}-1.noarch.rpm" \
+            "stamped_${version}-1_amd64.deb" \
+            "stamped-${version}-1.x86_64.rpm" \
+            "stamped-${version}-1.x86_64.AppImage" \
             "stamped-${version}-1.macos.arm64.zip" \
             "stamped-${version}-1.macos.x86_64.zip" \
             "stamped-${version}-1.windows.x64.zip" \
