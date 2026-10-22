@@ -8,6 +8,15 @@ dist/
 .gjsify/
 ship/
 
+# gjsify's local config file. The release writes the embedding model's ship entries into it, so
+# the 296 MiB file lands in the AppImage and the macOS .app and in no other artifact.
+app/.gjsifyrc.json
+
+# The embedding model: fetched at a PINNED revision by app/scripts/fetch-model.mts and verified
+# against its sha256 there — never committed. The licence and the NOTICE beside it ARE committed,
+# because redistributing an Apache-2.0 work carries its licence with it.
+app/models/*.gguf
+
 # npm is not the package manager here — `gjsify install` is (see AGENTS.md).
 package-lock.json
 

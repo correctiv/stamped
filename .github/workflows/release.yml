@@ -25,6 +25,7 @@ jobs:
           gjs libsoup3 json-glib gnutls libnghttp2
           libgda libgda-sqlite
           gettext glib2 msitools zip unzip file
+          squashfs-tools
 
       # No distribution packages appimagetool, so pin the release by its checksum.
       - name: Install appimagetool
@@ -70,9 +71,31 @@ jobs:
       - name: Build the bundles
         run: cd app && gjsify run build:gjs && gjsify run build:node
 
+      # The embedding model, ~296 MiB. Cached by the sha256 of the pinned file, so a cache hit
+      # can only ever be the file the pin names.
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: app/models/embeddinggemma-2-Q8_0.gguf
+          key: embeddinggemma-2-q8_0-2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135
+
+      # Fetches the pinned revision and verifies the sha256; skips the download when the file is
+      # already there. The model is never committed — it is 296 MiB of somebody else's work.
+      - name: Fetch the embedding model
+        run: node --experimental-strip-types app/scripts/fetch-model.mts fetch
+
       # AppImage is back: it needs `kind: "app"`, which Stamped only became when it grew a window.
-      - name: Ship Linux
-        run: cd app && gjsify ship linux --skip-build --target deb,rpm,appimage
+      #
+      # The packages do NOT carry the model: 296 MiB inside a .deb or .rpm is a distribution
+      # decision, not ours. The AppImage and the macOS .app do carry it — those are the artifacts
+      # a person downloads and runs, and semantic search must work offline from the first start.
+      - name: Ship Linux (packages)
+        run: cd app && gjsify ship linux --skip-build --target deb,rpm
+
+      - name: Ship Linux (AppImage, with the embedding model)
+        run: |
+          node --experimental-strip-types app/scripts/fetch-model.mts ship-config --on
+          cd app && gjsify ship linux --skip-build --target appimage
 
       # Naming the target installs the os/cpu-gated runtime packages a plain install skips.
       - name: Ship macOS (arm64)
@@ -85,8 +108,11 @@ jobs:
           gjsify install --os darwin --cpu x64 --immutable
           cd app && gjsify ship darwin --arch x64 --skip-build --target macos-app-zip
 
+      # The Windows artifacts carry no model: the ship config goes off before them, so the 296 MiB
+      # stay out of the .zip and the .msi.
       - name: Ship Windows (x64)
         run: |
+          node --experimental-strip-types app/scripts/fetch-model.mts ship-config --off
           gjsify install --os win32 --cpu x64 --immutable
           cd app && gjsify ship windows --arch x64 --skip-build --target windows-dir-zip,msi
 
@@ -106,6 +132,33 @@ jobs:
             "stamped-${version}-1.x64.msi"; do
             [ -s "$f" ] || { echo "::error::missing or empty artifact: $f"; exit 1; }
           done
+
+      # The model is 296 MiB and nobody reads a file list, so the artifacts are opened and
+      # asked what is inside: the AppImage and the macOS .app carry it, the Windows .zip must not.
+      # The listings are captured instead of piped: `grep -q` exits on the first match, and
+      # GitHub's bash runs with `pipefail`, so a pipe into it would fail the step on SIGPIPE.
+      - name: Assert the embedding model ships where it should
+        run: |
+          set -eu
+          appimage=$(ls app/ship/out/*.AppImage)
+          chmod +x "$appimage"
+          offset=$("$appimage" --appimage-offset)
+          listing=$(unsquashfs -o "$offset" -l "$appimage")
+          case "$listing" in
+            *usr/share/models/embeddinggemma-2-Q8_0.gguf*) ;;
+            *) echo "::error::the AppImage does not carry the model"; exit 1 ;;
+          esac
+          for macos in app/ship/out/*macos*.zip; do
+            names=$(unzip -Z1 "$macos")
+            case "$names" in
+              *share/models/embeddinggemma-2-Q8_0.gguf*) ;;
+              *) echo "::error::$macos does not carry the model"; exit 1 ;;
+            esac
+          done
+          names=$(unzip -Z1 app/ship/out/*windows*.zip)
+          case "$names" in
+            *embeddinggemma-2-Q8_0.gguf*) echo "::error::the Windows artifact carries the model"; exit 1 ;;
+          esac
 
       - uses: actions/upload-artifact@v4
         with:
