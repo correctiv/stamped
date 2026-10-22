@@ -33,6 +33,7 @@ import {
     digest,
     hashScope,
     type ImportLogEntry,
+    hitsForHashes,
     indexMessage,
     importSources,
     isCase,
@@ -1259,6 +1260,32 @@ export default async () => {
                 } finally {
                     scope.close();
                 }
+            });
+        });
+
+        await it('hitsForHashes maps a ranked list of hashes to the rows behind them', async () => {
+            withIndex((db) => {
+                const one = put(db, message('Harbour', 'the harbour contract'), 'confirmed');
+                const two = put(db, message('Harbour2', 'the harbour survey'), 'unverifiable');
+                // The order of the list is the order of the hits.
+                expect(hitsForHashes(db, [two, one]).map((hit) => hit.hash)).toStrictEqual([two, one]);
+                // A hash the index does not hold is dropped, not invented: the vector table and
+                // the index can disagree, and a hit without a row has nothing to show.
+                expect(hitsForHashes(db, [two, 'nothing-here']).map((hit) => hit.hash)).toStrictEqual([two]);
+                // The filters are the text search's.
+                expect(
+                    hitsForHashes(db, [one, two], { verdict: 'confirmed' }).map((hit) => hit.hash),
+                ).toStrictEqual([one]);
+                const scope = hashScope(db, new Set([one]));
+                try {
+                    expect(hitsForHashes(db, [one, two], { scope }).map((hit) => hit.hash)).toStrictEqual([
+                        one,
+                    ]);
+                } finally {
+                    scope.close();
+                }
+                // And the limit caps the hits.
+                expect(hitsForHashes(db, [one, two], { limit: 1 }).length).toBe(1);
             });
         });
 

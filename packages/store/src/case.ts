@@ -54,6 +54,9 @@ export function casePaths(root: string): CasePaths {
         log: join(root, 'import-log.jsonl'),
         database: join(root, 'index.db'),
         marker: join(root, 'case.json'),
+        // The embeddings live in their OWN file, not in `index.db`: they cost hours to compute
+        // and the index is a cache that can be rebuilt in minutes, so the two must be able to
+        // come and go independently.
         vectors: join(root, 'vectors.db'),
     };
 }

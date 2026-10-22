@@ -69,6 +69,7 @@ export {
     countMessages,
     type HashScope,
     hashScope,
+    hitsForHashes,
     indexedHashes,
     indexMessage,
     isIndexed,

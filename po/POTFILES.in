@@ -37,7 +37,9 @@ app/src/lib/case.ts
 app/src/lib/consent.ts
 app/src/lib/dns.ts
 app/src/lib/duration.ts
+app/src/lib/embedder.ts
 app/src/lib/evidence.ts
+app/src/lib/hybrid-search.ts
 app/src/lib/i18n.ts
 app/src/lib/import-summary.ts
 app/src/lib/keys.ts

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 15:42+0200\n"
+"POT-Creation-Date: 2026-10-22 16:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -460,56 +460,56 @@ msgstr ""
 msgid "No stored key applies to an unverified message."
 msgstr ""
 
-#: app/src/commands/search.ts:33
+#: app/src/commands/search.ts:46
 msgid "Search the messages in a case folder"
 msgstr ""
 
-#: app/src/commands/search.ts:37
+#: app/src/commands/search.ts:50
 msgid "The case folder, or the query when --case is given"
 msgstr ""
 
-#: app/src/commands/search.ts:42
+#: app/src/commands/search.ts:55
 msgid ""
 "What to look for. Full-text syntax: a word, \"a phrase\", a AND b, or "
 "subject : word"
 msgstr ""
 
-#: app/src/commands/search.ts:46
+#: app/src/commands/search.ts:59
 msgid "The case folder to search"
 msgstr ""
 
-#: app/src/commands/search.ts:48
+#: app/src/commands/search.ts:61
 msgid "How many matches to print"
 msgstr ""
 
-#: app/src/commands/search.ts:53
+#: app/src/commands/search.ts:66
 msgid "Print the matches as JSON"
 msgstr ""
 
-#: app/src/commands/search.ts:59
+#: app/src/commands/search.ts:72
 msgid "Find messages with \"invoice\" in the subject"
 msgstr ""
 
-#: app/src/commands/search.ts:65
+#: app/src/commands/search.ts:78
 msgid "No search query given. Use `stamped search <case> <query>`."
 msgstr ""
 
-#: app/src/commands/search.ts:78
+#: app/src/commands/search.ts:97
 msgid "No match."
 msgstr ""
 
-#: app/src/commands/search.ts:82 app/src/gui/view/message.ts:212
+#: app/src/commands/search.ts:101 app/src/gui/view/message.ts:212
 msgid "The case holds {total} message."
 msgid_plural "The case holds {total} messages."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/search.ts:90
+#: app/src/commands/search.ts:109
 msgid "  from    {from}"
 msgstr ""
 
-#: app/src/commands/search.ts:90 app/src/commands/search.ts:91
-#: app/src/commands/search.ts:92 app/src/gui/view/message.ts:88
+#: app/src/commands/search.ts:109 app/src/commands/search.ts:110
+#: app/src/commands/search.ts:111 app/src/gui/view/message.ts:88
 #: app/src/gui/view/message.ts:89 app/src/gui/view/message.ts:95
 #: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:100
 #: app/src/lib/evidence.ts:107 app/src/lib/evidence.ts:108
@@ -518,21 +518,29 @@ msgstr ""
 msgid "(none)"
 msgstr ""
 
-#: app/src/commands/search.ts:91
+#: app/src/commands/search.ts:110
 msgid "  date    {date}"
 msgstr ""
 
-#: app/src/commands/search.ts:92
+#: app/src/commands/search.ts:111
 msgid "  subject {subject}"
 msgstr ""
 
-#: app/src/commands/search.ts:96
+#: app/src/commands/search.ts:119
 msgid "{count} match."
 msgid_plural "{count} matches."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/search.ts:121
+#: app/src/commands/search.ts:143
+msgid "  semantic match"
+msgstr ""
+
+#: app/src/commands/search.ts:144
+msgid "  text and semantic match"
+msgstr ""
+
+#: app/src/commands/search.ts:201
 msgid ""
 "Cannot read the search {query}. Put a phrase in double quotes, and use "
 "`column : word` to search one field."
@@ -1718,7 +1726,7 @@ msgid ""
 "{path} is not a case folder. Run `stamped import {path} <source>` first."
 msgstr ""
 
-#: app/src/lib/case.ts:47
+#: app/src/lib/case.ts:49
 msgid ""
 "No case folder given. Use `stamped {command} <case> …` or `--case <dir>`."
 msgstr ""
@@ -2473,7 +2481,7 @@ msgstr ""
 msgid "{path} is not a folder."
 msgstr ""
 
-#: packages/store/src/case.ts:86
+#: packages/store/src/case.ts:89
 msgid "The case folder {path} was written by a newer version of Stamped."
 msgstr ""
 
