@@ -89,6 +89,7 @@ export {
     signatureHashes,
     verdictHashes,
 } from './index-db.ts';
+export { statementFor } from './statements.ts';
 export {
     appendLog,
     digest,
