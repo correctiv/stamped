@@ -9,7 +9,7 @@
 
 import { documentText } from './prepare.ts';
 import type { Embedder } from './embedder.ts';
-import type { DocumentSource, SourceDocument } from './indexer.ts';
+import type { DocumentSource, SourceDocument, SourceEntry } from './indexer.ts';
 
 /**
  * The longest an archive may take for the probe to recommend switching indexing on. A day of
@@ -48,12 +48,24 @@ export function estimateTokens(doc: Pick<SourceDocument, 'subject' | 'body'>): n
  * Pick the probe's messages: evenly spaced through the first stretch of the priority order,
  * with an empty body skipped (it would time the prompt, not the text). The source cannot jump,
  * so the sample is of the newest mail only.
+ *
+ * THE SAMPLE IS MADE UP FROM THE REST OF THE WINDOW when the spread picks blank bodies, because
+ * the filter would otherwise silently shrink it: a mailbox of notifications and attachment-only
+ * mail can blank most of eight picks, and the probe would then time two messages — or none at
+ * all, which {@link probeEmbedder} answers with "on" without having measured anything. The
+ * window is eight times the sample, so there is room to make it up.
  */
 export function sampleForProbe(source: DocumentSource, size = PROBE_SAMPLE_SIZE): SourceDocument[] {
     const window = source.next(undefined, size * 8);
     const step = Math.max(1, Math.floor(window.length / size));
-    const picked = window.filter((_, i) => i % step === 0).map((entry) => entry.hash);
-    return source.read(picked).filter((doc) => doc.body.trim() !== '').slice(0, size);
+    const spread = window.filter((_, i) => i % step === 0);
+    const rest = window.filter((_, i) => i % step !== 0);
+    const withText = (entries: readonly SourceEntry[]): SourceDocument[] =>
+        source.read(entries.map((entry) => entry.hash)).filter((doc) => doc.body.trim() !== '');
+
+    const picked = withText(spread);
+    if (picked.length < size && rest.length > 0) picked.push(...withText(rest));
+    return picked.slice(0, size);
 }
 
 /**

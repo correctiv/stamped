@@ -17,7 +17,9 @@ import {
     onBattery,
     openVectorDb,
     PROBE_MAX_ARCHIVE_HOURS,
+    PROBE_SAMPLE_SIZE,
     probeEmbedder,
+    sampleForProbe,
 } from '@stamped/semantic';
 import type { DocumentSource, EmbedDocument, Embedder, SourceDocument, SourceEntry } from '@stamped/semantic';
 import {
@@ -441,6 +443,38 @@ export default async () => {
             expect(Math.round(result.estimatedSeconds)).toBe(1000);
             expect(result.tokensPerSecond > 0).toBe(true);
             expect(result.recommendation).toBe('on');
+        });
+
+        await it('samples evenly through the window', async () => {
+            const picked = sampleForProbe(listSource(40));
+            expect(picked.length).toBe(PROBE_SAMPLE_SIZE);
+            // Spread, not the first eight in a row: 40 entries, every fifth one.
+            expect(picked.map((doc) => doc.hash).join(',')).toBe('m0,m5,m10,m15,m20,m25,m30,m35');
+        });
+
+        await it('makes the sample up when the spread picks blank bodies', async () => {
+            const source = listSource(40);
+            const blank = new Set(['m0', 'm5', 'm10', 'm15', 'm20', 'm25']);
+            const read = source.read;
+            // Timing a message with no text would time the prompt, not the text.
+            source.read = (hashes) =>
+                read(hashes).map((doc) => (blank.has(doc.hash) ? { ...doc, body: '  ' } : doc));
+            const picked = sampleForProbe(source);
+            expect(picked.length).toBe(PROBE_SAMPLE_SIZE);
+            expect(picked.every((doc) => doc.body.trim() !== '')).toBe(true);
+            expect(new Set(picked.map((doc) => doc.hash)).size).toBe(PROBE_SAMPLE_SIZE);
+        });
+
+        await it('gives nothing back when no message has a body', async () => {
+            const source = listSource(40);
+            const read = source.read;
+            source.read = (hashes) => read(hashes).map((doc) => ({ ...doc, body: '' }));
+            expect(sampleForProbe(source).length).toBe(0);
+        });
+
+        await it('takes what there is when the case is smaller than the sample', async () => {
+            const picked = sampleForProbe(listSource(3));
+            expect(picked.length).toBe(3);
         });
 
         await it('recommends off when the archive would take longer than the limit', async () => {
