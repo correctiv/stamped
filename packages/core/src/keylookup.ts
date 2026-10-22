@@ -23,6 +23,8 @@ export const ARCHIVE_ENDPOINT = 'https://archive.prove.email/api/key';
 export type FetchLike = (url: string) => Promise<{
     ok: boolean;
     status: number;
+    /** Read for `Retry-After` on a 429; a transport that has none is treated as "no hint". */
+    headers?: { get(name: string): string | null };
     json(): Promise<unknown>;
 }>;
 
@@ -39,8 +41,13 @@ export interface FoundKey {
 
 export interface LookupResult {
     readonly found: FoundKey[];
-    /** Pairs for which nothing usable came back, with a reason. */
+    /** Pairs the source ANSWERED for with nothing usable, with a reason. Never an error. */
     readonly misses: { readonly pair: KeyPair; readonly reason: string }[];
+    /**
+     * Pairs the source could not be asked or did not answer (rate limit, 5xx, timeout, network).
+     * They are unknown, not absent: a run must report them apart and offer a retry.
+     */
+    readonly errors: { readonly pair: KeyPair; readonly reason: string }[];
 }
 
 /** How many lookups run at once. Small on purpose: archive.prove.email is a volunteer service. */
@@ -71,7 +78,11 @@ export async function mapPool<T, R>(
 
 /** Merge per-pair results into one, in pair order. */
 function merge(parts: readonly LookupResult[]): LookupResult {
-    return { found: parts.flatMap((p) => p.found), misses: parts.flatMap((p) => p.misses) };
+    return {
+        found: parts.flatMap((p) => p.found),
+        misses: parts.flatMap((p) => p.misses),
+        errors: parts.flatMap((p) => p.errors),
+    };
 }
 
 function refuse(pair: KeyPair): Error {
@@ -80,40 +91,102 @@ function refuse(pair: KeyPair): Error {
     );
 }
 
+/** How the archive lookup waits and retries. Every field is overridable so tests run instantly. */
+export interface RetryOptions {
+    /** Tries per pair before it is reported as an error. */
+    readonly attempts?: number;
+    /** First backoff without a `Retry-After`; doubles per try. */
+    readonly backoffMs?: number;
+    /** Upper bound for any single wait, `Retry-After` included. */
+    readonly maxWaitMs?: number;
+    readonly sleep?: (ms: number) => Promise<void>;
+    readonly now?: () => number;
+}
+
+export const RETRY_ATTEMPTS = 5;
+
+const realSleep = (ms: number): Promise<void> =>
+    new Promise((resolve) => {
+        globalThis.setTimeout(resolve, ms);
+    });
+
+/** `Retry-After` is delta-seconds or an HTTP date; anything else is no hint. */
+function retryAfterMs(value: string | null | undefined, now: number): number | undefined {
+    if (value === null || value === undefined || value.trim() === '') return undefined;
+    const seconds = Number(value);
+    if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+    const date = Date.parse(value);
+    return Number.isNaN(date) ? undefined : Math.max(0, date - now);
+}
+
+/** 429, 408 and 5xx are worth another try; any other non-OK status is final. */
+function isTransient(status: number): boolean {
+    return status === 429 || status === 408 || status >= 500;
+}
+
+/**
+ * Archive lookups with at most `concurrency` in flight.
+ *
+ * A rate limit (HTTP 429, measured: archive.prove.email lets about ten requests through, then
+ * answers 429 with `Retry-After: 58`) is NOT "no key". The pause is shared: when one request is
+ * told to wait, every worker waits, instead of each one burning its tries against a closed door.
+ * A pair that is still unanswered after its tries lands in `errors`, never in `misses`.
+ */
 export async function lookupArchive(
     consent: LookupConsent,
     pairs: readonly KeyPair[],
     fetchImpl: FetchLike,
     concurrency: number = LOOKUP_CONCURRENCY,
+    retry: RetryOptions = {},
 ): Promise<LookupResult> {
     // Every pair is checked against the consent BEFORE the first request goes out.
     for (const pair of pairs) {
         if (!consentCovers(consent, 'archive.prove.email', pair)) throw refuse(pair);
     }
-    return merge(await mapPool(pairs, concurrency, (pair) => lookupArchiveOne(pair, fetchImpl)));
+    const gate = { until: 0 };
+    return merge(await mapPool(pairs, concurrency, (pair) => lookupArchiveOne(pair, fetchImpl, retry, gate)));
 }
 
-async function lookupArchiveOne(pair: KeyPair, fetchImpl: FetchLike): Promise<LookupResult> {
-    const result: LookupResult = { found: [], misses: [] };
+async function lookupArchiveOne(
+    pair: KeyPair,
+    fetchImpl: FetchLike,
+    retry: RetryOptions,
+    gate: { until: number },
+): Promise<LookupResult> {
+    const { attempts = RETRY_ATTEMPTS, backoffMs = 2000, maxWaitMs = 120_000 } = retry;
+    const sleep = retry.sleep ?? realSleep;
+    const now = retry.now ?? Date.now;
+    const result: LookupResult = { found: [], misses: [], errors: [] };
     const url = `${ARCHIVE_ENDPOINT}?domain=${encodeURIComponent(pair.domain)}&selector=${encodeURIComponent(pair.selector)}`;
     let rows: unknown;
-    try {
-        const response = await fetchImpl(url);
-        if (!response.ok) {
-            result.misses.push({
-                pair,
-                reason: fmt(_('archive.prove.email answered HTTP {status}.'), {
-                    status: response.status,
-                }),
-            });
-            return result;
+    let failure = '';
+    let answered = false;
+    for (let attempt = 0; attempt < attempts && !answered; attempt++) {
+        const wait = gate.until - now();
+        if (wait > 0) await sleep(wait);
+        let hint: number | undefined;
+        try {
+            const response = await fetchImpl(url);
+            if (response.ok) {
+                rows = await response.json();
+                answered = true;
+                break;
+            }
+            failure = fmt(_('archive.prove.email answered HTTP {status}.'), { status: response.status });
+            if (!isTransient(response.status)) {
+                // 404 and friends: the archive answered, and the answer is "no".
+                result.misses.push({ pair, reason: failure });
+                return result;
+            }
+            hint = retryAfterMs(response.headers?.get('retry-after'), now());
+        } catch (error) {
+            failure = error instanceof Error ? error.message : String(error);
         }
-        rows = await response.json();
-    } catch (error) {
-        result.misses.push({
-            pair,
-            reason: error instanceof Error ? error.message : String(error),
-        });
+        const delay = Math.min(hint ?? backoffMs * 2 ** attempt, maxWaitMs);
+        gate.until = Math.max(gate.until, now() + delay);
+    }
+    if (!answered) {
+        result.errors.push({ pair, reason: failure });
         return result;
     }
     let hits = 0;
@@ -157,7 +230,7 @@ export async function lookupDns(
 }
 
 async function lookupDnsOne(pair: KeyPair, resolveTxt: TxtResolver): Promise<LookupResult> {
-    const result: LookupResult = { found: [], misses: [] };
+    const result: LookupResult = { found: [], misses: [], errors: [] };
     try {
         const records = await resolveTxt(keyNameFor(pair.domain, pair.selector));
         const key = records
@@ -173,10 +246,16 @@ async function lookupDnsOne(pair: KeyPair, resolveTxt: TxtResolver): Promise<Loo
             });
         }
     } catch (error) {
-        result.misses.push({
-            pair,
-            reason: error instanceof Error ? error.message : String(error),
-        });
+        const reason = error instanceof Error ? error.message : String(error);
+        // "No such name" is an answer; a timeout or a failing resolver is not.
+        (isNoRecord(error) ? result.misses : result.errors).push({ pair, reason });
     }
     return result;
+}
+
+function isNoRecord(error: unknown): boolean {
+    const code = (error as { code?: unknown } | null)?.code;
+    if (code === 'ENOTFOUND' || code === 'ENODATA') return true;
+    const message = error instanceof Error ? error.message : String(error);
+    return /NXDOMAIN|NODATA|ENOTFOUND|ENODATA|not known|no dns record|no such host/i.test(message);
 }

@@ -99,6 +99,8 @@ export {
     lookupDns,
     type LookupResult,
     mapPool,
+    RETRY_ATTEMPTS,
+    type RetryOptions,
     type TxtResolver,
 } from './keylookup.ts';
 

@@ -252,12 +252,91 @@ export default async () => {
                 archiveFetch([{ domain: 'example.com', selector: 'sel', value: 'v=DKIM1; p=' }]),
             );
             expect(revoked.found.length).toBe(0);
-            const down = await lookupArchive(consent, [pair], async () => ({
-                ok: false,
-                status: 503,
-                json: async () => ({}),
-            }));
-            expect(down.misses[0]?.reason.includes('503')).toBe(true);
+        });
+
+        const noSleep = { sleep: async () => undefined, backoffMs: 1 };
+
+        await it('archive: HTTP 429 then 200 is retried and the key is found', async () => {
+            const consent: LookupConsent = { channel: 'archive.prove.email', pairs: [pair] };
+            const waits: number[] = [];
+            let calls = 0;
+            const result = await lookupArchive(
+                consent,
+                [pair],
+                async () => {
+                    calls++;
+                    if (calls === 1) {
+                        return {
+                            ok: false,
+                            status: 429,
+                            headers: { get: () => '3' },
+                            json: async () => ({}),
+                        };
+                    }
+                    return {
+                        ok: true,
+                        status: 200,
+                        json: async () => [{ domain: 'example.com', selector: 'sel', value: rsaRecord() }],
+                    };
+                },
+                8,
+                { sleep: async (ms) => void waits.push(ms) },
+            );
+            expect(calls).toBe(2);
+            expect(waits[0]).toBe(3000);
+            expect(result.found.length).toBe(1);
+            expect(result.errors.length).toBe(0);
+            expect(result.misses.length).toBe(0);
+        });
+
+        await it('archive: a persistent 503 or 429 is an error, never a miss', async () => {
+            const consent: LookupConsent = { channel: 'archive.prove.email', pairs: [pair] };
+            for (const status of [503, 429]) {
+                let calls = 0;
+                const down = await lookupArchive(
+                    consent,
+                    [pair],
+                    async () => {
+                        calls++;
+                        return { ok: false, status, json: async () => ({}) };
+                    },
+                    8,
+                    { ...noSleep, attempts: 3 },
+                );
+                expect(calls).toBe(3);
+                expect(down.misses.length).toBe(0);
+                expect(down.errors.length).toBe(1);
+                expect(down.errors[0]?.reason.includes(String(status))).toBe(true);
+            }
+        });
+
+        await it('archive: a thrown fetch is retried, then an error; a 404 is a miss at once', async () => {
+            const consent: LookupConsent = { channel: 'archive.prove.email', pairs: [pair] };
+            const broken = await lookupArchive(
+                consent,
+                [pair],
+                async () => {
+                    throw new Error('timeout');
+                },
+                8,
+                { ...noSleep, attempts: 2 },
+            );
+            expect(broken.errors[0]?.reason).toBe('timeout');
+            expect(broken.misses.length).toBe(0);
+            let calls = 0;
+            const gone = await lookupArchive(
+                consent,
+                [pair],
+                async () => {
+                    calls++;
+                    return { ok: false, status: 404, json: async () => ({}) };
+                },
+                8,
+                noSleep,
+            );
+            expect(calls).toBe(1);
+            expect(gone.misses.length).toBe(1);
+            expect(gone.errors.length).toBe(0);
         });
 
         await it('looks pairs up concurrently, bounded, and reports them in pair order', async () => {
@@ -283,7 +362,7 @@ export default async () => {
             );
             expect(peak > 1).toBe(true);
             expect(peak <= 4).toBe(true);
-            expect(result.misses.map((m) => m.pair.selector)).toStrictEqual(pairs.map((p) => p.selector));
+            expect(result.errors.map((m) => m.pair.selector)).toStrictEqual(pairs.map((p) => p.selector));
         });
 
         await it('refuses to send anything the consent does not list', async () => {
