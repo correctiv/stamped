@@ -31,6 +31,11 @@
     "ship": {
       "appId": "org.correctiv.Stamped",
       "binaryName": "stamped",
+      "bundledTypelibs": {
+        "linux": [
+          "../node_modules/@gjsify/http-soup-bridge-linux-x64/prebuilds/linux-x64"
+        ]
+      },
       "kind": "app",
       "name": "Stamped",
       "localeDir": "dist/locale",
