@@ -78,12 +78,15 @@ export interface ReverifyResult {
  *
  * `yieldTurn` is awaited before each message: a caller with a main loop to keep alive (the
  * window) hands in a promise that settles on an idle turn, because a microtask never repaints.
+ * `onProgress` hears `(checked, total)` once up front and after every message, so a caller can
+ * draw a progress bar over a run whose size is only known once the affected messages are found.
  */
 export async function reverifyPairs(
     paths: CasePaths,
     pairs: readonly KeyPair[],
     vault: KeyVault,
     yieldTurn?: () => Promise<void>,
+    onProgress?: (checked: number, total: number) => void,
 ): Promise<ReverifyResult> {
     const conflicted = new Set(vault.conflicts().map(pairName));
     const skippedConflicts = pairs.filter((pair) => conflicted.has(pairName(pair)));
@@ -106,6 +109,8 @@ export async function reverifyPairs(
         const before = db.prepare('SELECT verdict FROM messages WHERE hash = ?');
         const changed: VerdictChange[] = [];
         let failed = 0;
+        let seen = 0;
+        onProgress?.(0, affected.size);
         for (const hash of [...affected].sort()) {
             await yieldTurn?.();
             try {
@@ -121,6 +126,7 @@ export async function reverifyPairs(
             } catch {
                 failed++;
             }
+            onProgress?.(++seen, affected.size);
         }
         await settleSiblings(db, paths, keys, yieldTurn);
         return { checked: affected.size - failed, changed, failed, skippedConflicts };
