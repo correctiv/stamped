@@ -57,19 +57,24 @@ export const LOOKUP_CONCURRENCY = 8;
  * `fn` over `items` with at most `limit` in flight, results in the order of `items`.
  *
  * The order matters: the misses and finds are reported per pair, and a run that printed them in
- * completion order would differ from one run to the next.
+ * completion order would differ from one run to the next. `onEach` is the opposite on purpose:
+ * it fires in COMPLETION order, so a caller that saves work as it arrives can, while the merged
+ * result stays pair-ordered.
  */
 export async function mapPool<T, R>(
     items: readonly T[],
     limit: number,
     fn: (item: T) => Promise<R>,
+    onEach?: (result: R) => void,
 ): Promise<R[]> {
     const results: R[] = Array.from({ length: items.length });
     let next = 0;
     const worker = async (): Promise<void> => {
         while (next < items.length) {
             const index = next++;
-            results[index] = await fn(items[index] as T);
+            const result = await fn(items[index] as T);
+            results[index] = result;
+            onEach?.(result);
         }
     };
     await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, worker));
@@ -138,13 +143,21 @@ export async function lookupArchive(
     fetchImpl: FetchLike,
     concurrency: number = LOOKUP_CONCURRENCY,
     retry: RetryOptions = {},
+    onPairDone?: (one: LookupResult) => void,
 ): Promise<LookupResult> {
     // Every pair is checked against the consent BEFORE the first request goes out.
     for (const pair of pairs) {
         if (!consentCovers(consent, 'archive.prove.email', pair)) throw refuse(pair);
     }
     const gate = { until: 0 };
-    return merge(await mapPool(pairs, concurrency, (pair) => lookupArchiveOne(pair, fetchImpl, retry, gate)));
+    return merge(
+        await mapPool(
+            pairs,
+            concurrency,
+            (pair) => lookupArchiveOne(pair, fetchImpl, retry, gate),
+            onPairDone,
+        ),
+    );
 }
 
 async function lookupArchiveOne(
@@ -222,11 +235,12 @@ export async function lookupDns(
     pairs: readonly KeyPair[],
     resolveTxt: TxtResolver,
     concurrency: number = LOOKUP_CONCURRENCY,
+    onPairDone?: (one: LookupResult) => void,
 ): Promise<LookupResult> {
     for (const pair of pairs) {
         if (!consentCovers(consent, 'dns', pair)) throw refuse(pair);
     }
-    return merge(await mapPool(pairs, concurrency, (pair) => lookupDnsOne(pair, resolveTxt)));
+    return merge(await mapPool(pairs, concurrency, (pair) => lookupDnsOne(pair, resolveTxt), onPairDone));
 }
 
 async function lookupDnsOne(pair: KeyPair, resolveTxt: TxtResolver): Promise<LookupResult> {

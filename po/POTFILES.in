@@ -45,6 +45,7 @@ app/src/lib/open-copy.ts
 app/src/lib/pairs.ts
 app/src/lib/progress.ts
 app/src/lib/report.ts
+app/src/lib/self-argv.ts
 app/src/lib/status.ts
 app/src/lib/vault.ts
 packages/core/src/autokeys.ts

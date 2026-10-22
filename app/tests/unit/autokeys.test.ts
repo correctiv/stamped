@@ -165,6 +165,30 @@ export default async () => {
                 expect(done.misses.length).toBe(0);
             });
         });
+        await it('stores each key the moment it arrives, not at the end', async () => {
+            await withCase(async (paths) => {
+                const db = openIndex(paths);
+                const missing = missingKeyPairs(db, new KeyVault());
+                db.close();
+                const seen: string[] = [];
+                const vaultSizeWhenCalled: number[] = [];
+                const vault = new KeyVault();
+                await fetchKeys(vault, missing, {
+                    channels: ['archive.prove.email', 'dns'],
+                    confirm: async () => true,
+                    fetch: archiveFetch({ [T2048]: record(T2048) }, []),
+                    resolveTxt: async () => [[record(TED)]],
+                    onStored: (s) => {
+                        seen.push(s.pair.selector);
+                        // the key must already be IN the vault when the caller is told, so a save
+                        // there keeps it even if the run dies before the end
+                        vaultSizeWhenCalled.push(vault.size);
+                    },
+                });
+                expect(seen).toStrictEqual(['t2048', 'ted']);
+                expect(vaultSizeWhenCalled).toStrictEqual([1, 2]);
+            });
+        });
     });
 
     await describe('re-verification', async () => {
