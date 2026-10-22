@@ -337,6 +337,19 @@ function pathsOf(files: Gio.ListModel | null): string[] {
 }
 
 /**
+ * Where the case chooser starts: `~/Cases` when it exists, otherwise beside the archive.
+ *
+ * A suggestion, never a directory this creates on its own — a chooser that opens in a folder
+ * nobody made is a chooser that opens nowhere. Both candidates put the case next to something
+ * the person already recognises, which is what the second chooser of an import needs.
+ */
+function caseStart(archive: string): string {
+    const cases = GLib.build_filenamev([GLib.get_home_dir(), 'Cases']);
+    if (GLib.file_test(cases, GLib.FileTest.IS_DIR)) return cases;
+    return GLib.path_get_dirname(archive);
+}
+
+/**
  * Did the person simply close the file chooser?
  *
  * Dismissal arrives as an exception, same as a real failure, and the two must not be shown the
@@ -1863,9 +1876,20 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * and only `openCase` makes one, and that asymmetry matters more behind a file chooser than
      * on a command line: a chooser makes it easy to land one directory above the case and would
      * otherwise silently start a second, empty one there.
+     *
+     * @param archive The first archive an import just picked. It changes what both the chooser
+     *   and the question say, because at that point the person has already chosen one folder and
+     *   a second chooser with the same wording reads as the app asking twice for the same thing.
+     *   It also gives the chooser somewhere to start.
      */
-    private async chooseCase(): Promise<void> {
-        const dialog = new Gtk.FileDialog({ title: _('Open Case Folder') });
+    private async chooseCase(archive?: string): Promise<void> {
+        const forImport = archive !== undefined;
+        const dialog = new Gtk.FileDialog({
+            title: forImport ? _('Folder for the Case') : _('Open Case Folder'),
+        });
+        if (archive !== undefined) {
+            dialog.set_initial_folder(Gio.File.new_for_path(caseStart(archive)));
+        }
         let picked: string | null;
         try {
             picked = (await dialog.select_folder(this, null))?.get_path() ?? null;
@@ -1882,13 +1906,20 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 return;
             }
             const create = await confirmDialog(this, {
-                heading: _('Create a new case here?'),
-                body: fmt(
-                    _(
-                        '{path} is not a Stamped case yet. Creating one writes a case file, a store for the raw messages and a search index into it. Nothing is sent anywhere.',
-                    ),
-                    { path },
-                ),
+                heading: forImport ? _('Create the case here?') : _('Create a new case here?'),
+                body: forImport
+                    ? fmt(
+                          _(
+                              'Stamped creates the case in {path}. It holds the working copy of the messages and the search index. The archive stays where it is.',
+                          ),
+                          { path },
+                      )
+                    : fmt(
+                          _(
+                              '{path} is not a Stamped case yet. Creating one writes a case file, a store for the raw messages and a search index into it. Nothing is sent anywhere.',
+                          ),
+                          { path },
+                      ),
                 confirmLabel: _('Create Case'),
                 cancelLabel: _('Cancel'),
             });
@@ -1971,23 +2002,17 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /**
-     * Import archives into the open case, asking for a case first if there is none.
+     * Import archives, asking where the case goes when none is open.
+     *
+     * The archive is asked for first. It used to be the case folder, which put two folder
+     * choosers in a row in front of someone who had asked to import an archive, and the user
+     * test could not tell which chooser wanted what. Picking the archive first makes the second
+     * question answerable, and {@link chooseCase} then names the archive it is asking about.
      *
      * Two entry points because the chooser cannot do both: an mbox is a FILE and a Maildir is a
      * DIRECTORY, and a chooser that accepts files will not return a folder.
-     *
-     * KNOWN LIMITATION: the import runs to completion before the window repaints, so a large
-     * archive freezes it for as long as it takes. `importSources` reports progress and nothing
-     * here consumes it yet — a progress bar needs the import off the main loop, which is its own
-     * change.
      */
     private async importFrom(kind: 'files' | 'folder'): Promise<void> {
-        if (!this.session) {
-            await this.chooseCase();
-            if (!this.session) return;
-        }
-        const session = this.session;
-
         const dialog = new Gtk.FileDialog({
             title: kind === 'folder' ? _('Import a Mail Folder') : _('Import Mail Archives'),
         });
@@ -2006,6 +2031,14 @@ export class StampedWindow extends Adw.ApplicationWindow {
             return;
         }
         if (paths.length === 0) return;
+
+        if (!this.session) {
+            await this.chooseCase(paths[0]!);
+            // Cancelled at either step of `chooseCase` — the chooser or the question. There is
+            // no case to import into, and the archive the person picked is left untouched.
+            if (!this.session) return;
+        }
+        const session = this.session;
 
         try {
             await this.runImportSubprocess(session, paths);
