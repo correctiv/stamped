@@ -1025,9 +1025,10 @@ export default async () => {
                 const source = archive('inbox.mbox');
                 await importSources(paths, [source], { keys: fixtureKeys() });
                 const again = await importSources(paths, [source], { keys: fixtureKeys() });
-                expect(again.read).toBe(5);
+                // The first run finished the file, so the second does not read it again.
+                expect(again.read).toBe(0);
+                expect(again.resumed).toBe(1);
                 expect(again.stored).toBe(0);
-                expect(again.duplicates).toBe(5);
                 expect(again.indexed).toBe(0);
                 const db = openIndex(paths);
                 try {
@@ -1035,14 +1036,15 @@ export default async () => {
                 } finally {
                     db.close();
                 }
-                // The log keeps both runs: it records what was READ, which happened twice.
-                expect(readFileSync(paths.log, 'utf8').trim().split('\n').length).toBe(10);
+                // The log records what was READ, and the second run read nothing.
+                expect(readFileSync(paths.log, 'utf8').trim().split('\n').length).toBe(5);
             });
         });
 
         await it('finishes the rest after an interrupted run, without duplicates', async () => {
             // A killed import leaves the raw store and log whole but the index short by the batch
-            // that never committed. Simulated by dropping two index rows.
+            // that never committed — and the file unrecorded, since the ledger row goes in with
+            // that batch. Simulated by dropping two index rows and the ledger.
             await withCase(async (paths) => {
                 const source = archive('inbox.mbox');
                 await importSources(paths, [source], { keys: fixtureKeys() });
@@ -1056,12 +1058,14 @@ export default async () => {
                         db.prepare('DELETE FROM messages_fts WHERE hash = ?').run(hash);
                         db.prepare('DELETE FROM messages WHERE hash = ?').run(hash);
                     }
+                    db.prepare('DELETE FROM imported_files').run();
                     expect(messageCount(db)).toBe(2);
                 } finally {
                     db.close();
                 }
                 const again = await importSources(paths, [source], { keys: fixtureKeys() });
                 expect(again.stored).toBe(0);
+                expect(again.duplicates).toBe(5);
                 expect(again.indexed).toBe(2);
                 const check = openIndex(paths);
                 try {

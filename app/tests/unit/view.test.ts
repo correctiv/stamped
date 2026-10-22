@@ -840,6 +840,7 @@ export default async () => {
             mailboxes: 0,
             files: 0,
             skipped: 0,
+            resumed: 0,
             failures: [],
             ...over,
         });

@@ -19,12 +19,14 @@
  */
 
 import {
+    cpSync,
     existsSync,
     mkdirSync,
     mkdtempSync,
     readFileSync,
     rmSync,
     symlinkSync,
+    utimesSync,
     writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -99,6 +101,7 @@ function result(over: Partial<ImportResult> = {}): ImportResult {
         mailboxes: 0,
         files: 0,
         skipped: 0,
+        resumed: 0,
         failures: [],
         ...over,
     };
@@ -304,12 +307,40 @@ export default async () => {
                     mode: 'folders',
                 });
                 expect(again.stored).toBe(0);
-                expect(again.duplicates).toBe(4);
                 expect(again.indexed).toBe(0);
+                // The three files the first run finished are not read again. The broken part is
+                // never recorded as finished, so it is tried again below.
+                expect(again.read).toBe(0);
+                expect(again.resumed).toBe(3);
+                expect(logOf(paths).length).toBe(4);
                 // The damage is still damage on the second run: an import that fixed the
                 // failure by forgetting it would be lying about the archive.
                 expect(again.failures.length).toBe(1);
             });
+        });
+
+        await it('reads a file again once it changed since the last run', async () => {
+            const root = mkdtempSync(join(tmpdir(), 'stamped-resume-'));
+            try {
+                cpSync(archive('leak'), root, { recursive: true });
+                await withCase(async (paths) => {
+                    await importSources(paths, [root], { keys: fixtureKeys(), mode: 'folders' });
+                    const part = planFolder(root).mailboxes.find((m) => m.name === 'grace@example.net')
+                        ?.parts[0]?.path;
+                    expect(part !== undefined).toBe(true);
+                    const later = new Date(Date.now() + 60_000);
+                    utimesSync(part as string, later, later);
+                    const again = await importSources(paths, [root], {
+                        keys: fixtureKeys(),
+                        mode: 'folders',
+                    });
+                    expect(again.read).toBe(1);
+                    expect(again.duplicates).toBe(1);
+                    expect(again.resumed).toBe(2);
+                });
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
         });
 
         await it('reads a folder of mbox files as a tree of mailboxes on its own', async () => {

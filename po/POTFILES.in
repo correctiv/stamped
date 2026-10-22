@@ -98,6 +98,7 @@ packages/store/src/activity-status.ts
 packages/store/src/addresses-db.ts
 packages/store/src/case.ts
 packages/store/src/document-source.ts
+packages/store/src/imported-files.ts
 packages/store/src/importer.ts
 packages/store/src/import-status.ts
 packages/store/src/index-db.ts

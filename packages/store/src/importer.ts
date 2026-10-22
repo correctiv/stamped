@@ -48,6 +48,14 @@ import {
     rollbackBatch,
 } from './index-db.ts';
 import { settleSiblings } from './siblings.ts';
+import {
+    alreadyImported,
+    ensureImportedFiles,
+    fileIdentity,
+    importedFiles,
+    markImported,
+    type FileIdentity,
+} from './imported-files.ts';
 import { appendLog, readRaw, store, type ImportLogEntry } from './raw.ts';
 
 /** How many log lines are held before they are written. See {@link appendLog}. */
@@ -144,6 +152,8 @@ export interface ImportResult {
     readonly files: number;
     /** The files that were left alone because they are not mail. */
     readonly skipped: number;
+    /** The mail files an earlier, interrupted run had already read and indexed in full. */
+    readonly resumed: number;
     /** The files that could not be read. The import went on without them. */
     readonly failures: readonly ImportFailure[];
 }
@@ -179,7 +189,8 @@ interface SourcePlan {
  *
  * Idempotent: running it again over the same archive stores nothing, logs the messages as
  * duplicates and leaves the index as it was. That is what makes an interrupted import simply
- * runnable again rather than something to clean up first.
+ * runnable again rather than something to clean up first. A file an earlier run finished in full
+ * is not even read again — see `imported-files.ts`.
  */
 export async function importSources(
     paths: CasePaths,
@@ -198,6 +209,7 @@ export async function importSources(
     let files = 0;
     let mailboxes = 0;
     let skipped = 0;
+    let resumed = 0;
     let lastMailbox: string | undefined;
     let pending: ImportLogEntry[] = [];
     const madeDirs = new Set<string>();
@@ -205,6 +217,8 @@ export async function importSources(
     // One scan instead of a query per message. A hash added during this run goes in too, so a
     // message met twice is verified once.
     const known = indexedHashes(db);
+    ensureImportedFiles(db);
+    const ledger = importedFiles(db);
 
     const flush = (): void => {
         appendLog(paths, pending);
@@ -284,7 +298,19 @@ export async function importSources(
                     ...(unit.mailbox === undefined ? {} : { mailbox: unit.mailbox }),
                 };
 
+                // The files of this unit read to the end. They go into the ledger only together with
+                // the index rows of their messages, and only when every one of those got a row: a
+                // message whose verification failed must be met again by the next run.
+                const finished: FileIdentity[] = [];
+                const failedBefore = failed;
+
                 for (const part of unit.parts) {
+                    const identity = fileIdentity(part.path);
+                    if (identity !== undefined && alreadyImported(ledger, identity)) {
+                        resumed++;
+                        bytesRead += identity.size;
+                        continue;
+                    }
                     let found = 0;
                     writeFailed = false;
                     try {
@@ -311,6 +337,8 @@ export async function importSources(
                             path: part.path,
                             reason: fmt(_('{path} holds no messages.'), { path: part.path }),
                         });
+                    } else if (identity !== undefined) {
+                        finished.push(identity);
                     }
                 }
                 flush();
@@ -356,7 +384,13 @@ export async function importSources(
                             options.onBatch?.(snapshot(unit.mailbox));
                         }
                     }
-                    if (inBatch > 0) commitBatch(db);
+                    if (failed === failedBefore && finished.length > 0) {
+                        if (inBatch === 0) beginBatch(db);
+                        markImported(db, finished);
+                        commitBatch(db);
+                    } else if (inBatch > 0) {
+                        commitBatch(db);
+                    }
                     // One line per mailbox, ALWAYS — also for a mailbox that held no message at
                     // all. A progress stream that skips the empty ones cannot say that a
                     // mailbox was empty, and "no line" reads like "not reached yet".
@@ -383,6 +417,7 @@ export async function importSources(
         ...(lastMailbox === undefined ? {} : { lastMailbox }),
         files,
         skipped,
+        resumed,
         failures,
     };
 }
