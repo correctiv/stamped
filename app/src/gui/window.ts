@@ -894,7 +894,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /**
-     * The mail "sheet": what a mail program shows above the body, with the verdict as its stamp.
+     * The mail "sheet": what a mail program shows above the body, with the verdict as its stamp
+     * and the open action in its header.
      *
      * Everything shown here is decoded for reading and nothing in it is evidence — the verdict
      * card, the header group and the raw block below still quote the message as it stands.
@@ -926,6 +927,17 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const stamp = badge(card.badge, card.cssClass);
         stamp.set_valign(Gtk.Align.START);
         top.append(stamp);
+        // The header action, where a mail program puts reply and forward. ONE button and always
+        // the chooser: the second, "direct" button ended in the same app picker on Linux anyway,
+        // so it offered a distinction the desktop never made.
+        const openWith = new Gtk.Button({
+            child: new Adw.ButtonContent({ label: _('Open With…'), iconName: 'mail-send-symbolic' }),
+            tooltipText: _('Open a read-only copy in the program you choose'),
+        });
+        openWith.add_css_class('flat');
+        openWith.set_valign(Gtk.Align.START);
+        openWith.connect('clicked', () => void this.openInMailProgram(hash));
+        top.append(openWith);
         inner.append(top);
 
         const lines = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 });
@@ -963,6 +975,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
             });
             view.get_buffer().set_text(body.text === '' ? _('(no text)') : body.text, -1);
             inner.append(view);
+            // The reading notes belong to the body they describe — not to a row of buttons far
+            // below it, where they read as an afterthought about the whole message.
+            const notes: string[] = [];
+            if (body.fromHtml) notes.push(_('Shown as text; the HTML was not rendered.'));
+            if (body.truncated) notes.push(_('The text is cut here; the stored message is longer.'));
+            if (notes.length > 0) {
+                const about = new StampedHelpButton(escapeLine(notes.join(' ')));
+                about.set_halign(Gtk.Align.START);
+                inner.append(about);
+            }
             if (body.attachments.length > 0) {
                 inner.append(new Gtk.Separator());
                 const list = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 });
@@ -980,54 +1002,20 @@ export class StampedWindow extends Adw.ApplicationWindow {
             }
         }
 
-        const actions = new Gtk.Box({
-            orientation: Gtk.Orientation.HORIZONTAL,
-            spacing: 6,
-            halign: Gtk.Align.END,
-        });
-        const open = new Gtk.Button({
-            label: _('Open in Mail Program'),
-            iconName: 'mail-send-symbolic',
-            tooltipText: _('Open a read-only copy in your mail program'),
-        });
-        open.add_css_class('flat');
-        open.connect('clicked', () => void this.openInMailProgram(hash, false));
-        const openWith = new Gtk.Button({ label: _('Open With…') });
-        openWith.add_css_class('flat');
-        openWith.connect('clicked', () => void this.openInMailProgram(hash, true));
-        const notes: string[] = [];
-        if (body?.fromHtml) notes.push(_('Shown as text; the HTML was not rendered.'));
-        if (body?.truncated) notes.push(_('The text is cut here; the stored message is longer.'));
-        if (notes.length > 0) {
-            const about = new StampedHelpButton(escapeLine(notes.join(' ')));
-            about.set_halign(Gtk.Align.START);
-            actions.append(about);
-            actions.append(new Gtk.Box({ hexpand: true }));
-        }
-        actions.append(open);
-        actions.append(openWith);
-        actions.append(
-            new StampedHelpButton(
-                escapeLine(
-                    _(
-                        'A mail program that loads remote content tells the sender’s server that someone is reading this message right now. How a program displays a message proves nothing about it; the DKIM verdict does. The program gets a read-only copy outside the case.',
-                    ),
-                ),
-            ),
-        );
-        sheet.append(actions);
         return sheet;
     }
 
     /**
-     * Hand a READ-ONLY COPY of the message to another program.
+     * Hand a READ-ONLY COPY of the message to whatever program the person chooses.
      *
      * Never the stored file: a mail program may rewrite, move or flag what it is given, and the
      * stored bytes are what every verdict is computed from. The warning comes once per window
      * and before the first launch, because the damage of a remote image is done at the moment
-     * of opening and cannot be taken back.
+     * of opening and cannot be taken back. Its body stays one sentence — the paragraph with the
+     * why sits behind the expander, so the warning is read before the first launch rather than
+     * skipped as a wall of text.
      */
-    private async openInMailProgram(hash: string, ask: boolean): Promise<void> {
+    private async openInMailProgram(hash: string): Promise<void> {
         const session = this.session;
         if (!session) return;
         try {
@@ -1038,6 +1026,19 @@ export class StampedWindow extends Adw.ApplicationWindow {
                         'A mail program may load remote content. Only the verdict proves a message genuine.',
                     ),
                 });
+                // The paragraph the reader sheet's ⓘ used to carry, kept with the warning that
+                // replaces it — one place for the whole risk, not two.
+                const more = new Gtk.Expander({ label: _('What does that mean?') });
+                more.set_child(
+                    wrapLabel(
+                        escapeLine(
+                            _(
+                                'A mail program that loads remote content tells the sender’s server that someone is reading this message right now. How a program displays a message proves nothing about it; the DKIM verdict does. The program gets a read-only copy outside the case.',
+                            ),
+                        ),
+                    ),
+                );
+                dialog.set_extra_child(more);
                 dialog.add_response('cancel', _('Cancel'));
                 dialog.add_response('open', _('Open'));
                 dialog.set_response_appearance('open', Adw.ResponseAppearance.SUGGESTED);
@@ -1051,7 +1052,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 showToast(escapeLine(_('The stored copy of this message is missing.')));
                 return;
             }
-            const launcher = new Gtk.FileLauncher({ file: Gio.File.new_for_path(copy), alwaysAsk: ask });
+            const launcher = new Gtk.FileLauncher({ file: Gio.File.new_for_path(copy), alwaysAsk: true });
             await launcher.launch(this, null);
         } catch (error) {
             if (isDismissed(error)) return;
