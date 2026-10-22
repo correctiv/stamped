@@ -872,6 +872,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const report = await reportOf(session);
         if (!current()) return;
         this.total = report.messages;
+
+        // Show loading state while the list refreshes — an empty list reads as a crash
+        this._listStack.set_visible_child_name('loading');
         const steps: (() => Promise<void> | void)[] = [
             () => this.fillSidebar(session, report),
             () => this.fillList(),
@@ -887,6 +890,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             await step();
             if (!current()) return;
         }
+        this._listStack.set_visible_child_name('list');
     }
 
     /**
@@ -1215,6 +1219,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const session = this.session;
         if (!session) return;
         this.reading = hash;
+        this._readerStack.set_visible_child_name('empty'); // loading state while verifying
         const message = await messageOf(session, hash);
         if (this.session !== session || this.reading !== hash) return;
         if (!message) return;
@@ -1642,10 +1647,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         popover.set_child(label);
 
         const button = new Gtk.MenuButton({
-            label: _('How does DKIM work?'),
+            iconName: 'help-contents-symbolic',
+            tooltipText: _('How does DKIM work?'),
             valign: Gtk.Align.CENTER,
-            // Leftwards, for the reason in `help-button.ts`: this is a row suffix at the right
-            // edge of the pane, and GTK clips a popover to the monitor, not to the window.
             direction: Gtk.ArrowType.LEFT,
         });
         button.add_css_class('flat');

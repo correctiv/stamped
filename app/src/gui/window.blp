@@ -250,6 +250,21 @@ template $StampedWindow: Adw.ApplicationWindow {
 
                 content: Gtk.Stack listStack {
                   Gtk.StackPage {
+                    name: "loading";
+
+                    child: Adw.StatusPage {
+                      icon-name: "folder-open-symbolic";
+                      title: _("Loading the case…");
+
+                      child: Adw.Spinner {
+                        width-request: 32;
+                        height-request: 32;
+                        halign: center;
+                      };
+                    };
+                  }
+
+                  Gtk.StackPage {
                     name: "list";
 
                     child: Gtk.ScrolledWindow {
