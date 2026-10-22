@@ -370,7 +370,7 @@ export function sourcesOf(session: CaseSession): LogSource[] {
 
 /** What the whole case adds up to. The same query `stamped report` prints. */
 export function reportOf(session: CaseSession): CaseReport {
-    return caseReport(session.db, { paths: session.paths });
+    return caseReport(session.db, { paths: session.paths, keyLimit: 10_000 });
 }
 
 /** The indexed row for one message — the header block, and nothing a verdict rests on. */
@@ -550,6 +550,8 @@ export async function applyKeys(
 export interface LookupOutcome {
     readonly stored: number;
     readonly missed: number;
+    /** Pairs the lookup could not answer for: unknown, to be retried. */
+    readonly errors: number;
     readonly conflicts: number;
     /** The pairs that gained a key — what {@link applyKeys} has to re-verify. */
     readonly pairs: readonly KeyPair[];
@@ -592,5 +594,5 @@ export async function runLookup(
         gained.push(found.pair);
     }
     saveVault(session.root, session.vault);
-    return { stored, missed: result.misses.length, conflicts, pairs: gained };
+    return { stored, missed: result.misses.length, errors: result.errors.length, conflicts, pairs: gained };
 }

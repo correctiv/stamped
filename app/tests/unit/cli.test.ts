@@ -77,9 +77,18 @@ export default async () => {
                 ],
                 4,
             );
-            expect(tally).toStrictEqual({ archive: 2, dns: 1, notFound: 4, conflicts: 1 });
+            expect(tally).toStrictEqual({
+                archive: 2,
+                dns: 1,
+                notFound: 4,
+                errors: 0,
+                conflicts: 1,
+            });
             expect(tallyLines(tally).length).toBe(4);
             expect(tallyLines({ ...tally, conflicts: 0 }).length).toBe(3);
+            const failed = tallyFetch([], 0, 322);
+            expect(failed.errors).toBe(322);
+            expect(tallyLines(failed).some((l) => l.includes('322') && l.includes('Retry later'))).toBe(true);
         });
 
         await it('formats durations', async () => {

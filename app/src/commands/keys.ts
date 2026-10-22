@@ -83,6 +83,11 @@ function readText(value: string): string {
 
 function printResult(result: LookupResult, added: string[]): void {
     for (const line of added) console.log(line);
+    for (const error of result.errors) {
+        console.log(
+            fmt(_('  error   {name}: {reason}'), { name: pairName(error.pair), reason: error.reason }),
+        );
+    }
     for (const miss of result.misses) {
         console.log(fmt(_('  no key  {name}: {reason}'), { name: pairName(miss.pair), reason: miss.reason }));
     }
@@ -326,7 +331,8 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
 
             const vault = loadVault(dir);
             const stored: { origin: KeyOrigin; conflict: boolean }[] = [];
-            let notFound = 0;
+            let errorCount = 0;
+            const failedNames = new Set<string>();
             let todo: KeyPair[] = missingPairs(wanted, vault);
             if (todo.length === 0) {
                 console.log(_('Every listed key is already stored.'));
@@ -349,7 +355,7 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                         : await lookupArchive(consent, todo, (url) => fetch(url));
                 const now = new Date().toISOString();
                 const added: string[] = [];
-                notFound += result.misses.length;
+                for (const e of result.errors) failedNames.add(pairName(e.pair));
                 for (const f of result.found) {
                     const outcome = vault.add({
                         ...f.pair,
@@ -375,7 +381,8 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                 todo = missingPairs(todo, vault);
             }
             // A pair the archive missed but the DNS found is not "not found": count what is still open.
-            const tally: FetchTally = tallyFetch(stored, todo.length);
+            errorCount = todo.filter((pair) => failedNames.has(pairName(pair))).length;
+            const tally: FetchTally = tallyFetch(stored, todo.length - errorCount, errorCount);
             printTally(tally);
             if (existsSync(dir + '/case.json')) await reverifyApplicable(caseOrThrow(dir));
             console.log(durationLine(startedAt));

@@ -210,7 +210,7 @@ export function lookupPairs(rows: readonly KeyRow[]): KeyPair[] {
  * a key somebody substituted — and the second is the finding the tool exists for, so it may never
  * be summarised as a successful fetch.
  */
-export function lookupSummary(stored: number, missed: number, conflicts: number): string {
+export function lookupSummary(stored: number, missed: number, conflicts: number, errors = 0): string {
     const parts: string[] = [];
     if (stored > 0) {
         parts.push(
@@ -224,6 +224,18 @@ export function lookupSummary(stored: number, missed: number, conflicts: number)
             fmt(_n('{count} had no published record', '{count} had no published record', missed), {
                 count: groupDigits(missed),
             }),
+        );
+    }
+    if (errors > 0) {
+        parts.push(
+            fmt(
+                _n(
+                    '{count} could not be asked. Retry later.',
+                    '{count} could not be asked. Retry later.',
+                    errors,
+                ),
+                { count: groupDigits(errors) },
+            ),
         );
     }
     if (parts.length === 0) parts.push(_('nothing was found'));
