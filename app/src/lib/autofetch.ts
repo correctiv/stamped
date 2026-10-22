@@ -13,6 +13,7 @@ import {
     _n,
 } from '@stamped/core';
 import {
+    beginActivityStatus,
     missingKeyPairs,
     openIndex,
     reverifyPairs,
@@ -122,7 +123,17 @@ export async function reverifyApplicable(paths: CasePaths): Promise<ReverifyResu
         db.close();
     }
     if (pairs.length === 0) return undefined;
-    const result = await reverifyPairs(paths, pairs, vault);
+    const activity = beginActivityStatus(paths, 'reverify');
+    let result: ReverifyResult;
+    try {
+        result = await reverifyPairs(paths, pairs, vault, undefined, (checked, total) =>
+            activity.update(checked, total),
+        );
+    } catch (error) {
+        activity.fail();
+        throw error;
+    }
+    activity.finish();
     printReverify(result);
     return result;
 }
@@ -153,12 +164,17 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
     // Saved the moment a key arrives: a run interrupted after an hour of lookups keeps everything
     // it already fetched, instead of losing it all to one save at the end. The line shows the
     // arrival, so a long rate-limited fetch is not silent.
-    const summary = await fetchKeys(vault, missing, {
+    const activity = beginActivityStatus(paths, 'keys');
+    let stored = 0;
+    let summary;
+    try {
+        summary = await fetchKeys(vault, missing, {
         channels: options.channels ?? DEFAULT_CHANNELS,
         confirm: (text) => askConsent(text, options.yes),
         fetch: (url) => fetch(url),
         resolveTxt,
         onStored: (s) => {
+            activity.update(++stored, missing.length);
             saveVault(paths.root, vault);
             console.log(
                 fmt(_('  stored  {name} via {origin}{flag}'), {
@@ -168,7 +184,12 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
                 }),
             );
         },
-    });
+        });
+    } catch (error) {
+        activity.fail();
+        throw error;
+    }
+    activity.finish();
     if (summary.asked.length > 0 && !summary.consented) {
         console.log(_('Skipped; nothing was sent.'));
         return;

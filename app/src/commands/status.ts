@@ -17,13 +17,13 @@
  */
 
 import { fmt, _ } from '@stamped/core';
-import { readImportStatus } from '@stamped/store';
+import { readActivityStatuses, readImportStatus } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
 import { semanticLines, semanticStatusJson } from '../lib/semantic-status.ts';
 import { semanticSnapshot, semanticState } from '../lib/semantic-state.ts';
-import { noStatusLine, statusJson, statusLines } from '../lib/status.ts';
+import { activityJson, activityLine, noStatusLine, statusJson, statusLines } from '../lib/status.ts';
 
 interface StatusArgs {
     case?: string;
@@ -54,12 +54,14 @@ export function statusCommand(): CommandModule<unknown, StatusArgs> {
         handler: (args) => {
             const paths = caseOrThrow(caseRoot('status', args.case, [args.folder]).root);
             const status = readImportStatus(paths);
+            const activities = readActivityStatuses(paths);
             const snapshot = semanticSnapshot(paths);
             const semantic = snapshot === undefined ? undefined : semanticState(snapshot);
 
             if (args.json) {
                 const json = {
                     ...(status === undefined ? { state: 'none', orphaned: false } : statusJson(status)),
+                    activities: activities.map((a) => activityJson(a)),
                     ...(semantic === undefined
                         ? {}
                         : { semantic: semanticStatusJson(semantic, snapshot?.setting) }),
@@ -75,6 +77,7 @@ export function statusCommand(): CommandModule<unknown, StatusArgs> {
                 // who reads nothing else still learns the run is not going on.
                 for (const line of statusLines(status)) console.log(line);
             }
+            for (const activity of activities) console.log(activityLine(activity));
             if (semantic !== undefined) {
                 for (const line of semanticLines(semantic)) console.log(line);
             }

@@ -10,7 +10,7 @@
  */
 
 import { fmt, _, _n } from '@stamped/core';
-import { orphanedImport, type ImportStatus } from '@stamped/store';
+import { orphanedActivity, orphanedImport, type ActivityStatus, type ImportStatus } from '@stamped/store';
 
 import { formatBytes, groupDigits } from '../gui/view/format.ts';
 import { formatDuration } from './duration.ts';
@@ -139,4 +139,83 @@ export function statusLines(status: ImportStatus): string[] {
 /** The line for a case folder that has never had an import run in it. */
 export function noStatusLine(root: string): string {
     return fmt(_('No import has run in {path}.'), { path: root });
+}
+
+/** The machine form of one background run: `state` plus the derived `orphaned`, numbers only. */
+export interface ActivityJson {
+    readonly kind: ActivityStatus['kind'];
+    readonly state: ActivityStatus['state'];
+    readonly orphaned: boolean;
+    readonly pid: number;
+    readonly startedAt: string;
+    readonly updatedAt: string;
+    readonly done: number;
+    readonly total: number;
+    readonly percent: number;
+}
+
+export function activityJson(status: ActivityStatus, now: number = Date.now()): ActivityJson {
+    return {
+        kind: status.kind,
+        state: status.state,
+        orphaned: orphanedActivity(status, now),
+        pid: status.pid,
+        startedAt: status.startedAt,
+        updatedAt: status.updatedAt,
+        done: status.done,
+        total: status.total,
+        percent: percent(status.done, status.total),
+    };
+}
+
+/** One sentence per background run; a `running` file that is not alive reads as interrupted. */
+export function activityLine(status: ActivityStatus, now: number = Date.now()): string {
+    const args = { done: groupDigits(status.done), total: groupDigits(status.total) };
+    if (status.state === 'running' && orphanedActivity(status, now)) {
+        switch (status.kind) {
+            case 'people':
+                return _('The address listing was interrupted.');
+            case 'keys':
+                return _('The key lookup was interrupted.');
+            case 'reverify':
+                return _('The re-verification was interrupted.');
+        }
+    }
+    switch (status.kind) {
+        case 'people':
+            switch (status.state) {
+                case 'running':
+                    return fmt(_('Listing addresses: {done} of {total} messages.'), args);
+                case 'finished':
+                    return _('The last address listing finished.');
+                case 'failed':
+                    return _('The last address listing failed.');
+                case 'cancelled':
+                    return _('The last address listing was cancelled.');
+            }
+            break;
+        case 'keys':
+            switch (status.state) {
+                case 'running':
+                    return fmt(_('Looking up keys: {done} of {total} stored.'), args);
+                case 'finished':
+                    return _('The last key lookup finished.');
+                case 'failed':
+                    return _('The last key lookup failed.');
+                case 'cancelled':
+                    return _('The last key lookup was cancelled.');
+            }
+            break;
+        case 'reverify':
+            switch (status.state) {
+                case 'running':
+                    return fmt(_('Re-verifying: {done} of {total} messages.'), args);
+                case 'finished':
+                    return _('The last re-verification finished.');
+                case 'failed':
+                    return _('The last re-verification failed.');
+                case 'cancelled':
+                    return _('The last re-verification was cancelled.');
+            }
+    }
 }
