@@ -137,7 +137,7 @@ export class ActivityController {
             hscrollbarPolicy: Gtk.PolicyType.NEVER,
             propagateNaturalHeight: true,
             maxContentHeight: 440,
-            minContentWidth: 340,
+            minContentWidth: 400,
         });
         const body = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
