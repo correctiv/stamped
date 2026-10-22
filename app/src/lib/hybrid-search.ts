@@ -52,6 +52,19 @@ export interface HybridSearchRequest {
 }
 
 /**
+ * The same request with the query already embedded — what the worker gets.
+ *
+ * THE EMBEDDING IS THE ONE PART THAT CANNOT CROSS: a model runtime is loaded once, in the
+ * process that owns it, and that is the main thread. Everything else here is SQLite, which is
+ * exactly what must not run there. So the split goes through the vector: the main thread
+ * embeds, the worker searches, and {@link fuseHybrid} is the half that needs no `await`.
+ */
+export interface HybridFuseRequest extends Omit<HybridSearchRequest, 'embedder'> {
+    /** The embedded query, when the main thread could produce one. */
+    readonly vector?: Float32Array;
+}
+
+/**
  * How many candidates each half offers per wanted hit.
  *
  * OVER-FETCHING, because the filters come after the ranking: the semantic half asks for the
@@ -75,6 +88,40 @@ const MAX_CANDIDATES = 5000;
  * but an export.
  */
 export async function hybridSearch(request: HybridSearchRequest): Promise<HybridHit[]> {
+    return fuseHybrid({ ...request, ...(await embedFor(request)) });
+}
+
+/**
+ * The embedded query, or nothing at all when this search stays a text search.
+ *
+ * Every failure is swallowed here for the reason the module note gives, and the
+ * {@link asksForMeaning} check comes BEFORE the model rather than after it: a person who typed
+ * an address gets no vector, so the model is not asked to embed one.
+ */
+async function embedFor(request: HybridSearchRequest): Promise<{ vector?: Float32Array }> {
+    const { embedder } = request;
+    if (!embedder || !request.vectors || !asksForMeaning(request.query)) return {};
+    try {
+        // THE QUERY GOES IN RAW. `Embedder.embedQuery` applies the model's own prompt format
+        // — the llama backend wraps it in `task: search result | query: …` — so wrapping it
+        // here as well would hand the model a prompt inside a prompt. The seam owns the
+        // format; the search owns the words.
+        const vector = await embedder.embedQuery(request.query);
+        checkVector(vector);
+        return { vector };
+    } catch {
+        return {};
+    }
+}
+
+/**
+ * The search itself: both halves against SQLite, fused by rank. Synchronous on purpose.
+ *
+ * This is what runs on the query worker. Nothing in it awaits, because nothing in it may — the
+ * worker thread answers one request at a time, and a query that yields in the middle would let
+ * the next one open a cursor on the same connection.
+ */
+export function fuseHybrid(request: HybridFuseRequest): HybridHit[] {
     const options = request.options ?? {};
     const limit = clampLimit(options.limit ?? 20);
     const candidates = candidateCount(limit);
@@ -89,7 +136,7 @@ export async function hybridSearch(request: HybridSearchRequest): Promise<Hybrid
     }
 
     // The semantic half. It never fails the search — see the module note.
-    const semanticHits = await semanticHitsFor(request, candidates);
+    const semanticHits = semanticHitsFor(request, candidates);
 
     if (textHits.length === 0 && semanticHits.length === 0) {
         // Nothing to show and something to complain about: the query is the problem.
@@ -118,23 +165,16 @@ export async function hybridSearch(request: HybridSearchRequest): Promise<Hybrid
 /**
  * The hits the vector search finds, as rows of the index.
  *
- * EVERY FAILURE HERE IS SWALLOWED: a missing model, an empty vector table, an embedder that
- * throws, a vector database that will not open. The text half's answer stands, and a search
- * that cannot be semantic must still be a search.
+ * EVERY FAILURE HERE IS SWALLOWED: no vector (see {@link embedFor}), an empty vector table, a
+ * vector database that will not open. The text half's answer stands, and a search that cannot
+ * be semantic must still be a search.
  */
-async function semanticHitsFor(request: HybridSearchRequest, candidates: number): Promise<SearchHit[]> {
-    const { vectors, embedder } = request;
-    if (!vectors || !embedder) return [];
-    if (!asksForMeaning(request.query)) return [];
+function semanticHitsFor(request: HybridFuseRequest, candidates: number): SearchHit[] {
+    const { vectors, vector } = request;
+    if (!vectors || !vector) return [];
     try {
         // An empty table is not an error: the case is simply not indexed yet.
         if (countVectors(vectors) === 0) return [];
-        // THE QUERY GOES IN RAW. `Embedder.embedQuery` applies the model's own prompt format
-        // — the llama backend wraps it in `task: search result | query: …` — so wrapping it
-        // here as well would hand the model a prompt inside a prompt. The seam owns the
-        // format; the search owns the words.
-        const vector = await embedder.embedQuery(request.query);
-        checkVector(vector);
         const found = searchVectors(vectors, vector, candidates);
         // A vector that points in another direction is not a match. The score is not comparable
         // across models, but its SIGN is: a cosine of zero or less means the query and the
