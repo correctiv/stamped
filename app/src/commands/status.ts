@@ -1,14 +1,19 @@
 /**
- * `stamped status --case <dir>` — where the case's import has got to.
+ * `stamped status --case <dir>` — where the case's import has got to, and what the semantic
+ * layer is doing.
  *
  * The reader of this command is often NOT the terminal the import runs in: a 200 GB import is
  * started in one window and watched from another, or from the GUI, which polls the same file.
  * So the command exits 0 even when no import has run — "nothing is running" is an answer, not an
  * error — and `--json` prints the same facts in one object a script can read.
  *
- * The file it reads is written by whoever runs the import (CLI or GUI); this command never
+ * The files it reads are written by whoever runs the work (CLI or GUI); this command never
  * starts one. An interrupted import reads as `running` but orphaned, which the headline says in
  * a sentence of its own rather than leaving a progress bar frozen at some number.
+ *
+ * THE SEMANTIC STATE IS A NOTE UNDER THE IMPORT'S, and it only appears when the case has a
+ * setting for it: a case that never heard of semantic search has nothing to say about it, and
+ * saying "off" would be an opinion the folder never gave.
  */
 
 import { fmt, _ } from '@stamped/core';
@@ -16,6 +21,8 @@ import { readImportStatus } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
+import { semanticLines, semanticStatusJson } from '../lib/semantic-status.ts';
+import { semanticSnapshot, semanticState } from '../lib/semantic-state.ts';
 import { noStatusLine, statusJson, statusLines } from '../lib/status.ts';
 
 interface StatusArgs {
@@ -28,7 +35,9 @@ interface StatusArgs {
 export function statusCommand(): CommandModule<unknown, StatusArgs> {
     return {
         command: 'status [folder]',
-        describe: _('Show how far the last import into a case folder has got'),
+        describe: _(
+            'Show how far the last import into a case folder has got, and what the semantic search is doing',
+        ),
         builder: (yargs) =>
             yargs
                 .positional('folder', { describe: _('The case folder to report on'), type: 'string' })
@@ -45,25 +54,33 @@ export function statusCommand(): CommandModule<unknown, StatusArgs> {
         handler: (args) => {
             const paths = caseOrThrow(caseRoot('status', args.case, [args.folder]).root);
             const status = readImportStatus(paths);
-
-            if (status === undefined) {
-                if (args.json) {
-                    console.log(JSON.stringify({ state: 'none', orphaned: false }, undefined, 2));
-                    return;
-                }
-                console.log(noStatusLine(paths.root));
-                return;
-            }
+            const snapshot = semanticSnapshot(paths);
+            const semantic = snapshot === undefined ? undefined : semanticState(snapshot);
 
             if (args.json) {
-                console.log(JSON.stringify(statusJson(status), undefined, 2));
+                const json = {
+                    ...(status === undefined ? { state: 'none', orphaned: false } : statusJson(status)),
+                    ...(semantic === undefined
+                        ? {}
+                        : { semantic: semanticStatusJson(semantic, snapshot?.setting) }),
+                };
+                console.log(JSON.stringify(json, undefined, 2));
                 return;
             }
-            // The first line already says when the file is lying: `statusHeadline` turns a
-            // `running` state with a dead process into a sentence of its own, so an operator who
-            // reads nothing else still learns the run is not going on.
-            for (const line of statusLines(status)) console.log(line);
-            console.log(fmt(_('Case folder: {path}'), { path: paths.root }));
+            if (status === undefined) {
+                console.log(noStatusLine(paths.root));
+            } else {
+                // The first line already says when the file is lying: `statusHeadline` turns a
+                // `running` state with a dead process into a sentence of its own, so an operator
+                // who reads nothing else still learns the run is not going on.
+                for (const line of statusLines(status)) console.log(line);
+            }
+            if (semantic !== undefined) {
+                for (const line of semanticLines(semantic)) console.log(line);
+            }
+            if (status !== undefined) {
+                console.log(fmt(_('Case folder: {path}'), { path: paths.root }));
+            }
         },
     };
 }

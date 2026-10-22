@@ -133,6 +133,34 @@ Cancel button exists only for a subprocess the window started itself. Formatting
 `app/src/lib/status.ts`, `app/src/gui/view/import.ts` and `app/src/gui/view/activity.ts`, not in `window.ts`.
 Background work (import, key lookup, reverify, backfill) reports into `ActivityRegistry` (`app/src/lib/activity.ts`).
 
+**The semantic layer keeps TWO files per case, and they answer different questions.**
+`<case>/semantic.json` (`packages/store/src/semantic-setting.ts`) is the SETTING: on or off, the
+model id and its dimension count, and what the last probe measured (tokens/s, estimated hours,
+recommendation, when). Its ABSENCE means "never decided" — not "off": the difference decides
+whether the probe runs before the first indexing. `<case>/semantic-status.json`
+(`packages/store/src/semantic-status.ts`) is the RUN STATUS — `probing | indexing | paused |
+ready | failed | unavailable`, done/total, the seconds left, why a run is on hold. Written
+atomically; a state change is always written, the numbers inside a state at most once a second. A
+`probing`/`indexing` file whose last update is over 60 s old reads as interrupted: the file must
+never claim that a run is going on when nothing is running.
+
+**The state is DERIVED, and the estimate is RE-MEASURED.** `app/src/lib/semantic-state.ts` turns
+the two files into one of `off · unavailable · probing · indexing (n/N, remaining) · paused
+(battery|user) · ready · failed`; the same derivation serves the window and `stamped status`, so
+there is no second answer depending on who asks. The remaining time comes from the running
+indexer's own throughput over a moving window (`app/src/lib/semantic.ts`), and the probe's number
+is only the stand-in for the first seconds: the spike's three-second probe was off by 32 % in one
+run out of six — enough to decide whether to switch the feature on, not enough to promise a
+journalist an hour.
+
+**The CONTROLLER owns the indexer's life** (`app/src/lib/semantic.ts`): enable probes if nothing
+has been measured and starts the indexer, disable stops it and KEEPS `vectors.db`, the battery
+holds the run and mains lets it go, and a restart continues where the vectors left off. The
+embedder is injected as a FACTORY (`() => Promise<Embedder | undefined>`) — a runtime without the
+model answers `undefined`, which shows as "not available here" instead of a crash — and so is the
+clock, because an estimate that cannot be tested with a fake clock is an estimate nobody can
+check. `@stamped/semantic` and `@stamped/store` never import each other; the app composes them.
+
 ## Why mailauth and not our own verifier
 
 Measured, not assumed (see [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md)). RFC 6376 canonicalization —

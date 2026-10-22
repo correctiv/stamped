@@ -6,6 +6,7 @@
  * <case>/raw/ab/abcd….eml   the messages, byte for byte as they arrived
  * <case>/import-log.jsonl   one line per message read: where it came from
  * <case>/index.db           SQLite + FTS5, derived from the two above
+ * <case>/vectors.db         the semantic layer's vectors, derived and expensive
  * ```
  *
  * THE ORDER OF THAT LIST IS THE TRUST ORDER. `raw/` is the evidence: content-addressed, never
@@ -34,6 +35,8 @@ export interface CasePaths {
     readonly log: string;
     readonly database: string;
     readonly marker: string;
+    /** The semantic layer's vector database. Absent until semantic search is switched on. */
+    readonly vectors: string;
 }
 
 /** What `case.json` holds. Deliberately tiny: everything else is derivable. */
@@ -51,6 +54,7 @@ export function casePaths(root: string): CasePaths {
         log: join(root, 'import-log.jsonl'),
         database: join(root, 'index.db'),
         marker: join(root, 'case.json'),
+        vectors: join(root, 'vectors.db'),
     };
 }
 

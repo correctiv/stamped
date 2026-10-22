@@ -97,6 +97,27 @@ export {
     type IndexSourceEntry,
 } from './document-source.ts';
 export {
+    readSemanticSetting,
+    type SemanticProbeRecord,
+    type SemanticSetting,
+    SEMANTIC_SETTING_NAME,
+    SEMANTIC_SETTING_VERSION,
+    semanticSettingFile,
+    writeSemanticSetting,
+} from './semantic-setting.ts';
+export {
+    readSemanticRunStatus,
+    type SemanticPauseReason,
+    type SemanticRunState,
+    type SemanticRunStatus,
+    SEMANTIC_STATUS_NAME,
+    SEMANTIC_STATUS_STALE_SECONDS,
+    SEMANTIC_STATUS_VERSION,
+    semanticStatusFile,
+    staleSemanticRun,
+    writeSemanticRunStatus,
+} from './semantic-status.ts';
+export {
     appendLog,
     digest,
     eachLogEntry,
