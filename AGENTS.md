@@ -85,6 +85,13 @@ change one only with a fixture and a test for it.
   broken source still ends the import: a mistyped path is a typo, and half a case folder with no
   sign of where it stopped is worse than an error.
 
+**An interrupted import resumes by FILE.** Once every message of a mailbox is indexed, its files
+go into the index's `imported_files` table (`packages/store/src/imported-files.ts`; resolved path,
+size, mtime), in the same transaction as the last index batch. The next run skips a file whose
+three values all match and reports it as `resumed`. A changed file is read again, and so is a file
+that held no message or one whose messages did not all get a verdict. The ledger sits in the
+index, so a rebuilt index forgets it: that costs a re-read and never loses a message.
+
 **The mode is the CLI's, not the window's.** `importSources` takes a `mode` (`sources` by
 default, `folders`, `auto`); the window never passes one, so the folder mode is not reachable
 from the GUI — the GUI imports what the person picked, and the person's file is the whole of its

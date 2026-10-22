@@ -15,9 +15,25 @@
 import { fmt, _, _n } from '@stamped/core';
 import type { ImportResult } from '@stamped/store';
 
-/** The lines a folder import prints after the message counts. Empty for a plain import. */
+/**
+ * The lines an import prints after the message counts: the files an interrupted earlier run had
+ * already finished, and for a folder tree its structure. Empty for a plain, fresh import.
+ */
 export function folderSummary(result: ImportResult): string[] {
-    if (result.mailboxes === 0) return [];
+    const resumed =
+        result.resumed > 0
+            ? [
+                  fmt(
+                      _n(
+                          '{count} file was already imported by an earlier run and was not read again.',
+                          '{count} files were already imported by an earlier run and were not read again.',
+                          result.resumed,
+                      ),
+                      { count: String(result.resumed) },
+                  ),
+              ]
+            : [];
+    if (result.mailboxes === 0) return resumed;
     const lines = [
         fmt(
             _n(
@@ -40,7 +56,7 @@ export function folderSummary(result: ImportResult): string[] {
             ),
         );
     }
-    return lines;
+    return [...lines, ...resumed];
 }
 
 /** One line per file that could not be read. */
