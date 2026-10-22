@@ -34,7 +34,12 @@ export function confirmedPairNames(db: DatabaseSync): Set<string> {
  * Re-classify the messages carrying `key-newer-than-message` whose pair is confirmed elsewhere.
  * Returns how many were re-classified; a message that cannot be read keeps its old row.
  */
-export async function settleSiblings(db: DatabaseSync, paths: CasePaths, keys: KeyStore): Promise<number> {
+export async function settleSiblings(
+    db: DatabaseSync,
+    paths: CasePaths,
+    keys: KeyStore,
+    yieldTurn?: () => Promise<void>,
+): Promise<number> {
     const confirmed = confirmedPairNames(db);
     if (confirmed.size === 0) return 0;
     const candidates = db
@@ -46,6 +51,7 @@ export async function settleSiblings(db: DatabaseSync, paths: CasePaths, keys: K
     let settled = 0;
     for (const { hash } of candidates) {
         if (typeof hash !== 'string') continue;
+        await yieldTurn?.();
         try {
             const raw = new Uint8Array(readFileSync(rawPath(paths, hash)));
             const finding = classifyMessage(await verifyMessage(raw, { keys, confirmedPairs: confirmed }));
