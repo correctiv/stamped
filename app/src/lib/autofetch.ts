@@ -150,19 +150,16 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
         );
         return;
     }
+    // Saved the moment a key arrives: a run interrupted after an hour of lookups keeps everything
+    // it already fetched, instead of losing it all to one save at the end. The line shows the
+    // arrival, so a long rate-limited fetch is not silent.
     const summary = await fetchKeys(vault, missing, {
         channels: options.channels ?? DEFAULT_CHANNELS,
         confirm: (text) => askConsent(text, options.yes),
         fetch: (url) => fetch(url),
         resolveTxt,
-    });
-    if (summary.asked.length > 0 && !summary.consented) {
-        console.log(_('Skipped; nothing was sent.'));
-        return;
-    }
-    if (summary.stored.length > 0) saveVault(paths.root, vault);
-    if (options.verbose) {
-        for (const s of summary.stored) {
+        onStored: (s) => {
+            saveVault(paths.root, vault);
             console.log(
                 fmt(_('  stored  {name} via {origin}{flag}'), {
                     name: pairName(s.pair),
@@ -170,7 +167,14 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
                     flag: s.conflict ? _(', DIFFERS from a stored key') : '',
                 }),
             );
-        }
+        },
+    });
+    if (summary.asked.length > 0 && !summary.consented) {
+        console.log(_('Skipped; nothing was sent.'));
+        return;
+    }
+    if (summary.stored.length > 0) saveVault(paths.root, vault);
+    if (options.verbose) {
         for (const error of summary.errors) {
             console.log(
                 fmt(_('  error   {name}: {reason}'), { name: pairName(error.pair), reason: error.reason }),

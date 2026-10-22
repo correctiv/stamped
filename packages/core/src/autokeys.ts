@@ -61,6 +61,12 @@ export interface AutoFetchOptions {
     readonly fetch: FetchLike;
     readonly resolveTxt: TxtResolver;
     readonly now?: () => string;
+    /**
+     * Called the moment a key lands in the vault, in completion order — not once at the end. A
+     * caller that saves the vault here keeps every key a long fetch already produced when the run
+     * is interrupted; without it, an hour of rate-limited lookups can be lost to one kill.
+     */
+    readonly onStored?: (stored: StoredKey) => void;
 }
 
 export interface StoredKey {
@@ -99,26 +105,37 @@ export async function fetchKeys(
     for (const channel of options.channels) {
         if (remaining.length === 0) break;
         const consent: LookupConsent = { channel, pairs: todo };
-        const result: LookupResult =
-            channel === 'dns'
-                ? await lookupDns(consent, remaining, options.resolveTxt)
-                : await lookupArchive(consent, remaining, options.fetch);
-        const fetchedAt = options.now?.() ?? new Date().toISOString();
-        for (const found of result.found) {
-            const outcome = vault.add({
-                ...found.pair,
-                key: found.key,
-                origin: found.origin,
-                fetchedAt,
-                ...(found.seenFrom ? { seenFrom: found.seenFrom } : {}),
-                ...(found.seenTo ? { seenTo: found.seenTo } : {}),
-            });
-            stored.push({ pair: found.pair, origin: found.origin, conflict: outcome.status === 'conflict' });
-        }
-        for (const miss of result.misses) reasons.set(pairName(miss.pair), miss.reason);
-        for (const error of result.errors) {
-            reasons.set(pairName(error.pair), error.reason);
-            errored.add(pairName(error.pair));
+        // Taken per pair as its lookup completes, not when the whole channel ends — that is what
+        // makes an interrupted run keep the keys that already arrived, via options.onStored.
+        const take = (result: LookupResult): void => {
+            const fetchedAt = options.now?.() ?? new Date().toISOString();
+            for (const found of result.found) {
+                const outcome = vault.add({
+                    ...found.pair,
+                    key: found.key,
+                    origin: found.origin,
+                    fetchedAt,
+                    ...(found.seenFrom ? { seenFrom: found.seenFrom } : {}),
+                    ...(found.seenTo ? { seenTo: found.seenTo } : {}),
+                });
+                const storedKey: StoredKey = {
+                    pair: found.pair,
+                    origin: found.origin,
+                    conflict: outcome.status === 'conflict',
+                };
+                stored.push(storedKey);
+                options.onStored?.(storedKey);
+            }
+            for (const miss of result.misses) reasons.set(pairName(miss.pair), miss.reason);
+            for (const error of result.errors) {
+                reasons.set(pairName(error.pair), error.reason);
+                errored.add(pairName(error.pair));
+            }
+        };
+        if (channel === 'dns') {
+            await lookupDns(consent, remaining, options.resolveTxt, undefined, take);
+        } else {
+            await lookupArchive(consent, remaining, options.fetch, undefined, {}, take);
         }
         remaining = missingPairs(remaining, vault);
     }
