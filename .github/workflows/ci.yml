@@ -71,7 +71,13 @@ jobs:
           npm install -g "@gjsify/cli@$VERSION"
 
       - name: Install dependencies (gjsify install --immutable)
-        run: gjsify install --immutable
+        # From here on the PINNED CLI, not the bootstrap one: `npm install -g` resolves the
+        # CLI's own `^` deps to the newest release, so the global copy builds with a newer
+        # rolldown-plugin-gjsify than the lockfile's libs (0.64.4 injected
+        # `@gjsify/web-globals/register/self`, which 0.64.2 does not export).
+        run: |
+          gjsify install --immutable
+          echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
 
       # -A includes `private: true` workspaces. Without it every packages/* is skipped and the
       # type-check silently covers only the app.
