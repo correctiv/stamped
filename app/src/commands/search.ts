@@ -10,13 +10,24 @@
  * ZERO RESULTS IS THE DANGEROUS ANSWER in this tool — it reads as "the mail is not in the leak" —
  * so the command prints how many messages the case holds whenever it finds nothing. A search of
  * an empty case then says so instead of implying an answer about the archive.
+ *
+ * THE SEMANTIC HALF IS OPTIONAL and never changes the answer of a search that cannot use it: no
+ * model, no vectors, a half-indexed case or an embedder that fails — the text hits stand and the
+ * output is the same as it has always been. What the semantic half adds is hits the query's
+ * WORDS do not reach, and those are marked, because a message that was found by meaning and not
+ * by a word is a different kind of answer and must be recognisable as one.
  */
 
 import { fmt, _, _n } from '@stamped/core';
-import { messageCount, openIndex, searchMessages } from '@stamped/store';
+import type { Embedder } from '@stamped/semantic';
+import { openVectorDbForSearch } from '@stamped/semantic';
+import { messageCount, openIndex } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
+import { createEmbedder } from '../lib/embedder.ts';
+import { hybridSearch } from '../lib/hybrid-search.ts';
+import type { HybridHit, MatchKind } from '../lib/hybrid-search.ts';
 
 interface SearchArgs {
     case?: string;
@@ -58,7 +69,7 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                     'stamped search ./case "subject : invoice"',
                     _('Find messages with "invoice" in the subject'),
                 ),
-        handler: (args) => {
+        handler: async (args) => {
             const { root, rest } = caseRoot('search', args.case, [args.first, args.second]);
             const query = rest[0];
             if (query === undefined) {
@@ -66,8 +77,20 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
             }
             const paths = caseOrThrow(root);
             const db = openIndex(paths);
+            // The embedder FIRST: without one there is nothing to search the vectors with, and
+            // the vector database is not even opened — see `openVectorDbForSearch`.
+            // A MODEL THAT WILL NOT LOAD IS NOT A REASON TO REFUSE THE SEARCH: the text search
+            // is there, and the case stays searchable.
+            const embedder = await createEmbedder().catch(() => undefined);
+            const vectors =
+                embedder === undefined
+                    ? undefined
+                    : openVectorDbForSearch(paths.vectors, {
+                          modelId: embedder.modelId,
+                          dimensions: embedder.dimensions,
+                      });
             try {
-                const hits = search(db, query, args.limit ?? 20);
+                const hits = await runSearch(db, vectors, embedder, query, args.limit ?? 20);
 
                 if (args.json) {
                     console.log(JSON.stringify({ query, hits }, undefined, 2));
@@ -90,6 +113,10 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                     console.log(fmt(_('  from    {from}'), { from: hit.from || _('(none)') }));
                     console.log(fmt(_('  date    {date}'), { date: hit.date || _('(none)') }));
                     console.log(fmt(_('  subject {subject}'), { subject: hit.subject || _('(none)') }));
+                    // The marker, and only where it says something: a hit the semantic half
+                    // found. A hit the text search found is unmarked, exactly as before.
+                    const marker = matchMarker(hit.match);
+                    if (marker !== undefined) console.log(marker);
                     console.log('');
                 }
                 console.log(
@@ -98,10 +125,28 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                     }),
                 );
             } finally {
+                vectors?.close();
                 db.close();
             }
         },
     };
+}
+
+/**
+ * The line that marks a hit the semantic half found, or nothing at all.
+ *
+ * A MESSAGE OF ITS OWN, and not a word appended to the subject line: the mark says HOW the
+ * message was found, and the line under the subject is where the reader looks for what the
+ * message is about. A hit the text search found gets no line — the output of a search without
+ * a model must not change.
+ *
+ * A FUNCTION, so the marker can be tested without a model: the command cannot produce a
+ * semantic hit until the embedder ships, and the line it prints for one must be right anyway.
+ */
+export function matchMarker(match: MatchKind): string | undefined {
+    if (match === 'semantic') return _('  semantic match');
+    if (match === 'both') return _('  text and semantic match');
+    return undefined;
 }
 
 /**
@@ -110,10 +155,19 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
  * SQLite says `fts5: syntax error near "…"`, which names the character but not what the syntax
  * IS. Somebody searching for `O'Brien & Co.` needs to be told that quoting it works, not handed
  * a parser message.
+ *
+ * ONLY THE TEXT HALF CAN FAIL HERE: the semantic half swallows every failure of its own (see
+ * `hybrid-search.ts`), so an error that reaches this point is the query FTS5 could not read.
  */
-function search(db: ReturnType<typeof openIndex>, query: string, limit: number) {
+async function runSearch(
+    db: ReturnType<typeof openIndex>,
+    vectors: ReturnType<typeof openVectorDbForSearch>,
+    embedder: Embedder | undefined,
+    query: string,
+    limit: number,
+): Promise<HybridHit[]> {
     try {
-        return searchMessages(db, query, limit);
+        return await hybridSearch({ index: db, vectors, embedder, query, options: { limit } });
     } catch {
         throw new Error(
             fmt(

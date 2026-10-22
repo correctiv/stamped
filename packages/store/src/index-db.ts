@@ -441,7 +441,7 @@ export function searchHits(db: DatabaseSync, query: string, options: SearchOptio
     if (match === '') return [];
     // Interpolated, not bound: `LIMIT ?` is not accepted everywhere, and the value is an integer
     // this function clamps itself, so there is no string to inject.
-    const limit = Math.max(1, Math.min(5000, Math.trunc(options.limit ?? 20) || 1));
+    const limit = clampSearchLimit(options.limit ?? 20);
     const filtered = options.verdict !== undefined || options.scope !== undefined;
     const scan = filtered ? Math.min(SEARCH_SCAN_CAP, limit * 50) : limit;
     const statement = db.prepare(
@@ -471,6 +471,88 @@ export function searchHits(db: DatabaseSync, query: string, options: SearchOptio
 
 export function searchMessages(db: DatabaseSync, query: string, limit = 20): SearchHit[] {
     return searchHits(db, query, { limit });
+}
+
+/** How many hits a search may return. At least one, at most five thousand. */
+function clampSearchLimit(limit: number): number {
+    return Math.max(1, Math.min(5000, Math.trunc(limit) || 1));
+}
+
+/**
+ * How many hashes one `IN` list may carry.
+ *
+ * SQLite's limit on bound variables is 999 in the older builds and 32766 in the newer ones, and a
+ * ranked list of a big case is longer than the smaller limit — so the list is cut into pieces
+ * that fit either.
+ *
+ * EVERY PIECE IS THE SAME SIZE, so that all of them use ONE statement text and the prepared
+ * statement cache holds a single entry per case. The last piece is padded with a hash it
+ * already contains: `IN` does not repeat a row, so the padding changes nothing but the number
+ * of bound values.
+ */
+const IN_CHUNK = 500;
+
+/** The list in pieces of at most `size`. */
+function chunks<T>(list: readonly T[], size: number): T[][] {
+    const out: T[][] = [];
+    for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+    return out;
+}
+
+/** A piece filled up to `size`, with a hash it already holds. */
+function pad<T>(piece: readonly T[], size: number): T[] {
+    return [...piece, ...Array<T>(size - piece.length).fill(piece[0])];
+}
+
+/**
+ * The hits for a ranked list of hashes, in the order the list gives them.
+ *
+ * WHY IT EXISTS: another kind of search — the vector one — knows WHICH messages are close to a
+ * query but nothing about what they say. That is what the index is for, and this is the bridge:
+ * a ranked list of hashes in, the same rows a text search returns, out.
+ *
+ * THE FILTERS ARE THE TEXT SEARCH'S: a verdict and a source scope narrow the hits here exactly
+ * as they narrow them there, so a hit can never show a message the person filtered away.
+ *
+ * A HASH THE INDEX DOES NOT HOLD IS DROPPED, not invented: the vector table and the index can
+ * disagree — a message removed from the case, an import that stopped halfway — and a hit without
+ * a row has no subject, no date and no verdict to show.
+ *
+ * The `limit` in the options caps how many hits come back; without one every hash that has a
+ * row comes back, because this is a mapping and not a page.
+ */
+export function hitsForHashes(
+    db: DatabaseSync,
+    hashes: readonly string[],
+    options: SearchOptions = {},
+): SearchHit[] {
+    if (hashes.length === 0) return [];
+    const limit = options.limit === undefined ? undefined : clampSearchLimit(options.limit);
+
+    const rows = new Map<string, SearchHit>();
+    for (const chunk of chunks(hashes, IN_CHUNK)) {
+        const bound = chunk.length === IN_CHUNK ? chunk : pad(chunk, IN_CHUNK);
+        const placeholders = bound.map(() => '?').join(', ');
+        const found = statementFor(
+            db,
+            `SELECT ${HIT_COLUMNS} FROM messages WHERE messages.hash IN (${placeholders})`,
+        ).all(...bound) as Record<string, unknown>[];
+        for (const row of found) {
+            const hit = toHit(row);
+            rows.set(hit.hash, hit);
+        }
+    }
+
+    const hits: SearchHit[] = [];
+    for (const hash of hashes) {
+        if (limit !== undefined && hits.length >= limit) break;
+        const hit = rows.get(hash);
+        if (!hit) continue;
+        if (options.scope && !options.scope.has(hash)) continue;
+        if (options.verdict !== undefined && hit.verdict !== options.verdict) continue;
+        hits.push(hit);
+    }
+    return hits;
 }
 
 /**

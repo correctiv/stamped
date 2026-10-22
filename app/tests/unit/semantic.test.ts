@@ -7,7 +7,7 @@
  * no model, no download and no GPU — which is also what makes it runnable on both runtimes.
  */
 
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -21,6 +21,7 @@ import {
     missingVectors,
     normalize,
     openVectorDb,
+    openVectorDbForSearch,
     putVector,
     putVectors,
     searchVectors,
@@ -365,6 +366,35 @@ export default async () => {
                     const second = openVectorDb(path, { modelId: 'other/model', dimensions: 8 });
                     expect(countVectors(second)).toBe(0);
                     second.close();
+                } finally {
+                    rmSync(root, { recursive: true, force: true });
+                }
+            });
+
+            await it('leaves another model’s table alone when a search opens it', async () => {
+                // A search must never cost the person their index: a build with another model
+                // gets nothing back, and the vectors stay for the build that made them.
+                const root = mkdtempSync(join(tmpdir(), 'stamped-vectors-'));
+                const path = join(root, 'vectors.db');
+                try {
+                    expect(
+                        openVectorDbForSearch(path, { modelId: 'fake/hashed-characters', dimensions: 8 }),
+                    ).toBeUndefined();
+                    expect(existsSync(path)).toBe(false);
+
+                    const first = openVectorDb(path, { modelId: 'fake/hashed-characters', dimensions: 8 });
+                    putVector(first, 'a', new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]));
+                    first.close();
+
+                    expect(
+                        openVectorDbForSearch(path, { modelId: 'other/model', dimensions: 8 }),
+                    ).toBeUndefined();
+                    const same = openVectorDbForSearch(path, {
+                        modelId: 'fake/hashed-characters',
+                        dimensions: 8,
+                    });
+                    expect(same === undefined ? 0 : countVectors(same)).toBe(1);
+                    same?.close();
                 } finally {
                     rmSync(root, { recursive: true, force: true });
                 }

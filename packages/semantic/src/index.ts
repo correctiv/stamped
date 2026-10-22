@@ -9,6 +9,7 @@ export { documentPrompt, queryPrompt, truncateVector } from './prompts.ts';
 export type { VectorDbOptions, VectorSearchHit } from './vector-db.ts';
 export {
     openVectorDb,
+    openVectorDbForSearch,
     putVector,
     putVectors,
     hasVector,
