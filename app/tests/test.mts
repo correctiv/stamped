@@ -28,6 +28,7 @@ import llamaPrompts from './unit/llama-prompts.test.ts';
 import indexer from './unit/indexer.test.ts';
 import semanticState from './unit/semantic-state.test.ts';
 import hybridSearch from './unit/hybrid-search.test.ts';
+import modelPath from './unit/model-path.test.ts';
 
 run({
     activity,
@@ -55,4 +56,5 @@ run({
     indexer,
     semanticState,
     hybridSearch,
+    modelPath,
 });

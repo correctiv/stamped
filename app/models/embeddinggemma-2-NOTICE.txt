@@ -1,0 +1,21 @@
+EmbeddingGemma 2
+================
+
+This product redistributes the EmbeddingGemma 2 model
+(https://huggingface.co/google/embeddinggemma-2) as a GGUF quantization, taken from
+the ggml-org/embeddinggemma-2-GGUF repository
+(https://huggingface.co/ggml-org/embeddinggemma-2-GGUF).
+
+The file embeddinggemma-2-Q8_0.gguf is the Q8_0 quantization of that model, pinned at
+the revision 58faf90940886df2d62be555c8765d00dac362c5
+(sha256 2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135).
+
+The model is licensed under the Apache License, Version 2.0. A copy of that licence is
+shipped beside this notice as embeddinggemma-2-LICENSE.txt, and is also available at
+https://www.apache.org/licenses/LICENSE-2.0.
+
+The GGUF conversion is the work of the llama.cpp project
+(https://github.com/ggml-org/llama.cpp).
+
+The model weights are third-party material and keep their own licence; the AGPL-3.0-or-later
+licence of Stamped covers Stamped's own code.
