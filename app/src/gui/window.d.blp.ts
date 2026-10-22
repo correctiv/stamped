@@ -24,7 +24,6 @@ export declare const GTypeName: 'StampedWindow';
 export declare const InternalChildren: [
     'toasts',
     'rootStack',
-    'importBanner',
     'outerSplit',
     'sourceList',
     'verdictList',
@@ -46,6 +45,7 @@ export declare const InternalChildren: [
     'timelineBody',
     'overviewBody',
     'viewSwitcher',
+    'activityButton',
     'switcherBar',
 ];
 
@@ -53,7 +53,6 @@ export declare const InternalChildren: [
 export interface Children {
     _toasts: Adw.ToastOverlay;
     _rootStack: Gtk.Stack;
-    _importBanner: Adw.Banner;
     _outerSplit: Adw.OverlaySplitView;
     _sourceList: Gtk.ListBox;
     _verdictList: Gtk.ListBox;
@@ -75,5 +74,6 @@ export interface Children {
     _timelineBody: Gtk.Box;
     _overviewBody: Gtk.Box;
     _viewSwitcher: Adw.ViewSwitcher;
+    _activityButton: Gtk.MenuButton;
     _switcherBar: Adw.ViewSwitcherBar;
 }

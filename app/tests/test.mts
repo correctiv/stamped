@@ -3,6 +3,7 @@
 // test file.
 import { run } from '@gjsify/unit';
 
+import activity from './unit/activity.test.ts';
 import autokeys from './unit/autokeys.test.ts';
 import cli from './unit/cli.test.ts';
 import classify from './unit/classify.test.ts';
@@ -26,6 +27,7 @@ import llamaPrompts from './unit/llama-prompts.test.ts';
 import indexer from './unit/indexer.test.ts';
 
 run({
+    activity,
     autokeys,
     cli,
     classify,
