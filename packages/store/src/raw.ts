@@ -164,6 +164,14 @@ export interface LogSource {
     readonly messages: number;
     /** Of those, how many the store already held — the same mail in a second archive. */
     readonly duplicates: number;
+    /**
+     * The mailbox a folder import read this file out of, from the log entries' own field.
+     *
+     * Absent for a plain import. A folder tree names each part after its mailbox
+     * (`ada@example.com/part-01.mbox`), so two mailboxes can log the same FILE NAME; this is the
+     * only thing that still tells them apart once the sidebar shows just the file name.
+     */
+    readonly mailbox?: string;
 }
 
 /**
@@ -212,15 +220,29 @@ export function eachLogEntry(paths: CasePaths, visit: (entry: ImportLogEntry) =>
 
 /** The sources of a case, most mail first — the folder list of a case. */
 export function logSources(paths: CasePaths): LogSource[] {
-    const sources = new Map<string, { kind: string; messages: number; duplicates: number }>();
+    const sources = new Map<
+        string,
+        { kind: string; messages: number; duplicates: number; mailbox?: string }
+    >();
     eachLogEntry(paths, (entry) => {
-        const seen = sources.get(entry.source) ?? { kind: entry.kind, messages: 0, duplicates: 0 };
+        const seen = sources.get(entry.source) ?? {
+            kind: entry.kind,
+            messages: 0,
+            duplicates: 0,
+            mailbox: entry.mailbox,
+        };
         seen.messages++;
         if (entry.duplicate) seen.duplicates++;
         sources.set(entry.source, seen);
     });
     return [...sources]
-        .map(([source, counts]) => ({ source, ...counts }))
+        .map(([source, counts]) => ({
+            source,
+            kind: counts.kind,
+            messages: counts.messages,
+            duplicates: counts.duplicates,
+            ...(counts.mailbox === undefined ? {} : { mailbox: counts.mailbox }),
+        }))
         .sort((a, b) => b.messages - a.messages || a.source.localeCompare(b.source));
 }
 

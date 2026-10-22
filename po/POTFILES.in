@@ -43,6 +43,7 @@ app/src/lib/hybrid-search.ts
 app/src/lib/i18n.ts
 app/src/lib/import-summary.ts
 app/src/lib/keys.ts
+app/src/lib/model-path.ts
 app/src/lib/open-copy.ts
 app/src/lib/pairs.ts
 app/src/lib/progress.ts

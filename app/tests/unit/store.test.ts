@@ -355,6 +355,23 @@ export default async () => {
             });
         });
 
+        await it('names the mailbox of a folder import, so two same-named parts differ', async () => {
+            // A leak tree's parts are all called `part-01.mbox`; the mailbox name from the log
+            // entry is the only thing that still distinguishes `ada@example.com`'s from
+            // `grace@example.net`'s once the sidebar shows only the file name.
+            await withCase(async (paths) => {
+                await importSources(paths, [archive('leak')], { keys: fixtureKeys(), mode: 'folders' });
+                const sources = logSources(paths);
+                expect(sources.length).toBeGreaterThan(1);
+                for (const source of sources) {
+                    expect(source.mailbox).toBeDefined();
+                    expect(source.source.includes(`${source.mailbox}/`)).toBe(true);
+                }
+                const parts = sources.filter((source) => source.source.endsWith('/part-01.mbox'));
+                expect(new Set(parts.map((source) => source.mailbox)).size).toBe(parts.length);
+            });
+        });
+
         await it('answers an unimported case with no sources rather than failing', async () => {
             await withCase((paths) => {
                 expect(logSources(paths).length).toBe(0);
