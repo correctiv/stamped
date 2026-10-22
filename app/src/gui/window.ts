@@ -154,6 +154,45 @@ function nextTurn(): Promise<void> {
 const SEARCH_DELAY_MS = 180;
 
 /**
+ * How tall the mail body may grow before it scrolls on its own.
+ *
+ * A mail thread quoted twenty times is thousands of pixels of text, and shown whole it pushes
+ * the verdict card and the evidence off the bottom of the pane — the two things this window
+ * exists to show. `propagate-natural-height` keeps a three-line note three lines tall, so the
+ * cap costs a short message nothing.
+ */
+const BODY_MAX_HEIGHT = 360;
+
+/**
+ * The mail body's scroller: as tall as its text wants, up to {@link BODY_MAX_HEIGHT}.
+ *
+ * A plain `Gtk.ScrolledWindow` with `max-content-height` does NOT do this inside the reader.
+ * Measured: with `propagate-natural-height` the natural height is right (360 for a long thread,
+ * 54 for a three-liner) but the MINIMUM stays 46 — a scroller can always shrink — and the
+ * reader's own scroller hands its column the minimum. The body collapsed to two lines.
+ *
+ * So the minimum is reported as the natural height. The scrolling still happens, because
+ * `max-content-height` caps the natural height first; this only stops the parent from squeezing
+ * the result. `sourceView` solves the same problem with a fixed `min-content-height`, which the
+ * body cannot use: a short mail would then be padded out to a height it has no text for.
+ */
+const BodyScroller = GObject.registerClass(
+    class BodyScroller extends Gtk.ScrolledWindow {
+        vfunc_get_request_mode(): Gtk.SizeRequestMode {
+            return Gtk.SizeRequestMode.HEIGHT_FOR_WIDTH;
+        }
+
+        vfunc_measure(orientation: Gtk.Orientation, forSize: number): [number, number, number, number] {
+            const [min, nat, minBaseline, natBaseline] = super.vfunc_measure(orientation, forSize);
+            if (orientation !== Gtk.Orientation.VERTICAL) return [min, nat, minBaseline, natBaseline];
+            // Baselines are dropped on purpose: `ScrolledWindow` reports one here, and passing it
+            // back through a HEIGHT_FOR_WIDTH measure makes GTK warn about a horizontal baseline.
+            return [nat, nat, -1, -1];
+        }
+    },
+);
+
+/**
  * The screenshot hooks, read once.
  *
  * `dev/screenshots.sh` has to reach states that only a click reaches, and clicking at hard-coded
@@ -1053,7 +1092,14 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 rightMargin: 0,
             });
             view.get_buffer().set_text(body.text === '' ? _('(no text)') : body.text, -1);
-            inner.append(view);
+            inner.append(
+                new BodyScroller({
+                    child: view,
+                    hscrollbarPolicy: Gtk.PolicyType.NEVER,
+                    maxContentHeight: BODY_MAX_HEIGHT,
+                    propagateNaturalHeight: true,
+                }),
+            );
             // The reading notes belong to the body they describe — not to a row of buttons far
             // below it, where they read as an afterthought about the whole message.
             const notes: string[] = [];
