@@ -344,7 +344,8 @@ export function createSemanticController(options: SemanticControllerOptions): Se
     const pause = (): void => {
         userPaused = true;
         indexer?.pause();
-        if (run !== undefined) {
+        // Only a run that is going on can be held: a finished or failed index is not "paused".
+        if (run !== undefined && (run.state === 'indexing' || run.state === 'probing')) {
             setRun({
                 state: 'paused',
                 done: run.done,
