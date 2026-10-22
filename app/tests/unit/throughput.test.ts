@@ -79,12 +79,6 @@ export default async () => {
                 if (settled.length >= 4) {
                     // A pipeline that keeps each message grows by `size` bytes per message; the
                     // bound is a fifth of that.
-                    console.log(
-                        'SLOPE',
-                        slope(settled),
-                        size / 5,
-                        JSON.stringify(settled.map(([r, v]) => [r, Math.round(v / 1048576)])),
-                    );
                     expect(slope(settled) < size / 5).toBe(true);
                 }
             } finally {
