@@ -34,6 +34,7 @@ import type { ReadableBody } from '@stamped/import';
 
 import { importRunning, ImportWatcher, type ReverifyActivity } from '../lib/activity.ts';
 import { openCopy } from '../lib/open-copy.ts';
+import { selfArgv } from '../lib/self-argv.ts';
 import { ActivityController } from './activity.ts';
 import { StampedHelpButton } from './help-button.ts';
 import {
@@ -1818,10 +1819,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
     /** How the import subprocess is launched, or null when no binary can be found. */
     private importArgv(root: string, paths: readonly string[]): string[] | null {
-        const gjs = process.argv[0];
-        const bundle = process.argv.find((arg) => typeof arg === 'string' && arg.endsWith('.mjs'));
-        if (bundle !== undefined)
-            return [gjs, '-m', bundle, 'import', '--case', root, '--progress=jsonl', ...paths];
+        const self = selfArgv(process);
+        if (self !== null) return [...self, 'import', '--case', root, '--progress=jsonl', ...paths];
         const stamped = GLib.find_program_in_path('stamped');
         if (stamped !== null) return [stamped, 'import', '--case', root, '--progress=jsonl', ...paths];
         return null;

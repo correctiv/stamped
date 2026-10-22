@@ -22,6 +22,7 @@ import status from './unit/status.test.ts';
 import view from './unit/view.test.ts';
 import reading from './unit/reading.test.ts';
 import openCopy from './unit/open-copy.test.ts';
+import selfArgv from './unit/self-argv.test.ts';
 import semantic from './unit/semantic.test.ts';
 import llamaPrompts from './unit/llama-prompts.test.ts';
 import indexer from './unit/indexer.test.ts';
@@ -46,6 +47,7 @@ run({
     view,
     reading,
     openCopy,
+    selfArgv,
     semantic,
     llamaPrompts,
     indexer,
