@@ -109,7 +109,7 @@ export class ActivityController {
         this.button = button;
         this.onCancelImport = onCancelImport;
 
-        this.stack.add_named(new Gtk.Image({ iconName: 'content-loading-symbolic' }), 'idle');
+        this.stack.add_named(new Gtk.Image({ iconName: 'document-open-recent-symbolic' }), 'idle');
         this.stack.add_named(new Gtk.Spinner({ spinning: true }), 'busy');
         this.progress.set_content_width(ICON_SIZE);
         this.progress.set_content_height(ICON_SIZE);
