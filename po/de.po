@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 14:46+0200\n"
+"POT-Creation-Date: 2026-10-22 15:06+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -132,7 +132,7 @@ msgstr[1] ""
 "{failed} Nachrichten konnten nicht geprüft werden; sie sind gespeichert, "
 "haben aber keinen Befund."
 
-#: app/src/commands/import.ts:224 app/src/commands/status.ts:66
+#: app/src/commands/import.ts:224 app/src/commands/status.ts:82
 msgid "Case folder: {path}"
 msgstr "Fallordner: {path}"
 
@@ -396,7 +396,7 @@ msgstr ""
 "Mail klären"
 
 #: app/src/commands/report.ts:34 app/src/commands/report.ts:35
-#: app/src/commands/status.ts:34 app/src/commands/status.ts:35
+#: app/src/commands/status.ts:43 app/src/commands/status.ts:44
 msgid "The case folder to report on"
 msgstr "Der Fallordner, über den berichtet wird"
 
@@ -601,15 +601,19 @@ msgstr ""
 "Die Suche {query} ist nicht lesbar. Eine Wendung gehört in doppelte "
 "Anführungszeichen, und `Spalte : Wort` durchsucht ein einzelnes Feld."
 
-#: app/src/commands/status.ts:31
-msgid "Show how far the last import into a case folder has got"
-msgstr "Zeigen, wie weit der letzte Import in einen Fallordner gekommen ist"
+#: app/src/commands/status.ts:39
+msgid ""
+"Show how far the last import into a case folder has got, and what the "
+"semantic search is doing"
+msgstr ""
+"Zeigen, wie weit der letzte Import in einen Fallordner gekommen ist und was "
+"die semantische Suche gerade tut"
 
-#: app/src/commands/status.ts:37
+#: app/src/commands/status.ts:46
 msgid "Print the status as JSON"
 msgstr "Den Status als JSON ausgeben"
 
-#: app/src/commands/status.ts:43
+#: app/src/commands/status.ts:52
 msgid "Watch an import that is running somewhere else, without touching it"
 msgstr "Einen Import beobachten, der woanders läuft, ohne ihn anzufassen"
 
@@ -2095,6 +2099,59 @@ msgstr "Paarliste {path}: {reason}"
 msgid "  caveat: {text}"
 msgstr "  Einschränkung: {text}"
 
+#: app/src/lib/semantic-state.ts:101
+msgid "The measurement was interrupted and is not running any more."
+msgstr "Die Messung wurde unterbrochen und läuft nicht mehr."
+
+#: app/src/lib/semantic-state.ts:105
+msgid "The indexing was interrupted and is not running any more."
+msgstr "Die Indizierung wurde unterbrochen und läuft nicht mehr."
+
+#: app/src/lib/semantic-state.ts:122
+msgid "The indexing failed."
+msgstr "Die Indizierung ist fehlgeschlagen."
+
+#: app/src/lib/semantic-status.ts:45
+msgid "Semantic search is off."
+msgstr "Die semantische Suche ist aus."
+
+#: app/src/lib/semantic-status.ts:47
+msgid "Semantic search is not available on this runtime."
+msgstr "Die semantische Suche ist auf dieser Laufzeitumgebung nicht verfügbar."
+
+#: app/src/lib/semantic-status.ts:49
+msgid "Semantic search is measuring how fast this machine is."
+msgstr "Die semantische Suche misst, wie schnell dieser Rechner ist."
+
+#: app/src/lib/semantic-status.ts:54
+msgid "Semantic search: indexing {done} of {total} message."
+msgid_plural "Semantic search: indexing {done} of {total} messages."
+msgstr[0] "Semantische Suche: {done} von {total} Nachricht indiziert."
+msgstr[1] "Semantische Suche: {done} von {total} Nachrichten indiziert."
+
+#: app/src/lib/semantic-status.ts:62 app/src/lib/status.ts:116
+msgid "About {time} left."
+msgstr "Noch etwa {time}."
+
+#: app/src/lib/semantic-status.ts:68
+msgid "Semantic search is paused: this machine is running on its battery."
+msgstr ""
+"Die semantische Suche ist pausiert: dieser Rechner läuft im Akkubetrieb."
+
+#: app/src/lib/semantic-status.ts:69
+msgid "Semantic search is paused."
+msgstr "Die semantische Suche ist pausiert."
+
+#: app/src/lib/semantic-status.ts:74
+msgid "Semantic search is ready: {count} message indexed."
+msgid_plural "Semantic search is ready: {count} messages indexed."
+msgstr[0] "Semantische Suche ist bereit: {count} Nachricht indiziert."
+msgstr[1] "Semantische Suche ist bereit: {count} Nachrichten indiziert."
+
+#: app/src/lib/semantic-status.ts:82
+msgid "Semantic search failed: {message}"
+msgstr "Die semantische Suche ist fehlgeschlagen: {message}"
+
 #: app/src/lib/status.ts:73
 msgid ""
 "An import is marked running, but its process is gone or it has not reported "
@@ -2128,10 +2185,6 @@ msgstr[1] "{done} Nachrichten gelesen ({percent} % von {size})."
 #: app/src/lib/status.ts:110
 msgid "{rate} messages/s, {bytes}/s."
 msgstr "{rate} Nachrichten/s, {bytes}/s."
-
-#: app/src/lib/status.ts:116
-msgid "About {time} left."
-msgstr "Noch etwa {time}."
 
 #: app/src/lib/status.ts:122
 msgid "{count} message has no verdict because verification failed."
@@ -2739,7 +2792,7 @@ msgstr ""
 msgid "{path} is not a folder."
 msgstr "{path} ist kein Ordner."
 
-#: packages/store/src/case.ts:82
+#: packages/store/src/case.ts:86
 msgid "The case folder {path} was written by a newer version of Stamped."
 msgstr ""
 "Der Fallordner {path} wurde von einer neueren Version von Poststempel "

@@ -26,6 +26,7 @@ import selfArgv from './unit/self-argv.test.ts';
 import semantic from './unit/semantic.test.ts';
 import llamaPrompts from './unit/llama-prompts.test.ts';
 import indexer from './unit/indexer.test.ts';
+import semanticState from './unit/semantic-state.test.ts';
 
 run({
     activity,
@@ -51,4 +52,5 @@ run({
     semantic,
     llamaPrompts,
     indexer,
+    semanticState,
 });

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 14:46+0200\n"
+"POT-Creation-Date: 2026-10-22 15:06+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -113,7 +113,7 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/import.ts:224 app/src/commands/status.ts:66
+#: app/src/commands/import.ts:224 app/src/commands/status.ts:82
 msgid "Case folder: {path}"
 msgstr ""
 
@@ -345,7 +345,7 @@ msgid ""
 msgstr ""
 
 #: app/src/commands/report.ts:34 app/src/commands/report.ts:35
-#: app/src/commands/status.ts:34 app/src/commands/status.ts:35
+#: app/src/commands/status.ts:43 app/src/commands/status.ts:44
 msgid "The case folder to report on"
 msgstr ""
 
@@ -538,15 +538,17 @@ msgid ""
 "`column : word` to search one field."
 msgstr ""
 
-#: app/src/commands/status.ts:31
-msgid "Show how far the last import into a case folder has got"
+#: app/src/commands/status.ts:39
+msgid ""
+"Show how far the last import into a case folder has got, and what the "
+"semantic search is doing"
 msgstr ""
 
-#: app/src/commands/status.ts:37
+#: app/src/commands/status.ts:46
 msgid "Print the status as JSON"
 msgstr ""
 
-#: app/src/commands/status.ts:43
+#: app/src/commands/status.ts:52
 msgid "Watch an import that is running somewhere else, without touching it"
 msgstr ""
 
@@ -1873,6 +1875,58 @@ msgstr ""
 msgid "  caveat: {text}"
 msgstr ""
 
+#: app/src/lib/semantic-state.ts:101
+msgid "The measurement was interrupted and is not running any more."
+msgstr ""
+
+#: app/src/lib/semantic-state.ts:105
+msgid "The indexing was interrupted and is not running any more."
+msgstr ""
+
+#: app/src/lib/semantic-state.ts:122
+msgid "The indexing failed."
+msgstr ""
+
+#: app/src/lib/semantic-status.ts:45
+msgid "Semantic search is off."
+msgstr ""
+
+#: app/src/lib/semantic-status.ts:47
+msgid "Semantic search is not available on this runtime."
+msgstr ""
+
+#: app/src/lib/semantic-status.ts:49
+msgid "Semantic search is measuring how fast this machine is."
+msgstr ""
+
+#: app/src/lib/semantic-status.ts:54
+msgid "Semantic search: indexing {done} of {total} message."
+msgid_plural "Semantic search: indexing {done} of {total} messages."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/semantic-status.ts:62 app/src/lib/status.ts:116
+msgid "About {time} left."
+msgstr ""
+
+#: app/src/lib/semantic-status.ts:68
+msgid "Semantic search is paused: this machine is running on its battery."
+msgstr ""
+
+#: app/src/lib/semantic-status.ts:69
+msgid "Semantic search is paused."
+msgstr ""
+
+#: app/src/lib/semantic-status.ts:74
+msgid "Semantic search is ready: {count} message indexed."
+msgid_plural "Semantic search is ready: {count} messages indexed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/semantic-status.ts:82
+msgid "Semantic search failed: {message}"
+msgstr ""
+
 #: app/src/lib/status.ts:73
 msgid ""
 "An import is marked running, but its process is gone or it has not reported "
@@ -1903,10 +1957,6 @@ msgstr[1] ""
 
 #: app/src/lib/status.ts:110
 msgid "{rate} messages/s, {bytes}/s."
-msgstr ""
-
-#: app/src/lib/status.ts:116
-msgid "About {time} left."
 msgstr ""
 
 #: app/src/lib/status.ts:122
@@ -2409,7 +2459,7 @@ msgstr ""
 msgid "{path} is not a folder."
 msgstr ""
 
-#: packages/store/src/case.ts:82
+#: packages/store/src/case.ts:86
 msgid "The case folder {path} was written by a newer version of Stamped."
 msgstr ""
 
