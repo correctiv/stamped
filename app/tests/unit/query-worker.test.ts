@@ -128,6 +128,19 @@ function watch(promise: Promise<unknown>): Watched {
     return state;
 }
 
+/**
+ * Wait until a watched promise has settled.
+ *
+ * A fixed delay is the wrong instrument for a timeout test: the deadline is 25 ms here, but a
+ * busy CI runner can take far longer than that to get back to the timer, and the test would be
+ * reporting the runner's load rather than the client's behaviour.
+ */
+async function settled(state: Watched, limit = 10_000): Promise<Watched> {
+    const until = Date.now() + limit;
+    while (!state.done && Date.now() < until) await tick(5);
+    return state;
+}
+
 /** The requests a channel got that are not the implicit `open`. */
 function questions(fake: FakeChannel): QueryRequest[] {
     return fake.sent.filter((request) => request.op !== 'open');
@@ -276,7 +289,7 @@ export default async () => {
             const { spawn, made } = fakeChannels();
             const client = new QueryClient(PATHS, spawn, 25);
             const lost = watch(client.ask('timeline', {}));
-            await tick(80);
+            await settled(lost);
             expect(lost.ok).toBe(false);
             expect(lost.error?.includes('did not answer')).toBe(true);
             expect(client.restarts).toBe(1);
@@ -296,8 +309,7 @@ export default async () => {
         await it('ignores a late answer from the worker it gave up on', async () => {
             const { spawn, made } = fakeChannels();
             const client = new QueryClient(PATHS, spawn, 25);
-            watch(client.ask('total', {}));
-            await tick(80);
+            await settled(watch(client.ask('total', {})));
 
             const pending = watch(client.ask('total', {}));
             await tick();
