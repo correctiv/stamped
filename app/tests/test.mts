@@ -23,6 +23,7 @@ import reading from './unit/reading.test.ts';
 import openCopy from './unit/open-copy.test.ts';
 import semantic from './unit/semantic.test.ts';
 import llamaPrompts from './unit/llama-prompts.test.ts';
+import indexer from './unit/indexer.test.ts';
 
 run({
     autokeys,
@@ -45,4 +46,5 @@ run({
     openCopy,
     semantic,
     llamaPrompts,
+    indexer,
 });

@@ -21,11 +21,15 @@ export const EMBEDDING_GEMMA_MODEL_ID = 'ggml-org/embeddinggemma-2-GGUF:Q8_0';
  */
 const CONTEXT_SIZE = 512;
 
+/** Two, not "all cores": the indexer runs for hours next to the journalist's own work. */
+export const DEFAULT_THREADS = 2;
+
 export interface LlamaEmbedderOptions {
     /** Path of the GGUF file; the embedder never downloads. */
     modelPath: string;
     /** `'auto'` lets llama.cpp pick a GPU backend; `false` forces the CPU. Default `'auto'`. */
     gpu?: 'auto' | false;
+    /** CPU threads for the model. Default {@link DEFAULT_THREADS}: indexing is background work. */
     threads?: number;
     /** 768 is the model's native size; 256 is the Matryoshka truncation. Default 768. */
     dimensions?: 768 | 256;
@@ -69,7 +73,7 @@ async function openSession(options: LlamaEmbedderOptions, forceCpu: boolean): Pr
     const model = await llama.loadModel({ modelPath: options.modelPath });
     const context = await model.createEmbeddingContext({
         contextSize: CONTEXT_SIZE,
-        ...(options.threads != null ? { threads: options.threads } : {}),
+        threads: options.threads ?? DEFAULT_THREADS,
     });
     return { llama, model, context, gpu: llama.gpu !== false };
 }
