@@ -435,6 +435,13 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // produces a picture of the wrong page when the header bar shifts by a few pixels.
         const view = GLib.getenv('STAMPED_SHOT_VIEW');
         if (view !== null) this._contentStack.set_visible_child_name(view);
+        // Same hook for the status popover: it opens only on a click, which a screenshot cannot make.
+        if (GLib.getenv('STAMPED_SHOT_POPOVER') !== null) {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+                this._activityButton.popup();
+                return GLib.SOURCE_REMOVE;
+            });
+        }
     }
 
     /**
