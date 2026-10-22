@@ -94,6 +94,28 @@ template $StampedWindow: Adw.ApplicationWindow {
         };
       }
 
+      // Up while a case is being opened. Opening one is synchronous disk work — the index
+      // handle, then the first queries — and without this page the window sits frozen on
+      // whatever it last showed, which reads as a crash rather than as work.
+      Gtk.StackPage {
+        name: "loading";
+
+        child: Adw.ToolbarView {
+          [top]
+          Adw.HeaderBar {}
+
+          content: Adw.StatusPage {
+            title: _("Opening the case…");
+
+            child: Adw.Spinner {
+              width-request: 32;
+              height-request: 32;
+              halign: center;
+            };
+          };
+        };
+      }
+
       Gtk.StackPage {
         name: "case";
 

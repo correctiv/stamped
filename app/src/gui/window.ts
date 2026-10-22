@@ -508,6 +508,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // produces a picture of the wrong page when the header bar shifts by a few pixels.
         const view = GLib.getenv('STAMPED_SHOT_VIEW');
         if (view !== null) this._contentStack.set_visible_child_name(view);
+        // Same for the root pages. The loading one is up only for as long as an open takes, and
+        // `openAtStart` above finishes AFTER this line runs — setting the page here is undone by
+        // the `adopt` that ends the open. So the shot parks the window on it once that is over.
+        const page = GLib.getenv('STAMPED_SHOT_PAGE');
+        if (page !== null) {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+                this._rootStack.set_visible_child_name(page);
+                return GLib.SOURCE_REMOVE;
+            });
+        }
         // Same hook for the status popover: it opens only on a click, which a screenshot cannot make.
         if (GLib.getenv('STAMPED_SHOT_POPOVER') !== null) {
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
@@ -535,7 +545,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
      */
     private openAtStart(root: string): void {
         if (isCaseFolder(root)) {
-            this.adopt(openSession(root));
+            this.loadCase(() => openSession(root)).catch((error: unknown) => void this.fail(error));
             return;
         }
         showToast(escapeLine(fmt(_('{path} is not a Stamped case folder.'), { path: root })));
@@ -633,6 +643,30 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private stopImportPoll(): void {
         if (this.importPoll !== 0) GLib.source_remove(this.importPoll);
         this.importPoll = 0;
+    }
+
+    /**
+     * Open a case with the loading page up, so the window does not sit frozen while it works.
+     *
+     * Opening one is synchronous disk work: the index handle, then the first report query and the
+     * sidebar behind it. Those took long enough on the tester's machine that the window stopped
+     * repainting, which reads as a crash rather than as work. The {@link nextTurn} between the
+     * page and the load is what makes the spinner appear at all — GTK paints on an idle of higher
+     * priority, so one turn of the main loop is one rendered frame.
+     *
+     * The previous page comes back when `open` throws: a folder that cannot be opened must leave
+     * the person where they were, not on a spinner for a case that will never arrive.
+     */
+    private async loadCase(open: () => CaseSession): Promise<void> {
+        const previous = this._rootStack.get_visible_child_name() ?? 'welcome';
+        this._rootStack.set_visible_child_name('loading');
+        await nextTurn();
+        try {
+            this.adopt(open());
+        } catch (error) {
+            this._rootStack.set_visible_child_name(previous);
+            throw error;
+        }
     }
 
     /** Take over a case: the old one is closed, the filters are dropped, the panes rebuild. */
@@ -1832,18 +1866,19 @@ export class StampedWindow extends Adw.ApplicationWindow {
      */
     private async chooseCase(): Promise<void> {
         const dialog = new Gtk.FileDialog({ title: _('Open Case Folder') });
-        let path: string | null;
+        let picked: string | null;
         try {
-            path = (await dialog.select_folder(this, null))?.get_path() ?? null;
+            picked = (await dialog.select_folder(this, null))?.get_path() ?? null;
         } catch (error) {
             if (!dismissed(error)) await this.fail(error);
             return;
         }
-        if (path === null) return;
+        if (picked === null) return;
+        const path = picked;
 
         try {
             if (isCaseFolder(path)) {
-                this.adopt(openSession(path));
+                await this.loadCase(() => openSession(path));
                 return;
             }
             const create = await confirmDialog(this, {
@@ -1857,7 +1892,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 confirmLabel: _('Create Case'),
                 cancelLabel: _('Cancel'),
             });
-            if (create) this.adopt(createSession(path));
+            if (create) await this.loadCase(() => createSession(path));
         } catch (error) {
             await this.fail(error);
         }
