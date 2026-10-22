@@ -32,6 +32,7 @@ import queryWorker from './unit/query-worker.test.ts';
 import hybridSearch from './unit/hybrid-search.test.ts';
 import modelPath from './unit/model-path.test.ts';
 import semanticGui from './unit/semantic-gui.test.ts';
+import timecheck from './unit/timecheck.test.ts';
 
 run({
     activity,
@@ -63,4 +64,5 @@ run({
     modelPath,
     semanticGui,
     queryWorker,
+    timecheck,
 });
