@@ -56,6 +56,16 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.2.1" date="2026-10-22">
+      <description>
+        <p>On a Mac without Homebrew, Stamped now shows its own font and translates the toolkit's menus and buttons.</p>
+        <p xml:lang="de">Auf einem Mac ohne Homebrew zeigt Stamped jetzt seine eigene Schrift und übersetzt die Menüs und Knöpfe des Toolkits.</p>
+        <ul>
+          <li>Optional semantic search, switched on in the menu under Semantic Search</li>
+          <li xml:lang="de">Optionale semantische Suche, einzuschalten im Menü unter Semantische Suche</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-10-22">
       <description>
         <p>Stamped now runs on macOS, and it reads a leaked archive the way it usually arrives: a folder per mailbox, each split into parts.</p>
