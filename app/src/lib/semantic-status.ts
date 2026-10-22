@@ -115,8 +115,8 @@ export function semanticStatusJson(state: SemanticState, setting?: SemanticSetti
  * The semantic estimate is in HOURS — the probe measured a whole archive — so it needs a unit
  * the import's `formatDuration` does not have: "7.8 h" says what "468 min 0 s" hides.
  */
-function remainingTime(seconds: number): string {
-    if (seconds >= 3600) return `${(seconds / 3600).toFixed(1)} h`;
-    if (seconds >= 60) return `${Math.round(seconds / 60)} min`;
-    return `${Math.round(seconds)} s`;
+export function remainingTime(seconds: number): string {
+    if (seconds >= 3600) return fmt(_('{n} h'), { n: (seconds / 3600).toFixed(1) });
+    if (seconds >= 60) return fmt(_('{n} min'), { n: String(Math.round(seconds / 60)) });
+    return fmt(_('{n} s'), { n: String(Math.round(seconds)) });
 }

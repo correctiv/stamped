@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 17:26+0200\n"
+"POT-Creation-Date: 2026-10-22 17:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -229,7 +229,7 @@ msgstr ""
 msgid "The key text, or a path to a file holding it"
 msgstr ""
 
-#: app/src/commands/keys.ts:230 app/src/gui/session.ts:487
+#: app/src/commands/keys.ts:230 app/src/gui/session.ts:524
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
@@ -373,7 +373,7 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:82 app/src/gui/window.ts:1836
+#: app/src/commands/report.ts:82 app/src/gui/window.ts:1931
 #: app/src/gui/window.blp:166
 msgid "Verdicts"
 msgstr ""
@@ -607,16 +607,24 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1220
-#: app/src/gui/window.ts:1646 app/src/gui/window.ts:1930
+#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1315
+#: app/src/gui/window.ts:1741 app/src/gui/window.ts:2025
 msgid "Cancel"
 msgstr ""
 
-#: app/src/gui/activity.ts:38
+#: app/src/gui/activity.ts:40
 msgid "Dismiss"
 msgstr ""
 
-#: app/src/gui/activity.ts:136
+#: app/src/gui/activity.ts:95
+msgid "Pause"
+msgstr ""
+
+#: app/src/gui/activity.ts:95
+msgid "Resume"
+msgstr ""
+
+#: app/src/gui/activity.ts:159
 msgid "Nothing is running in the background."
 msgstr ""
 
@@ -632,191 +640,235 @@ msgid ""
 "you fill, so examining a message sends no lookup to the signing domain."
 msgstr ""
 
-#: app/src/gui/session.ts:516
+#: app/src/gui/semantic-dialog.ts:28 app/src/gui/view/activity.ts:69
+msgid "Semantic search"
+msgstr ""
+
+#: app/src/gui/semantic-dialog.ts:32
+msgid ""
+"Find messages by meaning as well as by word. The index is built on this "
+"machine."
+msgstr ""
+
+#: app/src/gui/semantic-dialog.ts:36
+msgid "Search by meaning"
+msgstr ""
+
+#: app/src/gui/session.ts:553
 msgid "That key was already stored."
 msgstr ""
 
-#: app/src/gui/session.ts:519
+#: app/src/gui/session.ts:556
 msgid ""
 "Stored, but this case already held a DIFFERENT key for that selector. Either "
 "the domain rotated it, or one of the two is not theirs. Check both before "
 "you rely on the new verdicts."
 msgstr ""
 
-#: app/src/gui/session.ts:522
+#: app/src/gui/session.ts:559
 msgid "Key stored."
 msgstr ""
 
-#: app/src/gui/view/activity.ts:57
+#: app/src/gui/view/activity.ts:61
 msgid "Import"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:59
+#: app/src/gui/view/activity.ts:63
 msgid "Key lookup"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:61
+#: app/src/gui/view/activity.ts:65
 msgid "Re-verification"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:63
+#: app/src/gui/view/activity.ts:67
 msgid "People and timeline"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:68
+#: app/src/gui/view/activity.ts:74
 msgid "DNS"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:73
+#: app/src/gui/view/activity.ts:79 app/src/lib/semantic-status.ts:121
 msgid "{n} s"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:74
+#: app/src/gui/view/activity.ts:80 app/src/lib/semantic-status.ts:120
 msgid "{n} min"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:83
+#: app/src/gui/view/activity.ts:88
+msgid "Indexing for semantic search, {done} of {total}"
+msgstr ""
+
+#: app/src/gui/view/activity.ts:89
+msgid "Semantic indexing paused, {done} of {total}"
+msgstr ""
+
+#: app/src/gui/view/activity.ts:91
+msgid "Measuring this machine for semantic search…"
+msgstr ""
+
+#: app/src/gui/view/activity.ts:100
 msgid "Importing mail…"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:84
+#: app/src/gui/view/activity.ts:101
 msgid "Importing mail, {percent}%"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:87
+#: app/src/gui/view/activity.ts:104
 msgid "Looking up keys, {done} of {total}"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:92
+#: app/src/gui/view/activity.ts:109
 msgid "Re-verifying messages, {done} of {total}"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:97
+#: app/src/gui/view/activity.ts:114
 msgid "Building the people list…"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:107
+#: app/src/gui/view/activity.ts:126
 msgid "{count} task failed"
 msgid_plural "{count} tasks failed"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:110 app/src/gui/window.blp:291
+#: app/src/gui/view/activity.ts:129 app/src/gui/window.blp:291
 msgid "No background work"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:110
+#: app/src/gui/view/activity.ts:129
 msgid "Background work finished"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:126 app/src/lib/status.ts:106
+#: app/src/gui/view/activity.ts:145 app/src/lib/status.ts:106
 msgid "Mailbox: {mailbox}"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:127 app/src/lib/status.ts:108
+#: app/src/gui/view/activity.ts:146 app/src/lib/status.ts:108
 msgid "Sources: {sources}"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:129
+#: app/src/gui/view/activity.ts:148
 msgid "{read} of {total} read"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:136
+#: app/src/gui/view/activity.ts:155
 msgid "{count} message has no verdict"
 msgid_plural "{count} messages have no verdict"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:146
+#: app/src/gui/view/activity.ts:165
 msgid "Interrupted. Its process is gone. Run the import again to resume."
 msgstr ""
 
-#: app/src/gui/view/activity.ts:148
+#: app/src/gui/view/activity.ts:167
 msgid "Cancelled. Run it again to resume."
 msgstr ""
 
-#: app/src/gui/view/activity.ts:150
+#: app/src/gui/view/activity.ts:169
 msgid "The import failed"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:152
+#: app/src/gui/view/activity.ts:171 app/src/gui/view/activity.ts:311
 msgid "Finished, {count} message"
 msgid_plural "Finished, {count} messages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:160 app/src/gui/view/sources.ts:116
+#: app/src/gui/view/activity.ts:179 app/src/gui/view/sources.ts:116
 msgid "{count} message"
 msgid_plural "{count} messages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:166
+#: app/src/gui/view/activity.ts:185
 msgid "{rate} messages/s, {bytes}/s"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:172
+#: app/src/gui/view/activity.ts:191 app/src/gui/view/activity.ts:296
 msgid "about {time} left"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:186
+#: app/src/gui/view/activity.ts:206
 msgid "{count} found"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:187
+#: app/src/gui/view/activity.ts:207
 msgid "{count} not found"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:191
+#: app/src/gui/view/activity.ts:211
 msgid "{count} error"
 msgid_plural "{count} errors"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:197
+#: app/src/gui/view/activity.ts:217
 msgid "{done} of {total} · {channel}"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:203
+#: app/src/gui/view/activity.ts:223
 msgid "The lookup failed"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:204
+#: app/src/gui/view/activity.ts:224
 msgid "Finished · {channel}"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:214
+#: app/src/gui/view/activity.ts:235
 msgid "{count} verdict changed"
 msgid_plural "{count} verdicts changed"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:219
+#: app/src/gui/view/activity.ts:240
 msgid "{done} of {total} messages"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:224
+#: app/src/gui/view/activity.ts:245
 msgid "The re-verification failed"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:225
+#: app/src/gui/view/activity.ts:246
 msgid "{count} message checked"
 msgid_plural "{count} messages checked"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:239
+#: app/src/gui/view/activity.ts:261
 msgid "{count} message indexed"
 msgid_plural "{count} messages indexed"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:243
+#: app/src/gui/view/activity.ts:265
 msgid "Indexing stopped"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:244
+#: app/src/gui/view/activity.ts:266
 msgid "Finished"
+msgstr ""
+
+#: app/src/gui/view/activity.ts:287
+msgid "Measuring how fast this machine is"
+msgstr ""
+
+#: app/src/gui/view/activity.ts:290 app/src/gui/view/activity.ts:301
+msgid "{done} of {total} message"
+msgid_plural "{done} of {total} messages"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/activity.ts:306
+msgid "Paused while on battery"
+msgstr ""
+
+#: app/src/gui/view/activity.ts:307
+msgid "Paused"
 msgstr ""
 
 #: app/src/gui/view/consent.ts:40
@@ -1135,11 +1187,11 @@ msgstr ""
 msgid "From"
 msgstr ""
 
-#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:1123
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:1218
 msgid "To"
 msgstr ""
 
-#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:1124
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:1219
 msgid "Cc"
 msgstr ""
 
@@ -1370,6 +1422,30 @@ msgstr[1] ""
 msgid "Reading the addresses of this case. The list is not complete yet."
 msgstr ""
 
+#: app/src/gui/view/semantic.ts:34
+msgid "About {time} for {count} message."
+msgid_plural "About {time} for {count} messages."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/semantic.ts:42
+msgid ""
+"This build cannot run the language model yet. Text search is not affected."
+msgstr ""
+
+#: app/src/gui/view/semantic.ts:45
+msgid ""
+"No embedding model was found on this machine. Text search is not affected."
+msgstr ""
+
+#: app/src/gui/view/semantic.ts:68
+msgid "Similar meaning"
+msgstr ""
+
+#: app/src/gui/view/semantic.ts:69
+msgid "Text and meaning"
+msgstr ""
+
 #: app/src/gui/view/sources.ts:76
 msgid "All archives"
 msgstr ""
@@ -1438,65 +1514,65 @@ msgstr ""
 msgid "{shown} of {total} shown"
 msgstr ""
 
-#: app/src/gui/window.ts:311
+#: app/src/gui/window.ts:329
 msgid "All files"
 msgstr ""
 
-#: app/src/gui/window.ts:313
+#: app/src/gui/window.ts:331
 msgid "Mail archives"
 msgstr ""
 
-#: app/src/gui/window.ts:564
+#: app/src/gui/window.ts:595
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
-#: app/src/gui/window.ts:1001
+#: app/src/gui/window.ts:1096
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 
-#: app/src/gui/window.ts:1099
+#: app/src/gui/window.ts:1194
 msgid "Open With…"
 msgstr ""
 
-#: app/src/gui/window.ts:1100
+#: app/src/gui/window.ts:1195
 msgid "Open a read-only copy in the program you choose"
 msgstr ""
 
-#: app/src/gui/window.ts:1130
+#: app/src/gui/window.ts:1225
 msgid "The stored copy could not be read."
 msgstr ""
 
-#: app/src/gui/window.ts:1147
+#: app/src/gui/window.ts:1242
 msgid "(no text)"
 msgstr ""
 
-#: app/src/gui/window.ts:1159
+#: app/src/gui/window.ts:1254
 msgid "Shown as text; the HTML was not rendered."
 msgstr ""
 
-#: app/src/gui/window.ts:1160
+#: app/src/gui/window.ts:1255
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 
-#: app/src/gui/window.ts:1172
+#: app/src/gui/window.ts:1267
 msgid "(unnamed)"
 msgstr ""
 
-#: app/src/gui/window.ts:1202
+#: app/src/gui/window.ts:1297
 msgid "Open in a mail program?"
 msgstr ""
 
-#: app/src/gui/window.ts:1204
+#: app/src/gui/window.ts:1299
 msgid ""
 "A mail program may load remote content. Only the verdict proves a message "
 "genuine."
 msgstr ""
 
-#: app/src/gui/window.ts:1209
+#: app/src/gui/window.ts:1304
 msgid "What does that mean?"
 msgstr ""
 
-#: app/src/gui/window.ts:1214
+#: app/src/gui/window.ts:1309
 msgid ""
 "A mail program that loads remote content tells the sender’s server that "
 "someone is reading this message right now. How a program displays a message "
@@ -1504,166 +1580,166 @@ msgid ""
 "copy outside the case."
 msgstr ""
 
-#: app/src/gui/window.ts:1221
+#: app/src/gui/window.ts:1316
 msgid "Open"
 msgstr ""
 
-#: app/src/gui/window.ts:1230
+#: app/src/gui/window.ts:1325
 msgid "The stored copy of this message is missing."
 msgstr ""
 
-#: app/src/gui/window.ts:1238
+#: app/src/gui/window.ts:1333
 msgid "Could not open the message: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:1291
+#: app/src/gui/window.ts:1386
 msgid "Look Up Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:1309 app/src/gui/window.blp:315
+#: app/src/gui/window.ts:1404 app/src/gui/window.blp:315
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:1328
+#: app/src/gui/window.ts:1423
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:1337
+#: app/src/gui/window.ts:1432
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:1353
+#: app/src/gui/window.ts:1448
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:1427
+#: app/src/gui/window.ts:1522
 msgid "How does DKIM work?"
 msgstr ""
 
-#: app/src/gui/window.ts:1447
+#: app/src/gui/window.ts:1542
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:1449
+#: app/src/gui/window.ts:1544
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:1451
+#: app/src/gui/window.ts:1546
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:1483
+#: app/src/gui/window.ts:1578
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:1495
+#: app/src/gui/window.ts:1590
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:1533
+#: app/src/gui/window.ts:1628
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:1542
+#: app/src/gui/window.ts:1637
 msgid "Copy Request…"
 msgstr ""
 
-#: app/src/gui/window.ts:1543
+#: app/src/gui/window.ts:1638
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 
-#: app/src/gui/window.ts:1547
+#: app/src/gui/window.ts:1642
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr ""
 
-#: app/src/gui/window.ts:1575
+#: app/src/gui/window.ts:1670
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:1625
+#: app/src/gui/window.ts:1720
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:1627
+#: app/src/gui/window.ts:1722
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:1647
+#: app/src/gui/window.ts:1742
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:1762
+#: app/src/gui/window.ts:1857
 msgid "Looking up keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:1795
+#: app/src/gui/window.ts:1890
 msgid "Key lookup failed: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:1829
+#: app/src/gui/window.ts:1924
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:1838
+#: app/src/gui/window.ts:1933
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:1894
+#: app/src/gui/window.ts:1989
 msgid "Folder for the Case"
 msgstr ""
 
-#: app/src/gui/window.ts:1894
+#: app/src/gui/window.ts:1989
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:1915
+#: app/src/gui/window.ts:2010
 msgid "Create the case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:1915
+#: app/src/gui/window.ts:2010
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:1919
+#: app/src/gui/window.ts:2014
 msgid ""
 "Stamped creates the case in {path}. It holds the working copy of the "
 "messages and the search index. The archive stays where it is."
 msgstr ""
 
-#: app/src/gui/window.ts:1925
+#: app/src/gui/window.ts:2020
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:1929
+#: app/src/gui/window.ts:2024
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:1952
+#: app/src/gui/window.ts:2047
 msgid "Imported."
 msgstr ""
 
-#: app/src/gui/window.ts:2023
+#: app/src/gui/window.ts:2118
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:2023
+#: app/src/gui/window.ts:2118
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:2065
+#: app/src/gui/window.ts:2160
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:2065
+#: app/src/gui/window.ts:2160
 msgid "Close"
 msgstr ""
 
@@ -1951,6 +2027,10 @@ msgstr[1] ""
 
 #: app/src/lib/semantic-status.ts:82
 msgid "Semantic search failed: {message}"
+msgstr ""
+
+#: app/src/lib/semantic-status.ts:119
+msgid "{n} h"
 msgstr ""
 
 #: app/src/lib/status.ts:73
@@ -2601,5 +2681,9 @@ msgid "Import Folder…"
 msgstr ""
 
 #: app/src/gui/window.blp:492
+msgid "Semantic Search…"
+msgstr ""
+
+#: app/src/gui/window.blp:499
 msgid "About Stamped"
 msgstr ""

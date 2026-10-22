@@ -18,9 +18,10 @@
 import type { LookupChannel } from '@stamped/core';
 import { orphanedImport, type ImportStatus } from '@stamped/store';
 
+import type { SemanticState } from './semantic-state.ts';
 import { percent } from './status.ts';
 
-export type ActivityKind = 'import' | 'keys' | 'reverify' | 'people';
+export type ActivityKind = 'import' | 'keys' | 'reverify' | 'people' | 'semantic';
 
 /** `running` until the job ends; the three others stay listed until dismissed. */
 export type ActivityState = 'running' | 'done' | 'failed' | 'cancelled';
@@ -58,7 +59,18 @@ export interface PeopleActivity {
     readonly processed: number;
 }
 
-export type ActivityData = ImportActivity | KeysActivity | ReverifyActivity | PeopleActivity;
+/** The vector indexing, as the semantic controller's state says. */
+export interface SemanticActivity {
+    readonly kind: 'semantic';
+    readonly state: SemanticState;
+}
+
+export type ActivityData =
+    | ImportActivity
+    | KeysActivity
+    | ReverifyActivity
+    | PeopleActivity
+    | SemanticActivity;
 
 export interface ActivityTask {
     readonly kind: ActivityKind;
@@ -94,6 +106,40 @@ export function progressOf(data: ActivityData): number | undefined {
             return data.total > 0 ? Math.min(1, data.checked / data.total) : undefined;
         case 'people':
             return undefined;
+        case 'semantic': {
+            const state = data.state;
+            if (state.kind !== 'indexing' && state.kind !== 'paused') return undefined;
+            return state.total > 0 ? Math.min(1, state.done / state.total) : undefined;
+        }
+    }
+}
+
+/**
+ * Put the semantic controller's state into the registry.
+ *
+ * A held run (`paused`) stays a RUNNING task: it is not over, and its row is where Resume is.
+ * A run that is `ready` or `failed` is only news when this window saw it going — opening a case
+ * whose index is complete must not leave a "Finished" row behind — and `off` / `unavailable`
+ * take the row away: they are not work, and the settings dialog is where they are explained.
+ */
+export function syncSemanticActivity(registry: ActivityRegistry, state: SemanticState): void {
+    const data: SemanticActivity = { kind: 'semantic', state };
+    const going = registry.get('semantic')?.state === 'running';
+    switch (state.kind) {
+        case 'probing':
+        case 'indexing':
+        case 'paused':
+            if (going) registry.update(data);
+            else registry.start(data);
+            break;
+        case 'ready':
+            if (going) registry.finish(data);
+            break;
+        case 'failed':
+            if (going) registry.fail(data, state.message);
+            break;
+        default:
+            registry.dismiss('semantic');
     }
 }
 

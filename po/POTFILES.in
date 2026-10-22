@@ -14,6 +14,7 @@ app/src/gui/help-button.d.blp.ts
 app/src/gui/help-button.ts
 app/src/gui/i18n-init.ts
 app/src/gui/main.ts
+app/src/gui/semantic-dialog.ts
 app/src/gui/session.ts
 app/src/gui/view/activity.ts
 app/src/gui/view/consent.ts
@@ -25,6 +26,7 @@ app/src/gui/view/markup.ts
 app/src/gui/view/message.ts
 app/src/gui/view/overview.ts
 app/src/gui/view/people.ts
+app/src/gui/view/semantic.ts
 app/src/gui/view/sources.ts
 app/src/gui/view/verdict.ts
 app/src/gui/window.blp
@@ -49,6 +51,7 @@ app/src/lib/pairs.ts
 app/src/lib/progress.ts
 app/src/lib/report.ts
 app/src/lib/self-argv.ts
+app/src/lib/semantic-embedder.ts
 app/src/lib/semantic-state.ts
 app/src/lib/semantic-status.ts
 app/src/lib/semantic.ts

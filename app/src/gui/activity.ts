@@ -33,13 +33,20 @@ class TaskRow {
     private readonly expander = new Gtk.Expander({ label: _('Details') });
     private readonly details = new Gtk.Label({ xalign: 0, wrap: true, selectable: true });
     private readonly cancel = new Gtk.Button({ label: _('Cancel'), valign: Gtk.Align.CENTER });
+    private readonly hold = new Gtk.Button({ valign: Gtk.Align.CENTER });
+    private control: RowView['control'];
     private readonly dismiss = new Gtk.Button({
         iconName: 'window-close-symbolic',
         tooltipText: _('Dismiss'),
         valign: Gtk.Align.CENTER,
     });
 
-    constructor(kind: ActivityKind, onCancel: () => void, onDismiss: (kind: ActivityKind) => void) {
+    constructor(
+        kind: ActivityKind,
+        onCancel: () => void,
+        onDismiss: (kind: ActivityKind) => void,
+        onHold: (control: 'pause' | 'resume') => void,
+    ) {
         this.title.add_css_class('heading');
         this.subtitle.add_css_class('caption');
         this.subtitle.add_css_class('dimmed');
@@ -48,6 +55,10 @@ class TaskRow {
         this.stats.add_css_class('numeric');
         this.details.add_css_class('caption');
         this.cancel.add_css_class('flat');
+        this.hold.add_css_class('flat');
+        this.hold.connect('clicked', () => {
+            if (this.control !== undefined) onHold(this.control);
+        });
         this.dismiss.add_css_class('flat');
         this.dismiss.add_css_class('circular');
         this.cancel.connect('clicked', onCancel);
@@ -59,6 +70,7 @@ class TaskRow {
         text.append(this.subtitle);
         const head = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 });
         head.append(text);
+        head.append(this.hold);
         head.append(this.cancel);
         head.append(this.dismiss);
         this.widget.append(head);
@@ -77,6 +89,10 @@ class TaskRow {
         this.expander.set_visible(view.details.length > 0);
         this.details.set_label(view.details.join('\n'));
         this.cancel.set_visible(view.cancellable);
+        this.control = view.control;
+        this.hold.set_visible(view.control !== undefined);
+        if (view.control !== undefined)
+            this.hold.set_label(view.control === 'pause' ? _('Pause') : _('Resume'));
         // Only a finished row can be dismissed: a running job is not the list's to hide.
         this.dismiss.set_visible(view.state !== 'running');
         if (view.state === 'failed') this.title.add_css_class('error');
@@ -104,14 +120,21 @@ export class ActivityController {
     private lastRender = 0;
     private readonly unsubscribe: () => void;
     private readonly onCancelImport: () => void;
+    private readonly onHold: (control: 'pause' | 'resume') => void;
 
     /**
      * @param onCancelImport Called by the import row's Cancel; the window decides what dies,
      *   and shows the button only for a subprocess it started itself.
+     * @param onHold Called by the semantic row's Pause and Resume.
      */
-    constructor(button: Gtk.MenuButton, onCancelImport: () => void) {
+    constructor(
+        button: Gtk.MenuButton,
+        onCancelImport: () => void,
+        onHold: (control: 'pause' | 'resume') => void,
+    ) {
         this.button = button;
         this.onCancelImport = onCancelImport;
+        this.onHold = onHold;
 
         this.stack.add_named(new Gtk.Image({ iconName: 'document-open-recent-symbolic' }), 'idle');
         this.stack.add_named(new Gtk.Spinner({ spinning: true }), 'busy');
@@ -196,6 +219,7 @@ export class ActivityController {
                     task.kind,
                     () => this.onCancelImport(),
                     (kind) => this.registry.dismiss(kind),
+                    (control) => this.onHold(control),
                 );
                 this.rows.set(task.kind, row);
             }

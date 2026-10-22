@@ -29,6 +29,7 @@ import indexer from './unit/indexer.test.ts';
 import semanticState from './unit/semantic-state.test.ts';
 import hybridSearch from './unit/hybrid-search.test.ts';
 import modelPath from './unit/model-path.test.ts';
+import semanticGui from './unit/semantic-gui.test.ts';
 
 run({
     activity,
@@ -57,4 +58,5 @@ run({
     semanticState,
     hybridSearch,
     modelPath,
+    semanticGui,
 });
