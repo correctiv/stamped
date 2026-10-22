@@ -186,6 +186,10 @@ export interface SignatureEvidence {
     readonly signatureBits?: number;
     /** ISO time the key was first seen (archive first-seen) or obtained (fetched), if known. */
     readonly keySince?: string;
+    /** `t=` — when the signer says it signed, in seconds since the epoch. Absent without `t=`. */
+    readonly signedAt?: number;
+    /** `x=` — when the signer says the signature expires, in seconds since the epoch. */
+    readonly expiresAt?: number;
     /** ISO time of the message's `Date:` header, if it parses. */
     readonly messageDate?: string;
     /**

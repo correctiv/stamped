@@ -152,6 +152,8 @@ them. Synthetic like everything else: reserved example domains, invented bodies.
 
 ## Documentation
 
+- [docs/time-checks.md](docs/time-checks.md) describes the "Zeit" layer beside the six verdicts:
+  what it compares, which values a verified signature protects, and the fixed tolerances.
 - [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md) holds what was measured before it
   was decided: why mailauth and not an own verifier, how it is configured and why, FTS5 under
   gjsify.
