@@ -45,6 +45,11 @@ export default async () => {
             expect(text.includes('report')).toBe(true);
             expect(text.includes('--case')).toBe(true);
         });
+
+        await it('refuses an empty case folder instead of using the working directory', async () => {
+            expect(message(() => caseRoot('import', undefined, ['', 'leak'])).includes('import')).toBe(true);
+            expect(message(() => caseRoot('reverify', undefined, [''], '.stamped')).includes('--case')).toBe(true);
+        });
     });
 
     await describe('pair files', async () => {
