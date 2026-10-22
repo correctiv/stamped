@@ -52,7 +52,7 @@ function parse(): Promise<unknown> {
             .command(statusCommand())
             .demandCommand(1, _('Pick a command. Try `stamped verify --help`.'))
             .strict()
-            .version('0.2.0')
+            .version('0.2.1')
             .help()
             .wrap(Math.min(110, process.stdout.columns ?? 110))
             // Don't let yargs print its own multi-line usage dump and stack trace on a failure: it
