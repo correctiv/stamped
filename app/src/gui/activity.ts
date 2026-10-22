@@ -91,7 +91,11 @@ export class ActivityController {
     private readonly stack = new Gtk.Stack();
     private readonly progress = new Gtk.DrawingArea();
     private readonly dot = new Gtk.DrawingArea();
-    private readonly list = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 14 });
+    private readonly list = new Gtk.Box({
+        orientation: Gtk.Orientation.VERTICAL,
+        spacing: 14,
+        widthRequest: 400,
+    });
     private readonly empty: Gtk.Label;
     private readonly rows = new Map<ActivityKind, TaskRow>();
     private order: ActivityKind[] = [];
@@ -137,7 +141,6 @@ export class ActivityController {
             hscrollbarPolicy: Gtk.PolicyType.NEVER,
             propagateNaturalHeight: true,
             maxContentHeight: 440,
-            minContentWidth: 400,
         });
         const body = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
