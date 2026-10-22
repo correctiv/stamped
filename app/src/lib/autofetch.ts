@@ -38,6 +38,8 @@ export interface FetchTally {
     readonly archive: number;
     readonly dns: number;
     readonly notFound: number;
+    /** Pairs that could not be answered for (rate limit, outage): retry later. */
+    readonly errors: number;
     readonly conflicts: number;
 }
 
@@ -45,11 +47,13 @@ export interface FetchTally {
 export function tallyFetch(
     stored: readonly { readonly origin: KeyOrigin; readonly conflict: boolean }[],
     notFound: number,
+    errors = 0,
 ): FetchTally {
     return {
         archive: stored.filter((s) => s.origin === 'archive.prove.email').length,
         dns: stored.filter((s) => s.origin === 'dns').length,
         notFound,
+        errors,
         conflicts: stored.filter((s) => s.conflict).length,
     };
 }
@@ -60,6 +64,11 @@ export function tallyLines(tally: FetchTally): string[] {
         fmt(_('{count} keys stored from the DNS'), { count: tally.dns }),
         fmt(_('{count} keys not found'), { count: tally.notFound }),
     ];
+    if (tally.errors > 0) {
+        lines.push(
+            fmt(_('{count} lookups failed (rate limit or outage). Retry later.'), { count: tally.errors }),
+        );
+    }
     if (tally.conflicts > 0) {
         lines.push(
             fmt(_('{count} differ from a key already stored — compare them'), { count: tally.conflicts }),
@@ -162,12 +171,17 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
                 }),
             );
         }
+        for (const error of summary.errors) {
+            console.log(
+                fmt(_('  error   {name}: {reason}'), { name: pairName(error.pair), reason: error.reason }),
+            );
+        }
         for (const miss of summary.misses) {
             console.log(
                 fmt(_('  no key  {name}: {reason}'), { name: pairName(miss.pair), reason: miss.reason }),
             );
         }
     }
-    printTally(tallyFetch(summary.stored, summary.misses.length));
+    printTally(tallyFetch(summary.stored, summary.misses.length, summary.errors.length));
     await reverifyApplicable(paths);
 }

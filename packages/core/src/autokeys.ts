@@ -77,6 +77,8 @@ export interface AutoFetchSummary {
     readonly stored: readonly StoredKey[];
     /** Pairs still without a key, with the last reason. */
     readonly misses: readonly { readonly pair: KeyPair; readonly reason: string }[];
+    /** Pairs a channel could not answer for (rate limit, outage): unknown, not absent. */
+    readonly errors: readonly { readonly pair: KeyPair; readonly reason: string }[];
 }
 
 export async function fetchKeys(
@@ -85,13 +87,14 @@ export async function fetchKeys(
     options: AutoFetchOptions,
 ): Promise<AutoFetchSummary> {
     const todo = options.channels.length === 0 ? [] : missingPairs(pairs, vault);
-    if (todo.length === 0) return { asked: [], consented: false, stored: [], misses: [] };
+    if (todo.length === 0) return { asked: [], consented: false, stored: [], misses: [], errors: [] };
     if (!(await options.confirm(describeAutoConsent(options.channels, todo)))) {
-        return { asked: todo, consented: false, stored: [], misses: [] };
+        return { asked: todo, consented: false, stored: [], misses: [], errors: [] };
     }
 
     const stored: StoredKey[] = [];
     const reasons = new Map<string, string>();
+    const errored = new Set<string>();
     let remaining: PairCount[] = todo;
     for (const channel of options.channels) {
         if (remaining.length === 0) break;
@@ -113,12 +116,21 @@ export async function fetchKeys(
             stored.push({ pair: found.pair, origin: found.origin, conflict: outcome.status === 'conflict' });
         }
         for (const miss of result.misses) reasons.set(pairName(miss.pair), miss.reason);
+        for (const error of result.errors) {
+            reasons.set(pairName(error.pair), error.reason);
+            errored.add(pairName(error.pair));
+        }
         remaining = missingPairs(remaining, vault);
     }
     return {
         asked: todo,
         consented: true,
         stored,
-        misses: remaining.map((pair) => ({ pair, reason: reasons.get(pairName(pair)) ?? '' })),
+        misses: remaining
+            .filter((pair) => !errored.has(pairName(pair)))
+            .map((pair) => ({ pair, reason: reasons.get(pairName(pair)) ?? '' })),
+        errors: remaining
+            .filter((pair) => errored.has(pairName(pair)))
+            .map((pair) => ({ pair, reason: reasons.get(pairName(pair)) ?? '' })),
     };
 }

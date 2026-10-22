@@ -1480,7 +1480,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             const outcome = await runLookup(session, text.channel, text.pairs);
             const applied = await applyKeys(session, outcome.pairs, nextTurn);
             showToast(
-                lookupSummary(outcome.stored, outcome.missed, outcome.conflicts) +
+                lookupSummary(outcome.stored, outcome.missed, outcome.conflicts, outcome.errors) +
                     this.appliedSentence(applied),
                 outcome.conflicts > 0 ? 0 : 5,
             );
