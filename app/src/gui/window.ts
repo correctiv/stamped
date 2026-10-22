@@ -29,16 +29,12 @@ import {
     type MessageFinding,
     type Verdict,
 } from '@stamped/core';
-import {
-    orphanedImport,
-    type CaseReport,
-    type IndexedMessage,
-    type ReverifyResult,
-    type SearchHit,
-} from '@stamped/store';
+import { type CaseReport, type IndexedMessage, type ReverifyResult, type SearchHit } from '@stamped/store';
 import type { ReadableBody } from '@stamped/import';
 
+import { importRunning, ImportWatcher, type ReverifyActivity } from '../lib/activity.ts';
 import { openCopy } from '../lib/open-copy.ts';
+import { ActivityController } from './activity.ts';
 import { StampedHelpButton } from './help-button.ts';
 import {
     addKey,
@@ -79,7 +75,7 @@ import {
     type VerdictCard,
 } from './view/evidence.ts';
 import { formatBytes, groupDigits } from './view/format.ts';
-import { importBannerView, importOutcome } from './view/import.ts';
+import { importOutcome } from './view/import.ts';
 import {
     explainKey,
     keyRows,
@@ -144,11 +140,6 @@ function nextTurn(): Promise<void> {
             return GLib.SOURCE_REMOVE;
         });
     });
-}
-
-/** A live run, as the banner counts it: `running` and not orphaned. */
-function isRunning(status: ReturnType<typeof importStatusOf>): boolean {
-    return status?.state === 'running' && importBannerView(status)?.cancellable === true;
 }
 
 /**
@@ -319,6 +310,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** The poll source reading the status file, and whether the last tick saw a live run. */
     private importPoll = 0;
     private importWasRunning = false;
+    /** The header bar's status button, and what turns the status file into its import row. */
+    private activity!: ActivityController;
+    private importWatcher!: ImportWatcher;
     /** How many of the filtered messages have actually been loaded into the list. */
     private listOffset = 0;
     /** Whether a further page is being fetched right now. */
@@ -413,7 +407,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // verdicts, and a mailbox, a signer or one key is neither. Its button clears exactly
         // what the banner says, so a verdict chosen afterwards stays chosen.
         this._filterBanner.connect('button-clicked', () => this.clearScope());
-        this._importBanner.connect('button-clicked', () => this.cancelImport());
+        this.activity = new ActivityController(this._activityButton, () => this.cancelImport());
+        this.importWatcher = new ImportWatcher(this.activity.registry);
 
         // The index handle is a connection held open on the case folder, and a folder with an
         // open connection cannot be unmounted — which is where a working copy of a leak lives.
@@ -427,6 +422,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             if (this.refreshSource !== 0) GLib.source_remove(this.refreshSource);
             this.refreshSource = 0;
             this.stopImportPoll();
+            this.activity.dispose();
             if (this.session) closeSession(this.session);
             this.session = undefined;
             return false;
@@ -556,6 +552,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.stopImportPoll();
         this.session = session;
         this.importWasRunning = false;
+        this.importWatcher.reset();
         this.importPoll = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => this.pollImport());
         this.text = '';
         this.verdict = undefined;
@@ -628,28 +625,33 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.backfillSource = 0;
         // An import writes this case: stepping the backfill beside it only makes both slower.
         // The run's end refreshes the window, and the refresh starts the backfill again.
-        if (isRunning(importStatusOf(session))) return;
+        if (importRunning(importStatusOf(session))) return;
         if (peopleComplete(session)) return;
+        const registry = this.activity.registry;
+        let processed = 0;
+        registry.start({ kind: 'people', processed });
         this.backfillSource = GLib.idle_add(GLib.PRIORITY_LOW, () => {
-            if (this.importWasRunning) {
+            if (this.importWasRunning || this.session !== session) {
                 this.backfillSource = 0;
+                registry.dismiss('people');
                 return false;
             }
             let done = true;
             try {
-                done = backfillStep(session);
+                const step = backfillStep(session);
+                done = step.done;
+                processed += step.processed;
             } catch {
+                // a busy database just stops the run; the next open resumes from the cursor
                 done = true;
-            }
-            if (this.session !== session) {
-                this.backfillSource = 0;
-                return false;
             }
             if (done) {
                 this.backfillSource = 0;
+                registry.finish({ kind: 'people', processed });
                 this.fillPeople();
                 return false;
             }
+            registry.update({ kind: 'people', processed });
             return true;
         });
     }
@@ -1400,13 +1402,40 @@ export class StampedWindow extends Adw.ApplicationWindow {
         try {
             const pair = { domain: row.domain, selector: row.selector };
             const outcome = addKey(session, pair, text);
-            const applied = await applyKeys(session, [pair], nextTurn);
+            const applied = await this.applyTracked(session, [pair]);
             // A conflict means the case held a DIFFERENT key for this selector, so its toast is
             // sticky: that is a finding to read, not a confirmation to watch go by.
             showToast(escapeLine(outcome.message) + this.appliedSentence(applied), outcome.conflict ? 0 : 5);
             this.refresh();
         } catch (error) {
             await this.fail(error);
+        }
+    }
+
+    /** {@link applyKeys}, with its progress reported to the status button's re-verification row. */
+    private async applyTracked(
+        session: CaseSession,
+        pairs: readonly KeyPair[],
+    ): Promise<ReverifyResult | undefined> {
+        if (pairs.length === 0) return undefined;
+        const registry = this.activity.registry;
+        let last: ReverifyActivity = { kind: 'reverify', checked: 0, total: 0, changed: 0 };
+        registry.start(last);
+        try {
+            const result = await applyKeys(session, pairs, nextTurn, (checked, total) => {
+                last = { kind: 'reverify', checked, total, changed: 0 };
+                registry.update(last);
+            });
+            registry.finish({
+                kind: 'reverify',
+                checked: result?.checked ?? 0,
+                total: last.total,
+                changed: result?.changed.length ?? 0,
+            });
+            return result;
+        } catch (error) {
+            registry.fail(last, error instanceof Error ? error.message : String(error));
+            throw error;
         }
     }
 
@@ -1476,9 +1505,28 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.lookupBusy = true;
         this._keysBody.set_sensitive(false);
         showToast(_('Looking up keys…'), 3);
+        const registry = this.activity.registry;
+        const keys = {
+            kind: 'keys',
+            channel: text.channel,
+            done: 0,
+            total: text.pairs.length,
+            found: 0,
+            notFound: 0,
+            errors: 0,
+        } as const;
+        registry.start(keys);
         try {
-            const outcome = await runLookup(session, text.channel, text.pairs);
-            const applied = await applyKeys(session, outcome.pairs, nextTurn);
+            const outcome = await runLookup(session, text.channel, text.pairs, (progress) =>
+                registry.update({ ...keys, ...progress }),
+            );
+            registry.finish({
+                ...keys,
+                done: text.pairs.length,
+                found: outcome.stored,
+                notFound: outcome.missed,
+            });
+            const applied = await this.applyTracked(session, outcome.pairs);
             showToast(
                 lookupSummary(outcome.stored, outcome.missed, outcome.conflicts, outcome.errors) +
                     this.appliedSentence(applied),
@@ -1486,7 +1534,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
             );
             this.refresh();
         } catch (error) {
-            await this.fail(error);
+            const reason = error instanceof Error ? error.message : String(error);
+            registry.fail(keys, reason);
+            showToast(escapeLine(fmt(_('Key lookup failed: {reason}'), { reason })), 0);
         } finally {
             this.lookupBusy = false;
             this._keysBody.set_sensitive(true);
@@ -1666,23 +1716,18 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.pollImport();
     }
 
-    /** One tick of the import banner: read the status file, show it, reload when a run ends. */
+    /** One tick: read the status file into the registry, reload when a run ends. */
     private pollImport(): boolean {
         const session = this.session;
         if (!session) return GLib.SOURCE_CONTINUE;
         const status = importStatusOf(session);
-        const view = importBannerView(status);
-        const own = this.importProc !== undefined;
-        this._importBanner.set_revealed(view?.revealed === true);
-        if (view?.revealed === true) {
-            this._importBanner.set_title(view.title);
-            this._importBanner.set_button_label(view.cancellable && own ? _('Cancel') : '');
-        }
-        const running = isRunning(status);
-        if (this.importWasRunning && !running && status !== undefined) {
+        const ended = this.importWatcher.poll(status, this.importProc !== undefined);
+        const running = importRunning(status);
+        if (ended !== undefined && status !== undefined) {
             dropFilterCaches(session);
             this.refresh();
-            showToast(importOutcome(status, orphanedImport(status)), 5);
+            const failed = ended.orphaned || status.state === 'failed';
+            showToast(importOutcome(status, ended.orphaned), failed ? 0 : 5);
         }
         this.importWasRunning = running;
         return GLib.SOURCE_CONTINUE;

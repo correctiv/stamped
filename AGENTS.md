@@ -128,9 +128,10 @@ atomically (tmp + rename) at most once a second, and the final state STAYS. It h
 mailbox/file names only — never mail content. `readImportStatus` + `orphanedImport` tell a
 `running` file whose PID is dead or whose last update is over 60 s old from a live run. The CLI
 import and the window's in-process fallback write it; `stamped status [--json]` (exit 0 even with
-no import) and the window's banner (polled once a second, no modal dialog) read it. The banner's
+no import) and the window's status button (polled once a second, no modal dialog) read it. Its popover's
 Cancel button exists only for a subprocess the window started itself. Formatting lives in
-`app/src/lib/status.ts` and `app/src/gui/view/import.ts`, not in `window.ts`.
+`app/src/lib/status.ts`, `app/src/gui/view/import.ts` and `app/src/gui/view/activity.ts`, not in `window.ts`.
+Background work (import, key lookup, reverify, backfill) reports into `ActivityRegistry` (`app/src/lib/activity.ts`).
 
 ## Why mailauth and not our own verifier
 

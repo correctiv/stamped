@@ -27,7 +27,7 @@ import {
 } from '@stamped/store';
 
 import { statusCommand } from '../../src/commands/status.ts';
-import { importBannerTitle, importBannerView, importOutcome } from '../../src/gui/view/import.ts';
+import { importOutcome } from '../../src/gui/view/import.ts';
 import { noStatusLine, percent, statusHeadline, statusJson, statusLines } from '../../src/lib/status.ts';
 import { archive, fixtureKeys } from './fixtures.ts';
 
@@ -278,34 +278,7 @@ export default async () => {
         });
     });
 
-    await describe('import banner', async () => {
-        await it('formats the title with percent, counts, mailbox and time left', () => {
-            const title = importBannerTitle(live({ eta: 150 }), false);
-            expect(title).toBe('25% · 250 messages · ada@example.com · about 3 min left');
-            expect(importBannerTitle(live({ eta: 20 }), false).endsWith('about 20 s left')).toBe(true);
-            expect(importBannerTitle(live({ eta: -1, mailbox: undefined }), false)).toBe(
-                '25% · 250 messages',
-            );
-        });
-
-        await it('escapes a mailbox name', () => {
-            expect(importBannerTitle(live({ mailbox: 'Mail & Co' }), false).includes('Mail &amp; Co')).toBe(
-                true,
-            );
-        });
-
-        await it('decides reveal and cancel from the status alone', () => {
-            expect(importBannerView(undefined)).toBe(undefined);
-            expect(importBannerView(live())?.revealed).toBe(true);
-            expect(importBannerView(live())?.cancellable).toBe(true);
-            const done = importBannerView(live({ state: 'finished' }));
-            expect(done?.revealed).toBe(false);
-            expect(done?.cancellable).toBe(false);
-            const orphan = importBannerView(live({ pid: 2 ** 22 + 12345 }));
-            expect(orphan?.revealed).toBe(true);
-            expect(orphan?.cancellable).toBe(false);
-        });
-
+    await describe('import outcome', async () => {
         await it('names every outcome', () => {
             expect(importOutcome(live({ state: 'finished' }), false)).toBe('Import finished.');
             expect(importOutcome(live({ state: 'failed' }), false)).toBe('The import failed.');

@@ -100,15 +100,6 @@ template $StampedWindow: Adw.ApplicationWindow {
         child: Gtk.Box {
           orientation: vertical;
 
-          // The import progress line. Never a modal dialog: closing a dialog used to cancel the
-          // import, and an import started on a command line was invisible here at all. The
-          // banner reads the case's status file once a second, so it shows BOTH kinds of run —
-          // and its Cancel button only ever kills a subprocess this window started itself.
-          Adw.Banner importBanner {
-            revealed: false;
-            button-label: _("Cancel");
-          }
-
           Adw.OverlaySplitView outerSplit {
             vexpand: true;
             sidebar-width-fraction: 0.22;
@@ -268,6 +259,13 @@ template $StampedWindow: Adw.ApplicationWindow {
               child: Adw.ToolbarView {
                 [top]
                 Adw.HeaderBar {
+                  // Background work: import, key lookup, re-verification. The button's content
+                  // and its popover are built in code (`activity.ts`) from the task registry.
+                  [end]
+                  Gtk.MenuButton activityButton {
+                    tooltip-text: _("No background work");
+                  }
+
                   title-widget: Adw.ViewSwitcher viewSwitcher {
                     stack: contentStack;
                     policy: wide;

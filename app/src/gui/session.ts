@@ -15,6 +15,7 @@ import {
     classifyMessage,
     lookupArchive,
     lookupDns,
+    type LookupResult,
     pairName,
     parseKeyMaterial,
     _,
@@ -353,9 +354,9 @@ export function peopleComplete(session: CaseSession): boolean {
     return addressesComplete(session.db);
 }
 
-/** One short backfill batch for a case that predates the address table; `true` when finished. */
-export function backfillStep(session: CaseSession): boolean {
-    return backfillAddresses(session.db, 1000).done;
+/** One short backfill batch for a case that predates the address table. */
+export function backfillStep(session: CaseSession): { done: boolean; processed: number } {
+    return backfillAddresses(session.db, 1000);
 }
 
 /** How many messages the case holds, whatever the filters — the denominator of every count. */
@@ -415,7 +416,7 @@ export function bodyOf(session: CaseSession, hash: string): ReadableBody | undef
  * Import archives into the open case. The index handle is the importer's own; ours survives.
  *
  * Writes the status file like the CLI's import does, so a run the window started in-process is
- * visible to `stamped status` and to this same banner — the file is the one channel, not the
+ * visible to `stamped status` and to the window’s status button — the file is the one channel, not the
  * process that happens to write it.
  */
 export async function importInto(
@@ -541,10 +542,22 @@ export async function applyKeys(
     session: CaseSession,
     pairs: readonly KeyPair[],
     yieldTurn?: () => Promise<void>,
+    onProgress?: (checked: number, total: number) => void,
 ): Promise<ReverifyResult | undefined> {
     if (pairs.length === 0) return undefined;
-    return reverifyPairs(session.paths, pairs, session.vault, yieldTurn);
+    return reverifyPairs(session.paths, pairs, session.vault, yieldTurn, onProgress);
 }
+
+/** How far a lookup is: pairs asked, and what came back so far. */
+export interface LookupProgress {
+    readonly done: number;
+    readonly total: number;
+    readonly found: number;
+    readonly notFound: number;
+}
+
+/** Pairs per slice of a lookup — a few rounds of the core's own concurrency. */
+const LOOKUP_SLICE = 16;
 
 /** What one lookup run did, counted for the toast that follows it. */
 export interface LookupOutcome {
@@ -569,12 +582,31 @@ export async function runLookup(
     session: CaseSession,
     channel: LookupChannel,
     pairs: readonly KeyPair[],
+    onProgress?: (progress: LookupProgress) => void,
 ): Promise<LookupOutcome> {
     const consent: LookupConsent = { channel, pairs };
-    const result =
-        channel === 'dns'
-            ? await lookupDns(consent, pairs, resolveTxt)
-            : await lookupArchive(consent, pairs, (url) => fetch(url));
+    // In slices, so the window can show how far a long list is: each slice is checked against the
+    // same consent and runs at the lookup's own concurrency, the join between slices is the cost.
+    const result: { found: LookupResult['found'][number][]; misses: LookupResult['misses'][number][] } = {
+        found: [],
+        misses: [],
+    };
+    onProgress?.({ done: 0, total: pairs.length, found: 0, notFound: 0 });
+    for (let at = 0; at < pairs.length; at += LOOKUP_SLICE) {
+        const slice = pairs.slice(at, at + LOOKUP_SLICE);
+        const part =
+            channel === 'dns'
+                ? await lookupDns(consent, slice, resolveTxt)
+                : await lookupArchive(consent, slice, (url) => fetch(url));
+        result.found.push(...part.found);
+        result.misses.push(...part.misses);
+        onProgress?.({
+            done: Math.min(pairs.length, at + slice.length),
+            total: pairs.length,
+            found: result.found.length,
+            notFound: result.misses.length,
+        });
+    }
 
     const now = new Date().toISOString();
     const gained: KeyPair[] = [];
