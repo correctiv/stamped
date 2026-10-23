@@ -19,7 +19,12 @@ function read(path: string): string {
     }
 }
 
-/** True when a battery is discharging and no mains supply is online. */
+/**
+ * True when the MACHINE's battery is discharging and no mains supply is online.
+ *
+ * A supply with `scope` `Device` is a peripheral (a wireless mouse or keyboard, a headset), not
+ * the machine: a desktop with a mouse running down would otherwise hold the indexer forever.
+ */
 export function onBattery(root: string = POWER_SUPPLY): boolean {
     let names: string[];
     try {
@@ -31,6 +36,7 @@ export function onBattery(root: string = POWER_SUPPLY): boolean {
     for (const name of names) {
         const type = read(join(root, name, 'type'));
         if (type === 'Mains' && read(join(root, name, 'online')) === '1') return false;
+        if (type === 'Battery' && read(join(root, name, 'scope')) === 'Device') continue;
         if (type === 'Battery' && read(join(root, name, 'status')) === 'Discharging') discharging = true;
     }
     return discharging;

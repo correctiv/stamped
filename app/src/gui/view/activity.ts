@@ -285,17 +285,27 @@ function semanticRow(task: ActivityTask, data: SemanticActivity): Omit<RowView, 
     switch (state.kind) {
         case 'probing':
             return row(_('Measuring how fast this machine is'));
-        case 'indexing':
+        case 'indexing': {
+            // A run another process started (a terminal) is shown and left alone: a Pause here
+            // would do nothing, so the row says where to end it instead of offering one.
+            const counts = fmt(
+                data.own
+                    ? _n('{done} of {total} message', '{done} of {total} messages', state.total)
+                    : _n(
+                          '{done} of {total} message, running in another process',
+                          '{done} of {total} messages, running in another process',
+                          state.total,
+                      ),
+                { done: groupDigits(state.done), total: groupDigits(state.total) },
+            );
             return row(
-                fmt(_n('{done} of {total} message', '{done} of {total} messages', state.total), {
-                    done: groupDigits(state.done),
-                    total: groupDigits(state.total),
-                }),
+                counts,
                 state.remainingSeconds === undefined
                     ? ''
                     : fmt(_('about {time} left'), { time: remainingTime(state.remainingSeconds) }),
-                'pause',
+                data.own ? 'pause' : undefined,
             );
+        }
         case 'paused': {
             // The two holds are different facts: the battery lets go by itself, the person's does not.
             const counts = fmt(_n('{done} of {total} message', '{done} of {total} messages', state.total), {

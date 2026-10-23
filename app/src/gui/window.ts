@@ -876,7 +876,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             spawn: () => spawnSemantic(argv),
             probeController: inProcess,
             importRunning: () => importRunning(importStatusOf(session)),
-            onState: (state) => syncSemanticActivity(this.activity.registry, state),
+            onState: (state) => syncSemanticActivity(this.activity.registry, state, !sub.external()),
         });
         this.semantic = sub;
         this.semanticSub = sub;

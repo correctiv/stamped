@@ -3,7 +3,7 @@
  * SYNTHETIC DATA ONLY.
  */
 
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -515,6 +515,25 @@ export default async () => {
     await describe('the battery check', async () => {
         await it('is false where there is no power_supply directory', async () => {
             expect(onBattery('/nonexistent/power_supply')).toBe(false);
+        });
+
+        await it('ignores a discharging peripheral, counts the machine battery', async () => {
+            const root = mkdtempSync(join(tmpdir(), 'stamped-power-'));
+            try {
+                const supply = (name: string, files: Record<string, string>): void => {
+                    mkdirSync(join(root, name));
+                    for (const [file, value] of Object.entries(files))
+                        writeFileSync(join(root, name, file), `${value}\n`);
+                };
+                supply('hidpp_battery_0', { type: 'Battery', status: 'Discharging', scope: 'Device' });
+                expect(onBattery(root)).toBe(false);
+                supply('BAT0', { type: 'Battery', status: 'Discharging', scope: 'System' });
+                expect(onBattery(root)).toBe(true);
+                supply('AC', { type: 'Mains', online: '1' });
+                expect(onBattery(root)).toBe(false);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
         });
     });
 };

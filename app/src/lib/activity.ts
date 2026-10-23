@@ -69,6 +69,11 @@ export interface PeopleActivity {
 export interface SemanticActivity {
     readonly kind: 'semantic';
     readonly state: SemanticState;
+    /**
+     * False when the run belongs to another process (a terminal's `stamped semantic index`): the
+     * window shows it and cannot pause it, so the row must not offer a Pause that does nothing.
+     */
+    readonly own: boolean;
 }
 
 export type ActivityData =
@@ -128,8 +133,8 @@ export function progressOf(data: ActivityData): number | undefined {
  * whose index is complete must not leave a "Finished" row behind — and `off` / `unavailable`
  * take the row away: they are not work, and the settings dialog is where they are explained.
  */
-export function syncSemanticActivity(registry: ActivityRegistry, state: SemanticState): void {
-    const data: SemanticActivity = { kind: 'semantic', state };
+export function syncSemanticActivity(registry: ActivityRegistry, state: SemanticState, own = true): void {
+    const data: SemanticActivity = { kind: 'semantic', state, own };
     const going = registry.get('semantic')?.state === 'running';
     switch (state.kind) {
         case 'probing':

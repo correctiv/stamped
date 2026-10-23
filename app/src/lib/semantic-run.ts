@@ -116,6 +116,8 @@ export interface SubprocessSemanticOptions {
 export interface SubprocessSemantic extends SemanticController {
     /** One tick: relaunch after an import, stop for one, report the state. */
     poll(): void;
+    /** A run is going that this window did not start, so it cannot be paused from here. */
+    external(): boolean;
 }
 
 export function createSubprocessSemantic(options: SubprocessSemanticOptions): SubprocessSemantic {
@@ -217,6 +219,9 @@ export function createSubprocessSemantic(options: SubprocessSemanticOptions): Su
         },
         async settled() {
             await proc?.exited.catch(() => undefined);
+        },
+        external() {
+            return proc === undefined && live();
         },
         poll() {
             const importing = options.importRunning();

@@ -5,7 +5,7 @@
  * SYNTHETIC DATA ONLY: a fake embedder and made-up messages. No model, no download.
  */
 
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -13,9 +13,14 @@ import { describe, expect, it } from '@gjsify/unit';
 import type { DocumentSource, EmbedDocument, Embedder, SourceDocument, SourceEntry } from '@stamped/semantic';
 import { type CasePaths, openCase, readSemanticSetting, type SemanticSetting } from '@stamped/store';
 
+import { EMBEDDING_MODEL_BYTES } from '../../src/lib/model-path.ts';
 import { ActivityRegistry, syncSemanticActivity } from '../../src/lib/activity.ts';
 import { createSemanticController } from '../../src/lib/semantic.ts';
-import { createGuiEmbedder, embedderAvailability } from '../../src/lib/semantic-embedder.ts';
+import {
+    createGuiEmbedder,
+    embedderAvailability,
+    registerLlamaEmbedder,
+} from '../../src/lib/semantic-embedder.ts';
 import type { SemanticState } from '../../src/lib/semantic-state.ts';
 import { buttonView, rowView } from '../../src/gui/view/activity.ts';
 import { matchBadge, semanticEstimate, semanticSettingsView } from '../../src/gui/view/semantic.ts';
@@ -62,9 +67,9 @@ async function withCase(body: (paths: CasePaths) => Promise<void>): Promise<void
     }
 }
 
-function rowOf(state: SemanticState) {
+function rowOf(state: SemanticState, own = true) {
     const registry = new ActivityRegistry();
-    registry.start({ kind: 'semantic', state });
+    registry.start({ kind: 'semantic', state, own });
     return rowView(registry.get('semantic')!);
 }
 
@@ -140,6 +145,16 @@ export default async () => {
             expect(row.stats.includes('2.0 h')).toBe(true);
         });
 
+        await it('offers no Pause for a run another process started, and says so', async () => {
+            const state: SemanticState = { kind: 'indexing', done: 1200, total: 5000, remainingSeconds: 60 };
+            const own = rowOf(state);
+            const other = rowOf(state, false);
+            expect(other.control).toBe(undefined);
+            expect(other.subtitle.includes('another process')).toBe(true);
+            expect(own.subtitle.includes('another process')).toBe(false);
+            expect(other.stats === '').toBe(false);
+        });
+
         await it('tells the battery pause from the person\u2019s', async () => {
             const battery = rowOf({ kind: 'paused', reason: 'battery', done: 1, total: 4 });
             const user = rowOf({ kind: 'paused', reason: 'user', done: 1, total: 4 });
@@ -207,6 +222,27 @@ export default async () => {
             // there, the model is not, and that difference is what the dialog explains.
             expect(embedderAvailability({ XDG_CACHE_HOME: '/nonexistent' }, true)).toBe('model');
             expect(await createGuiEmbedder({ XDG_CACHE_HOME: '/nonexistent' }, true)).toBe(undefined);
+        });
+
+        await it('creates the registered embedder for the model the environment names', async () => {
+            const dir = mkdtempSync(join(tmpdir(), 'stamped-gui-embedder-'));
+            try {
+                const model = join(dir, 'model.gguf');
+                // A sparse file of the pinned size: the size is all the lookup checks.
+                writeFileSync(model, '');
+                truncateSync(model, EMBEDDING_MODEL_BYTES);
+                const seen: string[] = [];
+                registerLlamaEmbedder(async (options) => {
+                    seen.push(options.modelPath);
+                    return fakeEmbedder({ t: 0 });
+                });
+                const embedder = await createGuiEmbedder({ STAMPED_EMBED_MODEL: model }, true);
+                expect(embedder?.modelId).toBe('fake/model');
+                expect(seen.length).toBe(1);
+                expect(seen[0]).toBe(model);
+            } finally {
+                rmSync(dir, { recursive: true, force: true });
+            }
         });
     });
 };

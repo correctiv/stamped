@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 09:38+0200\n"
+"POT-Creation-Date: 2026-10-23 12:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -461,56 +461,56 @@ msgstr ""
 msgid "No stored key applies to an unverified message."
 msgstr ""
 
-#: app/src/commands/search.ts:44
+#: app/src/commands/search.ts:46
 msgid "Search the messages in a case folder"
 msgstr ""
 
-#: app/src/commands/search.ts:48
+#: app/src/commands/search.ts:50
 msgid "The case folder, or the query when --case is given"
 msgstr ""
 
-#: app/src/commands/search.ts:53
+#: app/src/commands/search.ts:55
 msgid ""
 "What to look for. Full-text syntax: a word, \"a phrase\", a AND b, or "
 "subject : word"
 msgstr ""
 
-#: app/src/commands/search.ts:57
+#: app/src/commands/search.ts:59
 msgid "The case folder to search"
 msgstr ""
 
-#: app/src/commands/search.ts:59
+#: app/src/commands/search.ts:61
 msgid "How many matches to print"
 msgstr ""
 
-#: app/src/commands/search.ts:64
+#: app/src/commands/search.ts:66
 msgid "Print the matches as JSON"
 msgstr ""
 
-#: app/src/commands/search.ts:70
+#: app/src/commands/search.ts:72
 msgid "Find messages with \"invoice\" in the subject"
 msgstr ""
 
-#: app/src/commands/search.ts:76
+#: app/src/commands/search.ts:78
 msgid "No search query given. Use `stamped search <case> <query>`."
 msgstr ""
 
-#: app/src/commands/search.ts:101
+#: app/src/commands/search.ts:106
 msgid "No match."
 msgstr ""
 
-#: app/src/commands/search.ts:105 app/src/gui/view/message.ts:231
+#: app/src/commands/search.ts:110 app/src/gui/view/message.ts:231
 msgid "The case holds {total} message."
 msgid_plural "The case holds {total} messages."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/search.ts:113
+#: app/src/commands/search.ts:118
 msgid "  from    {from}"
 msgstr ""
 
-#: app/src/commands/search.ts:113 app/src/commands/search.ts:114
-#: app/src/commands/search.ts:115 app/src/gui/view/message.ts:88
+#: app/src/commands/search.ts:118 app/src/commands/search.ts:119
+#: app/src/commands/search.ts:120 app/src/gui/view/message.ts:88
 #: app/src/gui/view/message.ts:89 app/src/gui/view/message.ts:95
 #: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:100
 #: app/src/lib/evidence.ts:107 app/src/lib/evidence.ts:108
@@ -519,29 +519,29 @@ msgstr ""
 msgid "(none)"
 msgstr ""
 
-#: app/src/commands/search.ts:114
+#: app/src/commands/search.ts:119
 msgid "  date    {date}"
 msgstr ""
 
-#: app/src/commands/search.ts:115
+#: app/src/commands/search.ts:120
 msgid "  subject {subject}"
 msgstr ""
 
-#: app/src/commands/search.ts:123
+#: app/src/commands/search.ts:128
 msgid "{count} match."
 msgid_plural "{count} matches."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/search.ts:147
+#: app/src/commands/search.ts:152
 msgid "  semantic match"
 msgstr ""
 
-#: app/src/commands/search.ts:148
+#: app/src/commands/search.ts:153
 msgid "  text and semantic match"
 msgstr ""
 
-#: app/src/commands/search.ts:175
+#: app/src/commands/search.ts:180
 msgid ""
 "Cannot read the search {query}. Put a phrase in double quotes, and use "
 "`column : word` to search one field."
@@ -645,12 +645,12 @@ msgstr ""
 msgid "Nothing is running in the background."
 msgstr ""
 
-#: app/src/gui/main.ts:94
+#: app/src/gui/main.ts:100
 msgctxt "application name"
 msgid "Stamped"
 msgstr ""
 
-#: app/src/gui/main.ts:103
+#: app/src/gui/main.ts:109
 msgid ""
 "Verifies the DKIM signatures of an email archive and says what each "
 "signature actually covers. It works offline: public keys come from a store "
@@ -808,7 +808,7 @@ msgstr ""
 msgid "The import failed"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:171 app/src/gui/view/activity.ts:311
+#: app/src/gui/view/activity.ts:171 app/src/gui/view/activity.ts:321
 msgid "Finished, {count} message"
 msgid_plural "Finished, {count} messages"
 msgstr[0] ""
@@ -824,7 +824,7 @@ msgstr[1] ""
 msgid "{rate} messages/s, {bytes}/s"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:191 app/src/gui/view/activity.ts:296
+#: app/src/gui/view/activity.ts:191 app/src/gui/view/activity.ts:305
 msgid "about {time} left"
 msgstr ""
 
@@ -892,17 +892,23 @@ msgstr ""
 msgid "Measuring how fast this machine is"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:290 app/src/gui/view/activity.ts:301
+#: app/src/gui/view/activity.ts:293 app/src/gui/view/activity.ts:311
 msgid "{done} of {total} message"
 msgid_plural "{done} of {total} messages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/activity.ts:306
+#: app/src/gui/view/activity.ts:295
+msgid "{done} of {total} message, running in another process"
+msgid_plural "{done} of {total} messages, running in another process"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/gui/view/activity.ts:316
 msgid "Paused while on battery"
 msgstr ""
 
-#: app/src/gui/view/activity.ts:307
+#: app/src/gui/view/activity.ts:317
 msgid "Paused"
 msgstr ""
 
