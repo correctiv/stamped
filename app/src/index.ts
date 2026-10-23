@@ -23,6 +23,7 @@ import { peopleCommand } from './commands/people.ts';
 import { reportCommand } from './commands/report.ts';
 import { reverifyCommand } from './commands/reverify.ts';
 import { searchCommand } from './commands/search.ts';
+import { semanticCommand } from './commands/semantic.ts';
 import { statusCommand } from './commands/status.ts';
 import { timelineCommand } from './commands/timeline.ts';
 import { verifyCommand } from './commands/verify.ts';
@@ -50,6 +51,7 @@ function parse(): Promise<unknown> {
             .command(timelineCommand())
             .command(reverifyCommand())
             .command(statusCommand())
+            .command(semanticCommand())
             .demandCommand(1, _('Pick a command. Try `stamped verify --help`.'))
             .strict()
             .version('0.2.1')

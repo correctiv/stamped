@@ -32,7 +32,18 @@ import { _, _p, TEXT_DOMAIN } from '@stamped/core';
  * duplication is a command added to `../index.ts` and not to this array: it would open a window
  * instead of running, which the CLI smoke test in CI catches for the commands it covers.
  */
-const COMMANDS = ['verify', 'keys', 'import', 'search', 'report', 'reverify', 'people', 'timeline', 'status'];
+const COMMANDS = [
+    'verify',
+    'keys',
+    'import',
+    'search',
+    'report',
+    'reverify',
+    'people',
+    'timeline',
+    'status',
+    'semantic',
+];
 
 /** `stamped --help` and `stamped --version` are the CLI's; `stamped --foo` is not a window either. */
 const CLI_FLAGS = ['--help', '-h', '--version'];

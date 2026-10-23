@@ -52,6 +52,22 @@ function blobBytes(value: unknown): Uint8Array {
 }
 
 /**
+ * Two processes open this file: the indexing subprocess writes it while the window's query worker
+ * reads it. busy_timeout makes a second connection wait up to 5 s for the lock instead of failing
+ * at once, and WAL lets the reader go on while the writer commits. Best effort, like the index:
+ * a backend that refuses a pragma still works, just with the default locking.
+ */
+function tuneConnection(db: DatabaseSync): void {
+    for (const pragma of ['PRAGMA busy_timeout=5000', 'PRAGMA journal_mode=WAL']) {
+        try {
+            db.exec(pragma);
+        } catch {
+            // see above
+        }
+    }
+}
+
+/**
  * Open the case's vector database, creating it or starting it over as needed.
  *
  * The caller closes it.
@@ -63,6 +79,7 @@ export function openVectorDb(path: string, options: VectorDbOptions): DatabaseSy
     } catch {
         throw new Error(`Cannot open the vector database at ${path}.`);
     }
+    tuneConnection(db);
     if (needsRebuild(db, options)) createSchema(db, options);
     return db;
 }
@@ -86,6 +103,7 @@ export function openVectorDbForSearch(path: string, options: VectorDbOptions): D
     } catch {
         return undefined;
     }
+    tuneConnection(db);
     if (needsRebuild(db, options)) {
         db.close();
         return undefined;

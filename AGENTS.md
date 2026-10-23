@@ -168,6 +168,19 @@ model answers `undefined`, which shows as "not available here" instead of a cras
 clock, because an estimate that cannot be tested with a fake clock is an estimate nobody can
 check. `@stamped/semantic` and `@stamped/store` never import each other; the app composes them.
 
+**The window indexes in a SUBPROCESS, like the import** (`app/src/lib/semantic-run.ts`). The
+controller above runs inside `stamped semantic index <case>` (it obeys the setting, resumes from
+`vectors.db`, ends cleanly on SIGTERM/SIGINT with the vectors kept and the status `paused`). The
+window spawns that command (`semanticArgv`, same `selfArgv` route as the import) and only polls
+`semantic-status.json`; `createSubprocessSemantic` keeps the `SemanticController` interface, so the
+dialog and the activity row are unchanged. Rules: never a second run beside a live one (fresh
+update AND living pid — `liveSemanticRun`; a `paused` file is never stale, so its pid decides);
+the index yields to an import (SIGTERM, restart when the import ends); the window ends only a
+process it started itself, a terminal's run is shown and left alone. No argv (no binary) → the
+in-process controller as before. The GUI still embeds the QUERY itself (model loaded twice, ~310 MB
+plus a context each). `vectors.db` is opened by two processes, so both openers set `busy_timeout`
+and WAL like the index.
+
 ## Why mailauth and not our own verifier
 
 Measured, not assumed (see [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md)). RFC 6376 canonicalization —
