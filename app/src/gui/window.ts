@@ -2253,8 +2253,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const ended = this.activityWatcher.poll(readActivityStatuses(session.paths));
         if (ended !== undefined) {
             // A background run ended (or read as interrupted): the panes it fed are stale until
-            // they reload, exactly as after an import.
-            this.track(this.refresh());
+            // they reload, exactly as after an import — and like an import, a re-verification
+            // changes verdicts, so the cached scope tables go first or a filter keeps old hits.
+            this.track(
+                dropFilterCaches(session).then(() => this.refresh()),
+                session,
+            );
         }
         return GLib.SOURCE_CONTINUE;
     }
