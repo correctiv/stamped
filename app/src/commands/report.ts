@@ -12,16 +12,30 @@
  */
 
 import { describeUnverifiableReason, describeVerdict, fmt, _, _n } from '@stamped/core';
-import { caseReport, openIndex } from '@stamped/store';
+import {
+    caseReport,
+    domainsByVerdict,
+    openIndex,
+    periodBreakdown,
+    rawSetDigest,
+    unsignedBreakdown,
+} from '@stamped/store';
+import { basename, resolve } from 'node:path';
 import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
+import { buildPdfModel } from '../lib/pdf-report-model.ts';
+import { loadVault } from '../lib/vault.ts';
+import { VERSION } from '../lib/version.ts';
 
 interface ReportArgs {
     case?: string;
     folder?: string;
     keys?: number;
     json?: boolean;
+    pdf?: string;
+    unsignedBreakdown?: boolean;
+    anonymizeMailboxes?: boolean;
 }
 
 /** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
@@ -43,15 +57,56 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     type: 'boolean',
                     default: false,
                 })
+                .option('pdf', {
+                    describe: _('Write a verification report for journalists as a PDF to this file'),
+                    type: 'string',
+                })
+                .option('unsigned-breakdown', {
+                    describe: _(
+                        'With --pdf: add why messages are unsigned (reads one raw file per unsigned message)',
+                    ),
+                    type: 'boolean',
+                    default: false,
+                })
+                .option('anonymize-mailboxes', {
+                    describe: _('With --pdf: replace mailbox names by M1, M2, …'),
+                    type: 'boolean',
+                    default: false,
+                })
                 .example(
                     'stamped report ./case',
                     _('See how much of the case is still unverifiable, and which key would change that'),
                 ),
-        handler: (args) => {
+        handler: async (args) => {
             const paths = caseOrThrow(caseRoot('report', args.case, [args.folder]).root);
             const db = openIndex(paths);
             try {
                 const report = caseReport(db, { keyLimit: args.keys ?? 20, paths });
+
+                if (args.pdf !== undefined) {
+                    // Imported here: the GI modules are GJS-only and the other paths need none.
+                    const { renderPdfReport } = await import('../lib/pdf-report.ts');
+                    const model = buildPdfModel({
+                        caseName: basename(resolve(paths.root)),
+                        checkedAt: new Date(),
+                        version: VERSION,
+                        report,
+                        periods: periodBreakdown(db, paths),
+                        domains: domainsByVerdict(db, 15),
+                        digest: rawSetDigest(db),
+                        keys: loadVault(paths.root).all(),
+                        ...(args.unsignedBreakdown ? { unsigned: unsignedBreakdown(db, paths) } : {}),
+                        anonymizeMailboxes: args.anonymizeMailboxes === true,
+                    });
+                    const { pages } = await renderPdfReport(model, args.pdf);
+                    console.log(
+                        fmt(_n('Wrote {file} ({pages} page).', 'Wrote {file} ({pages} pages).', pages), {
+                            file: args.pdf,
+                            pages: String(pages),
+                        }),
+                    );
+                    return;
+                }
 
                 if (args.json) {
                     console.log(JSON.stringify(report, undefined, 2));
