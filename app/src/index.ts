@@ -28,6 +28,7 @@ import { statusCommand } from './commands/status.ts';
 import { timelineCommand } from './commands/timeline.ts';
 import { verifyCommand } from './commands/verify.ts';
 import { initI18n } from './lib/i18n.ts';
+import { VERSION } from './lib/version.ts';
 
 /** Build the parser and run it. Returns the promise yargs settles when the command is done. */
 function parse(): Promise<unknown> {
@@ -54,7 +55,7 @@ function parse(): Promise<unknown> {
             .command(semanticCommand())
             .demandCommand(1, _('Pick a command. Try `stamped verify --help`.'))
             .strict()
-            .version('0.2.1')
+            .version(VERSION)
             .help()
             .wrap(Math.min(110, process.stdout.columns ?? 110))
             // Don't let yargs print its own multi-line usage dump and stack trace on a failure: it
