@@ -24,35 +24,88 @@ export interface KeyEntry {
     readonly source: KeySource;
     /** ISO time the key was first seen or obtained, when known. */
     readonly since?: string;
+    /** The time range (ISO) this exact record is known to have been in use, when known. */
+    readonly seenFrom?: string;
+    readonly seenTo?: string;
+}
+
+/** Does a candidate's known era cover a message time? An unbounded side covers everything. */
+function covers(entry: KeyEntry, messageTime: string): boolean {
+    return (
+        (entry.seenFrom === undefined || entry.seenFrom <= messageTime) &&
+        (entry.seenTo === undefined || messageTime <= entry.seenTo)
+    );
 }
 
 /**
  * A lookup table from `<selector>._domainkey.<domain>` to a key record.
  *
  * The key of the map is the full DNS name, not a `(domain, selector)` pair, because that is what
- * a DKIM verifier asks for and what an operator pastes from a `dig` output.
+ * a DKIM verifier asks for and what an operator pastes from a `dig` output. A name may hold
+ * several ERA candidates (see {@link addEra}); {@link lookup} picks the one whose window covers
+ * a given message time.
  */
 export class KeyStore {
-    private readonly entries = new Map<string, KeyEntry>();
+    private readonly entries = new Map<string, KeyEntry[]>();
 
     /**
      * Add one key. The name is normalised (lowercased, a trailing dot dropped), so a record
      * copied from `dig`'s output and one typed by hand land on the same entry.
      *
-     * A later `add` for the same name REPLACES the earlier one: the operator's `--key` flag is
-     * meant to beat whatever a key file or the archive supplied, and the call order is what
-     * expresses that.
+     * A later `add` for the same name REPLACES every candidate held for it, era ones included:
+     * the operator's `--key` flag is meant to beat whatever a key file or the archive supplied,
+     * and the call order is what expresses that.
      */
     add(name: string, record: string, source: KeySource, since?: string): void {
-        this.entries.set(normaliseKeyName(name), { record, source, ...(since ? { since } : {}) });
+        this.entries.set(normaliseKeyName(name), [{ record, source, ...(since ? { since } : {}) }]);
     }
 
-    /** The entry for a name, or `undefined` — which is `no-key`, not an error. */
-    lookup(name: string): KeyEntry | undefined {
-        return this.entries.get(normaliseKeyName(name));
+    /**
+     * Add one ERA candidate for a name, alongside whatever is already there rather than
+     * replacing it — the vault feeds every era-distinct record of a non-conflicted pair this
+     * way, so {@link lookup} can pick the one whose `seenFrom`/`seenTo` window covers a given
+     * message rather than always answering with a single fixed record.
+     */
+    addEra(
+        name: string,
+        record: string,
+        source: KeySource,
+        options: { since?: string; seenFrom?: string; seenTo?: string } = {},
+    ): void {
+        const key = normaliseKeyName(name);
+        const entry: KeyEntry = {
+            record,
+            source,
+            ...(options.since !== undefined ? { since: options.since } : {}),
+            ...(options.seenFrom !== undefined ? { seenFrom: options.seenFrom } : {}),
+            ...(options.seenTo !== undefined ? { seenTo: options.seenTo } : {}),
+        };
+        const existing = this.entries.get(key);
+        if (existing) existing.push(entry);
+        else this.entries.set(key, [entry]);
     }
 
-    /** How many keys are in the store, for the diagnostics line. */
+    /**
+     * The entry for a name, or `undefined` — which is `no-key`, not an error.
+     *
+     * With one candidate, `messageTime` is irrelevant and that candidate answers. With several
+     * (era-distinct records of one pair, fed in by {@link KeyVault.toKeyStore} only for a pair
+     * it did NOT flag as conflicted), exactly one candidate whose window covers `messageTime`
+     * must exist for an answer at all: no message time, no covering candidate, or more than one
+     * covering candidate all answer `undefined` rather than guess. A caller that reads
+     * `undefined` as "no key" and reports `unverifiable` is exactly the failure mode this is
+     * for — era selection must never *confirm* a message through a record chosen by chance.
+     */
+    lookup(name: string, messageTime?: string): KeyEntry | undefined {
+        const candidates = this.entries.get(normaliseKeyName(name));
+        if (!candidates || candidates.length === 0) return undefined;
+        if (candidates.length === 1) return candidates[0];
+        if (messageTime === undefined) return undefined;
+        const covering = candidates.filter((c) => covers(c, messageTime));
+        return covering.length === 1 ? covering[0] : undefined;
+    }
+
+    /** How many names are in the store, for the diagnostics line. */
     get size(): number {
         return this.entries.size;
     }

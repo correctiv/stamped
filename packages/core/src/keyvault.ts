@@ -16,6 +16,7 @@
  */
 
 import { fmt, _ } from './i18n.ts';
+import { keyFingerprint } from './keymaterial.ts';
 import type { KeyAlgorithm, ParsedKey } from './keymaterial.ts';
 import { KeyStore, keyNameFor, normaliseKeyName } from './keys.ts';
 import type { KeySource } from './verdict.ts';
@@ -119,6 +120,71 @@ function later(a: string | undefined, b: string | undefined): string | undefined
     return a === undefined ? b : b === undefined ? a : a > b ? a : b;
 }
 
+/**
+ * Entries of one pair, grouped by decoded key fingerprint: every formatted variant of one key
+ * lands in the same group. A record that fails to decode gets its own singleton group — two
+ * unparseable records must never be read as "the same key" by both fingerprinting to nothing.
+ */
+function fingerprintGroups(entries: readonly VaultEntry[]): Map<string, VaultEntry[]> {
+    const groups = new Map<string, VaultEntry[]>();
+    let anonymous = 0;
+    for (const e of entries) {
+        const fingerprint = keyFingerprint(e.record) ?? `#unparseable-${anonymous++}`;
+        (groups.get(fingerprint) ?? groups.set(fingerprint, []).get(fingerprint)!).push(e);
+    }
+    return groups;
+}
+
+/** The precedence-best entry of a fingerprint group, same ordering as {@link recordsFor}. */
+function bestOf(group: readonly VaultEntry[]): VaultEntry {
+    return [...group].sort(
+        (a, b) => PRECEDENCE[b.origin] - PRECEDENCE[a.origin] || (a.fetchedAt < b.fetchedAt ? 1 : -1),
+    )[0] as VaultEntry;
+}
+
+/** The union of a fingerprint group's `seenFrom`/`seenTo`: how wide the group's own era is known. */
+function groupWindow(group: readonly VaultEntry[]): { from?: string; to?: string } {
+    let from: string | undefined;
+    let to: string | undefined;
+    for (const e of group) {
+        from = earlier(from, e.seenFrom);
+        to = later(to, e.seenTo);
+    }
+    return { from, to };
+}
+
+function windowsOverlap(a: { from?: string; to?: string }, b: { from?: string; to?: string }): boolean {
+    if (a.from === undefined || a.to === undefined || b.from === undefined || b.to === undefined) {
+        return true;
+    }
+    return a.from <= b.to && b.from <= a.to;
+}
+
+/**
+ * Can every group of a multi-key pair be told apart by era alone? Only when EVERY group's own
+ * window is fully bounded (a record with no seen range at all is "always", which nothing can be
+ * told apart from) and no two groups' windows overlap — a message falling in an overlap, or
+ * carrying no time, could be either group's, and that is exactly the human question {@link
+ * conflicts} must keep surfacing.
+ */
+function eraResolvable(groups: readonly (readonly VaultEntry[])[]): boolean {
+    const windows = groups.map(groupWindow);
+    if (windows.some((w) => w.from === undefined || w.to === undefined)) return false;
+    for (let i = 0; i < windows.length; i++) {
+        for (let j = i + 1; j < windows.length; j++) {
+            if (
+                windowsOverlap(
+                    windows[i] as { from?: string; to?: string },
+                    windows[j] as { from?: string; to?: string },
+                )
+            ) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 export class KeyVault {
     private entries: VaultEntry[] = [];
 
@@ -168,23 +234,43 @@ export class KeyVault {
         return { status: others.length > 0 ? 'conflict' : 'added', entry, others };
     }
 
-    /** Pairs holding more than one distinct record: rotation or forgery, both worth a look. */
+    /**
+     * Pairs holding more than one distinct KEY (decoded material, not record text) whose eras
+     * cannot tell them apart: rotation or forgery, both worth a human look. Two records that
+     * decode to the same key are never a conflict, whatever their formatting. Two records that
+     * decode to DIFFERENT keys are not a conflict either, exactly when every one of them carries
+     * a fully bounded `seenFrom`/`seenTo` window and no two windows overlap — a message's own
+     * time then picks the one record that could have signed it, with no human guess involved.
+     * An unbounded window, or two windows that overlap, is the genuine case: a message falling in
+     * the overlap (or with no time at all) could be either record's, and `toKeyStore` must not
+     * pick for it. See the file header: this is the invariant the whole module exists to keep.
+     */
     conflicts(): KeyPair[] {
-        const records = new Map<string, Set<string>>();
+        const byPair = new Map<string, VaultEntry[]>();
         const pairs = new Map<string, KeyPair>();
         for (const e of this.entries) {
             const name = pairName(e);
             pairs.set(name, { domain: e.domain, selector: e.selector });
-            (records.get(name) ?? records.set(name, new Set()).get(name)!).add(e.record);
+            (byPair.get(name) ?? byPair.set(name, []).get(name)!).push(e);
         }
-        return [...pairs].filter(([name]) => (records.get(name)?.size ?? 0) > 1).map(([, pair]) => pair);
+        const out: KeyPair[] = [];
+        for (const [name, pair] of pairs) {
+            const groups = [...fingerprintGroups(byPair.get(name) ?? []).values()];
+            if (groups.length > 1 && !eraResolvable(groups)) out.push(pair);
+        }
+        return out;
     }
 
     /**
-     * The store the verifier is fed: one record per name, the best origin, the newest on a tie.
-     * With a conflict this PICKS one — {@link conflicts} is how a caller learns that it did —
-     * unless `skipConflicts` leaves the pair out, so that a rotation-or-forgery question can
-     * never turn a verdict into a confirmation.
+     * The store the verifier is fed.
+     *
+     * A pair with one key (whatever its formatting history) feeds one record, best origin and
+     * newest first on a tie. A pair with several KEYS whose eras partition cleanly feeds every
+     * one of them as an era candidate ({@link KeyStore.addEra}), so a lookup with a message time
+     * picks the record whose window covers it — never a guess, see {@link conflicts}. A pair
+     * still in {@link conflicts} PICKS one as before, unless `skipConflicts` leaves it out
+     * entirely, so that a rotation-or-forgery question can never turn a verdict into a
+     * confirmation.
      */
     toKeyStore(options: { skipConflicts?: boolean } = {}): KeyStore {
         const store = new KeyStore();
@@ -194,10 +280,49 @@ export class KeyVault {
             const name = pairName(e);
             if (seen.has(name) || conflicted.has(name)) continue;
             seen.add(name);
-            const best = this.recordsFor(e)[0] ?? e;
+            const entries = this.recordsFor(e);
+            const groups = [...fingerprintGroups(entries).values()];
+            if (groups.length > 1 && eraResolvable(groups)) {
+                for (const group of groups) {
+                    const best = bestOf(group);
+                    const window = groupWindow(group);
+                    store.addEra(name, best.record, keySourceOf(best.origin), {
+                        since: best.seenFrom ?? best.fetchedAt,
+                        ...(window.from !== undefined ? { seenFrom: window.from } : {}),
+                        ...(window.to !== undefined ? { seenTo: window.to } : {}),
+                    });
+                }
+                continue;
+            }
+            const best = entries[0] ?? e;
             store.add(name, best.record, keySourceOf(best.origin), best.seenFrom ?? best.fetchedAt);
         }
         return store;
+    }
+
+    /**
+     * One representative entry per DISTINCT key held for a pair (the best-origin record of each
+     * {@link fingerprintGroups} group) — what a human choosing among candidates (`stamped keys
+     * resolve`) is shown, so two differently-formatted copies of the same key are offered as one
+     * choice rather than two.
+     */
+    distinctKeys(pair: KeyPair): VaultEntry[] {
+        return [...fingerprintGroups(this.recordsFor(pair)).values()].map(bestOf);
+    }
+
+    /**
+     * The human decision {@link conflicts} surfaces: keep every candidate that is the SAME key
+     * as `chosen` (same decoded material) for this pair, and discard every other one. Never
+     * automatic — a caller picks `chosen` from {@link distinctKeys}, which is what `stamped keys
+     * resolve` and its report line are for.
+     */
+    keepOnly(pair: KeyPair, chosen: VaultEntry): void {
+        const name = pairName(pair);
+        const fingerprint = keyFingerprint(chosen.record);
+        this.entries = this.entries.filter((e) => {
+            if (pairName(e) !== name) return true;
+            return fingerprint !== undefined ? keyFingerprint(e.record) === fingerprint : e === chosen;
+        });
     }
 
     toJson(): string {

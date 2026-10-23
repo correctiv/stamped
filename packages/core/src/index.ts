@@ -87,6 +87,7 @@ export {
 export {
     decodeBase64,
     type KeyAlgorithm,
+    keyFingerprint,
     type KeyMaterial,
     parseKeyMaterial,
     type ParsedKey,

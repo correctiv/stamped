@@ -257,6 +257,19 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     );
                 }
 
+                const conflicts = loadVault(paths.root).conflicts();
+                if (conflicts.length > 0) {
+                    // Era selection already resolved every pair it safely could; a name still
+                    // listed here holds two live keys neither era nor formatting tells apart —
+                    // the rotation-or-forgery question a human has to answer.
+                    console.log('');
+                    console.log(_('Keys needing a human decision'));
+                    for (const pair of conflicts) {
+                        console.log(`  ${pair.selector}._domainkey.${pair.domain}`);
+                    }
+                    console.log(_('Hint: stamped keys resolve <selector>._domainkey.<domain>'));
+                }
+
                 const caveats = report.caveats.filter((c) => c.messages > 0);
                 if (caveats.length > 0) {
                     console.log('');
