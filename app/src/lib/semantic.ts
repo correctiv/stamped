@@ -436,6 +436,10 @@ function sameSetting(a: SemanticSetting, b: SemanticSetting): boolean {
 
 /** What to tell the user when something threw. */
 function messageOf(error: unknown): string {
-    if (error instanceof Error && error.message !== '') return error.message;
+    if (error instanceof Error && error.message !== '') {
+        // The indexer wraps the embedder's own error as the cause; without it "failed" says nothing.
+        const cause = error.cause === undefined ? '' : `: ${messageOf(error.cause)}`;
+        return `${error.message}${cause}`;
+    }
     return String(error);
 }
