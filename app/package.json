@@ -26,6 +26,7 @@
     "bench:stall": "gjsify build scripts/bench-stall.ts --app gjs --outfile dist/bench-stall.gjs.mjs && gjsify run dist/bench-stall.gjs.mjs",
     "test": "LC_ALL=C LANGUAGE= gjsify test",
     "test:embedder": "node --experimental-strip-types tests/embedder.integration.mts",
+    "test:embedder:gjs": "gjsify build tests/embedder.integration.mts --app gjs -o dist/embedder.integration.gjs.mjs && gjsify run dist/embedder.integration.gjs.mjs",
     "check:macos-app": "node tests/macos/check-app.mjs"
   },
   "gjsify": {
@@ -90,6 +91,11 @@
           "environment": "gnome"
         }
       ]
+    },
+    "aliases": {
+      "child_process": "@stamped/semantic/child-process",
+      "node:child_process": "@stamped/semantic/child-process",
+      "ipull": "ipull/node"
     },
     "excludeGlobals": [
       "document",

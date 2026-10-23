@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 22:22+0200\n"
+"POT-Creation-Date: 2026-10-23 08:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1448,7 +1448,8 @@ msgstr[1] ""
 
 #: app/src/gui/view/semantic.ts:42
 msgid ""
-"This build cannot run the language model yet. Text search is not affected."
+"Stamped ships no language model for this kind of machine. Text search is not "
+"affected."
 msgstr ""
 
 #: app/src/gui/view/semantic.ts:45
@@ -2021,7 +2022,7 @@ msgid "Semantic search is off."
 msgstr ""
 
 #: app/src/lib/semantic-status.ts:47
-msgid "Semantic search is not available on this runtime."
+msgid "Semantic search is not available on this machine."
 msgstr ""
 
 #: app/src/lib/semantic-status.ts:49

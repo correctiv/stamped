@@ -39,7 +39,7 @@ export function semanticEstimate(setting: SemanticSetting | undefined, total: nu
 
 function unavailableNote(availability: EmbedderAvailability): string | undefined {
     if (availability === 'runtime') {
-        return _('This build cannot run the language model yet. Text search is not affected.');
+        return _('Stamped ships no language model for this kind of machine. Text search is not affected.');
     }
     if (availability === 'model') {
         return _('No embedding model was found on this machine. Text search is not affected.');

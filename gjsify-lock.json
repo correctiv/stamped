@@ -32,6 +32,7 @@
     "@gjsify/node-runtime-darwin-arm64@0.64.5",
     "@gjsify/node-runtime-darwin-x64@0.64.5",
     "@gjsify/node-runtime-win32-x64@0.64.5",
+    "@gjsify/child_process@0.64.5",
     "node-llama-cpp@3.22.2",
     "mailauth@8.0.1"
   ],
