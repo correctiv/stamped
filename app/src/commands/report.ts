@@ -13,6 +13,7 @@
 
 import { describeUnverifiableReason, describeVerdict, fmt, _, _n } from '@stamped/core';
 import {
+    bodyAlteredBreakdown,
     caseReport,
     domainsByVerdict,
     openIndex,
@@ -24,6 +25,7 @@ import { basename, resolve } from 'node:path';
 import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
+import { bodyAlteredSection } from '../lib/body-altered.ts';
 import { buildPdfModel } from '../lib/pdf-report-model.ts';
 import { loadVault } from '../lib/vault.ts';
 import { VERSION } from '../lib/version.ts';
@@ -95,6 +97,7 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                         domains: domainsByVerdict(db, 15),
                         digest: rawSetDigest(db),
                         keys: loadVault(paths.root).all(),
+                        bodyAltered: bodyAlteredBreakdown(db, paths),
                         ...(args.unsignedBreakdown ? { unsigned: unsignedBreakdown(db, paths) } : {}),
                         anonymizeMailboxes: args.anonymizeMailboxes === true,
                     });
@@ -178,6 +181,28 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                         for (const reason of count.reasons) {
                             console.log(
                                 `            ${String(reason.messages).padStart(6)}  ${reason.selector}._domainkey.${reason.domain}`,
+                            );
+                        }
+                    }
+                }
+
+                const bodySection = bodyAlteredSection(bodyAlteredBreakdown(db, paths));
+                if (bodySection !== undefined) {
+                    console.log('');
+                    console.log(_('Body altered: export artefacts and indications'));
+                    console.log(`  ${bodySection.basis}`);
+                    console.log(`  ${bodySection.explainedNote}`);
+                    for (const [label, messages] of bodySection.explained) {
+                        console.log(`  ${String(messages).padStart(8)}  ${label}`);
+                    }
+                    if (bodySection.unexplained > 0) {
+                        console.log(`  ${bodySection.indicatorNote}`);
+                        console.log(
+                            `  ${String(bodySection.unexplained).padStart(8)}  ${_('Not explained')}`,
+                        );
+                        for (const [label, messages] of bodySection.indicators) {
+                            console.log(
+                                `            ${String(messages).padStart(6)}  ${label} (${_('Indication, not proof')})`,
                             );
                         }
                     }

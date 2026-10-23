@@ -168,6 +168,7 @@ export {
     periodBreakdown,
     rawSetDigest,
     type RawSetDigest,
+    bodyAlteredBreakdown,
     type UnsignedBreakdown,
     unsignedBreakdown,
     type VerdictDomains,

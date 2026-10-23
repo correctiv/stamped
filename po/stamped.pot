@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 14:27+0200\n"
+"POT-Creation-Date: 2026-10-23 14:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -340,132 +340,144 @@ msgid_plural "{n} addresses listed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/report.ts:45
+#: app/src/commands/report.ts:47
 msgid ""
 "Summarise a case folder: verdicts, and which keys would answer the most mail"
 msgstr ""
 
-#: app/src/commands/report.ts:48 app/src/commands/report.ts:49
+#: app/src/commands/report.ts:50 app/src/commands/report.ts:51
 #: app/src/commands/status.ts:43 app/src/commands/status.ts:44
 msgid "The case folder to report on"
 msgstr ""
 
-#: app/src/commands/report.ts:51
+#: app/src/commands/report.ts:53
 msgid "How many (domain, selector) pairs to list"
 msgstr ""
 
-#: app/src/commands/report.ts:56
+#: app/src/commands/report.ts:58
 msgid "Print the report as JSON"
 msgstr ""
 
-#: app/src/commands/report.ts:61
+#: app/src/commands/report.ts:63
 msgid "Write a verification report for journalists as a PDF to this file"
 msgstr ""
 
-#: app/src/commands/report.ts:66
+#: app/src/commands/report.ts:68
 msgid ""
 "With --pdf: add why messages are unsigned (reads one raw file per unsigned "
 "message)"
 msgstr ""
 
-#: app/src/commands/report.ts:72
+#: app/src/commands/report.ts:74
 msgid "With --pdf: replace mailbox names by M1, M2, …"
 msgstr ""
 
-#: app/src/commands/report.ts:78
+#: app/src/commands/report.ts:80
 msgid ""
 "See how much of the case is still unverifiable, and which key would change "
 "that"
 msgstr ""
 
-#: app/src/commands/report.ts:103
+#: app/src/commands/report.ts:106
 msgid "Wrote {file} ({pages} page)."
 msgid_plural "Wrote {file} ({pages} pages)."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/report.ts:120
+#: app/src/commands/report.ts:123
 msgid "{count} message, {bytes} bytes."
 msgid_plural "{count} messages, {bytes} bytes."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/report.ts:129
+#: app/src/commands/report.ts:132
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:137 app/src/gui/window.ts:2162
+#: app/src/commands/report.ts:140 app/src/gui/window.ts:2162
 #: app/src/gui/window.blp:166
 msgid "Verdicts"
 msgstr ""
 
-#: app/src/commands/report.ts:147 app/src/gui/view/overview.ts:358
+#: app/src/commands/report.ts:150 app/src/gui/view/overview.ts:358
 msgid "Mailboxes"
 msgstr ""
 
-#: app/src/commands/report.ts:165
+#: app/src/commands/report.ts:168
 msgid "Altered messages, and the keys behind them"
 msgstr ""
 
-#: app/src/commands/report.ts:173
+#: app/src/commands/report.ts:176
 msgid "{n} of them equally explained by a key newer than the message"
 msgstr ""
 
-#: app/src/commands/report.ts:188
+#: app/src/commands/report.ts:192 app/src/lib/pdf-report.ts:353
+msgid "Body altered: export artefacts and indications"
+msgstr ""
+
+#: app/src/commands/report.ts:201
+msgid "Not explained"
+msgstr ""
+
+#: app/src/commands/report.ts:205 app/src/lib/pdf-report.ts:367
+msgid "Indication, not proof"
+msgstr ""
+
+#: app/src/commands/report.ts:213
 msgid "Before and now (verdict at first indexing, verdict today)"
 msgstr ""
 
-#: app/src/commands/report.ts:205
+#: app/src/commands/report.ts:230
 msgid ""
 "Signed mail confirmed: {all} of {signed} ({allPct}) including caveats, "
 "{clean} ({cleanPct}) without."
 msgstr ""
 
-#: app/src/commands/report.ts:220 app/src/gui/view/overview.ts:329
+#: app/src/commands/report.ts:245 app/src/gui/view/overview.ts:329
 msgid "Most missing keys"
 msgstr ""
 
-#: app/src/commands/report.ts:228
+#: app/src/commands/report.ts:253
 msgid "Hint: stamped keys template {domain} {selector}"
 msgstr ""
 
-#: app/src/commands/report.ts:238
+#: app/src/commands/report.ts:263
 msgid "Caveats"
 msgstr ""
 
-#: app/src/commands/report.ts:248
+#: app/src/commands/report.ts:273
 msgid "No verdict, by reason"
 msgstr ""
 
-#: app/src/commands/report.ts:257
+#: app/src/commands/report.ts:282
 msgid "No DKIM signatures in this case, so no keys are needed."
 msgstr ""
 
-#: app/src/commands/report.ts:261
+#: app/src/commands/report.ts:286
 msgid "Signing domains, by how much mail they signed"
 msgstr ""
 
-#: app/src/commands/report.ts:267
+#: app/src/commands/report.ts:292
 msgid "Keys, by how much mail depends on them"
 msgstr ""
 
-#: app/src/commands/report.ts:269
+#: app/src/commands/report.ts:294
 msgid "messages"
 msgstr ""
 
-#: app/src/commands/report.ts:269
+#: app/src/commands/report.ts:294
 msgid "unverifiable"
 msgstr ""
 
-#: app/src/commands/report.ts:269
+#: app/src/commands/report.ts:294
 msgid "confirmed"
 msgstr ""
 
-#: app/src/commands/report.ts:269
+#: app/src/commands/report.ts:294
 msgid "w/ caveats"
 msgstr ""
 
-#: app/src/commands/report.ts:269
+#: app/src/commands/report.ts:294
 msgid "selector._domainkey.domain"
 msgstr ""
 
@@ -652,7 +664,7 @@ msgid "Check one message against a key you have on disk"
 msgstr ""
 
 #: app/src/commands/verify.ts:83 packages/import/src/folder.ts:128
-#: packages/import/src/source.ts:219 packages/store/src/importer.ts:472
+#: packages/import/src/source.ts:219 packages/store/src/importer.ts:474
 msgid "Cannot read {path}."
 msgstr ""
 
@@ -1316,9 +1328,10 @@ msgstr ""
 msgid "No message has the verdict you filtered for."
 msgstr ""
 
-#: app/src/gui/view/overview.ts:108 app/src/lib/pdf-report.ts:254
-#: app/src/lib/pdf-report.ts:293 app/src/lib/pdf-report.ts:339
-#: app/src/lib/pdf-report.ts:372 app/src/lib/pdf-report.ts:421
+#: app/src/gui/view/overview.ts:108 app/src/lib/pdf-report.ts:255
+#: app/src/lib/pdf-report.ts:294 app/src/lib/pdf-report.ts:340
+#: app/src/lib/pdf-report.ts:358 app/src/lib/pdf-report.ts:367
+#: app/src/lib/pdf-report.ts:399 app/src/lib/pdf-report.ts:448
 #: app/src/gui/window.blp:216 app/src/gui/window.blp:230
 msgid "Messages"
 msgstr ""
@@ -1634,7 +1647,7 @@ msgstr ""
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 
-#: app/src/gui/window.ts:1493 app/src/lib/pdf-report.ts:374
+#: app/src/gui/window.ts:1493 app/src/lib/pdf-report.ts:401
 msgid "(unnamed)"
 msgstr ""
 
@@ -1881,6 +1894,60 @@ msgstr[1] ""
 msgid "  stored  {name} via {origin}{flag}"
 msgstr ""
 
+#: app/src/lib/body-altered.ts:34
+msgid "Doubled leading dots (dot-stuffing)"
+msgstr ""
+
+#: app/src/lib/body-altered.ts:36
+msgid "Line endings converted"
+msgstr ""
+
+#: app/src/lib/body-altered.ts:38
+msgid "Doubled leading dots and line endings"
+msgstr ""
+
+#: app/src/lib/body-altered.ts:40
+msgid "Base64 lines re-wrapped"
+msgstr ""
+
+#: app/src/lib/body-altered.ts:42
+msgid "Base64 line break before the boundary added or removed"
+msgstr ""
+
+#: app/src/lib/body-altered.ts:44
+msgid "Quoted-printable text stored decoded"
+msgstr ""
+
+#: app/src/lib/body-altered.ts:59
+msgid ""
+"Counted over {count} message with a body-altered signature, by re-checking "
+"its raw file against the hash the sender signed."
+msgid_plural ""
+"Counted over {count} messages with a body-altered signature, by re-checking "
+"their raw files against the hash the sender signed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/body-altered.ts:67
+msgid ""
+"{count} most likely changed by the export, content unchanged: undoing the "
+"artefact brings the signed hash back. The verdict stays body-altered."
+msgstr ""
+
+#: app/src/lib/body-altered.ts:74
+msgid ""
+"Of the rest, no known export artefact explains the difference. The groups "
+"below are an indication, not proof, and overlap."
+msgstr ""
+
+#: app/src/lib/body-altered.ts:77
+msgid "Exchange/TNEF markers in the header"
+msgstr ""
+
+#: app/src/lib/body-altered.ts:78
+msgid "Receiving server recorded no dkim=pass"
+msgstr ""
+
 #: app/src/lib/case.ts:18
 msgid ""
 "{path} is not a case folder. Run `stamped import {path} <source>` first."
@@ -1903,7 +1970,7 @@ msgstr ""
 msgid "Signature {position} of {total}, {verdict}"
 msgstr ""
 
-#: app/src/lib/evidence.ts:100 app/src/lib/pdf-report.ts:421
+#: app/src/lib/evidence.ts:100 app/src/lib/pdf-report.ts:448
 msgid "Domain"
 msgstr ""
 
@@ -1967,7 +2034,7 @@ msgstr ""
 msgid "Length limit (l=)"
 msgstr ""
 
-#: app/src/lib/evidence.ts:138 app/src/lib/pdf-report.ts:339
+#: app/src/lib/evidence.ts:138 app/src/lib/pdf-report.ts:340
 msgid "Reason"
 msgstr ""
 
@@ -2062,79 +2129,79 @@ msgstr ""
 msgid "Pair file {path}: {reason}"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:140
+#: app/src/lib/pdf-report.ts:141
 msgid "Page {page}/{total}"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:246
+#: app/src/lib/pdf-report.ts:247
 msgid "Email verification report"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:247
+#: app/src/lib/pdf-report.ts:248
 msgid "DKIM signature check of an email archive"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:250 app/src/gui/window.blp:150
+#: app/src/lib/pdf-report.ts:251 app/src/gui/window.blp:150
 msgid "Case"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:251
+#: app/src/lib/pdf-report.ts:252
 msgid "Checked on"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:252
+#: app/src/lib/pdf-report.ts:253
 msgid "Stamped version"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:256
+#: app/src/lib/pdf-report.ts:257
 msgid "{count} (dated {earliest} to {latest})"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:264
+#: app/src/lib/pdf-report.ts:265
 msgid "Key coverage"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:266
+#: app/src/lib/pdf-report.ts:267
 msgid "{count} keys in the key store, the latest obtained on {date}"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:270
+#: app/src/lib/pdf-report.ts:271
 msgid "No keys in the key store"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:272
+#: app/src/lib/pdf-report.ts:273
 msgid "SHA-256 of the raw set"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:279
+#: app/src/lib/pdf-report.ts:280
 msgid ""
 "The SHA-256 is computed over the sorted SHA-256 hashes of the raw messages, "
 "one per line. It changes when a message is added, removed or altered."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:285
+#: app/src/lib/pdf-report.ts:286
 msgid "Summary"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:287
+#: app/src/lib/pdf-report.ts:288
 msgid "{count} message was checked."
 msgid_plural "{count} messages were checked."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:293
+#: app/src/lib/pdf-report.ts:294
 msgid "Verdict"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:293 app/src/lib/pdf-report.ts:372
+#: app/src/lib/pdf-report.ts:294 app/src/lib/pdf-report.ts:399
 msgid "Share"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:305
+#: app/src/lib/pdf-report.ts:306
 msgid "What the verdicts mean — and what they do not mean"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:307
+#: app/src/lib/pdf-report.ts:308
 msgid ""
 "“Body altered” and “Headers altered” do not mean that someone manipulated "
 "the message. Archive and export software, mail gateways, character-set or "
@@ -2143,21 +2210,21 @@ msgid ""
 "message no longer matches its signature, not why."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:310
+#: app/src/lib/pdf-report.ts:311
 msgid ""
 "“Unsigned” does not mean forged. Many senders and servers never signed their "
 "mail, and some archives remove or rename signatures. Without a signature a "
 "message is neither confirmed nor contradicted."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:313
+#: app/src/lib/pdf-report.ts:314
 msgid ""
 "“Unverifiable” is not a negative finding. It means that the key needed to "
 "check the signature was not available, or could not be used. Nothing could "
 "be checked, in either direction."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:316
+#: app/src/lib/pdf-report.ts:317
 msgid ""
 "When the published key is available but provably cannot have made the "
 "signature, the sender has since replaced or reused that key. The message is "
@@ -2165,18 +2232,18 @@ msgid ""
 "about the key, nothing about the message."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:319
+#: app/src/lib/pdf-report.ts:320
 msgid ""
 "Without the sender’s key, “Body altered” only says that the body no longer "
 "matches the hash written into the signature. That hash itself is then not "
 "authenticated."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:326
+#: app/src/lib/pdf-report.ts:327
 msgid "Why messages are unsigned"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:330
+#: app/src/lib/pdf-report.ts:331
 msgid ""
 "Read from the header block of {count} unsigned message. The groups overlap: "
 "one message can be in several."
@@ -2186,121 +2253,125 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:340
+#: app/src/lib/pdf-report.ts:341
 msgid "Never transported (no Received header)"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:341
+#: app/src/lib/pdf-report.ts:342
 msgid "Signature header renamed"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:342
+#: app/src/lib/pdf-report.ts:343
 msgid "dkim=pass in Authentication-Results"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:343
+#: app/src/lib/pdf-report.ts:344
 msgid "ARC signature only"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:345
+#: app/src/lib/pdf-report.ts:346
 msgid "Signature only in an embedded message"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:350
+#: app/src/lib/pdf-report.ts:358
+msgid "Export artefact"
+msgstr ""
+
+#: app/src/lib/pdf-report.ts:377
 msgid "Altered mail by mailbox and year"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:352
+#: app/src/lib/pdf-report.ts:379
 msgid "The import log names no mailboxes and no messages were dated."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:357
+#: app/src/lib/pdf-report.ts:384
 msgid ""
 "A row is flagged when it holds at least {min} messages and its altered share "
 "is at least {factor} times the share of the whole case ({share})."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:368
+#: app/src/lib/pdf-report.ts:395
 msgid "Mailbox names are replaced by M1, M2, … in the order of their size."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:372
+#: app/src/lib/pdf-report.ts:399
 msgid "Mailbox"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:372
+#: app/src/lib/pdf-report.ts:399
 msgid "Year"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:372
+#: app/src/lib/pdf-report.ts:399
 msgid "Altered"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:375
+#: app/src/lib/pdf-report.ts:402
 msgid "undated"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:379
+#: app/src/lib/pdf-report.ts:406
 msgid "Flagged"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:388
+#: app/src/lib/pdf-report.ts:415
 msgid "{count} further rows are not shown."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:395
+#: app/src/lib/pdf-report.ts:422
 msgid ""
 "Rows below {min} messages are never flagged, however high their altered "
 "share."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:402
+#: app/src/lib/pdf-report.ts:429
 msgid "Notable concentration"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:405
+#: app/src/lib/pdf-report.ts:432
 msgid ""
 "Points to a common technical cause (e.g. archive or export software); no "
 "statement about individual messages."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:414
+#: app/src/lib/pdf-report.ts:441
 msgid "Top {n} signing domains per verdict"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:416
+#: app/src/lib/pdf-report.ts:443
 msgid "No message carries a signature."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:429
+#: app/src/lib/pdf-report.ts:456
 msgid "Where the keys come from"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:432
+#: app/src/lib/pdf-report.ts:459
 msgid "Source"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:432 app/src/gui/window.blp:378
+#: app/src/lib/pdf-report.ts:459 app/src/gui/window.blp:378
 msgid "Keys"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:433
+#: app/src/lib/pdf-report.ts:460
 msgid "Published DNS record, looked up with consent"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:434
+#: app/src/lib/pdf-report.ts:461
 msgid "archive.prove.email (a third party’s snapshots)"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:435
+#: app/src/lib/pdf-report.ts:462
 msgid "Shipped with the archive"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:436
+#: app/src/lib/pdf-report.ts:463
 msgid "Supplied by the operator"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:444
+#: app/src/lib/pdf-report.ts:471
 msgid ""
 "{messages} message waits for a key that is not in the store ({pairs} "
 "distinct selectors in total)."
@@ -2310,14 +2381,14 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:455
+#: app/src/lib/pdf-report.ts:482
 msgid "{count} message could not be checked because its key had expired."
 msgid_plural ""
 "{count} messages could not be checked because their key had expired."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:466
+#: app/src/lib/pdf-report.ts:493
 msgid ""
 "{count} message could not be checked because the published key provably did "
 "not make its signature."
@@ -2327,7 +2398,7 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:477
+#: app/src/lib/pdf-report.ts:504
 msgid ""
 "{count} message counts as body altered against a body hash that no available "
 "key authenticates."
@@ -2337,37 +2408,37 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:487
+#: app/src/lib/pdf-report.ts:514
 msgid "Method and limits"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:490
+#: app/src/lib/pdf-report.ts:517
 msgid ""
 "Each DKIM signature (RFC 6376) of each message was checked on its own: the "
 "hash of the body, then the signature over the signed header fields, against "
 "the public key published for the signing domain and selector."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:493
+#: app/src/lib/pdf-report.ts:520
 msgid ""
 "A valid signature proves that the signed parts of the message are unchanged "
 "since the signing server added it. It does not prove who wrote the message, "
 "and it says nothing about the parts the signature does not cover."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:496
+#: app/src/lib/pdf-report.ts:523
 msgid ""
 "Keys are taken from the key store of the case. Stamped does not query DNS on "
 "its own; a key that was not supplied is reported as missing, not guessed."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:500
+#: app/src/lib/pdf-report.ts:527
 msgid ""
 "Tool: Stamped {version}. Every figure in this report can be reproduced from "
 "the raw messages with `stamped reverify` and `stamped report`."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:519
+#: app/src/lib/pdf-report.ts:546
 msgid "{case} · {date}"
 msgstr ""
 
@@ -3179,7 +3250,7 @@ msgstr ""
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 
-#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:450
+#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:452
 msgid "{path} is not a folder."
 msgstr ""
 
@@ -3187,15 +3258,15 @@ msgstr ""
 msgid "The case folder {path} was written by a newer version of Stamped."
 msgstr ""
 
-#: packages/store/src/importer.ts:340
+#: packages/store/src/importer.ts:341
 msgid "{path} holds no messages."
 msgstr ""
 
-#: packages/store/src/importer.ts:460
+#: packages/store/src/importer.ts:462
 msgid "{path} holds no mail files."
 msgstr ""
 
-#: packages/store/src/index-db.ts:81
+#: packages/store/src/index-db.ts:82
 msgid "Cannot open the index of the case folder {path}."
 msgstr ""
 

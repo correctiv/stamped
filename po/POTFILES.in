@@ -41,6 +41,7 @@ app/src/gui/window.ts
 app/src/index.ts
 app/src/lib/activity.ts
 app/src/lib/autofetch.ts
+app/src/lib/body-altered.ts
 app/src/lib/case.ts
 app/src/lib/consent.ts
 app/src/lib/dns.ts
@@ -110,6 +111,7 @@ packages/semantic/src/runtime.ts
 packages/semantic/src/vector-db.ts
 packages/store/src/activity-status.ts
 packages/store/src/addresses-db.ts
+packages/store/src/body-explanations.ts
 packages/store/src/breakdown.ts
 packages/store/src/case.ts
 packages/store/src/document-source.ts

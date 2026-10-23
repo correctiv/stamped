@@ -38,6 +38,7 @@ import {
     type CaseReport,
 } from '@stamped/store';
 
+import { bodyAlteredSection } from '../../src/lib/body-altered.ts';
 import {
     breakableMailbox,
     buildPdfModel,
@@ -231,6 +232,35 @@ export default async () => {
                 authResultsPass: false,
                 arcOnly: false,
             });
+        });
+    });
+
+    await describe('body altered section', async () => {
+        await it('counts messages per artefact and states the basis', async () => {
+            const section = bodyAlteredSection({
+                examined: 10,
+                explained: { 'line-endings': 3, 'base64-rewrapped': 2 },
+                unexplained: 5,
+                exchange: 2,
+                noReceiverPass: 4,
+            });
+            expect(section?.explained.map(([, n]) => n)).toStrictEqual([3, 2]);
+            expect(section?.unexplained).toBe(5);
+            expect(section?.indicators.map(([, n]) => n)).toStrictEqual([2, 4]);
+            expect(section?.basis.includes('10')).toBe(true);
+            expect(section?.explainedNote.includes('5')).toBe(true);
+            expect(section?.indicatorNote.includes('not proof')).toBe(true);
+        });
+        await it('is absent when nothing is body-altered', async () => {
+            expect(
+                bodyAlteredSection({
+                    examined: 0,
+                    explained: {},
+                    unexplained: 0,
+                    exchange: 0,
+                    noReceiverPass: 0,
+                }),
+            ).toBe(undefined);
         });
     });
 
