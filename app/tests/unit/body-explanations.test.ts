@@ -199,5 +199,17 @@ export default async () => {
                 expect(bodyExplanationTotals(db)).toStrictEqual(EXPECTED);
             });
         });
+
+        await it('stops for a missing table instead of looping', async () => {
+            withCase((db, paths) => {
+                // `ensure` is best effort: without the table the backfill must return, not loop
+                db.exec('DROP TABLE body_explanations');
+                const step = backfillBodyExplanations(db, paths);
+                expect(step.processed).toStrictEqual(0);
+                expect(step.done).toBe(false);
+                backfillBodyExplanationsAll(db, paths);
+                expect(bodyExplanationTotals(db).examined).toStrictEqual(0);
+            });
+        });
     });
 };

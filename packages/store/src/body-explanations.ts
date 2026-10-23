@@ -260,16 +260,28 @@ export function backfillBodyExplanations(
             } catch {
                 raw = undefined;
             }
-            const fields = raw === undefined ? undefined : parseHeaderFields(splitMessage(raw).header);
+            let fields: readonly HeaderField[] | undefined;
+            try {
+                fields = raw === undefined ? undefined : parseHeaderFields(splitMessage(raw).header);
+            } catch {
+                // an unreadable header means 'none' for every signature, never a failed batch
+                fields = undefined;
+            }
             for (const row of rows) {
                 if (raw === undefined || fields === undefined) {
                     putRow(db, message.hash, row.position, NO_ARTEFACT, 0);
                 } else {
+                    let artefact = NO_ARTEFACT;
+                    try {
+                        artefact = explainFromRaw(raw, fields, row);
+                    } catch {
+                        // an unreadable or unsupported signature is 'none', never a failed batch
+                    }
                     putRow(
                         db,
                         message.hash,
                         row.position,
-                        explainFromRaw(raw, fields, row),
+                        artefact,
                         toBits(analyseBodyHeaders(fields, row.domain)),
                     );
                 }
@@ -303,7 +315,9 @@ export function backfillBodyExplanationsAll(
         const step = backfillBodyExplanations(db, paths);
         total += step.processed;
         if (step.processed > 0) onProgress?.(total);
-        if (step.done) return;
+        // no progress and not done covers the absent table (ensure is best effort): looping
+        // forever on it would hang the report; stopping makes the next run retry.
+        if (step.done || step.processed === 0) return;
     }
 }
 
