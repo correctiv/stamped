@@ -69,6 +69,10 @@ export interface KeyProvenance {
     readonly pairsWithoutKey: number;
     /** Messages whose key was found but had expired. */
     readonly messagesExpired: number;
+    /** Messages whose key was found but provably cannot have made the signature. */
+    readonly messagesKeyMismatch: number;
+    /** Messages altered by a body hash that no key vouches for. */
+    readonly messagesUnauthenticatedHash: number;
     /** Newest time a key was obtained (ISO), if any. */
     readonly lastFetched?: string;
 }
@@ -162,6 +166,9 @@ export function keyProvenance(keys: readonly VaultEntry[], report: CaseReport): 
         messagesWithoutKey: report.reasons.find((r) => r.reason === 'no-key')?.messages ?? 0,
         pairsWithoutKey: report.missing.length,
         messagesExpired: report.reasons.find((r) => r.reason === 'expired')?.messages ?? 0,
+        messagesKeyMismatch: report.reasons.find((r) => r.reason === 'key-mismatch')?.messages ?? 0,
+        messagesUnauthenticatedHash:
+            report.caveats.find((c) => c.caveat === 'body-hash-unauthenticated')?.messages ?? 0,
         ...(last === undefined ? {} : { lastFetched: last }),
     };
 }

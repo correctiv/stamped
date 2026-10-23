@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 12:38+0200\n"
+"POT-Creation-Date: 2026-10-23 12:40+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2299,37 +2299,57 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:456
+#: app/src/lib/pdf-report.ts:457
+msgid ""
+"{count} message could not be checked because the published key provably did "
+"not make its signature."
+msgid_plural ""
+"{count} messages could not be checked because the published key provably did "
+"not make their signature."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/pdf-report.ts:468
+msgid ""
+"{count} message counts as body altered against a body hash that no available "
+"key authenticates."
+msgid_plural ""
+"{count} messages count as body altered against a body hash that no available "
+"key authenticates."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/lib/pdf-report.ts:478
 msgid "Method and limits"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:459
+#: app/src/lib/pdf-report.ts:481
 msgid ""
 "Each DKIM signature (RFC 6376) of each message was checked on its own: the "
 "hash of the body, then the signature over the signed header fields, against "
 "the public key published for the signing domain and selector."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:462
+#: app/src/lib/pdf-report.ts:484
 msgid ""
 "A valid signature proves that the signed parts of the message are unchanged "
 "since the signing server added it. It does not prove who wrote the message, "
 "and it says nothing about the parts the signature does not cover."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:465
+#: app/src/lib/pdf-report.ts:487
 msgid ""
 "Keys are taken from the key store of the case. Stamped does not query DNS on "
 "its own; a key that was not supplied is reported as missing, not guessed."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:469
+#: app/src/lib/pdf-report.ts:491
 msgid ""
 "Tool: Stamped {version}. Every figure in this report can be reproduced from "
 "the raw messages with `stamped reverify` and `stamped report`."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:488
+#: app/src/lib/pdf-report.ts:510
 msgid "{case} · {date}"
 msgstr ""
 

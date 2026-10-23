@@ -25,12 +25,14 @@ import {
     openIndex,
     periodBreakdown,
     rawSetDigest,
+    type CaseReport,
 } from '@stamped/store';
 
 import {
     buildPdfModel,
     CLUSTER_MIN_MESSAGES,
     clusterRows,
+    keyProvenance,
     type PdfReportInput,
 } from '../../src/lib/pdf-report-model.ts';
 
@@ -159,6 +161,24 @@ export default async () => {
                 authResultsPass: false,
                 arcOnly: false,
             });
+        });
+    });
+
+    await describe('key provenance', async () => {
+        await it('counts key mismatches and unauthenticated hashes apart', async () => {
+            const report = {
+                reasons: [
+                    { reason: 'no-key', messages: 5 },
+                    { reason: 'key-mismatch', messages: 3 },
+                ],
+                caveats: [{ caveat: 'body-hash-unauthenticated', messages: 2 }],
+                missing: [],
+            } as unknown as CaseReport;
+            const p = keyProvenance([], report);
+            expect(p.messagesWithoutKey).toBe(5);
+            expect(p.messagesKeyMismatch).toBe(3);
+            expect(p.messagesUnauthenticatedHash).toBe(2);
+            expect(p.messagesExpired).toBe(0);
         });
     });
 

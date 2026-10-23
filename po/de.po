@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 12:38+0200\n"
+"POT-Creation-Date: 2026-10-23 12:40+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -2587,11 +2587,39 @@ msgstr[1] ""
 "{count} Nachrichten konnten nicht geprüft werden, weil ihre Schlüssel "
 "abgelaufen waren."
 
-#: app/src/lib/pdf-report.ts:456
+#: app/src/lib/pdf-report.ts:457
+msgid ""
+"{count} message could not be checked because the published key provably did "
+"not make its signature."
+msgid_plural ""
+"{count} messages could not be checked because the published key provably did "
+"not make their signature."
+msgstr[0] ""
+"{count} Nachricht konnte nicht geprüft werden, weil der veröffentlichte "
+"Schlüssel ihre Signatur nachweislich nicht erzeugt hat."
+msgstr[1] ""
+"{count} Nachrichten konnten nicht geprüft werden, weil der veröffentlichte "
+"Schlüssel ihre Signatur nachweislich nicht erzeugt hat."
+
+#: app/src/lib/pdf-report.ts:468
+msgid ""
+"{count} message counts as body altered against a body hash that no available "
+"key authenticates."
+msgid_plural ""
+"{count} messages count as body altered against a body hash that no available "
+"key authenticates."
+msgstr[0] ""
+"{count} Nachricht gilt als „Text verändert“ gegenüber einem Text-Hash, den "
+"kein verfügbarer Schlüssel beglaubigt."
+msgstr[1] ""
+"{count} Nachrichten gelten als „Text verändert“ gegenüber einem Text-Hash, "
+"den kein verfügbarer Schlüssel beglaubigt."
+
+#: app/src/lib/pdf-report.ts:478
 msgid "Method and limits"
 msgstr "Methode und Grenzen"
 
-#: app/src/lib/pdf-report.ts:459
+#: app/src/lib/pdf-report.ts:481
 msgid ""
 "Each DKIM signature (RFC 6376) of each message was checked on its own: the "
 "hash of the body, then the signature over the signed header fields, against "
@@ -2602,7 +2630,7 @@ msgstr ""
 "den veröffentlichten öffentlichen Schlüssel der signierenden Domain und des "
 "Selektors."
 
-#: app/src/lib/pdf-report.ts:462
+#: app/src/lib/pdf-report.ts:484
 msgid ""
 "A valid signature proves that the signed parts of the message are unchanged "
 "since the signing server added it. It does not prove who wrote the message, "
@@ -2612,7 +2640,7 @@ msgstr ""
 "dem Signieren durch den Server unverändert sind. Sie belegt nicht, wer die "
 "Nachricht geschrieben hat, und sagt nichts über Teile, die sie nicht abdeckt."
 
-#: app/src/lib/pdf-report.ts:465
+#: app/src/lib/pdf-report.ts:487
 msgid ""
 "Keys are taken from the key store of the case. Stamped does not query DNS on "
 "its own; a key that was not supplied is reported as missing, not guessed."
@@ -2621,7 +2649,7 @@ msgstr ""
 "nicht von sich aus ab; ein nicht bereitgestellter Schlüssel wird als fehlend "
 "gemeldet, nicht geraten."
 
-#: app/src/lib/pdf-report.ts:469
+#: app/src/lib/pdf-report.ts:491
 msgid ""
 "Tool: Stamped {version}. Every figure in this report can be reproduced from "
 "the raw messages with `stamped reverify` and `stamped report`."
@@ -2629,7 +2657,7 @@ msgstr ""
 "Werkzeug: Stamped {version}. Jede Zahl in diesem Bericht lässt sich aus den "
 "Rohnachrichten mit `stamped reverify` und `stamped report` nachvollziehen."
 
-#: app/src/lib/pdf-report.ts:488
+#: app/src/lib/pdf-report.ts:510
 msgid "{case} · {date}"
 msgstr "{case} · {date}"
 

@@ -451,6 +451,28 @@ function compose(w: Writer, model: PdfReportModel): void {
         ),
         { size: 9 },
     );
+    w.text(
+        fmt(
+            _n(
+                '{count} message could not be checked because the published key provably did not make its signature.',
+                '{count} messages could not be checked because the published key provably did not make their signature.',
+                p.messagesKeyMismatch,
+            ),
+            { count: String(p.messagesKeyMismatch) },
+        ),
+        { size: 9 },
+    );
+    w.text(
+        fmt(
+            _n(
+                '{count} message counts as body altered against a body hash that no available key authenticates.',
+                '{count} messages count as body altered against a body hash that no available key authenticates.',
+                p.messagesUnauthenticatedHash,
+            ),
+            { count: String(p.messagesUnauthenticatedHash) },
+        ),
+        { size: 9 },
+    );
 
     // --- method ---
     w.heading(_('Method and limits'));
