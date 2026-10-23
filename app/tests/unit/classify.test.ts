@@ -185,6 +185,9 @@ export default async () => {
         await it('caveats a key that came from the archive', async () => {
             expect(caveatsFor(good({ keySource: 'archive' }))).toStrictEqual(['archive-key']);
         });
+        await it('caveats a key that was recovered', async () => {
+            expect(caveatsFor(good({ keySource: 'recovered' }))).toStrictEqual(['recovered-key']);
+        });
 
         await it('caveats a signature whose x= has passed', async () => {
             expect(caveatsFor(good({ expired: true }))).toStrictEqual(['signature-expired']);

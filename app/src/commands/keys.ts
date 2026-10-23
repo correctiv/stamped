@@ -203,6 +203,7 @@ function listCommand(): CommandModule<CaseArgs, ListArgs> {
 interface AddArgs extends CaseArgs {
     name: string;
     key: string;
+    recovered: boolean;
 }
 
 function addCommand(): CommandModule<CaseArgs, AddArgs> {
@@ -221,7 +222,12 @@ function addCommand(): CommandModule<CaseArgs, AddArgs> {
                     type: 'string',
                     demandOption: true,
                 })
-                .positional('folder', { describe: _('The case folder'), type: 'string' }),
+                .positional('folder', { describe: _('The case folder'), type: 'string' })
+                .option('recovered', {
+                    describe: _('Mark this key as recovered from DKIM signatures rather than published'),
+                    type: 'boolean',
+                    default: false,
+                }),
         handler: (args) => {
             const pair = splitName(args.name);
             const key = parseKeyMaterial(readText(args.key));
@@ -237,7 +243,7 @@ function addCommand(): CommandModule<CaseArgs, AddArgs> {
             const outcome = vault.add({
                 ...pair,
                 key,
-                origin: 'operator',
+                origin: args.recovered ? 'recovered' : 'operator',
                 fetchedAt: new Date().toISOString(),
             });
             saveVault(dir, vault);

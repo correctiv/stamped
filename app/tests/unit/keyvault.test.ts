@@ -140,6 +140,13 @@ export default async () => {
             vault.add({ ...pair, key: a, origin: 'operator', fetchedAt: '2026-10-20T11:00:00Z' });
             expect(vault.toKeyStore().lookup('sel._domainkey.example.com')?.source).toBe('operator');
         });
+        await it('serves a recovered key as the recovered source and round-trips it', async () => {
+            const vault = new KeyVault();
+            vault.add({ ...pair, key: a, origin: 'recovered', fetchedAt: '2026-10-20T10:00:00Z' });
+            expect(vault.toKeyStore().lookup('sel._domainkey.example.com')?.source).toBe('recovered');
+            const again = KeyVault.fromJson(vault.toJson());
+            expect(again.all()[0]?.origin).toBe('recovered');
+        });
 
         await it('round-trips through JSON', async () => {
             const vault = new KeyVault();

@@ -133,7 +133,10 @@ export async function verifyMessage(
     // Which names were answered from where, filled by the resolver below and read back per
     // signature. mailauth reports the key record it used but not its provenance — it has no
     // reason to care, and the `archive-key` caveat is exactly that provenance.
-    const sources = new Map<string, { source: 'dns' | 'operator' | 'archive'; since?: string }>();
+    const sources = new Map<
+        string,
+        { source: 'dns' | 'operator' | 'archive' | 'recovered'; since?: string }
+    >();
 
     const resolver: DNSResolver = async (name, rrtype) => {
         const entry = options.keys.lookup(name);

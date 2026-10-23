@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 15:56+0200\n"
+"POT-Creation-Date: 2026-10-23 16:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -177,8 +177,8 @@ msgstr ""
 msgid "List stored keys, and with --pairs the ones still missing"
 msgstr ""
 
-#: app/src/commands/keys.ts:128 app/src/commands/keys.ts:224
-#: app/src/commands/keys.ts:277 app/src/commands/people.ts:37
+#: app/src/commands/keys.ts:128 app/src/commands/keys.ts:225
+#: app/src/commands/keys.ts:283 app/src/commands/people.ts:37
 #: app/src/commands/people.ts:38 app/src/commands/reverify.ts:27
 #: app/src/commands/semantic.ts:73 app/src/commands/semantic.ts:74
 #: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
@@ -217,99 +217,103 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/keys.ts:211
+#: app/src/commands/keys.ts:212
 msgid ""
 "Store a key you have: a PEM, a bare p= value, or a pasted DNS TXT record"
 msgstr ""
 
-#: app/src/commands/keys.ts:215
+#: app/src/commands/keys.ts:216
 msgid "<selector>._domainkey.<domain>"
 msgstr ""
 
-#: app/src/commands/keys.ts:220
+#: app/src/commands/keys.ts:221
 msgid "The key text, or a path to a file holding it"
 msgstr ""
 
-#: app/src/commands/keys.ts:231 app/src/gui/session.ts:359
+#: app/src/commands/keys.ts:227
+msgid "Mark this key as recovered from DKIM signatures rather than published"
+msgstr ""
+
+#: app/src/commands/keys.ts:237 app/src/gui/session.ts:359
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
 msgstr ""
 
-#: app/src/commands/keys.ts:245
+#: app/src/commands/keys.ts:251
 msgid "Stored {name}: {algorithm} {bits} bit."
 msgstr ""
 
-#: app/src/commands/keys.ts:254
+#: app/src/commands/keys.ts:260
 msgid ""
 "! The case already held a different key for this pair. Both are kept: this "
 "is either a key rotation or a forgery."
 msgstr ""
 
-#: app/src/commands/keys.ts:274
+#: app/src/commands/keys.ts:280
 msgid ""
 "Look up missing keys over the network, after you confirm exactly what is sent"
 msgstr ""
 
-#: app/src/commands/keys.ts:278
+#: app/src/commands/keys.ts:284
 msgid "A pair list (domain, selector per line)"
 msgstr ""
 
-#: app/src/commands/keys.ts:280
+#: app/src/commands/keys.ts:286
 msgid "One <selector>._domainkey.<domain>. Repeatable."
 msgstr ""
 
-#: app/src/commands/keys.ts:285
+#: app/src/commands/keys.ts:291
 msgid "Ask archive.prove.email (a third party; its keys are unsigned)"
 msgstr ""
 
-#: app/src/commands/keys.ts:290
+#: app/src/commands/keys.ts:296
 msgid "Query the public DNS (the domain’s operator can see it)"
 msgstr ""
 
-#: app/src/commands/keys.ts:295
+#: app/src/commands/keys.ts:301
 msgid "Skip the confirmation prompt"
 msgstr ""
 
-#: app/src/commands/keys.ts:300
+#: app/src/commands/keys.ts:306
 msgid "Print one line per key stored or not found"
 msgstr ""
 
-#: app/src/commands/keys.ts:325
+#: app/src/commands/keys.ts:331
 msgid ""
 "Choose where to look: --archive and/or --dns. Stamped never goes online "
 "unasked."
 msgstr ""
 
-#: app/src/commands/keys.ts:339
+#: app/src/commands/keys.ts:345
 msgid "Every listed key is already stored."
 msgstr ""
 
-#: app/src/commands/keys.ts:353 app/src/lib/autofetch.ts:235
+#: app/src/commands/keys.ts:359 app/src/lib/autofetch.ts:235
 msgid "Skipped; nothing was sent."
 msgstr ""
 
-#: app/src/commands/keys.ts:374
+#: app/src/commands/keys.ts:380
 msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr ""
 
-#: app/src/commands/keys.ts:379 app/src/lib/autofetch.ts:228
+#: app/src/commands/keys.ts:385 app/src/lib/autofetch.ts:228
 msgid ", DIFFERS from a stored key"
 msgstr ""
 
-#: app/src/commands/keys.ts:416
+#: app/src/commands/keys.ts:422
 msgid "Print a request you can send to the provider for the historical key"
 msgstr ""
 
-#: app/src/commands/keys.ts:420
+#: app/src/commands/keys.ts:426
 msgid "The signing domain"
 msgstr ""
 
-#: app/src/commands/keys.ts:425
+#: app/src/commands/keys.ts:431
 msgid "One or more selectors"
 msgstr ""
 
-#: app/src/commands/keys.ts:431
+#: app/src/commands/keys.ts:437
 msgid "When the messages were sent, e.g. \"March 2019\""
 msgstr ""
 
@@ -2074,35 +2078,39 @@ msgstr ""
 msgid "from the archive itself"
 msgstr ""
 
-#: app/src/lib/evidence.ts:195
+#: app/src/lib/evidence.ts:183
+msgid "recovered from other signatures"
+msgstr ""
+
+#: app/src/lib/evidence.ts:197
 msgid "matches ({hash})"
 msgstr ""
 
-#: app/src/lib/evidence.ts:196
+#: app/src/lib/evidence.ts:198
 msgid "matches"
 msgstr ""
 
-#: app/src/lib/evidence.ts:199
+#: app/src/lib/evidence.ts:201
 msgid "differs. Signed {expected}, message hashes to {actual}"
 msgstr ""
 
-#: app/src/lib/evidence.ts:204
+#: app/src/lib/evidence.ts:206
 msgid "not checked"
 msgstr ""
 
-#: app/src/lib/evidence.ts:210
+#: app/src/lib/evidence.ts:212
 msgid "expires {expires}"
 msgstr ""
 
-#: app/src/lib/evidence.ts:211
+#: app/src/lib/evidence.ts:213
 msgid "signed {signed}, expires {expires}"
 msgstr ""
 
-#: app/src/lib/evidence.ts:224
+#: app/src/lib/evidence.ts:226
 msgid "{limit} bytes of the body are signed"
 msgstr ""
 
-#: app/src/lib/evidence.ts:226
+#: app/src/lib/evidence.ts:228
 msgid "{limit} bytes of the body are signed, {unsigned} are not"
 msgstr ""
 
@@ -2990,19 +2998,19 @@ msgstr ""
 msgid "Thank you,"
 msgstr ""
 
-#: packages/core/src/keyvault.ts:204
+#: packages/core/src/keyvault.ts:215
 msgid "The key store file is not valid JSON."
 msgstr ""
 
-#: packages/core/src/keyvault.ts:208
+#: packages/core/src/keyvault.ts:219
 msgid "The key store file has an unknown format."
 msgstr ""
 
-#: packages/core/src/keyvault.ts:223
+#: packages/core/src/keyvault.ts:234
 msgid "The key store file has a malformed entry for {name}."
 msgstr ""
 
-#: packages/core/src/keyvault.ts:284
+#: packages/core/src/keyvault.ts:295
 msgid "Pair list line {line}: expected domain and selector."
 msgstr ""
 
@@ -3115,168 +3123,176 @@ msgid ""
 "have been written by anyone."
 msgstr ""
 
-#: packages/core/src/verdict.ts:312
+#: packages/core/src/verdict.ts:322
 msgid "Confirmed"
 msgstr ""
 
-#: packages/core/src/verdict.ts:314
+#: packages/core/src/verdict.ts:324
 msgid "With caveats"
 msgstr ""
 
-#: packages/core/src/verdict.ts:316
+#: packages/core/src/verdict.ts:326
 msgid "Body altered"
 msgstr ""
 
-#: packages/core/src/verdict.ts:318
+#: packages/core/src/verdict.ts:328
 msgid "Headers altered"
 msgstr ""
 
-#: packages/core/src/verdict.ts:320
+#: packages/core/src/verdict.ts:330
 msgid "Unverifiable"
 msgstr ""
 
-#: packages/core/src/verdict.ts:322
+#: packages/core/src/verdict.ts:332
 msgid "Unsigned"
 msgstr ""
 
-#: packages/core/src/verdict.ts:335
+#: packages/core/src/verdict.ts:345
 msgid "Confirmed: a valid signature covers this message as it stands."
 msgstr ""
 
-#: packages/core/src/verdict.ts:337
+#: packages/core/src/verdict.ts:347
 msgid ""
 "Confirmed with caveats: the signature is valid but covers less than it "
 "appears to."
 msgstr ""
 
-#: packages/core/src/verdict.ts:339
+#: packages/core/src/verdict.ts:349
 msgid "Body altered: the body is not the body that was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:341
+#: packages/core/src/verdict.ts:351
 msgid "Headers altered: a signed header field is not what was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:343
+#: packages/core/src/verdict.ts:353
 msgid "Unverifiable: a signature is present, but nothing here can check it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:345
+#: packages/core/src/verdict.ts:355
 msgid ""
 "Unsigned: no DKIM signature. This says nothing about the message either way."
 msgstr ""
 
-#: packages/core/src/verdict.ts:358
+#: packages/core/src/verdict.ts:368
 msgid ""
 "Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
 "carry a valid signature (RFC 8301)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:361
+#: packages/core/src/verdict.ts:371
 msgid ""
 "The RSA key is shorter than 1024 bits and can be factored with ordinary "
 "resources."
 msgstr ""
 
-#: packages/core/src/verdict.ts:364
+#: packages/core/src/verdict.ts:374
 msgid ""
 "An l= tag limits the signature to the start of the body. Anything appended "
 "after that is unsigned."
 msgstr ""
 
-#: packages/core/src/verdict.ts:367
+#: packages/core/src/verdict.ts:377
 msgid ""
 "Subject is not signed: the subject line could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:369
+#: packages/core/src/verdict.ts:379
 msgid "To is not signed: the recipient could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:371
+#: packages/core/src/verdict.ts:381
 msgid "Date is not signed: the date could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:374
+#: packages/core/src/verdict.ts:384
 msgid ""
 "The public key came from the archive itself, so it proves consistency rather "
 "than authenticity."
 msgstr ""
 
-#: packages/core/src/verdict.ts:378
+#: packages/core/src/verdict.ts:388
 msgid ""
 "The signature was valid when it was made; its expiry date (x=) has since "
 "passed. That matters for live delivery, not for an archive."
 msgstr ""
 
-#: packages/core/src/verdict.ts:382
+#: packages/core/src/verdict.ts:392
 msgid ""
 "The signature header contradicts itself: its expiry date (x=) lies before "
 "the time it was made (t=). The signature itself verifies."
 msgstr ""
 
-#: packages/core/src/verdict.ts:386
+#: packages/core/src/verdict.ts:396
+msgid ""
+"The public key was recovered from other signatures, so it proves the same "
+"key signed these messages, not that the key ever belonged to the domain. A "
+"dkim=pass in a received Authentication-Results header of the same message "
+"would be the anchor that strengthens it."
+msgstr ""
+
+#: packages/core/src/verdict.ts:400
 msgid ""
 "The key was first seen after this message was sent. The selector may have "
 "been rotated, so this failure may come from a wrong key rather than an edit."
 msgstr ""
 
-#: packages/core/src/verdict.ts:390
+#: packages/core/src/verdict.ts:404
 msgid ""
 "No public key is available, so the body hash claimed in the signature could "
 "not be confirmed as the signer’s. Whoever changed the body could have "
 "rewritten the hash too."
 msgstr ""
 
-#: packages/core/src/verdict.ts:396
+#: packages/core/src/verdict.ts:410
 msgid ""
 "The signature is from {signer}, but the message claims to be from {author}. "
 "It proves only that {signer} handled the message, not that {author} sent it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:398
+#: packages/core/src/verdict.ts:412
 msgid "(unknown domain)"
 msgstr ""
 
-#: packages/core/src/verdict.ts:401
+#: packages/core/src/verdict.ts:415
 msgid ""
 "The signing domain is not the From domain, so the signature does not vouch "
 "for the author."
 msgstr ""
 
-#: packages/core/src/verdict.ts:410
+#: packages/core/src/verdict.ts:424
 msgid "No public key for this selector and domain."
 msgstr ""
 
-#: packages/core/src/verdict.ts:412
+#: packages/core/src/verdict.ts:426
 msgid "The public key record is unusable."
 msgstr ""
 
-#: packages/core/src/verdict.ts:414
+#: packages/core/src/verdict.ts:428
 msgid "The DKIM-Signature header does not parse."
 msgstr ""
 
-#: packages/core/src/verdict.ts:416
+#: packages/core/src/verdict.ts:430
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:418
+#: packages/core/src/verdict.ts:432
 msgid "The signature’s expiry date (x=) has passed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:420
+#: packages/core/src/verdict.ts:434
 msgid "The key lookup failed and may succeed later."
 msgstr ""
 
-#: packages/core/src/verdict.ts:423
+#: packages/core/src/verdict.ts:437
 msgid ""
 "The key does not match the signature (different size or type), so it cannot "
 "have produced it. The selector was probably rotated."
 msgstr ""
 
-#: packages/core/src/verdict.ts:426
+#: packages/core/src/verdict.ts:440
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 
@@ -3308,7 +3324,7 @@ msgstr ""
 msgid "unknown error"
 msgstr ""
 
-#: packages/verify/src/mailauth.ts:160
+#: packages/verify/src/mailauth.ts:163
 msgid "no key in the store"
 msgstr ""
 
