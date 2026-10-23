@@ -7,8 +7,10 @@
  * louder than the foreground one.
  *
  * ON BOTH RUNTIMES the model is found through {@link resolveEmbeddingModelFromEnv} and run by the
- * llama embedder, imported dynamically so nothing native is loaded until somebody switches the
- * feature on. GJS reaches the same prebuilt addon as Node, by its own route — that branch lives in
+ * llama embedder. The embedder is NOT imported here but registered by `semantic-embedder-llama.ts`,
+ * which the entry point imports statically: node-llama-cpp deadlocks when the bundler wraps it in
+ * a lazy initialiser, and any module reachable through `await import()` that also imports it gets
+ * wrapped. This file is reachable from the window, so it must stay free of that import. GJS reaches the same prebuilt addon as Node, by its own route — that branch lives in
  * `@stamped/semantic/llama-embedder` and is not this file's business.
  *
  * WHAT IS LEFT OF "no runtime here" is the machine nobody built a binary for: llama.cpp ships as
@@ -20,6 +22,15 @@ import type { Embedder } from '@stamped/semantic';
 import { hasPrebuiltBins } from '@stamped/semantic/prebuilt-bins';
 
 import { resolveEmbeddingModelFromEnv } from './model-path.ts';
+
+type CreateLlama = (options: { modelPath: string }) => Promise<Embedder>;
+
+let createLlama: CreateLlama | undefined;
+
+/** Called once by `semantic-embedder-llama.ts`; until then there is no embedder to create. */
+export function registerLlamaEmbedder(create: CreateLlama): void {
+    createLlama = create;
+}
 
 /** Why there is no embedder, or `ready` when there is one to try. */
 export type EmbedderAvailability = 'ready' | 'runtime' | 'model';
@@ -48,11 +59,12 @@ export async function createGuiEmbedder(
         if (!bins) return undefined;
         const model = resolveEmbeddingModelFromEnv(env);
         if (model === undefined) return undefined;
-        // A LITERAL specifier, so both bundles carry the embedder: under GJS it is reached through
-        // `@gjsify/napi`, and a bundle that never followed the import would have nothing to reach.
-        const { createLlamaEmbedder } = await import('@stamped/semantic/llama-embedder');
-        return await createLlamaEmbedder({ modelPath: model.path });
-    } catch {
+        if (createLlama === undefined) return undefined;
+        return await createLlama({ modelPath: model.path });
+    } catch (error) {
+        // Never thrown on, but not silent either: "not available" with no word on stderr is how a
+        // model that would not load looked like a missing feature.
+        console.error(error);
         return undefined;
     }
 }

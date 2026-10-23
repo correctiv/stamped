@@ -18,6 +18,8 @@
  * by a word is a different kind of answer and must be recognisable as one.
  */
 
+import { existsSync } from 'node:fs';
+
 import { fmt, _, _n } from '@stamped/core';
 import type { Embedder } from '@stamped/semantic';
 import { openVectorDbForSearch } from '@stamped/semantic';
@@ -81,7 +83,10 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
             // the vector database is not even opened — see `openVectorDbForSearch`.
             // A MODEL THAT WILL NOT LOAD IS NOT A REASON TO REFUSE THE SEARCH: the text search
             // is there, and the case stays searchable.
-            const embedder = await createEmbedder().catch(() => undefined);
+            // A case without vectors is searched as text without paying for a model load.
+            const embedder = existsSync(paths.vectors)
+                ? await createEmbedder().catch(() => undefined)
+                : undefined;
             const vectors =
                 embedder === undefined
                     ? undefined

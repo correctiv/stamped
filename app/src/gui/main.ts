@@ -23,6 +23,13 @@ import { LOCALE_DIR } from './i18n-init.ts';
 // Safe to import statically: `i18n-init.ts` already pulls `@stamped/core` in to install the
 // catalogue, so the CLI path pays nothing extra for it.
 import { _, _p, TEXT_DOMAIN } from '@stamped/core';
+// Static, unlike the frontends: node-llama-cpp has an import cycle with top-level await, and a
+// bundler wraps a module reachable through `await import()` in a lazy async initialiser that
+// deadlocks on it — the process spins at 100 % CPU and prints nothing. Statically reachable
+// modules are hoisted as plain ESM. Nothing the window imports may import it (see the note in
+// `lib/semantic-embedder.ts`), and the CLI is static too for the same reason.
+import '../lib/semantic-embedder-llama.ts';
+import { runCli } from '../index.ts';
 
 /**
  * The CLI's commands, as `stamped --help` lists them.
@@ -53,7 +60,6 @@ const wantsCli =
     first !== undefined && (COMMANDS.includes(first) || first.startsWith('-') || CLI_FLAGS.includes(first));
 
 if (wantsCli) {
-    const { runCli } = await import('../index.ts');
     // Awaited, not fired and forgotten: the `await` is what keeps the command alive. GJS pumps
     // the main context until THIS module's promise settles, and that pump is what a yargs
     // handler's `await` needs — without it the process ends at the first one and `verify` prints
