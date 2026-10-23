@@ -93,6 +93,7 @@ export {
     isIndexed,
     type ListOptions,
     listMessages,
+    mailboxScope,
     messageCount,
     openIndex,
     queryScope,

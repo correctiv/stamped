@@ -629,9 +629,86 @@ let scopeSerial = 0;
  */
 export function hashScope(db: DatabaseSync, hashes: Iterable<string>): HashScope {
     return buildScope(db, (table) => {
-        const insert = db.prepare(`INSERT OR IGNORE INTO ${table} (hash) VALUES (?)`);
-        for (const hash of hashes) insert.run(hash);
+        insertBatched(
+            db,
+            table,
+            1,
+            'hash',
+            (function* () {
+                for (const hash of hashes) yield [hash];
+            })(),
+        );
     });
+}
+
+/** Rows per multi-row INSERT: 450 × 2 variables stays under SQLite's historic limit of 999. */
+const INSERT_ROWS = 450;
+
+/**
+ * `INSERT OR IGNORE` the rows as multi-row statements. Through the SQLite worker every statement
+ * is a round trip, so one row per statement made a few hundred thousand hashes cost minutes.
+ */
+function insertBatched(
+    db: DatabaseSync,
+    table: string,
+    width: number,
+    columns: string,
+    rows: Iterable<readonly string[]>,
+): void {
+    const tuple = `(${Array.from({ length: width }, () => '?').join(',')})`;
+    const prefix = `INSERT OR IGNORE INTO ${table} (${columns}) VALUES `;
+    const full = db.prepare(prefix + Array.from({ length: INSERT_ROWS }, () => tuple).join(','));
+    let pending: string[] = [];
+    let count = 0;
+    for (const row of rows) {
+        pending.push(...row);
+        count += 1;
+        if (count === INSERT_ROWS) {
+            full.run(...pending);
+            pending = [];
+            count = 0;
+        }
+    }
+    if (count > 0) {
+        db.prepare(prefix + Array.from({ length: count }, () => tuple).join(',')).run(...pending);
+    }
+}
+
+/**
+ * Mailbox → hashes in one temp table `(mailbox, hash)`, for a query that needs every mailbox at
+ * once. Same transaction convention as {@link hashScope}. The caller closes it.
+ */
+export function mailboxScope(
+    db: DatabaseSync,
+    byMailbox: Iterable<readonly [string, Iterable<string>]>,
+): { readonly table: string; close(): void } {
+    scopeSerial += 1;
+    const table = `scope_${scopeSerial}`;
+    db.exec(
+        `CREATE TEMP TABLE ${table} (mailbox TEXT NOT NULL, hash TEXT NOT NULL, PRIMARY KEY (mailbox, hash))`,
+    );
+    const own = beganHere(db);
+    try {
+        function* pairs(): Iterable<readonly string[]> {
+            for (const [mailbox, hashes] of byMailbox) for (const hash of hashes) yield [mailbox, hash];
+        }
+        insertBatched(db, table, 2, 'mailbox, hash', pairs());
+        if (own) commitBatch(db);
+    } catch (error) {
+        if (own) rollbackBatch(db);
+        db.exec(`DROP TABLE ${table}`);
+        throw error;
+    }
+    return {
+        table,
+        close(): void {
+            try {
+                db.exec(`DROP TABLE ${table}`);
+            } catch {
+                // the connection is already closed, which drops the temp table anyway
+            }
+        },
+    };
 }
 
 /**
