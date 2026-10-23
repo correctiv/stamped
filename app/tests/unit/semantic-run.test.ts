@@ -291,6 +291,24 @@ export default async () => {
             });
         });
 
+        await it('knows a live run is external only while it did not start it', async () => {
+            await withCase(async (paths) => {
+                enable(paths);
+                writeSemanticRunStatus(paths, status({ updatedAt: new Date(T0).toISOString() }));
+                const { sub, spawned } = make(paths, { importing: false, alive: true });
+                expect(sub.external()).toBe(true);
+                await sub.start();
+                expect(spawned.length).toBe(0);
+            });
+            await withCase(async (paths) => {
+                enable(paths);
+                const { sub } = make(paths, { importing: false, alive: true });
+                expect(sub.external()).toBe(false);
+                await sub.start();
+                expect(sub.external()).toBe(false);
+            });
+        });
+
         await it('reads a run whose process died as interrupted and starts anew', async () => {
             await withCase(async (paths) => {
                 enable(paths);

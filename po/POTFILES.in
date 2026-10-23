@@ -56,6 +56,7 @@ app/src/lib/progress.ts
 app/src/lib/queries.ts
 app/src/lib/report.ts
 app/src/lib/self-argv.ts
+app/src/lib/semantic-embedder-llama.ts
 app/src/lib/semantic-embedder.ts
 app/src/lib/semantic-run.ts
 app/src/lib/semantic-state.ts
