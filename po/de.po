@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 12:40+0200\n"
+"POT-Creation-Date: 2026-10-23 12:49+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -207,7 +207,7 @@ msgstr "Gespeicherte Schlüssel auflisten, mit --pairs auch die noch fehlenden"
 #: app/src/commands/keys.ts:128 app/src/commands/keys.ts:224
 #: app/src/commands/keys.ts:277 app/src/commands/people.ts:37
 #: app/src/commands/people.ts:38 app/src/commands/reverify.ts:27
-#: app/src/commands/semantic.ts:31 app/src/commands/semantic.ts:32
+#: app/src/commands/semantic.ts:73 app/src/commands/semantic.ts:74
 #: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
 msgid "The case folder"
 msgstr "Der Fallordner"
@@ -638,21 +638,37 @@ msgstr ""
 "Die Suche {query} ist nicht lesbar. Eine Wendung gehört in doppelte "
 "Anführungszeichen, und `Spalte : Wort` durchsucht ein einzelnes Feld."
 
-#: app/src/commands/semantic.ts:29
+#: app/src/commands/semantic.ts:44
+msgid ""
+"A semantic index run is already going for this case (pid {pid}). Wait for it "
+"to end, or end that process first."
+msgstr ""
+"Für diesen Fall läuft bereits eine semantische Indizierung (PID {pid}). Erst "
+"warten oder den Prozess beenden."
+
+#: app/src/commands/semantic.ts:51
+msgid ""
+"A semantic index run is already going for this case. Wait for it to end, or "
+"end that process first."
+msgstr ""
+"Für diesen Fall läuft bereits eine semantische Indizierung. Erst warten oder "
+"den Prozess beenden."
+
+#: app/src/commands/semantic.ts:71
 msgid "Build or continue the semantic index of a case (needs it switched on)"
 msgstr ""
 "Den semantischen Index eines Falls aufbauen oder fortsetzen (setzt voraus, "
 "dass er eingeschaltet ist)"
 
-#: app/src/commands/semantic.ts:57
+#: app/src/commands/semantic.ts:100
 msgid "Semantic index: {state}"
 msgstr "Semantischer Index: {state}"
 
-#: app/src/commands/semantic.ts:70
+#: app/src/commands/semantic.ts:113
 msgid "Semantic search: build the index of a case"
 msgstr "Semantische Suche: den Index eines Falls aufbauen"
 
-#: app/src/commands/semantic.ts:74
+#: app/src/commands/semantic.ts:117
 msgid "Pick a subcommand. Try `stamped semantic --help`."
 msgstr "Bitte einen Unterbefehl wählen, etwa `stamped semantic --help`."
 
