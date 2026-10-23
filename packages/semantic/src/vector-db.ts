@@ -41,13 +41,12 @@ export const VECTOR_SCHEMA_VERSION = 1;
  *
  * Fixed upstream in gjsify 0.64.4 (gjsify/gjsify#2332): `@gjsify/sqlite` hands BLOB columns
  * back as `Uint8Array` on both runtimes, where GJS used to return a boxed `Gda_Binary` whose
- * bytes only `hex(vector)` could reach. The bump re-measures that under GJS (issue #45 step 5);
- * if a runtime ever hands something else back, `blobBytes` says so.
+ * bytes only `hex(vector)` could reach. Confirmed under GJS at the 0.64.6 bump (issue #45 step
+ * 5, gjs test run of this very function). If a runtime ever hands something else back, this
+ * throws rather than silently misreading the vector.
  */
 function blobBytes(value: unknown): Uint8Array {
     if (value instanceof Uint8Array) return value;
-    if (value instanceof ArrayBuffer) return new Uint8Array(value);
-    if (Array.isArray(value)) return new Uint8Array(value as number[]);
     throw new Error('This runtime cannot read a vector blob.');
 }
 
