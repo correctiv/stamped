@@ -168,10 +168,22 @@ export {
     periodBreakdown,
     rawSetDigest,
     type RawSetDigest,
+    bodyAlteredBreakdown,
     type UnsignedBreakdown,
     unsignedBreakdown,
     type VerdictDomains,
 } from './breakdown.ts';
+export {
+    analyseBodyHeaders,
+    backfillBodyExplanations,
+    backfillBodyExplanationsAll,
+    BODY_EXPLANATION_VERSION,
+    type BodyExplanationTotals,
+    bodyExplanationsComplete,
+    bodyExplanationTotals,
+    type BodyHeaderFlags,
+    writeBodyExplanations,
+} from './body-explanations.ts';
 export {
     analyseUnsignedHeaders,
     backfillUnsignedHeaders,

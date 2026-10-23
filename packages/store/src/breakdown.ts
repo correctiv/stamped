@@ -15,6 +15,11 @@ import type { DatabaseSync } from 'node:sqlite';
 import { VERDICTS, type Verdict } from '@stamped/core';
 
 import type { CasePaths } from './case.ts';
+import {
+    type BodyExplanationTotals,
+    backfillBodyExplanationsAll,
+    bodyExplanationTotals,
+} from './body-explanations.ts';
 import { mailboxScope } from './index-db.ts';
 import { eachLogEntry, type ImportLogEntry } from './raw.ts';
 import type { SigningDomain } from './report.ts';
@@ -171,6 +176,15 @@ export interface UnsignedBreakdown {
 export function unsignedBreakdown(db: DatabaseSync, paths: CasePaths): UnsignedBreakdown {
     backfillUnsignedHeadersAll(db, paths);
     return unsignedTotals(db);
+}
+
+/**
+ * Which body-altered messages an export artefact explains, and what the header says about the
+ * rest. Runs the `body_explanations` fill to the end, then answers with one aggregate query.
+ */
+export function bodyAlteredBreakdown(db: DatabaseSync, paths: CasePaths): BodyExplanationTotals {
+    backfillBodyExplanationsAll(db, paths);
+    return bodyExplanationTotals(db);
 }
 
 /** A fingerprint of the set of messages the index holds, and how many that is. */

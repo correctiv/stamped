@@ -230,7 +230,9 @@ export function backfillUnsignedHeadersAll(
         const step = backfillUnsignedHeaders(db, paths);
         total += step.processed;
         if (step.processed > 0) onProgress?.(total);
-        if (step.done) return;
+        // no progress and not done covers the absent table (ensure is best effort): looping
+        // forever on it would hang the caller; stopping makes the next run retry.
+        if (step.done || step.processed === 0) return;
     }
 }
 

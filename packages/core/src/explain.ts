@@ -19,6 +19,7 @@ export const REASON_CODES = [
     'body-export-line-endings',
     'body-export-both',
     'body-export-base64',
+    'body-export-encoding',
     'body-signed-part-changed',
     'body-changed',
     'headers-key-maybe-rotated',
@@ -116,6 +117,26 @@ function explainBody(finding: SignatureFinding): Explanation {
             sentence: _(
                 'Base64 line wrapping was changed by the export. The decoded content is identical to what was signed. The verdict stays body altered: this is an explanation, not a confirmation.',
             ),
+            details,
+        };
+    }
+    if (artefact === 'base64-trailing-newline' || artefact === 'quoted-printable-decoded') {
+        const decoded = artefact === 'quoted-printable-decoded';
+        details.push({
+            label: _('Retry'),
+            value: decoded
+                ? _('re-encoding the quoted-printable text makes the hash match')
+                : _('adding or removing the line break before the boundary makes the hash match'),
+        });
+        return {
+            code: 'body-export-encoding',
+            sentence: decoded
+                ? _(
+                      'A quoted-printable text part was stored decoded by the export. The text is identical to what was signed. The body was most likely changed by the export, content unchanged. The verdict stays body altered: this is an explanation, not a confirmation.',
+                  )
+                : _(
+                      'The line break before a base64 part boundary was added or removed by the export. The decoded content is identical to what was signed. The body was most likely changed by the export, content unchanged. The verdict stays body altered: this is an explanation, not a confirmation.',
+                  ),
             details,
         };
     }

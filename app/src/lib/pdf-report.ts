@@ -12,6 +12,7 @@
 
 import { fmt, formatNumber as num, verdictLabel, _, _n } from '@stamped/core';
 
+import { bodyAlteredSection } from './body-altered.ts';
 import {
     breakableMailbox,
     CLUSTER_FACTOR,
@@ -344,6 +345,32 @@ function compose(w: Writer, model: PdfReportModel): void {
         ];
         if (u.embedded !== undefined) rows.push([_('Signature only in an embedded message'), num(u.embedded)]);
         w.table(rows, [0.75, 0.25], { rightAligned: [1] });
+    }
+
+    // --- body altered, explained ---
+    const bodySection = model.bodyAltered === undefined ? undefined : bodyAlteredSection(model.bodyAltered);
+    if (bodySection !== undefined) {
+        w.heading(_('Body altered: export artefacts and indications'));
+        w.text(bodySection.basis, { size: 9 });
+        w.text(bodySection.explainedNote, { size: 9 });
+        if (bodySection.explained.length > 0) {
+            w.table(
+                [[_('Export artefact'), _('Messages')], ...bodySection.explained.map(([l, n]) => [l, num(n)])],
+                [0.75, 0.25],
+                { rightAligned: [1] },
+            );
+        }
+        if (bodySection.unexplained > 0) {
+            w.text(`${bodySection.indicatorNote} (${num(bodySection.unexplained)})`, { size: 9 });
+            w.table(
+                [
+                    [_('Indication, not proof'), _('Messages')],
+                    ...bodySection.indicators.map(([l, n]) => [l, num(n)]),
+                ],
+                [0.75, 0.25],
+                { rightAligned: [1] },
+            );
+        }
     }
 
     // --- clusters ---
