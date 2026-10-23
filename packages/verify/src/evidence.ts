@@ -48,8 +48,6 @@ const REASON_BY_COMMENT: ReadonlyMap<string, UnverifiableReason> = new Map<strin
     ['key not for email', 'key-rejects-signature'],
     ['inappropriate key algorithm', 'key-rejects-signature'],
     ['domain mismatch', 'key-rejects-signature'],
-    ['expired', 'expired'],
-    ['invalid expiration', 'expired'],
     ['signature syntax error', 'malformed-signature'],
 ]);
 
@@ -60,7 +58,13 @@ export function evidenceFrom(raw: RawSignatureResult, context: EvidenceContext =
     // ever overwrites it with a string, so a bare truthiness test would read `false` as a
     // missing comment on a PASS — correct by accident. Checked by type.
     const comment = typeof status.comment === 'string' ? status.comment : undefined;
-    const passed = status.result === 'pass';
+    // mailauth sets these two comments only AFTER the body hash matched and `crypto.verify`
+    // returned true, and only because `x=` lies before now (`expired`) or before `t=`
+    // (`invalid expiration`; `expired` wins when both hold). The signature is genuine: `x=` is a
+    // replay limit for live delivery, no statement about an archived message. A `t=` in the
+    // future never comes through here — mailauth reports that in `signatureTimeValid` only.
+    const lifetimeOnly = comment === 'expired' || comment === 'invalid expiration';
+    const passed = status.result === 'pass' || (status.result === 'neutral' && lifetimeOnly);
     const bodyHashMismatch = comment === 'body hash did not verify';
     const badSignature = comment === 'bad signature';
 
@@ -83,6 +87,11 @@ export function evidenceFrom(raw: RawSignatureResult, context: EvidenceContext =
         signatureOk: passed,
     };
 
+    const signedAt = secondsOf(raw.signTime);
+    const expiresAt = secondsOf(raw.expiresAfter);
+    if (signedAt !== undefined) evidence.signedAt = signedAt;
+    if (expiresAt !== undefined) evidence.expiresAt = expiresAt;
+    if (comment === 'expired') evidence.expired = true;
     if (typeof raw.modulusLength === 'number') evidence.keyBits = raw.modulusLength;
     if (context.authorDomain) evidence.authorDomain = context.authorDomain;
     if (context.source) evidence.keySource = context.source;
@@ -113,6 +122,13 @@ export function evidenceFrom(raw: RawSignatureResult, context: EvidenceContext =
     }
 
     return evidence;
+}
+
+/** mailauth's ISO instant (`signTime`, `expiresAfter`) as whole seconds since the epoch. */
+function secondsOf(iso: string | null | undefined): number | undefined {
+    if (typeof iso !== 'string') return undefined;
+    const ms = Date.parse(iso);
+    return Number.isNaN(ms) ? undefined : Math.floor(ms / 1000);
 }
 
 /** `k=` of a key record; RFC 6376 defaults it to rsa. */

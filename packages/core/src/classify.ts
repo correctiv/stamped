@@ -143,6 +143,15 @@ export function caveatsFor(evidence: SignatureEvidence): Caveat[] {
 
     if (evidence.keySource === 'archive') caveats.push('archive-key');
 
+    if (evidence.expired) caveats.push('signature-expired');
+    if (
+        evidence.expiresAt !== undefined &&
+        evidence.signedAt !== undefined &&
+        evidence.expiresAt < evidence.signedAt
+    ) {
+        caveats.push('signature-lifetime-invalid');
+    }
+
     // A valid signature from a domain other than the author's vouches for the signer only.
     if (!evidence.aligned) caveats.push('signer-not-author');
 

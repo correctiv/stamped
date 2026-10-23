@@ -25,7 +25,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const fixtureDir = join(repoRoot, 'app', 'tests', 'fixtures');
+// STAMPED_FIXTURE_DIR lets a run write somewhere else, to pick out a single new fixture without
+// touching the keys of the committed ones.
+const fixtureDir = process.env.STAMPED_FIXTURE_DIR ?? join(repoRoot, 'app', 'tests', 'fixtures');
 const keyDir = join(fixtureDir, 'keys');
 
 /** A fixed timestamp, so a regenerated fixture differs only where a key forced it to. */
@@ -89,6 +91,7 @@ function sign({
     canonicalization,
     signedHeaders,
     lengthLimit,
+    expiresAt,
 }) {
     const [headerCanon, bodyCanon] = canonicalization.split('/');
     const canonHeader = headerCanon === 'simple' ? simpleHeader : relaxedHeader;
@@ -106,6 +109,7 @@ function sign({
         `d=${domain}`,
         `s=${selector}`,
         `t=${SIGN_TIME}`,
+        ...(expiresAt === undefined ? [] : [`x=${expiresAt}`]),
         `h=${signedHeaders.join(':')}`,
         ...(lengthLimit === undefined ? [] : [`l=${lengthLimit}`]),
         `bh=${bodyHash}`,
@@ -242,6 +246,9 @@ makeKey({ selector: 'tswapped', domain: 'example.com', type: 'rsa', bits: 2048 }
 
 // Its own key, so the base64 fixtures do not depend on the bytes of any older key.
 const base64Key = makeKey({ selector: 'tb64', domain: 'example.com', type: 'rsa', bits: 2048 });
+
+// Its own key as well: the x= fixtures stand beside the older ones without sharing their bytes.
+const expKey = makeKey({ selector: 'texp', domain: 'example.com', type: 'rsa', bits: 2048 });
 
 console.log('fixtures:');
 
@@ -674,6 +681,36 @@ write(
         canonicalization: 'relaxed/relaxed',
         signedHeaders: SIGNED,
     }),
+);
+
+// ── signature lifetime (x=) ─────────────────────────────────────────────────────────────────
+
+// x= a day after t=, which is long past: the signature is genuine, only its stated lifetime is over.
+const signExpiring = (expiresAt, body = BODY) =>
+    sign({
+        headers: headersFor({ subject: 'Quarterly figures' }),
+        body,
+        key: expKey.privateKey,
+        domain: expKey.domain,
+        selector: expKey.selector,
+        algorithm: 'rsa-sha256',
+        canonicalization: 'relaxed/relaxed',
+        signedHeaders: SIGNED,
+        expiresAt,
+    });
+
+write('caveat-expired.eml', signExpiring(SIGN_TIME + 86400));
+
+// x= BEFORE t=: the header contradicts itself.
+write('caveat-lifetime-invalid.eml', signExpiring(SIGN_TIME - 3600));
+
+// An expired x= must not hide an altered body.
+write(
+    'body-altered-expired.eml',
+    signExpiring(SIGN_TIME + 86400).replace(
+        'provisional until the audit closes',
+        'final and the audit has closed',
+    ),
 );
 
 console.log(`keys:\n  ${keyDir}`);

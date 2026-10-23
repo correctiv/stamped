@@ -34,6 +34,14 @@ const EXPECTED: ReadonlyArray<{ file: string; verdict: Verdict; caveats: Caveat[
         verdict: 'confirmed-with-caveats',
         caveats: ['unsigned-subject', 'unsigned-to', 'unsigned-date'],
     },
+    { file: 'caveat-expired.eml', verdict: 'confirmed-with-caveats', caveats: ['signature-expired'] },
+    // x= before t=: mailauth reports `invalid expiration`, then `expired` as well, since x is past.
+    {
+        file: 'caveat-lifetime-invalid.eml',
+        verdict: 'confirmed-with-caveats',
+        caveats: ['signature-expired', 'signature-lifetime-invalid'],
+    },
+    { file: 'body-altered-expired.eml', verdict: 'body-altered', caveats: [] },
     { file: 'body-altered.eml', verdict: 'body-altered', caveats: [] },
     { file: 'headers-altered.eml', verdict: 'headers-altered', caveats: [] },
     { file: 'unverifiable-no-key.eml', verdict: 'unverifiable', caveats: [] },

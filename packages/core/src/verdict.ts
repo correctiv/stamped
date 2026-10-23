@@ -71,6 +71,19 @@ export const CAVEATS = [
      */
     'archive-key',
     /**
+     * `x=` lies before now. The signature and the body hash checked out, so this is no finding
+     * against the message: `x=` limits how long a receiver should ACCEPT a message in live
+     * delivery (a replay limit), and an archive is by definition read after that.
+     */
+    'signature-expired',
+    /**
+     * `x=` lies before `t=`: the signer's own header contradicts itself. The cryptography is
+     * intact, so it is no tampering finding either, but a signature that expires before it was
+     * made is a fact a reader should hear — it points at odd signing software or at a header
+     * that was constructed rather than produced by a normal signer.
+     */
+    'signature-lifetime-invalid',
+    /**
      * The signature verifies, but its `d=` is not the From domain. It proves that `d=` handled
      * the message, not that the author's domain sent it: anyone can sign a forged `From:` with a
      * domain they own, and the cryptography will be flawless.
@@ -102,7 +115,10 @@ export type UnverifiableReason =
     | 'malformed-signature'
     /** The key record's `h=` or `s=` excludes this signature's hash or email entirely. */
     | 'key-rejects-signature'
-    /** The signature's `x=` has passed, or its `t=` is in the future. */
+    /**
+     * Kept for indexes written before an expired `x=` became a caveat (`signature-expired`): the
+     * verifier no longer produces it, but stored rows may still hold it, so it stays readable.
+     */
     | 'expired'
     /** The lookup failed in a way that may succeed later (a DNS error, with `--dns`). */
     | 'lookup-failed'
@@ -202,6 +218,11 @@ export interface SignatureEvidence {
     readonly signedAt?: number;
     /** `x=` — when the signer says the signature expires, in seconds since the epoch. */
     readonly expiresAt?: number;
+    /**
+     * True when the signature verified but its `x=` lies before the moment of verification. A
+     * fact of the verifier (it owns the clock); the classifier turns it into `signature-expired`.
+     */
+    readonly expired?: boolean;
     /** ISO time of the message's `Date:` header, if it parses. */
     readonly messageDate?: string;
     /**
@@ -352,6 +373,14 @@ export function describeCaveat(caveat: Caveat, evidence?: SignatureEvidence): st
             return _(
                 'The public key came from the archive itself, so it proves consistency rather than authenticity.',
             );
+        case 'signature-expired':
+            return _(
+                'The signature was valid when it was made; its expiry date (x=) has since passed. That matters for live delivery, not for an archive.',
+            );
+        case 'signature-lifetime-invalid':
+            return _(
+                'The signature header contradicts itself: its expiry date (x=) lies before the time it was made (t=). The signature itself verifies.',
+            );
         case 'key-newer-than-message':
             return _(
                 'The key was first seen after this message was sent. The selector may have been rotated, so this failure may come from a wrong key rather than an edit.',
@@ -386,7 +415,7 @@ export function describeUnverifiableReason(reason: UnverifiableReason): string {
         case 'key-rejects-signature':
             return _('The key record does not allow this signature (hash algorithm or service type).');
         case 'expired':
-            return _('The signature is expired or its timestamp lies in the future.');
+            return _('The signature’s expiry date (x=) has passed.');
         case 'lookup-failed':
             return _('The key lookup failed and may succeed later.');
         case 'key-mismatch':

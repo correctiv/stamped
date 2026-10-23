@@ -202,6 +202,10 @@ function evidenceExplanation(key: EvidenceKey): string {
             return _(
                 'An l= tag, which signs only the first so many bytes of the body. Everything after that is unsigned and can be appended by anyone without breaking the signature.',
             );
+        case 'lifetime':
+            return _(
+                'When the signer says it signed (t=) and when it wants the signature to stop being accepted (x=). The expiry limits live delivery. It does not make an archived message less genuine, so a passed date is a caveat and not a failure.',
+            );
         case 'reason':
             return _(
                 'Why no verdict was possible. Almost always a missing public key, which says nothing against the message: fetch the key and it gets a verdict.',

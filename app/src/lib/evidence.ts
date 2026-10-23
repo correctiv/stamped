@@ -43,6 +43,7 @@ export const EVIDENCE_KEYS = [
     'body-hash',
     'signature',
     'length-limit',
+    'lifetime',
     'reason',
     'verifier-note',
 ] as const;
@@ -132,6 +133,9 @@ export function evidenceFields(finding: SignatureFinding): EvidenceField[] {
             value: lengthLimitLine(evidence),
         });
     }
+    if (evidence.expiresAt !== undefined) {
+        fields.push({ key: 'lifetime', label: _('Lifetime (t=, x=)'), value: lifetimeLine(evidence) });
+    }
     if (evidence.unverifiableBecause) {
         fields.push({
             key: 'reason',
@@ -198,6 +202,19 @@ function bodyHashLine(evidence: SignatureEvidence): string {
         });
     }
     return _('not checked');
+}
+
+/** When the signer says it signed and when the signature expires, as UTC instants. */
+function lifetimeLine(evidence: SignatureEvidence): string {
+    const expires = instant(evidence.expiresAt ?? 0);
+    if (evidence.signedAt === undefined) return fmt(_('expires {expires}'), { expires });
+    return fmt(_('signed {signed}, expires {expires}'), { signed: instant(evidence.signedAt), expires });
+}
+
+/** Seconds since the epoch as an ISO instant; the raw number when it is out of range. */
+function instant(seconds: number): string {
+    const date = new Date(seconds * 1000);
+    return Number.isNaN(date.getTime()) ? String(seconds) : date.toISOString();
 }
 
 /** How much of the body `l=` leaves out, in canonicalized bytes. */

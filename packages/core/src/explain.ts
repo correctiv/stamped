@@ -286,12 +286,9 @@ function explainUnverifiable(finding: SignatureFinding, reason: UnverifiableReas
         case 'expired':
             return {
                 code: 'unverifiable-expired',
-                sentence: fmt(
-                    _('The signature has an expiry time that has passed or lies in the future. {nothing}'),
-                    {
-                        nothing,
-                    },
-                ),
+                sentence: fmt(_('The signature’s expiry date (x=) has passed. {nothing}'), {
+                    nothing,
+                }),
                 details,
             };
         case 'lookup-failed':

@@ -35,8 +35,8 @@ the journalist needs:
 
 `body-altered` vs `headers-altered` is the whole point and must never be merged into one "fail".
 The caveats (`packages/core/src/verdict.ts`) are: `rsa-sha1`, a key under 1024 bit, an `l=` body
-length limit, `To`/`Date`/`Subject` not in `h=`, and a key that came only from the archive rather
-than from a published record. **Each signature of a multi-signature message is classified on its
+length limit, `To`/`Date`/`Subject` not in `h=`, a key that came only from the archive rather
+than from a published record, and a signature whose `x=` has passed (or lies before its `t=`). **Each signature of a multi-signature message is classified on its
 own** — a forwarder's passing signature says nothing about the originator's.
 
 Never make a caveat into a failure, and never drop one because it is "probably fine". Adding a
