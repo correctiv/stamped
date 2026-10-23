@@ -227,6 +227,8 @@ caveat* instead of refusing to look. Stamped applies policy on top; mailauth app
 
 ```bash
 gjsify foreach -A check                      # type-check everything
+gjsify format --check .                      # formatting, as CI runs it
+gjsify lint .                                # lint from the ROOT, as CI runs it — `foreach -A lint` misses rules
 gjsify workspace stamped-cli build           # → app/dist/stamped.gjs.mjs
 gjsify workspace stamped-cli test            # @gjsify/unit, on gjs AND node
 gjsify run app/dist/stamped.gjs.mjs verify app/tests/fixtures/confirmed.eml \
@@ -329,7 +331,8 @@ Yahoo/Epstein archives — the app has to be shown doing a real DKIM verificatio
 - SQLite runs on **libgda** through gjsify's `node:sqlite` wrapper, not sqlite3. FTS5 is available
   on both runtimes (measured, [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md)).
 - Conventional commits (`feat(verify): …`, `fix(core): …`), imperative, subject ≤ 50 chars. Run
-  `gjsify foreach -A check`, `format:check`, `lint` and the tests before committing. No
+  `gjsify foreach -A check`, `gjsify format --check .`, `gjsify lint .` and the tests before
+  committing. A fresh worktree needs `./dev/i18n.sh compile` first, or the catalogue test fails. No
   `--no-verify`.
 - This repo is a **submodule of werkstatt**: commit here, push, *then* bump the pointer in the
   parent. NEVER stage across that boundary in one commit, and never commit a werkstatt file here.
