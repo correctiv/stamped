@@ -109,6 +109,8 @@ import {
 } from './view/keys.ts';
 import { escapeLine, noHyphens, plainText } from './view/markup.ts';
 import { BENCH_FILE, cpuMs, report as benchReport, rssMb, settle, sinceStart, startLap } from './bench.ts';
+import { MessageItem, MessageRowView } from './message-row.ts';
+import { nearEnd, PagedList } from '../lib/paged-list.ts';
 import { matchBadge } from './view/semantic.ts';
 import type { MatchKind } from '../lib/hybrid-search.ts';
 import {
@@ -416,8 +418,14 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** The scope an overview tap set: the same "where from" axis as `source`, never both. */
     private scope?: ScopeRef;
 
-    /** The hits behind the message rows, by row index. */
-    private hits: SearchHit[] = [];
+    /** The rows of the message list; the `Gtk.ListView` only ever builds the visible ones. */
+    private readonly messageStore = new Gio.ListStore<MessageItem>({ itemType: MessageItem.$gtype });
+    private messageSelection!: Gtk.SingleSelection;
+    /** Which page comes next, and whether one is on its way. */
+    private readonly paged = new PagedList<SearchHit>({
+        pageSize: PAGE_SIZE,
+        onPage: (page, replace) => this.appendPage(page, replace),
+    });
     /** Cancellable for an in-flight import subprocess. */
     private importCancellable?: Gio.Cancellable;
     /** The import subprocess this window started, if any; only its Cancel button may kill it. */
@@ -431,12 +439,6 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** The header bar's status button, and what turns the status file into its import row. */
     private activity!: ActivityController;
     private importWatcher!: ImportWatcher;
-    /** How many of the filtered messages have actually been loaded into the list. */
-    private listOffset = 0;
-    /** Whether a further page is being fetched right now. */
-    private loadingMore = false;
-    /** Whether more pages remain. */
-    private hasMore = true;
     /** How many messages the current filter admits, for the counter under the list. */
     private filteredTotal = 0;
     /** The archive behind each `sourceList` row; `undefined` at index 0 — the "all" row. */
@@ -517,10 +519,28 @@ export class StampedWindow extends Adw.ApplicationWindow {
             });
         });
 
-        this._messageList.connect('row-selected', (_list, row) => {
-            if (this.rebuilding || row === null) return;
-            const hit = this.hits[row.get_index()];
-            if (hit) this.track(this.showMessage(hit.hash));
+        this.messageSelection = new Gtk.SingleSelection({
+            model: this.messageStore,
+            autoselect: false,
+            canUnselect: true,
+        });
+        const factory = new Gtk.SignalListItemFactory();
+        factory.connect('setup', (_factory, object) => {
+            (object as Gtk.ListItem).set_child(new MessageRowView());
+        });
+        factory.connect('bind', (_factory, object) => {
+            const listItem = object as Gtk.ListItem;
+            (listItem.get_child() as MessageRowView).bind(listItem.get_item() as MessageItem);
+        });
+        factory.connect('unbind', (_factory, object) => {
+            ((object as Gtk.ListItem).get_child() as MessageRowView).unbind();
+        });
+        this._messageList.set_factory(factory);
+        this._messageList.set_model(this.messageSelection);
+        this.messageSelection.connect('notify::selected', () => {
+            if (this.rebuilding) return;
+            const item = this.messageSelection.get_selected_item() as MessageItem | null;
+            if (item) this.track(this.showMessage(item.row.hash));
         });
 
         // Lazy loading: fetch the next page when the scroller nears the bottom, so a case of
@@ -603,7 +623,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         if (SHOT_VERDICT !== null) {
             this.verdict = SHOT_VERDICT as Verdict;
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
-                this._messageList.select_row(this._messageList.get_row_at_index(0));
+                this.messageSelection.set_selected(0);
                 return GLib.SOURCE_REMOVE;
             });
         }
@@ -727,6 +747,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private cancelQueries(): void {
         this.refreshGeneration++;
         this.listGeneration++;
+        this.paged.reset(0);
         this.peopleGeneration++;
         this.backfillGeneration++;
     }
@@ -1095,20 +1116,19 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const generation = ++this.listGeneration;
         const query = this.currentQuery();
         this.updateFilterBanner();
-        this.listOffset = 0;
-        this.loadingMore = false;
-        this.hasMore = true;
+        this.paged.reset(0);
         const total = await filteredCount(session, query);
         if (this.session !== session || this.listGeneration !== generation) return;
         this.filteredTotal = total;
+        this.paged.reset(total);
 
         this.matches = new Map();
-        await this.loadMore(query, true);
+        await this.loadMore(query);
         if (this.session !== session || this.listGeneration !== generation) return;
         void this.mergeMeaning(query);
 
         // Plain text, not markup: see `adopt` on `Adw.WindowTitle`.
-        if (this.hits.length === 0) {
+        if (this.messageStore.get_n_items() === 0) {
             const empty = emptyList(this.total, query.text);
             this._emptyState.set_title(empty.title);
             this._emptyState.set_description(empty.description);
@@ -1119,7 +1139,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         } else {
             this._listStack.set_visible_child_name('list');
         }
-        if (BENCH_FILE !== null && !this.benchStarted && this.hits.length > 0) {
+        if (BENCH_FILE !== null && !this.benchStarted && this.messageStore.get_n_items() > 0) {
             this.benchStarted = true;
             this.track(this.runBench());
         }
@@ -1138,7 +1158,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
         const scrolled = scroll();
         await settle(1000);
-        const loaded = this.hits.length;
+        const loaded = this.messageStore.get_n_items();
         const rssScrolled = rssMb();
         const picks: ReturnType<ReturnType<typeof startLap>>[] = [];
         for (const index of [loaded - 1, loaded - 11, loaded - 21]) {
@@ -1164,51 +1184,39 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     private benchSelect(index: number): void {
-        this._messageList.select_row(this._messageList.get_row_at_index(index));
+        this.messageSelection.set_selected(index);
     }
 
     /**
      * Fetch one more page and append it, unless there is nothing left or a fetch is in flight.
      *
-     * `loadingMore` is set before the await and cleared after it, so the scroller's handler
-     * cannot start a second fetch for the same offset while this one is out at the worker.
+     * The bookkeeping — one fetch at a time, a reset drops a late answer — is {@link PagedList}'s;
+     * this only says where the page comes from and where it goes.
      */
-    private async loadMore(query: Query = this.currentQuery(), replace = false): Promise<void> {
+    private async loadMore(query: Query = this.currentQuery()): Promise<void> {
         const session = this.session;
-        if (!session || this.loadingMore || !this.hasMore) return;
+        if (!session) return;
         const generation = this.listGeneration;
-        this.loadingMore = true;
-        let page: SearchHit[];
-        try {
-            page = await pageOf(session, query, this.listOffset);
-        } finally {
-            this.loadingMore = false;
-        }
-        if (this.session !== session || this.listGeneration !== generation) return;
-        this.rebuilding = true;
-        if (replace) {
-            this.hits = [];
-            clearList(this._messageList);
-        }
-        this.appendRows(page);
-        this.rebuilding = false;
-        this.hits = replace ? page : this.hits.concat(page);
-        this.listOffset += page.length;
-        this.hasMore = page.length === PAGE_SIZE && this.listOffset < this.filteredTotal;
-        this._listTitle.set_subtitle(filterSummary(this.hits.length, this.filteredTotal));
+        const landed = await this.paged.loadMore((offset) => pageOf(session, query, offset));
+        if (!landed || this.session !== session || this.listGeneration !== generation) return;
+        this._listTitle.set_subtitle(filterSummary(this.paged.loaded, this.filteredTotal));
     }
 
-    private appendRows(page: readonly SearchHit[]): void {
-        for (const row of messageRows(page)) {
-            const item = new Adw.ActionRow({ title: row.title, subtitle: noHyphens(row.subtitle) });
-            item.set_subtitle_lines(1);
-            item.set_title_lines(1);
-            item.set_tooltip_markup(row.tooltip);
+    private appendPage(page: readonly SearchHit[], replace: boolean): void {
+        this.rebuilding = true;
+        this.messageStore.splice(
+            replace ? 0 : this.messageStore.get_n_items(),
+            replace ? this.messageStore.get_n_items() : 0,
+            this.itemsOf(page),
+        );
+        this.rebuilding = false;
+    }
+
+    private itemsOf(page: readonly SearchHit[]): MessageItem[] {
+        return messageRows(page).map((row) => {
             const found = matchBadge(this.matches.get(row.hash) ?? 'text');
-            if (found !== undefined) item.add_suffix(badge(escapeLine(found), 'dimmed'));
-            item.add_suffix(badge(row.badge, row.cssClass));
-            this._messageList.append(item);
-        }
+            return new MessageItem(row, found === undefined ? undefined : escapeLine(found));
+        });
     }
 
     /**
@@ -1227,14 +1235,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
             if (!merged || session !== this.session || query.text !== this.currentQuery().text) return;
             if (!merged.some((hit) => hit.match !== 'text')) return;
             this.matches = new Map(merged.map((hit) => [hit.hash, hit.match]));
-            this.rebuilding = true;
-            clearList(this._messageList);
-            this.rebuilding = false;
-            this.appendRows(merged);
-            this.hits = merged;
-            this.listOffset = merged.length;
-            this.hasMore = false;
-            this._listTitle.set_subtitle(filterSummary(this.hits.length, this.filteredTotal));
+            this.paged.finish(merged.length);
+            this.appendPage(merged, true);
+            this._listTitle.set_subtitle(filterSummary(merged.length, this.filteredTotal));
         } catch {
             // Text search already answered.
         }
@@ -1242,11 +1245,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
     /** Triggered by the scroller: pull the next page when the bottom comes into view. */
     private maybeLoadMore(): void {
-        if (this.rebuilding || this.loadingMore || !this.hasMore) return;
+        if (this.rebuilding || this.paged.isLoading || !this.paged.hasMore) return;
         const scroller = this._messageList.get_parent() as Gtk.ScrolledWindow | null;
         if (scroller === null) return;
         const adj = scroller.get_vadjustment();
-        if (adj.get_value() + adj.get_page_size() >= adj.get_upper() - 200) {
+        if (nearEnd(adj.get_value(), adj.get_page_size(), adj.get_upper(), 200)) {
             this.track(this.loadMore());
         }
     }

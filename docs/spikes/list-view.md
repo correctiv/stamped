@@ -25,3 +25,17 @@ STAMPED_BENCH=/tmp/bench.jsonl ./scripts/headless-run -- gjsify run app/dist/sta
 | 1.5 s idle with 5,000 rows | 850 ms main-thread CPU |
 
 The worker does almost nothing; the main thread is busy because every page adds 200 more `Adw.ActionRow` widget trees to a list that keeps all of them, and each addition re-measures the whole box.
+
+## Step 2: `Gtk.ListView` over a `Gio.ListStore`
+
+Rows are `MessageItem` objects in a `Gio.ListStore`; a `SignalListItemFactory` binds a small recycled `MessageRowView` to each visible one. Paging bookkeeping lives in `app/src/lib/paged-list.ts` (unit-tested).
+
+| Measure | Baseline | ListView |
+|---|---|---|
+| First list on screen | 2.5 s; main 700 ms CPU | 2.2 s; main 630 ms CPU |
+| Scroll 24 pages (5,000 rows) | 30.2 s wall, **10.1 s** main CPU | 29.5 s wall, **1.0 s** main CPU |
+| RSS after scrolling | 313 MB | 207 MB |
+| Select a row after scrolling | 727 ms main CPU | 73 ms main CPU |
+| 1.5 s idle with 5,000 rows | 850 ms main CPU | 40 ms main CPU |
+
+Wall time for the scroll barely moves: the bench waits for each page from the worker, so that figure is the query, not the widgets. The main thread is free during it.
