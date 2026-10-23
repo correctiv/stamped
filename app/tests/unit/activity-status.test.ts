@@ -23,6 +23,7 @@ import {
     writeActivityStatus,
 } from '@stamped/store';
 
+import { trackActivity } from '../../src/lib/autofetch.ts';
 import { statusCommand } from '../../src/commands/status.ts';
 import { activityJson, activityLine } from '../../src/lib/status.ts';
 
@@ -162,6 +163,47 @@ export default async () => {
                 expect(json.activities[0].orphaned).toBe(false);
                 const text = await runStatus({ case: paths.root });
                 expect(text.some((l) => l.startsWith('Listing addresses'))).toBe(true);
+            });
+        });
+
+        await it('trackActivity ends every phase: finished, failed on a throw, cancelled on a signal', async () => {
+            await withCase(async (paths) => {
+                const result = await trackActivity(paths, 'keys', async (activity) => {
+                    expect(readActivityStatus(paths, 'keys')?.state).toBe('running');
+                    activity.update(3, 4);
+                    return 7;
+                });
+                expect(result).toBe(7);
+                const finished = readActivityStatus(paths, 'keys');
+                expect(finished?.state).toBe('finished');
+                expect(finished?.done).toBe(3);
+                expect(finished?.total).toBe(4);
+
+                let thrown = false;
+                try {
+                    await trackActivity(paths, 'reverify', async () => {
+                        throw new Error('boom');
+                    });
+                } catch {
+                    thrown = true;
+                }
+                expect(thrown).toBe(true);
+                expect(readActivityStatus(paths, 'reverify')?.state).toBe('failed');
+
+                const exits: number[] = [];
+                const before = process.listenerCount('SIGTERM');
+                await trackActivity(
+                    paths,
+                    'people',
+                    async () => {
+                        expect(process.listenerCount('SIGTERM')).toBe(before + 1);
+                        process.emit('SIGTERM', 'SIGTERM');
+                    },
+                    { exit: (code) => void exits.push(code) },
+                );
+                expect(exits).toStrictEqual([143]);
+                expect(readActivityStatus(paths, 'people')?.state).toBe('cancelled');
+                expect(process.listenerCount('SIGTERM')).toBe(before);
             });
         });
     });

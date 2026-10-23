@@ -14,6 +14,8 @@ import {
 } from '@stamped/core';
 import {
     beginActivityStatus,
+    type ActivityKind,
+    type ActivityStatusHandle,
     missingKeyPairs,
     openIndex,
     reverifyPairs,
@@ -82,6 +84,53 @@ export function printTally(tally: FetchTally): void {
     for (const line of tallyLines(tally)) console.log(`  ${line}`);
 }
 
+export interface TrackOptions {
+    /** What a signal ends the process with; injectable so a test does not exit. */
+    readonly exit?: (code: number) => void;
+}
+
+/**
+ * Run one phase with its activity status, and give the status a final state however the phase
+ * ends: `finished`, `failed` on a throw, `cancelled` on SIGINT/SIGTERM. A run that dies without
+ * writing one leaves a `running` file with a dead PID, which the window reads as a failure.
+ */
+export async function trackActivity<T>(
+    paths: CasePaths,
+    kind: ActivityKind,
+    run: (activity: ActivityStatusHandle) => Promise<T>,
+    options: TrackOptions = {},
+): Promise<T> {
+    const activity = beginActivityStatus(paths, kind);
+    let ended = false;
+    const end = (close: () => void): void => {
+        if (ended) return;
+        ended = true;
+        close();
+    };
+    const exit = options.exit ?? ((code: number) => process.exit(code));
+    const onInt = (): void => {
+        end(() => activity.cancel());
+        exit(130);
+    };
+    const onTerm = (): void => {
+        end(() => activity.cancel());
+        exit(143);
+    };
+    process.on('SIGINT', onInt);
+    process.on('SIGTERM', onTerm);
+    try {
+        const result = await run(activity);
+        end(() => activity.finish());
+        return result;
+    } catch (error) {
+        end(() => activity.fail());
+        throw error;
+    } finally {
+        process.removeListener('SIGINT', onInt);
+        process.removeListener('SIGTERM', onTerm);
+    }
+}
+
 function printReverify(result: ReverifyResult): void {
     console.log(
         fmt(
@@ -123,17 +172,9 @@ export async function reverifyApplicable(paths: CasePaths): Promise<ReverifyResu
         db.close();
     }
     if (pairs.length === 0) return undefined;
-    const activity = beginActivityStatus(paths, 'reverify');
-    let result: ReverifyResult;
-    try {
-        result = await reverifyPairs(paths, pairs, vault, undefined, (checked, total) =>
-            activity.update(checked, total),
-        );
-    } catch (error) {
-        activity.fail();
-        throw error;
-    }
-    activity.finish();
+    const result = await trackActivity(paths, 'reverify', (activity) =>
+        reverifyPairs(paths, pairs, vault, undefined, (checked, total) => activity.update(checked, total)),
+    );
     printReverify(result);
     return result;
 }
@@ -164,17 +205,14 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
     // Saved the moment a key arrives: a run interrupted after an hour of lookups keeps everything
     // it already fetched, instead of losing it all to one save at the end. The line shows the
     // arrival, so a long rate-limited fetch is not silent.
-    const activity = beginActivityStatus(paths, 'keys');
-    let stored = 0;
-    let summary;
-    try {
-        summary = await fetchKeys(vault, missing, {
+    const summary = await trackActivity(paths, 'keys', (activity) =>
+        fetchKeys(vault, missing, {
             channels: options.channels ?? DEFAULT_CHANNELS,
             confirm: (text) => askConsent(text, options.yes),
             fetch: (url) => fetch(url),
             resolveTxt,
+            onProgress: (done, total) => activity.update(done, total),
             onStored: (s) => {
-                activity.update(++stored, missing.length);
                 saveVault(paths.root, vault);
                 console.log(
                     fmt(_('  stored  {name} via {origin}{flag}'), {
@@ -184,12 +222,8 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
                     }),
                 );
             },
-        });
-    } catch (error) {
-        activity.fail();
-        throw error;
-    }
-    activity.finish();
+        }),
+    );
     if (summary.asked.length > 0 && !summary.consented) {
         console.log(_('Skipped; nothing was sent.'));
         return;

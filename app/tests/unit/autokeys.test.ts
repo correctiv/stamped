@@ -19,6 +19,8 @@ import {
 } from '@stamped/core';
 import {
     digest,
+    beginBatch,
+    commitBatch,
     importSources,
     messageCount,
     missingKeyPairs,
@@ -222,6 +224,105 @@ export default async () => {
                     expect(unappliedKeyPairs(again, vault).length).toBe(0);
                 } finally {
                     again.close();
+                }
+            });
+        });
+
+        await it('reports progress while keys are looked up, rising to the total', async () => {
+            await withCase(async (paths) => {
+                const db = openIndex(paths);
+                const missing = missingKeyPairs(db, new KeyVault());
+                db.close();
+                const seen: [number, number][] = [];
+                await fetchKeys(new KeyVault(), missing, {
+                    channels: ['archive.prove.email', 'dns'],
+                    confirm: async () => true,
+                    fetch: archiveFetch({ [T2048]: record(T2048) }, []),
+                    resolveTxt: async () => [[record(TED)]],
+                    onProgress: (done, total) => void seen.push([done, total]),
+                });
+                expect(seen[0]).toStrictEqual([0, 2]);
+                expect(seen[seen.length - 1]).toStrictEqual([2, 2]);
+                for (let i = 1; i < seen.length; i++) {
+                    expect((seen[i]?.[0] ?? 0) >= (seen[i - 1]?.[0] ?? 0)).toBe(true);
+                }
+            });
+        });
+
+        await it('reports the total before the first message and rises to it', async () => {
+            await withCase(async (paths) => {
+                const vault = new KeyVault();
+                const pair = { domain: 'example.com', selector: 't2048' };
+                const parsed = parseKeyMaterial(record(T2048));
+                if (parsed.kind !== 'key') throw new Error('fixture key');
+                vault.add({ ...pair, key: parsed, origin: 'dns', fetchedAt: new Date().toISOString() });
+                const seen: [number, number][] = [];
+                await reverifyPairs(
+                    paths,
+                    [pair],
+                    vault,
+                    undefined,
+                    (done, total) => void seen.push([done, total]),
+                );
+                expect(seen[0]).toStrictEqual([0, 2]);
+                expect(seen[seen.length - 1]).toStrictEqual([2, 2]);
+            });
+        });
+
+        await it('re-verifies without rewriting the text index, and keeps the first verdict', async () => {
+            await withCase(async (paths) => {
+                const hash = digest(fixture('confirmed.eml'));
+                const probe = (): { rowid: number; first: string | null } => {
+                    const db = openIndex(paths);
+                    try {
+                        const fts = db.prepare('SELECT rowid FROM messages_fts WHERE hash = ?').get(hash) as {
+                            rowid: number;
+                        };
+                        const msg = db
+                            .prepare('SELECT first_verdict FROM messages WHERE hash = ?')
+                            .get(hash) as {
+                            first_verdict: string | null;
+                        };
+                        return { rowid: Number(fts.rowid), first: msg.first_verdict };
+                    } finally {
+                        db.close();
+                    }
+                };
+                const before = probe();
+                const vault = new KeyVault();
+                const parsed = parseKeyMaterial(record(T2048));
+                if (parsed.kind !== 'key') throw new Error('fixture key');
+                vault.add({
+                    domain: 'example.com',
+                    selector: 't2048',
+                    key: parsed,
+                    origin: 'dns',
+                    fetchedAt: new Date().toISOString(),
+                });
+                await reverifyPairs(paths, vault.all(), vault);
+                expect(verdictOf(paths, 'confirmed.eml')).toBe('confirmed');
+                const after = probe();
+                // A delete-and-insert of the FTS row would give it a new rowid (and scan the whole table).
+                expect(after.rowid).toBe(before.rowid);
+                expect(after.first).toBe('unverifiable');
+            });
+        });
+
+        await it('does not block a reader in another connection while a batch is open', async () => {
+            await withCase(async (paths) => {
+                const writer = openIndex(paths);
+                const reader = openIndex(paths);
+                try {
+                    const mode = writer.prepare('PRAGMA journal_mode').get() as Record<string, unknown>;
+                    expect(String(Object.values(mode)[0]).toLowerCase()).toBe('wal');
+                    beginBatch(writer);
+                    writer.prepare("UPDATE messages SET caveats = '[]'").run();
+                    const row = reader.prepare('SELECT count(*) AS n FROM messages').get() as { n: number };
+                    expect(Number(row.n)).toBe(3);
+                    commitBatch(writer);
+                } finally {
+                    reader.close();
+                    writer.close();
                 }
             });
         });
