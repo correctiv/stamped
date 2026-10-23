@@ -1462,8 +1462,8 @@ msgid "No message has the verdict you filtered for."
 msgstr "Keine Nachricht hat den Befund, nach dem Sie gefiltert haben."
 
 #: app/src/gui/view/overview.ts:108 app/src/lib/pdf-report.ts:251
-#: app/src/lib/pdf-report.ts:290 app/src/lib/pdf-report.ts:330
-#: app/src/lib/pdf-report.ts:363 app/src/lib/pdf-report.ts:406
+#: app/src/lib/pdf-report.ts:290 app/src/lib/pdf-report.ts:336
+#: app/src/lib/pdf-report.ts:369 app/src/lib/pdf-report.ts:412
 #: app/src/gui/window.blp:216 app/src/gui/window.blp:230
 msgid "Messages"
 msgstr "Nachrichten"
@@ -1822,7 +1822,7 @@ msgid "The text is cut here; the stored message is longer."
 msgstr ""
 "Der Text ist hier abgeschnitten; die gespeicherte Nachricht ist länger."
 
-#: app/src/gui/window.ts:1493 app/src/lib/pdf-report.ts:365
+#: app/src/gui/window.ts:1493 app/src/lib/pdf-report.ts:371
 msgid "(unnamed)"
 msgstr "(ohne Namen)"
 
@@ -2126,7 +2126,7 @@ msgstr "Dauer: {duration}."
 msgid "Signature {position} of {total}, {verdict}"
 msgstr "Signatur {position} von {total}, {verdict}"
 
-#: app/src/lib/evidence.ts:100 app/src/lib/pdf-report.ts:406
+#: app/src/lib/evidence.ts:100 app/src/lib/pdf-report.ts:412
 msgid "Domain"
 msgstr "Domain"
 
@@ -2190,7 +2190,7 @@ msgstr "nicht verifiziert"
 msgid "Length limit (l=)"
 msgstr "Längenlimit (l=)"
 
-#: app/src/lib/evidence.ts:138 app/src/lib/pdf-report.ts:330
+#: app/src/lib/evidence.ts:138 app/src/lib/pdf-report.ts:336
 msgid "Reason"
 msgstr "Grund"
 
@@ -2362,7 +2362,7 @@ msgstr[1] "{count} Nachrichten wurden geprüft."
 msgid "Verdict"
 msgstr "Befund"
 
-#: app/src/lib/pdf-report.ts:290 app/src/lib/pdf-report.ts:363
+#: app/src/lib/pdf-report.ts:290 app/src/lib/pdf-report.ts:369
 msgid "Share"
 msgstr "Anteil"
 
@@ -2406,11 +2406,34 @@ msgstr ""
 "Prüfung der Signatur nicht vorlag oder nicht nutzbar war. Es konnte in keine "
 "Richtung etwas geprüft werden."
 
-#: app/src/lib/pdf-report.ts:317
+#: app/src/lib/pdf-report.ts:313
+msgid ""
+"When the published key is available but provably cannot have made the "
+"signature, the sender has since replaced or reused that key. The message is "
+"then counted as unverifiable, not as altered: the mismatch says something "
+"about the key, nothing about the message."
+msgstr ""
+"Ist der veröffentlichte Schlüssel vorhanden, kann die Signatur aber "
+"nachweislich nicht erzeugt haben, hat der Absender diesen Schlüssel "
+"inzwischen ersetzt oder wiederverwendet. Die Nachricht zählt dann als nicht "
+"prüfbar, nicht als verändert: Die Abweichung sagt etwas über den Schlüssel "
+"aus, nichts über die Nachricht."
+
+#: app/src/lib/pdf-report.ts:316
+msgid ""
+"Without the sender’s key, “Body altered” only says that the body no longer "
+"matches the hash written into the signature. That hash itself is then not "
+"authenticated."
+msgstr ""
+"Ohne den Schlüssel des Absenders sagt „Text verändert“ nur, dass der Text "
+"nicht mehr zu dem Hash passt, der in der Signatur steht. Dieser Hash selbst "
+"ist dann nicht beglaubigt."
+
+#: app/src/lib/pdf-report.ts:323
 msgid "Why messages are unsigned"
 msgstr "Warum Nachrichten ohne Signatur sind"
 
-#: app/src/lib/pdf-report.ts:321
+#: app/src/lib/pdf-report.ts:327
 msgid ""
 "Read from the header block of {count} unsigned message. The groups overlap: "
 "one message can be in several."
@@ -2424,37 +2447,37 @@ msgstr[1] ""
 "Gelesen aus den Kopfbereichen von {count} unsignierten Nachrichten. Die "
 "Gruppen überschneiden sich: Eine Nachricht kann in mehreren stehen."
 
-#: app/src/lib/pdf-report.ts:331
+#: app/src/lib/pdf-report.ts:337
 msgid "Never transported (no Received header)"
 msgstr "Nie übertragen (keine Received-Kopfzeile)"
 
-#: app/src/lib/pdf-report.ts:332
+#: app/src/lib/pdf-report.ts:338
 msgid "Signature header renamed"
 msgstr "Signatur-Kopfzeile umbenannt"
 
-#: app/src/lib/pdf-report.ts:333
+#: app/src/lib/pdf-report.ts:339
 msgid "dkim=pass in Authentication-Results"
 msgstr "dkim=pass in Authentication-Results"
 
-#: app/src/lib/pdf-report.ts:334
+#: app/src/lib/pdf-report.ts:340
 msgid "ARC signature only"
 msgstr "Nur ARC-Signatur"
 
-#: app/src/lib/pdf-report.ts:336
+#: app/src/lib/pdf-report.ts:342
 msgid "Signature only in an embedded message"
 msgstr "Signatur nur in einer eingebetteten Nachricht"
 
-#: app/src/lib/pdf-report.ts:341
+#: app/src/lib/pdf-report.ts:347
 msgid "Altered mail by mailbox and year"
 msgstr "Veränderte Nachrichten nach Postfach und Jahr"
 
-#: app/src/lib/pdf-report.ts:343
+#: app/src/lib/pdf-report.ts:349
 msgid "The import log names no mailboxes and no messages were dated."
 msgstr ""
 "Das Importprotokoll nennt keine Postfächer, und keine Nachricht hatte ein "
 "Datum."
 
-#: app/src/lib/pdf-report.ts:348
+#: app/src/lib/pdf-report.ts:354
 msgid ""
 "A row is flagged when it holds at least {min} messages and its altered share "
 "is at least {factor} times the share of the whole case ({share})."
@@ -2463,39 +2486,39 @@ msgstr ""
 "ihr Anteil veränderter Nachrichten mindestens das {factor}-Fache des Anteils "
 "im ganzen Fall ({share}) beträgt."
 
-#: app/src/lib/pdf-report.ts:359
+#: app/src/lib/pdf-report.ts:365
 msgid "Mailbox names are replaced by M1, M2, … in the order of their size."
 msgstr "Postfachnamen sind durch M1, M2, … ersetzt, nach Größe geordnet."
 
-#: app/src/lib/pdf-report.ts:363
+#: app/src/lib/pdf-report.ts:369
 msgid "Mailbox"
 msgstr "Postfach"
 
-#: app/src/lib/pdf-report.ts:363
+#: app/src/lib/pdf-report.ts:369
 msgid "Year"
 msgstr "Jahr"
 
-#: app/src/lib/pdf-report.ts:363
+#: app/src/lib/pdf-report.ts:369
 msgid "Altered"
 msgstr "Verändert"
 
-#: app/src/lib/pdf-report.ts:366
+#: app/src/lib/pdf-report.ts:372
 msgid "undated"
 msgstr "ohne Datum"
 
-#: app/src/lib/pdf-report.ts:370
+#: app/src/lib/pdf-report.ts:376
 msgid "Flagged"
 msgstr "Markiert"
 
-#: app/src/lib/pdf-report.ts:379
+#: app/src/lib/pdf-report.ts:385
 msgid "{count} further rows are not shown."
 msgstr "{count} weitere Zeilen werden nicht angezeigt."
 
-#: app/src/lib/pdf-report.ts:387
+#: app/src/lib/pdf-report.ts:393
 msgid "Notable concentration"
 msgstr "Auffällige Häufung"
 
-#: app/src/lib/pdf-report.ts:390
+#: app/src/lib/pdf-report.ts:396
 msgid ""
 "Notable concentration – points to a common technical cause (e.g. archive or "
 "export software); no statement about individual messages."
@@ -2503,43 +2526,43 @@ msgstr ""
 "Auffällige Häufung – deutet auf eine gemeinsame technische Ursache (z. B. "
 "Archiv- oder Exportsoftware) hin; keine Aussage über einzelne Nachrichten."
 
-#: app/src/lib/pdf-report.ts:399
+#: app/src/lib/pdf-report.ts:405
 msgid "Top {n} signing domains per verdict"
 msgstr "Die {n} wichtigsten signierenden Domains je Befund"
 
-#: app/src/lib/pdf-report.ts:401
+#: app/src/lib/pdf-report.ts:407
 msgid "No message carries a signature."
 msgstr "Keine Nachricht trägt eine Signatur."
 
-#: app/src/lib/pdf-report.ts:414
+#: app/src/lib/pdf-report.ts:420
 msgid "Where the keys come from"
 msgstr "Woher die Schlüssel stammen"
 
-#: app/src/lib/pdf-report.ts:417
+#: app/src/lib/pdf-report.ts:423
 msgid "Source"
 msgstr "Quelle"
 
-#: app/src/lib/pdf-report.ts:417 app/src/gui/window.blp:378
+#: app/src/lib/pdf-report.ts:423 app/src/gui/window.blp:378
 msgid "Keys"
 msgstr "Schlüssel"
 
-#: app/src/lib/pdf-report.ts:418
+#: app/src/lib/pdf-report.ts:424
 msgid "Published DNS record, looked up with consent"
 msgstr "Veröffentlichter DNS-Eintrag, mit Zustimmung abgefragt"
 
-#: app/src/lib/pdf-report.ts:419
+#: app/src/lib/pdf-report.ts:425
 msgid "archive.prove.email (a third party’s snapshots)"
 msgstr "archive.prove.email (Momentaufnahmen eines Dritten)"
 
-#: app/src/lib/pdf-report.ts:420
+#: app/src/lib/pdf-report.ts:426
 msgid "Shipped with the archive"
 msgstr "Mit dem Archiv geliefert"
 
-#: app/src/lib/pdf-report.ts:421
+#: app/src/lib/pdf-report.ts:427
 msgid "Supplied by the operator"
 msgstr "Vom Bearbeiter bereitgestellt"
 
-#: app/src/lib/pdf-report.ts:429
+#: app/src/lib/pdf-report.ts:435
 msgid ""
 "{messages} message waits for a key that is not in the store ({pairs} "
 "distinct selectors in total)."
@@ -2553,7 +2576,7 @@ msgstr[1] ""
 "{messages} Nachrichten warten auf einen Schlüssel, der nicht im Speicher "
 "liegt (insgesamt {pairs} verschiedene Selektoren)."
 
-#: app/src/lib/pdf-report.ts:440
+#: app/src/lib/pdf-report.ts:446
 msgid "{count} message could not be checked because its key had expired."
 msgid_plural ""
 "{count} messages could not be checked because their key had expired."
@@ -2564,11 +2587,11 @@ msgstr[1] ""
 "{count} Nachrichten konnten nicht geprüft werden, weil ihre Schlüssel "
 "abgelaufen waren."
 
-#: app/src/lib/pdf-report.ts:450
+#: app/src/lib/pdf-report.ts:456
 msgid "Method and limits"
 msgstr "Methode und Grenzen"
 
-#: app/src/lib/pdf-report.ts:453
+#: app/src/lib/pdf-report.ts:459
 msgid ""
 "Each DKIM signature (RFC 6376) of each message was checked on its own: the "
 "hash of the body, then the signature over the signed header fields, against "
@@ -2579,7 +2602,7 @@ msgstr ""
 "den veröffentlichten öffentlichen Schlüssel der signierenden Domain und des "
 "Selektors."
 
-#: app/src/lib/pdf-report.ts:456
+#: app/src/lib/pdf-report.ts:462
 msgid ""
 "A valid signature proves that the signed parts of the message are unchanged "
 "since the signing server added it. It does not prove who wrote the message, "
@@ -2589,7 +2612,7 @@ msgstr ""
 "dem Signieren durch den Server unverändert sind. Sie belegt nicht, wer die "
 "Nachricht geschrieben hat, und sagt nichts über Teile, die sie nicht abdeckt."
 
-#: app/src/lib/pdf-report.ts:459
+#: app/src/lib/pdf-report.ts:465
 msgid ""
 "Keys are taken from the key store of the case. Stamped does not query DNS on "
 "its own; a key that was not supplied is reported as missing, not guessed."
@@ -2598,7 +2621,7 @@ msgstr ""
 "nicht von sich aus ab; ein nicht bereitgestellter Schlüssel wird als fehlend "
 "gemeldet, nicht geraten."
 
-#: app/src/lib/pdf-report.ts:463
+#: app/src/lib/pdf-report.ts:469
 msgid ""
 "Tool: Stamped {version}. Every figure in this report can be reproduced from "
 "the raw messages with `stamped reverify` and `stamped report`."
@@ -2606,7 +2629,7 @@ msgstr ""
 "Werkzeug: Stamped {version}. Jede Zahl in diesem Bericht lässt sich aus den "
 "Rohnachrichten mit `stamped reverify` und `stamped report` nachvollziehen."
 
-#: app/src/lib/pdf-report.ts:482
+#: app/src/lib/pdf-report.ts:488
 msgid "{case} · {date}"
 msgstr "{case} · {date}"
 

@@ -309,6 +309,12 @@ function compose(w: Writer, model: PdfReportModel): void {
         _(
             '“Unverifiable” is not a negative finding. It means that the key needed to check the signature was not available, or could not be used. Nothing could be checked, in either direction.',
         ),
+        _(
+            'When the published key is available but provably cannot have made the signature, the sender has since replaced or reused that key. The message is then counted as unverifiable, not as altered: the mismatch says something about the key, nothing about the message.',
+        ),
+        _(
+            'Without the sender’s key, “Body altered” only says that the body no longer matches the hash written into the signature. That hash itself is then not authenticated.',
+        ),
     ]);
 
     // --- unsigned breakdown ---
