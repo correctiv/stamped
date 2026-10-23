@@ -177,8 +177,8 @@ dialog and the activity row are unchanged. Rules: never a second run beside a li
 update AND living pid — `liveSemanticRun`; a `paused` file is never stale, so its pid decides),
 and `stamped semantic index` itself refuses one, naming the pid (`refuseLiveRun`), before it
 opens the index; the index yields to an import (SIGTERM, restart when the import ends); the
-window ends only a process it started itself, a terminal's run is shown and left alone. No argv (no binary) → the
-in-process controller as before. The GUI still embeds the QUERY itself (model loaded twice, ~310 MB
+window ends only a process it started itself, a terminal's run is shown and left alone. No argv
+(no binary) → the in-process controller as before. The GUI still embeds the QUERY itself (model loaded twice, ~310 MB
 plus a context each). `vectors.db` is opened by two processes, so both openers set `busy_timeout`
 and WAL like the index.
 
