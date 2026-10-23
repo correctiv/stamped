@@ -84,6 +84,14 @@ export const CAVEATS = [
      */
     'signature-lifetime-invalid',
     /**
+     * The public key was recovered mathematically from DKIM signatures (GCD across signature
+     * pairs, RFC 6376 canonicalization, e=65537). It proves that the SAME key signed the
+     * messages — never that the key belonged to the domain or was ever published. A
+     * received-server `Authentication-Results: dkim=pass` in the same message would be the
+     * anchor that strengthens it.
+     */
+    'recovered-key',
+    /**
      * The signature verifies, but its `d=` is not the From domain. It proves that `d=` handled
      * the message, not that the author's domain sent it: anyone can sign a forged `From:` with a
      * domain they own, and the cryptography will be flawless.
@@ -171,7 +179,9 @@ export type KeySource =
     /** Supplied by the operator — `--key`, a key file, a key store they curate. */
     | 'operator'
     /** Found inside the archive under examination. See the `archive-key` caveat. */
-    | 'archive';
+    | 'archive'
+    /** Recovered mathematically from signatures. See the `recovered-key` caveat. */
+    | 'recovered';
 
 /**
  * Everything known about one DKIM signature after verification, and the only input the
@@ -380,6 +390,10 @@ export function describeCaveat(caveat: Caveat, evidence?: SignatureEvidence): st
         case 'signature-lifetime-invalid':
             return _(
                 'The signature header contradicts itself: its expiry date (x=) lies before the time it was made (t=). The signature itself verifies.',
+            );
+        case 'recovered-key':
+            return _(
+                'The public key was recovered from other signatures, so it proves the same key signed these messages, not that the key ever belonged to the domain. A dkim=pass in a received Authentication-Results header of the same message would be the anchor that strengthens it.',
             );
         case 'key-newer-than-message':
             return _(

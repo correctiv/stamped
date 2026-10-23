@@ -32,9 +32,17 @@ export type KeyOrigin =
     /** archive.prove.email: its own DNS snapshots, unsigned — a third party's word. */
     | 'archive.prove.email'
     /** Shipped with the leak itself. */
-    | 'archive';
+    | 'archive'
+    /** Recovered mathematically from DKIM signatures of this sender. */
+    | 'recovered';
 
-export const KEY_ORIGINS: readonly KeyOrigin[] = ['operator', 'dns', 'archive.prove.email', 'archive'];
+export const KEY_ORIGINS: readonly KeyOrigin[] = [
+    'operator',
+    'dns',
+    'archive.prove.email',
+    'archive',
+    'recovered',
+];
 
 /** A (domain, selector) pair a message was signed with. */
 export interface KeyPair {
@@ -82,11 +90,14 @@ const PRECEDENCE: Record<KeyOrigin, number> = {
     dns: 2,
     'archive.prove.email': 1,
     archive: 0,
+    recovered: 0,
 };
 
 /** The verifier's provenance for a vault origin — what the `archive-key` caveat reads. */
 export function keySourceOf(origin: KeyOrigin): KeySource {
-    return origin === 'operator' || origin === 'dns' ? origin : 'archive';
+    if (origin === 'operator' || origin === 'dns') return origin;
+    if (origin === 'recovered') return 'recovered';
+    return 'archive';
 }
 
 export function pairName(pair: KeyPair): string {

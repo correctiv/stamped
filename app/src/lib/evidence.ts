@@ -179,6 +179,8 @@ export function describeKeySource(source: KeySource): string {
             return _('supplied by you');
         case 'archive':
             return _('from the archive itself');
+        case 'recovered':
+            return _('recovered from other signatures');
     }
 }
 

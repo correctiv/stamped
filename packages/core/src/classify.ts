@@ -151,6 +151,7 @@ export function caveatsFor(evidence: SignatureEvidence): Caveat[] {
     ) {
         caveats.push('signature-lifetime-invalid');
     }
+    if (evidence.keySource === 'recovered') caveats.push('recovered-key');
 
     // A valid signature from a domain other than the author's vouches for the signer only.
     if (!evidence.aligned) caveats.push('signer-not-author');
