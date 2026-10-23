@@ -10,7 +10,8 @@
     "./child-process": "./src/child-process.ts",
     "./llama-embedder": "./src/llama-embedder.ts",
     "./prebuilt-bins": "./src/prebuilt-bins.ts",
-    "./prompts": "./src/prompts.ts"
+    "./prompts": "./src/prompts.ts",
+    "./runtime": "./src/runtime.ts"
   },
   "scripts": {
     "check": "gjsify tsc --noEmit"
