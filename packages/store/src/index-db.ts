@@ -655,9 +655,9 @@ function insertBatched(
     columns: string,
     rows: Iterable<readonly string[]>,
 ): void {
-    const tuple = `(${new Array<string>(width).fill('?').join(',')})`;
+    const tuple = `(${Array.from({ length: width }, () => '?').join(',')})`;
     const prefix = `INSERT OR IGNORE INTO ${table} (${columns}) VALUES `;
-    const full = db.prepare(prefix + new Array<string>(INSERT_ROWS).fill(tuple).join(','));
+    const full = db.prepare(prefix + Array.from({ length: INSERT_ROWS }, () => tuple).join(','));
     let pending: string[] = [];
     let count = 0;
     for (const row of rows) {
@@ -670,7 +670,7 @@ function insertBatched(
         }
     }
     if (count > 0) {
-        db.prepare(prefix + new Array<string>(count).fill(tuple).join(',')).run(...pending);
+        db.prepare(prefix + Array.from({ length: count }, () => tuple).join(',')).run(...pending);
     }
 }
 
