@@ -109,6 +109,9 @@ export function ensureUnsignedHeaders(db: DatabaseSync): void {
     try {
         if (!exists(db, 'unsigned_headers')) {
             db.exec('CREATE TABLE unsigned_headers (hash TEXT PRIMARY KEY, flags INTEGER NOT NULL)');
+            // A new table is empty, so it is current by definition: without this, the first
+            // backfill of a fresh case would clear what the importer has just written.
+            setMeta(db, 'unsigned_headers_version', String(UNSIGNED_ANALYSER_VERSION));
         }
     } catch {
         // a busy database must not make the case unopenable
@@ -182,8 +185,10 @@ export function backfillUnsignedHeaders(
     const cursor = Number(metaValue(db, 'unsigned_headers_cursor') ?? 0);
     const rows = db
         .prepare(
-            `SELECT rowid AS id, hash FROM messages
-             WHERE rowid > ? AND verdict = 'unsigned' ORDER BY rowid LIMIT ${Math.max(1, Math.trunc(batch))}`,
+            `SELECT m.rowid AS id, m.hash AS hash FROM messages m
+             LEFT JOIN unsigned_headers u ON u.hash = m.hash
+             WHERE m.rowid > ? AND m.verdict = 'unsigned' AND u.hash IS NULL
+             ORDER BY m.rowid LIMIT ${Math.max(1, Math.trunc(batch))}`,
         )
         .all(cursor) as { id: number; hash: string }[];
 
