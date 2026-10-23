@@ -26,7 +26,7 @@ import { getLlama, Llama, LlamaLogLevel } from 'node-llama-cpp';
 import { checkVector, normalize } from './embedder.ts';
 import type { EmbedDocument, Embedder } from './embedder.ts';
 import { BUILD_METADATA_FILE, prebuiltBinsDir } from './prebuilt-bins.ts';
-import { documentPrompt, queryPrompt, truncateVector } from './prompts.ts';
+import { documentPrompt, fitTokens, queryPrompt, truncateVector } from './prompts.ts';
 import { collectGarbage, runningOnGjs } from './runtime.ts';
 
 export const EMBEDDING_GEMMA_MODEL_ID = 'ggml-org/embeddinggemma-2-GGUF:Q8_0';
@@ -63,6 +63,8 @@ interface EmbeddingContextLike {
     dispose(): Promise<void>;
 }
 interface ModelLike {
+    tokenize(text: string): readonly number[];
+    detokenize(tokens: readonly number[]): string;
     createEmbeddingContext(options: { contextSize: number; threads?: number }): Promise<EmbeddingContextLike>;
     dispose(): Promise<void>;
 }
@@ -147,7 +149,9 @@ export async function createLlamaEmbedder(options: LlamaEmbedderOptions): Promis
     let session = await openSession(options, false);
 
     const embedOnce = async (text: string): Promise<Float32Array> => {
-        const { vector } = await session.context.getEmbeddingFor(text);
+        const { vector } = await session.context.getEmbeddingFor(
+            fitTokens(session.model, text, CONTEXT_SIZE),
+        );
         checkVector(vector);
         return dimensions === 768 ? normalize(vector) : truncateVector(vector, dimensions);
     };

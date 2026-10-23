@@ -24,3 +24,24 @@ export function truncateVector(vector: ArrayLike<number>, dimensions: number): F
     }
     return normalize(Array.prototype.slice.call(vector, 0, dimensions) as number[]);
 }
+
+/** The two tokenizer calls {@link fitTokens} needs; a model has both. */
+export interface Tokenizing {
+    tokenize(text: string): readonly number[];
+    detokenize(tokens: readonly number[]): string;
+}
+
+/** Room for the begin and end tokens the model adds around the text. */
+const SPECIAL_TOKEN_ROOM = 8;
+
+/**
+ * Cut the text to what a context of `contextSize` tokens holds. `prepare.ts` caps by characters,
+ * which is only a guess: digits and rare scripts cost about one token per character, and an
+ * over-long text is rejected (#124), so the message would be skipped without being embedded.
+ */
+export function fitTokens(model: Tokenizing, text: string, contextSize: number): string {
+    const limit = contextSize - SPECIAL_TOKEN_ROOM;
+    const tokens = model.tokenize(text);
+    if (tokens.length <= limit) return text;
+    return model.detokenize(tokens.slice(0, limit));
+}

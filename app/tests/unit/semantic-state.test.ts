@@ -590,7 +590,7 @@ export default async () => {
                 const state = controller.state();
                 expect(state.kind).toBe('failed');
                 expect(state.kind === 'failed' && state.message).toBe(
-                    'The embedder failed on several messages in a row; stopping.',
+                    'The embedder failed on several messages in a row; stopping.: cannot embed',
                 );
                 expect(readSemanticRunStatus(paths)?.state).toBe('failed');
             });

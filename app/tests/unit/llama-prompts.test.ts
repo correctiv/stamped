@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from '@gjsify/unit';
-import { documentPrompt, queryPrompt, truncateVector } from '@stamped/semantic/prompts';
+import { documentPrompt, fitTokens, queryPrompt, truncateVector } from '@stamped/semantic/prompts';
 
 function norm(v: ArrayLike<number>): number {
     let sum = 0;
@@ -14,6 +14,16 @@ function norm(v: ArrayLike<number>): number {
 
 export default async () => {
     await describe('llama embedder helpers', async () => {
+        await it('cuts a text to the context, and leaves a short one alone', async () => {
+            const model = {
+                tokenize: (text: string) => Array.from(text, (c) => c.charCodeAt(0)),
+                detokenize: (tokens: readonly number[]) => String.fromCharCode(...tokens),
+            };
+            expect(fitTokens(model, 'short', 512)).toBe('short');
+            const cut = fitTokens(model, '1'.repeat(2000), 512);
+            expect(cut.length).toBe(504);
+        });
+
         await it('prefixes a query for search', async () => {
             expect(queryPrompt('who approved it')).toBe('task: search result | query: who approved it');
         });

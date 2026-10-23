@@ -11,7 +11,13 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from '@gjsify/unit';
 import type { DocumentSource, EmbedDocument, Embedder, SourceDocument, SourceEntry } from '@stamped/semantic';
-import { type CasePaths, openCase, readSemanticSetting, type SemanticSetting } from '@stamped/store';
+import {
+    type CasePaths,
+    openCase,
+    readSemanticSetting,
+    type SemanticSetting,
+    writeSemanticSetting,
+} from '@stamped/store';
 
 import { EMBEDDING_MODEL_BYTES } from '../../src/lib/model-path.ts';
 import { ActivityRegistry, syncSemanticActivity } from '../../src/lib/activity.ts';
@@ -115,6 +121,46 @@ export default async () => {
                     source: listSource(5),
                 });
                 expect(await controller.probeOnly()).toBe(undefined);
+            });
+        });
+    });
+
+    await describe('a failed run', async () => {
+        await it('names the embedder error, not only the indexer wrapper', async () => {
+            await withCase(async (paths) => {
+                writeSemanticSetting(paths, {
+                    version: 1,
+                    enabled: true,
+                    modelId: 'fake/model',
+                    dimensions: 4,
+                    probe: {
+                        modelId: 'fake/model',
+                        tokensPerSecond: 1000,
+                        estimatedHours: 0.1,
+                        recommendation: 'on',
+                        measuredAt: '2026-10-22T10:00:00Z',
+                    },
+                });
+                const broken: Embedder = {
+                    ...fakeEmbedder({ t: T0 }),
+                    async embedDocuments() {
+                        throw new Error('input is longer than the context');
+                    },
+                };
+                const controller = createSemanticController({
+                    paths,
+                    createEmbedder: async () => broken,
+                    source: listSource(10),
+                });
+                await controller.start();
+                for (let i = 0; i < 200 && controller.state().kind === 'indexing'; i++) {
+                    await new Promise((resolve) => setTimeout(resolve, 10));
+                }
+                const state = controller.state();
+                expect(state.kind).toBe('failed');
+                expect(state.kind === 'failed' && state.message.includes('longer than the context')).toBe(
+                    true,
+                );
             });
         });
     });
