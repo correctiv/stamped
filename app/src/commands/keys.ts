@@ -33,6 +33,7 @@ import {
     printTally,
     reverifyApplicable,
     tallyFetch,
+    trackActivity,
     type FetchTally,
 } from '../lib/autofetch.ts';
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
@@ -342,43 +343,56 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                 ...(args.archive ? (['archive.prove.email'] as const) : []),
                 ...(args.dns ? (['dns'] as const) : []),
             ];
-            for (const channel of channels) {
-                if (todo.length === 0) break;
-                const consent = { channel, pairs: todo };
-                if (!(await askConsent(describeConsent(channel, todo), args.yes))) {
-                    console.log(_('Skipped; nothing was sent.'));
-                    continue;
-                }
-                const result =
-                    channel === 'dns'
-                        ? await lookupDns(consent, todo, resolveTxt)
-                        : await lookupArchive(consent, todo, (url) => fetch(url));
-                const now = new Date().toISOString();
-                const added: string[] = [];
-                for (const e of result.errors) failedNames.add(pairName(e.pair));
-                for (const f of result.found) {
-                    const outcome = vault.add({
-                        ...f.pair,
-                        key: f.key,
-                        origin: f.origin,
-                        fetchedAt: now,
-                        ...(f.seenFrom ? { seenFrom: f.seenFrom } : {}),
-                        ...(f.seenTo ? { seenTo: f.seenTo } : {}),
-                    });
-                    stored.push({ origin: f.origin, conflict: outcome.status === 'conflict' });
-                    added.push(
-                        fmt(_('  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}'), {
-                            name: pairName(f.pair),
-                            algorithm: f.key.algorithm,
-                            bits: f.key.bits,
+            const lookup = async (progress: (done: number, total: number) => void): Promise<void> => {
+                const total = todo.length;
+                progress(0, total);
+                for (const channel of channels) {
+                    if (todo.length === 0) break;
+                    const consent = { channel, pairs: todo };
+                    if (!(await askConsent(describeConsent(channel, todo), args.yes))) {
+                        console.log(_('Skipped; nothing was sent.'));
+                        continue;
+                    }
+                    const result =
+                        channel === 'dns'
+                            ? await lookupDns(consent, todo, resolveTxt)
+                            : await lookupArchive(consent, todo, (url) => fetch(url));
+                    const now = new Date().toISOString();
+                    const added: string[] = [];
+                    for (const e of result.errors) failedNames.add(pairName(e.pair));
+                    for (const f of result.found) {
+                        const outcome = vault.add({
+                            ...f.pair,
+                            key: f.key,
                             origin: f.origin,
-                            flag: outcome.status === 'conflict' ? _(', DIFFERS from a stored key') : '',
-                        }),
-                    );
+                            fetchedAt: now,
+                            ...(f.seenFrom ? { seenFrom: f.seenFrom } : {}),
+                            ...(f.seenTo ? { seenTo: f.seenTo } : {}),
+                        });
+                        stored.push({ origin: f.origin, conflict: outcome.status === 'conflict' });
+                        added.push(
+                            fmt(_('  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}'), {
+                                name: pairName(f.pair),
+                                algorithm: f.key.algorithm,
+                                bits: f.key.bits,
+                                origin: f.origin,
+                                flag: outcome.status === 'conflict' ? _(', DIFFERS from a stored key') : '',
+                            }),
+                        );
+                    }
+                    saveVault(dir, vault);
+                    if (args.verbose) printResult(result, added);
+                    todo = missingPairs(todo, vault);
+                    progress(total - todo.length, total);
                 }
-                saveVault(dir, vault);
-                if (args.verbose) printResult(result, added);
-                todo = missingPairs(todo, vault);
+            };
+            // The status needs a case folder; a bare vault directory has none to put it in.
+            if (existsSync(dir + '/case.json')) {
+                await trackActivity(caseOrThrow(dir), 'keys', (activity) =>
+                    lookup((done, total) => activity.update(done, total)),
+                );
+            } else {
+                await lookup(() => undefined);
             }
             // A pair the archive missed but the DNS found is not "not found": count what is still open.
             errorCount = todo.filter((pair) => failedNames.has(pairName(pair))).length;

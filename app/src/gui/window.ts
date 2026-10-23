@@ -77,10 +77,10 @@ import {
     PAGE_SIZE,
     pageOf,
     bodyOf,
-    rawTextOf,
     reportOf,
     runLookup,
     sourcesOf,
+    storedRaw,
     verifyStored,
     type CaseSession,
     type Query,
@@ -112,10 +112,10 @@ import { matchBadge } from './view/semantic.ts';
 import type { MatchKind } from '../lib/hybrid-search.ts';
 import {
     emptyList,
+    headerBlockOf,
     headerFields,
     mailHead,
     messageRows,
-    rawHeaders,
     type HeaderField,
     type MailHead,
 } from './view/message.ts';
@@ -210,10 +210,11 @@ const BodyScroller = GObject.registerClass(
         }
 
         vfunc_measure(orientation: Gtk.Orientation, forSize: number): [number, number, number, number] {
-            const [min, nat, minBaseline, natBaseline] = super.vfunc_measure(orientation, forSize);
-            if (orientation !== Gtk.Orientation.VERTICAL) return [min, nat, minBaseline, natBaseline];
-            // Baselines are dropped on purpose: `ScrolledWindow` reports one here, and passing it
-            // back through a HEIGHT_FOR_WIDTH measure makes GTK warn about a horizontal baseline.
+            const [min, nat] = super.vfunc_measure(orientation, forSize);
+            // Baselines are dropped in BOTH orientations. GJS hands a chained-up vfunc's baseline
+            // out-parameters back as 0, not -1, and GTK warns "reported a horizontal baseline"
+            // for any horizontal measure that returns one — once per layout pass.
+            if (orientation !== Gtk.Orientation.VERTICAL) return [min, nat, -1, -1];
             return [nat, nat, -1, -1];
         }
     },
@@ -792,6 +793,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.reading = undefined;
         this._searchEntry.set_text('');
         this._readerStack.set_visible_child_name('empty');
+        // Until the first `fillList` picks `list` or `empty`. Only here, not in `refresh`: that
+        // also runs after every import, key lookup and re-verification, and a list that blanks
+        // out to a spinner each time loses the journalist's place in it.
+        this._listStack.set_visible_child_name('loading');
         // `Adw.WindowTitle` parses no markup, so it takes the path as it is — not the escaped
         // form the view models hand the rows. A case folder called `Mail & Co` would otherwise
         // appear here as `Mail &amp; Co`.
@@ -1215,23 +1220,29 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const session = this.session;
         if (!session) return;
         this.reading = hash;
+        // Not the previous message's evidence under the new selection while this one verifies.
+        this._readerStack.set_visible_child_name('loading');
         const message = await messageOf(session, hash);
         if (this.session !== session || this.reading !== hash) return;
-        if (!message) return;
+        if (!message) {
+            this._readerStack.set_visible_child_name('empty');
+            return;
+        }
 
-        const finding = await verifyStored(session, hash);
+        const raw = storedRaw(session, hash);
+        const finding = await verifyStored(session, hash, raw);
         if (this.session !== session || this.reading !== hash) return;
-        if (finding === undefined) {
+        if (finding === undefined || raw === undefined) {
             throw new Error(_('The stored copy of this message is missing from the case’s blob store.'));
         }
-        this.renderMessage(message, finding, rawTextOf(session, hash) ?? '', bodyOf(session, hash));
+        this.renderMessage(message, finding, raw, bodyOf(raw));
     }
 
     /** The reader, top to bottom: what Stamped claims, the headers, the evidence, the bytes. */
     private renderMessage(
         message: IndexedMessage,
         finding: MessageFinding,
-        raw: string,
+        raw: Uint8Array,
         body: ReadableBody | undefined,
     ): void {
         clearBox(this._readerBody);
@@ -1245,7 +1256,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         for (const card of signatureCards(finding)) {
             this._readerBody.append(this.signatureGroup(card));
         }
-        if (raw !== '') this._readerBody.append(this.sourceGroup(raw));
+        if (raw.length > 0) this._readerBody.append(this.sourceGroup(raw));
         this._readerStack.set_visible_child_name('message');
         if (SHOT_EVIDENCE !== null) this.popEvidenceShot(Number(SHOT_EVIDENCE));
     }
@@ -1543,7 +1554,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * so copying the escaped form would paste `&lt;ada@example.com&gt;` into the colleague's
      * message. The same reason the hash shows twelve digits and copies all sixty-four.
      */
-    private copyButton(text: string, tooltip = _('Copy')): Gtk.Button {
+    private copyButton(text: string | (() => string), tooltip = _('Copy')): Gtk.Button {
         const button = new Gtk.Button({
             iconName: 'edit-copy-symbolic',
             valign: Gtk.Align.CENTER,
@@ -1551,7 +1562,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         });
         button.add_css_class('flat');
         button.connect('clicked', () => {
-            this.get_clipboard().set(text);
+            this.get_clipboard().set(typeof text === 'function' ? text() : text);
             showToast(escapeLine(_('Copied.')));
         });
         return button;
@@ -1642,7 +1653,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
         popover.set_child(label);
 
         const button = new Gtk.MenuButton({
-            label: _('How does DKIM work?'),
+            iconName: 'help-contents-symbolic',
+            tooltipText: _('How does DKIM work?'),
             valign: Gtk.Align.CENTER,
             // Leftwards, for the reason in `help-button.ts`: this is a row suffix at the right
             // edge of the pane, and GTK clips a popover to the monitor, not to the window.
@@ -1661,17 +1673,21 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * without them. The whole source, body included, goes to the clipboard, which is where
      * somebody takes it to verify it with another tool.
      */
-    private sourceGroup(raw: string): Adw.PreferencesGroup {
+    private sourceGroup(raw: Uint8Array): Adw.PreferencesGroup {
         const group = new Adw.PreferencesGroup({ title: _('Raw message') });
+        // Decoded when pressed: the whole message can be megabytes, and nobody reads it here.
         group.set_header_suffix(
-            this.copyButton(raw, _('Copy the whole message, headers and body, as stored')),
+            this.copyButton(
+                () => new TextDecoder('utf-8').decode(raw),
+                _('Copy the whole message, headers and body, as stored'),
+            ),
         );
         const headers = new Adw.ExpanderRow({ title: _('Header block, as stored') });
         headers.add_prefix(new Gtk.Image({ iconName: 'format-justify-left-symbolic' }));
         // A plain `Gtk.ListBoxRow`, not an `Adw.ActionRow`: `set_child` on an action row would
         // replace the box that holds its own title and suffixes.
         const row = new Gtk.ListBoxRow({ activatable: false, selectable: false });
-        row.set_child(sourceView(rawHeaders(raw), 180));
+        row.set_child(sourceView(headerBlockOf(raw), 180));
         headers.add_row(row);
         group.add(headers);
         return group;
@@ -2237,8 +2253,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const ended = this.activityWatcher.poll(readActivityStatuses(session.paths));
         if (ended !== undefined) {
             // A background run ended (or read as interrupted): the panes it fed are stale until
-            // they reload, exactly as after an import.
-            this.track(this.refresh());
+            // they reload, exactly as after an import — and like an import, a re-verification
+            // changes verdicts, so the cached scope tables go first or a filter keeps old hits.
+            this.track(
+                dropFilterCaches(session).then(() => this.refresh()),
+                session,
+            );
         }
         return GLib.SOURCE_CONTINUE;
     }

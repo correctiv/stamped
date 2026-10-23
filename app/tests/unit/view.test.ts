@@ -49,7 +49,13 @@ import {
     reverifySummary,
 } from '../../src/gui/view/keys.ts';
 import { escapeLine, escapeMarkup, noHyphens, plainText } from '../../src/gui/view/markup.ts';
-import { emptyList, headerFields, messageRow, rawHeaders } from '../../src/gui/view/message.ts';
+import {
+    emptyList,
+    headerBlockOf,
+    headerFields,
+    messageRow,
+    rawHeaders,
+} from '../../src/gui/view/message.ts';
 import {
     filterBannerText,
     overviewHeadline,
@@ -421,6 +427,29 @@ export default async () => {
 
         await it('returns the text unescaped, because a TextView takes no markup', async () => {
             expect(rawHeaders('From: Ada <ada@example.com>\n\nbody')).toBe('From: Ada <ada@example.com>');
+        });
+    });
+
+    await describe('the header block of raw bytes', async () => {
+        const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
+
+        await it('agrees with rawHeaders on the decoded text, whatever the line endings', async () => {
+            for (const text of [
+                'From: ada@example.com\r\nSubject: hi\r\n\r\nBody line\r\n\r\nmore body\r\n',
+                'From: ada@example.com\nSubject: hi\n\nbody\n',
+                'From: ada@example.com\nSubject: hi\r\n\r\nmixed',
+                'From: ada@example.com\n',
+                'From: Ada <ada@example.com>\n\nbody',
+                'Subject: Grüße\r\n\r\nKörper',
+                '',
+            ]) {
+                expect(headerBlockOf(encode(text))).toBe(rawHeaders(text));
+            }
+        });
+
+        await it('does not look past the header section', async () => {
+            const body = 'x'.repeat(200_000);
+            expect(headerBlockOf(encode(`From: a@example.com\r\n\r\n${body}`))).toBe('From: a@example.com');
         });
     });
 

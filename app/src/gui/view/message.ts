@@ -186,6 +186,25 @@ export function rawHeaders(text: string): string {
     return end < 0 ? normalised.replace(/\n+$/, '') : normalised.slice(0, end);
 }
 
+/**
+ * {@link rawHeaders} of a message still in bytes, decoding only the header section.
+ *
+ * The reader needs the header block on every click, and a message with an attachment can be tens
+ * of megabytes: decoding all of it and running a regex over the result just to cut it at the
+ * first empty line is main-thread work for text that is never shown.
+ */
+export function headerBlockOf(raw: Uint8Array): string {
+    let end = raw.length;
+    for (let i = 0; i < raw.length; i++) {
+        if (raw[i] !== 0x0a) continue;
+        if (raw[i + 1] === 0x0a || (raw[i + 1] === 0x0d && raw[i + 2] === 0x0a)) {
+            end = i + 1;
+            break;
+        }
+    }
+    return rawHeaders(new TextDecoder('utf-8').decode(raw.subarray(0, end)));
+}
+
 /** What the middle pane says when it has nothing to show. */
 export interface EmptyList {
     readonly title: string;

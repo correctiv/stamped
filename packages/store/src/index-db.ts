@@ -340,14 +340,18 @@ export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fre
 
     writeAddresses(db, entry.hash, { from: summary.from, to: summary.to, cc: summary.cc });
 
+    writeSignatures(db, entry.hash, entry.finding);
+}
+
+function writeSignatures(db: DatabaseSync, hash: string, finding: MessageFinding): void {
     const signature = statementFor(
         db,
         `INSERT INTO signatures (hash, position, domain, selector, algorithm, verdict, aligned, reason)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     );
-    for (const [position, found] of entry.finding.signatures.entries()) {
+    for (const [position, found] of finding.signatures.entries()) {
         signature.run(
-            entry.hash,
+            hash,
             position,
             found.evidence.domain,
             found.evidence.selector,
@@ -357,6 +361,29 @@ export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fre
             found.evidence.unverifiableBecause ?? '',
         );
     }
+}
+
+/**
+ * Replace what the verifier said about an INDEXED message — verdict, caveats, signatures — and
+ * nothing else. Returns false when the hash is not indexed (nothing was written).
+ *
+ * This is what a re-verification needs instead of {@link indexMessage}: the text, the headers
+ * and the addresses do not change with a key, and `indexMessage` would delete the FTS row first —
+ * a full scan of the whole text index per message, because `hash` is UNINDEXED there. On a case
+ * of several hundred thousand messages that scan, repeated per message, is what starved every
+ * other reader of the file. `first_verdict` stays as it is.
+ */
+export function updateFinding(db: DatabaseSync, hash: string, finding: MessageFinding): boolean {
+    const known = statementFor(db, 'SELECT 1 AS n FROM messages WHERE hash = ?').get(hash);
+    if (known === undefined) return false;
+    statementFor(db, 'UPDATE messages SET verdict = ?, caveats = ? WHERE hash = ?').run(
+        finding.verdict,
+        JSON.stringify(finding.caveats),
+        hash,
+    );
+    statementFor(db, 'DELETE FROM signatures WHERE hash = ?').run(hash);
+    writeSignatures(db, hash, finding);
+    return true;
 }
 
 /** Forget one message. Used before re-indexing it; the raw store is untouched either way. */

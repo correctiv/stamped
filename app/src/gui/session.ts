@@ -259,29 +259,35 @@ export async function messageOf(session: CaseSession, hash: string): Promise<Ind
  * answer and the row would not know. The pane that shows the evidence chain is the pane that
  * must not be stale, so it re-reads the raw bytes and runs the verifier.
  */
-export async function verifyStored(session: CaseSession, hash: string): Promise<MessageFinding | undefined> {
-    const raw = readRaw(session.paths, hash);
+export async function verifyStored(
+    session: CaseSession,
+    hash: string,
+    raw: Uint8Array | undefined = storedRaw(session, hash),
+): Promise<MessageFinding | undefined> {
     if (!raw) return undefined;
     return classifyMessage(await verifyMessage(raw, { keys: session.vault.toKeyStore() }));
 }
 
 /**
- * The raw message as text, for the source expander.
+ * The stored bytes of one message, read once per click.
  *
- * Lossy on purpose: a mail body is octets and may be any encoding or none, so decoding it for
- * DISPLAY is allowed to produce replacement characters. Nothing is ever verified from this
- * string — {@link verifyStored} reads the bytes — which is what makes the lossiness harmless
- * here and would make it a defect anywhere else.
+ * The reader needs them three times — verification, the readable body, the header block — and
+ * a message with an attachment can be tens of megabytes, so each caller used to pay a read and
+ * a copy of its own on the main thread. Every consumer takes these bytes instead.
  */
-export function rawTextOf(session: CaseSession, hash: string): string | undefined {
-    const raw = readRaw(session.paths, hash);
-    return raw ? new TextDecoder('utf-8').decode(raw) : undefined;
+export function storedRaw(session: CaseSession, hash: string): Uint8Array | undefined {
+    return readRaw(session.paths, hash);
 }
 
-/** The readable body and attachments of one stored message, decoded for display only. */
-export function bodyOf(session: CaseSession, hash: string): ReadableBody | undefined {
-    const raw = readRaw(session.paths, hash);
-    return raw ? readableBody(raw) : undefined;
+/**
+ * The readable body and attachments of one stored message, decoded for display only.
+ *
+ * The raw text for the source expander is deliberately not here: only the header block is shown
+ * (`headerBlockOf`), and the whole message is decoded when somebody presses copy, not on every
+ * click. Lossy on purpose when it is — a mail body is octets, and nothing is verified from text.
+ */
+export function bodyOf(raw: Uint8Array): ReadableBody {
+    return readableBody(raw);
 }
 
 /**

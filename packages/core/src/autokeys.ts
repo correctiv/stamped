@@ -67,6 +67,11 @@ export interface AutoFetchOptions {
      * is interrupted; without it, an hour of rate-limited lookups can be lost to one kill.
      */
     readonly onStored?: (stored: StoredKey) => void;
+    /**
+     * `(settled, total)` once the consent is given and after every lookup result: a pair is
+     * settled when a key arrived or the last channel has answered for it, so the count only rises.
+     */
+    readonly onProgress?: (settled: number, total: number) => void;
 }
 
 export interface StoredKey {
@@ -102,7 +107,10 @@ export async function fetchKeys(
     const reasons = new Map<string, string>();
     const errored = new Set<string>();
     let remaining: PairCount[] = todo;
-    for (const channel of options.channels) {
+    let settled = 0;
+    options.onProgress?.(0, todo.length);
+    for (const [index, channel] of options.channels.entries()) {
+        const last = index === options.channels.length - 1;
         if (remaining.length === 0) break;
         const consent: LookupConsent = { channel, pairs: todo };
         // Taken per pair as its lookup completes, not when the whole channel ends — that is what
@@ -131,6 +139,8 @@ export async function fetchKeys(
                 reasons.set(pairName(error.pair), error.reason);
                 errored.add(pairName(error.pair));
             }
+            settled += result.found.length + (last ? result.misses.length + result.errors.length : 0);
+            options.onProgress?.(Math.min(settled, todo.length), todo.length);
         };
         if (channel === 'dns') {
             await lookupDns(consent, remaining, options.resolveTxt, undefined, take);
