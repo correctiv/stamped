@@ -43,6 +43,12 @@ import {
 } from '../lib/activity.ts';
 import { createGuiEmbedder } from '../lib/semantic-embedder.ts';
 import { createSemanticController, type SemanticController } from '../lib/semantic.ts';
+import {
+    createSubprocessSemantic,
+    semanticArgv,
+    type SemanticProcess,
+    type SubprocessSemantic,
+} from '../lib/semantic-run.ts';
 import { openCopy } from '../lib/open-copy.ts';
 import { selfArgv } from '../lib/self-argv.ts';
 import { ActivityController } from './activity.ts';
@@ -393,6 +399,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private session?: CaseSession;
     /** The semantic index of the open case, and the embedder searches share (loaded once). */
     private semantic?: SemanticController;
+    /** Set when the index runs as a subprocess; polled once a second beside the import. */
+    private semanticSub?: SubprocessSemantic;
     /** The connection that controller walks the case through — closed after it stops. */
     private semanticSource?: SemanticSource;
     private queryEmbedder?: Promise<Embedder | undefined>;
@@ -800,16 +808,33 @@ export class StampedWindow extends Adw.ApplicationWindow {
      */
     private startSemantic(session: CaseSession): void {
         const reader = openSemanticSource(session);
-        const controller = createSemanticController({
-            paths: session.paths,
-            createEmbedder: createGuiEmbedder,
-            source: reader.source,
-            onBattery,
-            onProgress: (state) => syncSemanticActivity(this.activity.registry, state),
-        });
-        this.semantic = controller;
+        const inProcess = (): SemanticController =>
+            createSemanticController({
+                paths: session.paths,
+                createEmbedder: createGuiEmbedder,
+                source: reader.source,
+                onBattery,
+                onProgress: (state) => syncSemanticActivity(this.activity.registry, state),
+            });
+        const argv = semanticArgv(selfArgv(process), GLib.find_program_in_path('stamped'), session.root);
         this.semanticSource = reader;
-        if (controller.setting()?.enabled === true) void controller.start().catch(() => undefined);
+        if (argv === null) {
+            const controller = inProcess();
+            this.semantic = controller;
+            if (controller.setting()?.enabled === true) void controller.start().catch(() => undefined);
+            return;
+        }
+        const sub = createSubprocessSemantic({
+            paths: session.paths,
+            spawn: () => spawnSemantic(argv),
+            probeController: inProcess,
+            importRunning: () => importRunning(importStatusOf(session)),
+            onState: (state) => syncSemanticActivity(this.activity.registry, state),
+        });
+        this.semantic = sub;
+        this.semanticSub = sub;
+        sub.poll();
+        if (sub.setting()?.enabled === true) void sub.start().catch(() => undefined);
     }
 
     /** Stop the index before the connection it reads through is closed — in that order. */
@@ -817,6 +842,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const controller = this.semantic;
         const reader = this.semanticSource;
         this.semantic = undefined;
+        this.semanticSub = undefined;
         this.semanticSource = undefined;
         this.matches = new Map();
         this.activity.registry.dismiss('semantic');
@@ -2186,6 +2212,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private pollImport(): boolean {
         const session = this.session;
         if (!session) return GLib.SOURCE_CONTINUE;
+        this.semanticSub?.poll();
         const status = importStatusOf(session);
         const ended = this.importWatcher.poll(status, this.importProc !== undefined);
         const running = importRunning(status);
@@ -2273,4 +2300,25 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const message = error instanceof Error ? error.message : String(error);
         await errorDialog(this, _('That did not work'), message, _('Close'));
     }
+}
+
+/** Start `stamped semantic index` as a child of the window; SIGTERM ends it with the vectors kept. */
+function spawnSemantic(argv: string[]): SemanticProcess {
+    const proc = Gio.Subprocess.new(
+        argv,
+        Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,
+    );
+    const exited = new Promise<void>((resolve) => {
+        proc.wait_async(null, () => resolve());
+    });
+    return {
+        terminate: () => {
+            try {
+                proc.send_signal(15);
+            } catch {
+                // already gone
+            }
+        },
+        exited,
+    };
 }

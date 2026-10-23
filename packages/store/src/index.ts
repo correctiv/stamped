@@ -41,6 +41,7 @@ export {
     type ImportState,
     orphanedImport,
     plannedImportBytes,
+    processAlive,
     readImportStatus,
     STATUS_STALE_SECONDS,
     statusFile,
