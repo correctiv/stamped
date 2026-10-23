@@ -4,23 +4,65 @@
  * What the window starts as a subprocess, and what can be run from a terminal as well: the
  * progress goes to `semantic-status.json`, so either one is visible from the other. The setting
  * decides — a case that is switched off indexes nothing — and a SIGTERM / SIGINT ends the run
- * cleanly, keeping `vectors.db`, so the next run continues where this one stopped.
+ * cleanly, keeping `vectors.db`, so the next run continues where this one stopped. A second run
+ * beside a live one is refused, as in the window (`liveSemanticRun`).
  */
 
 import { fmt, _ } from '@stamped/core';
 import { onBattery } from '@stamped/semantic';
-import { indexDocumentSource, openIndex } from '@stamped/store';
+import {
+    indexDocumentSource,
+    openIndex,
+    readSemanticRunStatus,
+    type CasePaths,
+    type SemanticRunStatus,
+} from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
 import { durationLine } from '../lib/duration.ts';
 import { createGuiEmbedder } from '../lib/semantic-embedder.ts';
-import { runSemanticIndex } from '../lib/semantic-run.ts';
+import { liveSemanticRun, runSemanticIndex } from '../lib/semantic-run.ts';
 import { createSemanticController } from '../lib/semantic.ts';
 
 interface IndexArgs {
     case?: string;
     folder?: string;
+}
+
+/** Test seams for {@link refuseLiveRun}: the live-run test's clock and liveness check. */
+export interface RefuseOptions {
+    readonly now?: number;
+    readonly alive?: (pid: number) => boolean;
+}
+
+/** Which process holds the case, so the operator can look at it instead of guessing. */
+function refuseMessage(status: SemanticRunStatus): string {
+    if (status.pid > 0) {
+        return fmt(
+            _(
+                'A semantic index run is already going for this case (pid {pid}). Wait for it to end, or end that process first.',
+            ),
+            { pid: status.pid },
+        );
+    }
+    // A pid of 0 means the writer did not say — the run is believed, but not named.
+    return _(
+        'A semantic index run is already going for this case. Wait for it to end, or end that process first.',
+    );
+}
+
+/**
+ * Refuse to start beside a live run, as the window does (`createSubprocessSemantic`).
+ *
+ * Two indexers on one case write the same vectors to `vectors.db` and leave `semantic-status.json`
+ * naming whichever of them wrote last — the other one becomes invisible while it still runs. The
+ * status file is only READ here: a refusal must not overwrite the run it is describing.
+ */
+export function refuseLiveRun(paths: CasePaths, options: RefuseOptions = {}): void {
+    const status = readSemanticRunStatus(paths);
+    if (status === undefined || !liveSemanticRun(status, options.now, options.alive)) return;
+    throw new Error(refuseMessage(status));
 }
 
 function indexCommand(): CommandModule<unknown, IndexArgs> {
@@ -35,6 +77,7 @@ function indexCommand(): CommandModule<unknown, IndexArgs> {
         handler: async (args) => {
             const startedAt = Date.now();
             const paths = caseOrThrow(caseRoot('semantic index', args.case, [args.folder]).root);
+            refuseLiveRun(paths);
             const db = openIndex(paths);
             try {
                 const controller = createSemanticController({

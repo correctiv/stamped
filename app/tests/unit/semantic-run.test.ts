@@ -1,12 +1,12 @@
 /**
- * The semantic index as a subprocess: the argv, the live-run test, the CLI's run to the end, the
- * window's side (never a second run, the import goes first, only its own process is ended), and
- * two connections on one `vectors.db`.
+ * The semantic index as a subprocess: the argv, the live-run test, the CLI's run to the end and
+ * its refusal of a second run, the window's side (never a second run, the import goes first, only
+ * its own process is ended), and two connections on one `vectors.db`.
  *
  * SYNTHETIC DATA ONLY: a fake embedder, made-up messages, a fake clock, a fake process.
  */
 
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -27,12 +27,14 @@ import {
     readSemanticRunStatus,
     SEMANTIC_SETTING_VERSION,
     SEMANTIC_STATUS_VERSION,
+    semanticStatusFile,
     writeSemanticRunStatus,
     writeSemanticSetting,
     type CasePaths,
     type SemanticRunStatus,
 } from '@stamped/store';
 
+import { refuseLiveRun, type RefuseOptions } from '../../src/commands/semantic.ts';
 import { createSemanticController } from '../../src/lib/semantic.ts';
 import {
     createSubprocessSemantic,
@@ -156,6 +158,46 @@ export default async () => {
             expect(liveSemanticRun(paused, T0 + 3_600_000, alive)).toBe(true);
             expect(liveSemanticRun(paused, T0, dead)).toBe(false);
             expect(liveSemanticRun(status({ state: 'ready' }), T0, alive)).toBe(false);
+        });
+    });
+
+    await describe('refuseLiveRun', async () => {
+        const alive = (): boolean => true;
+        const dead = (): boolean => false;
+        const refusal = (paths: CasePaths, options: RefuseOptions): string => {
+            try {
+                refuseLiveRun(paths, options);
+            } catch (error) {
+                return error instanceof Error ? error.message : String(error);
+            }
+            return '';
+        };
+
+        await it('names the pid of the live run and leaves its status file as it was', async () => {
+            await withCase(async (paths) => {
+                writeSemanticRunStatus(paths, status({}));
+                const before = readFileSync(semanticStatusFile(paths), 'utf8');
+                const text = refusal(paths, { now: T0 + 1000, alive });
+                expect(text.includes('4242')).toBe(true);
+                expect(readFileSync(semanticStatusFile(paths), 'utf8')).toBe(before);
+            });
+        });
+
+        await it('refuses a paused run whose process is still there', async () => {
+            await withCase(async (paths) => {
+                writeSemanticRunStatus(paths, status({ state: 'paused', pausedReason: 'user' }));
+                expect(refusal(paths, { now: T0 + 3_600_000, alive }).includes('4242')).toBe(true);
+                expect(refusal(paths, { now: T0 + 3_600_000, alive: dead })).toBe('');
+            });
+        });
+
+        await it('lets a free case, a stale run and a dead pid through', async () => {
+            await withCase(async (paths) => {
+                expect(refusal(paths, { now: T0, alive })).toBe('');
+                writeSemanticRunStatus(paths, status({}));
+                expect(refusal(paths, { now: T0 + 120_000, alive })).toBe('');
+                expect(refusal(paths, { now: T0 + 1000, alive: dead })).toBe('');
+            });
         });
     });
 
