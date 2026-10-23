@@ -17,3 +17,4 @@
 
 export { type EvidenceContext, evidenceFrom, type RawSignatureResult } from './evidence.ts';
 export { type VerifiedSignature, verifyMessage, type VerifyOptions } from './mailauth.ts';
+export { explainBodyByRetry, type RetryInput } from './retry.ts';

@@ -142,7 +142,11 @@ export type ExportArtefact =
     /** Both. */
     | 'dot-stuffing-and-line-endings'
     /** Base64 lines were re-wrapped to another width; the decoded content is unchanged. */
-    | 'base64-rewrapped';
+    | 'base64-rewrapped'
+    /** Base64 at 76 columns, with the CRLF before the boundary added or removed. */
+    | 'base64-trailing-newline'
+    /** A quoted-printable part was stored decoded (8bit); re-encoding it brings the hash back. */
+    | 'quoted-printable-decoded';
 
 /** Where a public key came from, which is the whole of the `archive-key` caveat. */
 export type KeySource =

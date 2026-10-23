@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 13:57+0200\n"
+"POT-Creation-Date: 2026-10-23 14:27+0200\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -604,7 +604,7 @@ msgstr "  von     {from}"
 #: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:100
 #: app/src/lib/evidence.ts:107 app/src/lib/evidence.ts:108
 #: app/src/lib/evidence.ts:112 app/src/lib/evidence.ts:118
-#: packages/core/src/explain.ts:59
+#: packages/core/src/explain.ts:60
 msgid "(none)"
 msgstr "(keine)"
 
@@ -2210,7 +2210,7 @@ msgstr "Längenlimit (l=)"
 msgid "Reason"
 msgstr "Grund"
 
-#: app/src/lib/evidence.ts:145 packages/core/src/explain.ts:199
+#: app/src/lib/evidence.ts:145 packages/core/src/explain.ts:220
 msgid "Verifier says"
 msgstr "Prüfer sagt"
 
@@ -2876,28 +2876,28 @@ msgid_plural "{name}, {count} messages"
 msgstr[0] "{name}, {count} Nachricht"
 msgstr[1] "{name}, {count} Nachrichten"
 
-#: packages/core/src/explain.ts:59
+#: packages/core/src/explain.ts:60
 msgid "Signed header fields"
 msgstr "Signierte Kopfzeilen"
 
-#: packages/core/src/explain.ts:61
+#: packages/core/src/explain.ts:62
 msgid "Which one changed"
 msgstr "Welche sich geändert hat"
 
-#: packages/core/src/explain.ts:62
+#: packages/core/src/explain.ts:63
 msgid "not determinable: a signature only says that the set as a whole differs"
 msgstr ""
 "nicht feststellbar: Eine Signatur sagt nur, dass die Gesamtheit abweicht"
 
-#: packages/core/src/explain.ts:66
+#: packages/core/src/explain.ts:67
 msgid "Key first seen"
 msgstr "Schlüssel erstmals gesehen"
 
-#: packages/core/src/explain.ts:68
+#: packages/core/src/explain.ts:69
 msgid "Message date"
 msgstr "Datum der Nachricht"
 
-#: packages/core/src/explain.ts:72
+#: packages/core/src/explain.ts:73
 msgid ""
 "The body is intact, but the header signature does not verify. The key we "
 "hold was first seen after this message was sent, so the sender may have "
@@ -2908,7 +2908,7 @@ msgstr ""
 "Nachricht erstmals gesehen; der Absender kann ihn seitdem ausgetauscht "
 "haben. Es kann also ein falscher Schlüssel sein statt einer Änderung."
 
-#: packages/core/src/explain.ts:80
+#: packages/core/src/explain.ts:81
 msgid ""
 "The body is intact, but at least one header field covered by the signature "
 "(such as From, Subject or Date) is not what was signed. The signature cannot "
@@ -2918,28 +2918,28 @@ msgstr ""
 "abgedeckte Kopfzeile (etwa Von, Betreff oder Datum) ist nicht die signierte. "
 "Die Signatur kann nicht sagen, welche."
 
-#: packages/core/src/explain.ts:103
+#: packages/core/src/explain.ts:104
 msgid "Signed body hash"
 msgstr "Signierter Body-Hash"
 
-#: packages/core/src/explain.ts:104
+#: packages/core/src/explain.ts:105
 msgid "Body hash of this message"
 msgstr "Body-Hash dieser Nachricht"
 
-#: packages/core/src/explain.ts:106
+#: packages/core/src/explain.ts:107
 msgid "l= limit"
 msgstr "l=-Grenze"
 
-#: packages/core/src/explain.ts:111 packages/core/src/explain.ts:124
-#: packages/core/src/explain.ts:156
+#: packages/core/src/explain.ts:112 packages/core/src/explain.ts:126
+#: packages/core/src/explain.ts:145 packages/core/src/explain.ts:177
 msgid "Retry"
 msgstr "Wiederholung"
 
-#: packages/core/src/explain.ts:112
+#: packages/core/src/explain.ts:113
 msgid "re-wrapping the base64 lines makes the hash match"
 msgstr "Base64-Zeilen neu umzubrechen lässt den Hash passen"
 
-#: packages/core/src/explain.ts:117
+#: packages/core/src/explain.ts:118
 msgid ""
 "Base64 line wrapping was changed by the export. The decoded content is "
 "identical to what was signed. The verdict stays body altered: this is an "
@@ -2949,38 +2949,81 @@ msgstr ""
 "dem Signierten. Das Urteil bleibt „Text verändert“: Dies ist eine Erklärung, "
 "keine Bestätigung."
 
-#: packages/core/src/explain.ts:127
+#: packages/core/src/explain.ts:128
+#, fuzzy
+#| msgid "re-wrapping the base64 lines makes the hash match"
+msgid "re-encoding the quoted-printable text makes the hash match"
+msgstr "Base64-Zeilen neu umzubrechen lässt den Hash passen"
+
+#: packages/core/src/explain.ts:129
+msgid ""
+"adding or removing the line break before the boundary makes the hash match"
+msgstr ""
+
+#: packages/core/src/explain.ts:135
+#, fuzzy
+#| msgid ""
+#| "{how}, and with that undone the signature matches. The body was most "
+#| "likely changed by the export, not by a person. The verdict stays body "
+#| "altered: this is an explanation, not a confirmation."
+msgid ""
+"A quoted-printable text part was stored decoded by the export. The text is "
+"identical to what was signed. The body was most likely changed by the "
+"export, content unchanged. The verdict stays body altered: this is an "
+"explanation, not a confirmation."
+msgstr ""
+"{how}; macht man das rückgängig, passt die Signatur. Der Text wurde "
+"höchstwahrscheinlich durch den Export verändert, nicht von einer Person. Das "
+"Urteil bleibt „Text verändert“: Dies ist eine Erklärung, keine Bestätigung."
+
+#: packages/core/src/explain.ts:138
+#, fuzzy
+#| msgid ""
+#| "Base64 line wrapping was changed by the export. The decoded content is "
+#| "identical to what was signed. The verdict stays body altered: this is an "
+#| "explanation, not a confirmation."
+msgid ""
+"The line break before a base64 part boundary was added or removed by the "
+"export. The decoded content is identical to what was signed. The body was "
+"most likely changed by the export, content unchanged. The verdict stays body "
+"altered: this is an explanation, not a confirmation."
+msgstr ""
+"Base64-Zeilenumbruch beim Export geändert – dekodierter Inhalt identisch mit "
+"dem Signierten. Das Urteil bleibt „Text verändert“: Dies ist eine Erklärung, "
+"keine Bestätigung."
+
+#: packages/core/src/explain.ts:148
 msgid "undoing doubled leading dots makes the hash match"
 msgstr "Doppelte führende Punkte zurückzunehmen lässt den Hash passen"
 
-#: packages/core/src/explain.ts:129
+#: packages/core/src/explain.ts:150
 msgid "converting line endings to CRLF makes the hash match"
 msgstr "Zeilenenden nach CRLF umzuwandeln lässt den Hash passen"
 
-#: packages/core/src/explain.ts:130
+#: packages/core/src/explain.ts:151
 msgid ""
 "undoing doubled leading dots and converting line endings makes the hash match"
 msgstr ""
 "Doppelte führende Punkte zurückzunehmen und Zeilenenden umzuwandeln lässt "
 "den Hash passen"
 
-#: packages/core/src/explain.ts:134
+#: packages/core/src/explain.ts:155
 msgid "Lines that start with a dot were written with two dots"
 msgstr ""
 "Zeilen, die mit einem Punkt beginnen, wurden mit zwei Punkten geschrieben"
 
-#: packages/core/src/explain.ts:136
+#: packages/core/src/explain.ts:157
 msgid "The line endings were converted"
 msgstr "Die Zeilenenden wurden umgewandelt"
 
-#: packages/core/src/explain.ts:137
+#: packages/core/src/explain.ts:158
 msgid ""
 "Lines that start with a dot were doubled and the line endings were converted"
 msgstr ""
 "Zeilen, die mit einem Punkt beginnen, wurden verdoppelt und die Zeilenenden "
 "umgewandelt"
 
-#: packages/core/src/explain.ts:147
+#: packages/core/src/explain.ts:168
 msgid ""
 "{how}, and with that undone the signature matches. The body was most likely "
 "changed by the export, not by a person. The verdict stays body altered: this "
@@ -2990,7 +3033,7 @@ msgstr ""
 "höchstwahrscheinlich durch den Export verändert, nicht von einer Person. Das "
 "Urteil bleibt „Text verändert“: Dies ist eine Erklärung, keine Bestätigung."
 
-#: packages/core/src/explain.ts:158
+#: packages/core/src/explain.ts:179
 msgid ""
 "undoing doubled leading dots, converting line endings and re-wrapping base64 "
 "does not make the hash match"
@@ -2998,7 +3041,7 @@ msgstr ""
 "Doppelte führende Punkte zurückzunehmen, Zeilenenden umzuwandeln und Base64 "
 "neu umzubrechen lässt den Hash nicht passen"
 
-#: packages/core/src/explain.ts:165
+#: packages/core/src/explain.ts:186
 msgid ""
 " The signed header, including the body hash, is authentic and unchanged, so "
 "the deviation is in the text only."
@@ -3006,7 +3049,7 @@ msgstr ""
 " Der signierte Header samt Body-Hash ist echt und unverändert, die "
 "Abweichung liegt also nur im Text."
 
-#: packages/core/src/explain.ts:174
+#: packages/core/src/explain.ts:195
 msgid ""
 "The signature covers only the first {limit} bytes of the body, and even "
 "those are not what was signed. Text inside the signed part was added, "
@@ -3016,7 +3059,7 @@ msgstr ""
 "diese sind nicht das Signierte. Text im signierten Teil wurde hinzugefügt, "
 "entfernt oder geändert."
 
-#: packages/core/src/explain.ts:186
+#: packages/core/src/explain.ts:207
 msgid ""
 "The text of the body is not the text that was signed: something was added, "
 "removed or changed after signing. Three harmless export effects (doubled "
@@ -3028,7 +3071,7 @@ msgstr ""
 "führende Punkte, umgewandelte Zeilenenden, neu umbrochenes Base64) wurden "
 "geprüft und erklären es nicht."
 
-#: packages/core/src/explain.ts:189
+#: packages/core/src/explain.ts:210
 msgid ""
 "The text of the body is not the text that was signed: something was added, "
 "removed or changed after signing."
@@ -3036,18 +3079,18 @@ msgstr ""
 "Der Text ist nicht der signierte Text: Nach dem Signieren wurde etwas "
 "hinzugefügt, entfernt oder geändert."
 
-#: packages/core/src/explain.ts:198
+#: packages/core/src/explain.ts:219
 msgid "Key name"
 msgstr "Schlüsselname"
 
-#: packages/core/src/explain.ts:200
+#: packages/core/src/explain.ts:221
 msgid ""
 "This is not evidence of tampering; it only means no verdict is possible."
 msgstr ""
 "Das ist kein Beleg für eine Manipulation; es heißt nur, dass kein Urteil "
 "möglich ist."
 
-#: packages/core/src/explain.ts:207
+#: packages/core/src/explain.ts:228
 msgid ""
 "The message is signed, but the public key {name} that checks the signature "
 "is not in this case. {nothing}"
@@ -3055,7 +3098,7 @@ msgstr ""
 "Die Nachricht ist signiert, aber der öffentliche Schlüssel {name}, der die "
 "Signatur prüft, ist nicht in diesem Fall. {nothing}"
 
-#: packages/core/src/explain.ts:218
+#: packages/core/src/explain.ts:239
 msgid ""
 "The key we hold for {name} cannot have made this signature (different size "
 "or type). The sender probably replaced the key since. {nothing}"
@@ -3064,34 +3107,34 @@ msgstr ""
 "haben (andere Größe oder Art). Der Absender hat den Schlüssel wahrscheinlich "
 "seitdem ausgetauscht. {nothing}"
 
-#: packages/core/src/explain.ts:227
+#: packages/core/src/explain.ts:248
 msgid "Key size"
 msgstr "Schlüsselgröße"
 
-#: packages/core/src/explain.ts:228 packages/core/src/explain.ts:236
+#: packages/core/src/explain.ts:249 packages/core/src/explain.ts:257
 msgid "{bits} bit"
 msgstr "{bits} Bit"
 
-#: packages/core/src/explain.ts:235
+#: packages/core/src/explain.ts:256
 msgid "Signature size"
 msgstr "Signaturgröße"
 
-#: packages/core/src/explain.ts:245
+#: packages/core/src/explain.ts:266
 msgid "The key record for {name} is unusable. {nothing}"
 msgstr "Der Schlüsseleintrag für {name} ist nicht verwendbar. {nothing}"
 
-#: packages/core/src/explain.ts:251
+#: packages/core/src/explain.ts:272
 msgid "The signature header itself is malformed and cannot be read. {nothing}"
 msgstr "Die Signaturzeile selbst ist fehlerhaft und nicht lesbar. {nothing}"
 
-#: packages/core/src/explain.ts:260
+#: packages/core/src/explain.ts:281
 msgid ""
 "The key record for {name} does not allow this kind of signature. {nothing}"
 msgstr ""
 "Der Schlüsseleintrag für {name} erlaubt diese Art von Signatur nicht. "
 "{nothing}"
 
-#: packages/core/src/explain.ts:269
+#: packages/core/src/explain.ts:290
 msgid ""
 "The signature has an expiry time that has passed or lies in the future. "
 "{nothing}"
@@ -3099,12 +3142,12 @@ msgstr ""
 "Die Signatur hat eine Ablaufzeit, die verstrichen ist oder in der Zukunft "
 "liegt. {nothing}"
 
-#: packages/core/src/explain.ts:279
+#: packages/core/src/explain.ts:300
 msgid "The key lookup failed and may work later. {nothing}"
 msgstr ""
 "Die Schlüsselabfrage ist fehlgeschlagen und könnte später gelingen. {nothing}"
 
-#: packages/core/src/explain.ts:286
+#: packages/core/src/explain.ts:307
 msgid ""
 "The signature algorithm or key type is not supported by this tool. {nothing}"
 msgstr ""
@@ -3412,37 +3455,37 @@ msgstr ""
 "Mindestens ein verglichener Wert ist nicht durch eine geprüfte Signatur "
 "abgedeckt und kann von jedem geschrieben worden sein."
 
-#: packages/core/src/verdict.ts:287
+#: packages/core/src/verdict.ts:291
 msgid "Confirmed"
 msgstr "Bestätigt"
 
-#: packages/core/src/verdict.ts:289
+#: packages/core/src/verdict.ts:293
 msgid "With caveats"
 msgstr "Mit Einschränkungen"
 
-#: packages/core/src/verdict.ts:291
+#: packages/core/src/verdict.ts:295
 msgid "Body altered"
 msgstr "Text verändert"
 
-#: packages/core/src/verdict.ts:293
+#: packages/core/src/verdict.ts:297
 msgid "Headers altered"
 msgstr "Kopfzeilen verändert"
 
-#: packages/core/src/verdict.ts:295
+#: packages/core/src/verdict.ts:299
 msgid "Unverifiable"
 msgstr "Nicht prüfbar"
 
-#: packages/core/src/verdict.ts:297
+#: packages/core/src/verdict.ts:301
 msgid "Unsigned"
 msgstr "Ohne Signatur"
 
-#: packages/core/src/verdict.ts:310
+#: packages/core/src/verdict.ts:314
 msgid "Confirmed: a valid signature covers this message as it stands."
 msgstr ""
 "Bestätigt: Eine gültige Signatur deckt diese Nachricht in ihrer vorliegenden "
 "Form ab."
 
-#: packages/core/src/verdict.ts:312
+#: packages/core/src/verdict.ts:316
 msgid ""
 "Confirmed with caveats: the signature is valid but covers less than it "
 "appears to."
@@ -3450,31 +3493,31 @@ msgstr ""
 "Bestätigt mit Einschränkungen: Die Signatur ist gültig, deckt aber weniger "
 "ab, als es scheint."
 
-#: packages/core/src/verdict.ts:314
+#: packages/core/src/verdict.ts:318
 msgid "Body altered: the body is not the body that was signed."
 msgstr ""
 "Nachrichtentext verändert: Der Text ist nicht der Text, der signiert wurde."
 
-#: packages/core/src/verdict.ts:316
+#: packages/core/src/verdict.ts:320
 msgid "Headers altered: a signed header field is not what was signed."
 msgstr ""
 "Kopfzeilen verändert: Eine signierte Kopfzeile ist nicht die, die signiert "
 "wurde."
 
-#: packages/core/src/verdict.ts:318
+#: packages/core/src/verdict.ts:322
 msgid "Unverifiable: a signature is present, but nothing here can check it."
 msgstr ""
 "Nicht prüfbar: Es liegt eine Signatur vor, aber hier ist nichts, womit sie "
 "geprüft werden könnte."
 
-#: packages/core/src/verdict.ts:320
+#: packages/core/src/verdict.ts:324
 msgid ""
 "Unsigned: no DKIM signature. This says nothing about the message either way."
 msgstr ""
 "Ohne Signatur: keine DKIM-Signatur. Das sagt über die Nachricht in keine "
 "Richtung etwas aus."
 
-#: packages/core/src/verdict.ts:333
+#: packages/core/src/verdict.ts:337
 msgid ""
 "Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
 "carry a valid signature (RFC 8301)."
@@ -3483,7 +3526,7 @@ msgstr ""
 "kann auch ein gefälschter Nachrichtentext eine gültige Signatur tragen (RFC "
 "8301)."
 
-#: packages/core/src/verdict.ts:336
+#: packages/core/src/verdict.ts:340
 msgid ""
 "The RSA key is shorter than 1024 bits and can be factored with ordinary "
 "resources."
@@ -3491,7 +3534,7 @@ msgstr ""
 "Der RSA-Schlüssel ist kürzer als 1024 Bit und lässt sich mit gewöhnlichen "
 "Mitteln faktorisieren."
 
-#: packages/core/src/verdict.ts:339
+#: packages/core/src/verdict.ts:343
 msgid ""
 "An l= tag limits the signature to the start of the body. Anything appended "
 "after that is unsigned."
@@ -3499,26 +3542,26 @@ msgstr ""
 "Ein l=-Tag begrenzt die Signatur auf den Anfang des Nachrichtentextes. Alles "
 "danach Angehängte ist nicht signiert."
 
-#: packages/core/src/verdict.ts:342
+#: packages/core/src/verdict.ts:346
 msgid ""
 "Subject is not signed: the subject line could have been changed or added."
 msgstr ""
 "Subject ist nicht signiert: Die Betreffzeile könnte geändert oder "
 "hinzugefügt worden sein."
 
-#: packages/core/src/verdict.ts:344
+#: packages/core/src/verdict.ts:348
 msgid "To is not signed: the recipient could have been changed or added."
 msgstr ""
 "To ist nicht signiert: Der Empfänger könnte geändert oder hinzugefügt worden "
 "sein."
 
-#: packages/core/src/verdict.ts:346
+#: packages/core/src/verdict.ts:350
 msgid "Date is not signed: the date could have been changed or added."
 msgstr ""
 "Date ist nicht signiert: Das Datum könnte geändert oder hinzugefügt worden "
 "sein."
 
-#: packages/core/src/verdict.ts:349
+#: packages/core/src/verdict.ts:353
 msgid ""
 "The public key came from the archive itself, so it proves consistency rather "
 "than authenticity."
@@ -3526,7 +3569,7 @@ msgstr ""
 "Der öffentliche Schlüssel stammt aus dem Archiv selbst und belegt damit "
 "Konsistenz, nicht Echtheit."
 
-#: packages/core/src/verdict.ts:353
+#: packages/core/src/verdict.ts:357
 msgid ""
 "The key was first seen after this message was sent. The selector may have "
 "been rotated, so this failure may come from a wrong key rather than an edit."
@@ -3535,7 +3578,7 @@ msgstr ""
 "Der Selektor wurde womöglich rotiert; dieser Fehler kann daher von einem "
 "falschen Schlüssel statt von einer Änderung herrühren."
 
-#: packages/core/src/verdict.ts:357
+#: packages/core/src/verdict.ts:361
 msgid ""
 "No public key is available, so the body hash claimed in the signature could "
 "not be confirmed as the signer’s. Whoever changed the body could have "
@@ -3545,7 +3588,7 @@ msgstr ""
 "Signatur genannte Body-Hash nicht als der des Absenders bestätigen. Wer den "
 "Text geändert hat, könnte auch den Hash neu geschrieben haben."
 
-#: packages/core/src/verdict.ts:363
+#: packages/core/src/verdict.ts:367
 msgid ""
 "The signature is from {signer}, but the message claims to be from {author}. "
 "It proves only that {signer} handled the message, not that {author} sent it."
@@ -3554,11 +3597,11 @@ msgstr ""
 "{author} aus. Sie belegt nur, dass {signer} die Nachricht bearbeitet hat, "
 "nicht, dass {author} sie gesendet hat."
 
-#: packages/core/src/verdict.ts:365
+#: packages/core/src/verdict.ts:369
 msgid "(unknown domain)"
 msgstr "(unbekannte Domain)"
 
-#: packages/core/src/verdict.ts:368
+#: packages/core/src/verdict.ts:372
 msgid ""
 "The signing domain is not the From domain, so the signature does not vouch "
 "for the author."
@@ -3566,19 +3609,19 @@ msgstr ""
 "Die Signatur-Domain ist nicht die Absenderdomain; die Signatur bürgt daher "
 "nicht für den Absender."
 
-#: packages/core/src/verdict.ts:377
+#: packages/core/src/verdict.ts:381
 msgid "No public key for this selector and domain."
 msgstr "Kein öffentlicher Schlüssel für diesen Selektor und diese Domain."
 
-#: packages/core/src/verdict.ts:379
+#: packages/core/src/verdict.ts:383
 msgid "The public key record is unusable."
 msgstr "Der Eintrag des öffentlichen Schlüssels ist nicht verwendbar."
 
-#: packages/core/src/verdict.ts:381
+#: packages/core/src/verdict.ts:385
 msgid "The DKIM-Signature header does not parse."
 msgstr "Die Kopfzeile DKIM-Signature lässt sich nicht auswerten."
 
-#: packages/core/src/verdict.ts:383
+#: packages/core/src/verdict.ts:387
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
@@ -3586,16 +3629,16 @@ msgstr ""
 "Der Schlüsseleintrag erlaubt diese Signatur nicht (Hash-Algorithmus oder "
 "Dienstart)."
 
-#: packages/core/src/verdict.ts:385
+#: packages/core/src/verdict.ts:389
 msgid "The signature is expired or its timestamp lies in the future."
 msgstr ""
 "Die Signatur ist abgelaufen, oder ihr Zeitstempel liegt in der Zukunft."
 
-#: packages/core/src/verdict.ts:387
+#: packages/core/src/verdict.ts:391
 msgid "The key lookup failed and may succeed later."
 msgstr "Die Schlüsselabfrage ist fehlgeschlagen und könnte später gelingen."
 
-#: packages/core/src/verdict.ts:390
+#: packages/core/src/verdict.ts:394
 msgid ""
 "The key does not match the signature (different size or type), so it cannot "
 "have produced it. The selector was probably rotated."
@@ -3603,7 +3646,7 @@ msgstr ""
 "Der Schlüssel passt nicht zur Signatur (andere Größe oder Art) und kann sie "
 "daher nicht erzeugt haben. Der Selektor wurde wahrscheinlich rotiert."
 
-#: packages/core/src/verdict.ts:393
+#: packages/core/src/verdict.ts:397
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 "Der Signaturalgorithmus oder der Schlüsseltyp wird hier nicht unterstützt."

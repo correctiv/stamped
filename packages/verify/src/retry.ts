@@ -44,52 +44,122 @@ function headerValue(head: string, name: string): string | undefined {
     return new RegExp(`^${name}:[ \\t]*(.*)$`, 'im').exec(unfolded)?.[1];
 }
 
-/** Join the base64 lines of one body and wrap them again at `width`. */
-function rewrapBase64(body: string, width: number): string {
+/**
+ * Join the base64 lines of one body and wrap them again at `width`. `edge` toggles the CRLF that
+ * sits between the last base64 line and the boundary: one is added when there is none, one is
+ * taken away when there is.
+ */
+function rewrapBase64(body: string, width: number, edge = false): string {
     const trailing = /(\r\n)*$/.exec(body)?.[0] ?? '';
     const data = body.slice(0, body.length - trailing.length).replace(/[ \t\r\n]+/g, '');
     if (data.length === 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) return body;
     const lines: string[] = [];
     for (let at = 0; at < data.length; at += width) lines.push(data.slice(at, at + width));
-    return lines.join('\r\n') + trailing;
+    return lines.join('\r\n') + (edge ? (trailing === '' ? '\r\n' : trailing.slice(2)) : trailing);
+}
+
+/** One quoted-printable line: uppercase hex, soft breaks (`=` CRLF) so no line passes 76 characters. */
+function encodeQpLine(line: string): string {
+    const tokens: string[] = [];
+    for (let i = 0; i < line.length; i++) {
+        const code = line.charCodeAt(i);
+        const blankAtEnd = (code === 32 || code === 9) && i === line.length - 1;
+        const plain = code !== 0x3d && code <= 126 && (code >= 32 || code === 9) && !blankAtEnd;
+        tokens.push(plain ? (line[i] as string) : `=${code.toString(16).toUpperCase().padStart(2, '0')}`);
+    }
+    let out = '';
+    let width = 0;
+    for (const [i, token] of tokens.entries()) {
+        if (width + token.length > (i === tokens.length - 1 ? 76 : 75)) {
+            out += '=\r\n';
+            width = 0;
+        }
+        out += token;
+        width += token.length;
+    }
+    return out;
+}
+
+function encodeQp(text: string): string {
+    return text.split('\r\n').map(encodeQpLine).join('\r\n');
+}
+
+/** What a transform does with one non-multipart entity. `top` is true for the message's own body. */
+type Leaf = (head: string, body: string, top: boolean) => { head: string; body: string };
+
+function encodingOf(head: string): string {
+    return (headerValue(head, 'content-transfer-encoding') ?? '').trim().toLowerCase();
+}
+
+function base64Leaf(width: number, edge: boolean): Leaf {
+    return (head, body) => ({
+        head,
+        body: encodingOf(head) === 'base64' ? rewrapBase64(body, width, edge) : body,
+    });
 }
 
 /**
- * One MIME entity with every base64 body inside it (nested multiparts included) re-wrapped.
- * `head` is the entity's own header block, `body` its body with CRLF line ends.
+ * Reverse an export that stored a quoted-printable text part decoded. `kept`: the part still
+ * says quoted-printable. `changed`: the export wrote 8bit/7bit there, so the header goes back too
+ * (the part headers are inside the body hash; the message's own header block is not).
  */
-function rewrapEntity(head: string, body: string, width: number): string {
+function qpLeaf(variant: 'kept' | 'changed'): Leaf {
+    return (head, body, top) => {
+        const type = (headerValue(head, 'content-type') ?? 'text/plain').trim().toLowerCase();
+        const encoding = encodingOf(head);
+        if (!type.startsWith('text/')) return { head, body };
+        if (variant === 'kept') {
+            return { head, body: encoding === 'quoted-printable' ? encodeQp(body) : body };
+        }
+        if (encoding !== '8bit' && encoding !== '7bit') return { head, body };
+        if (top) return { head, body: encodeQp(body) };
+        return {
+            head: head.replace(/^(content-transfer-encoding:[ \t]*).*$/im, '$1quoted-printable'),
+            body: encodeQp(body),
+        };
+    };
+}
+
+/**
+ * One MIME entity with `leaf` applied to every non-multipart entity inside it (nested
+ * multiparts included). `head` is the entity's own header block, `body` its body with CRLF line
+ * ends. The returned head differs from `head` only for a leaf that rewrites it.
+ */
+function mapEntity(head: string, body: string, leaf: Leaf, top = false): { head: string; body: string } {
     const type = headerValue(head, 'content-type') ?? '';
     const boundary = /^\s*multipart\/.*?boundary\s*=\s*"?([^";\s]+)"?/i.exec(type)?.[1];
-    if (boundary) {
-        const delimiter = `\r\n--${boundary}`;
-        const pieces = `\r\n${body}`.split(delimiter);
-        let out = pieces[0] as string;
-        for (let i = 1; i < pieces.length; i++) {
-            const piece = pieces[i] as string;
-            const lineEnd = piece.indexOf('\r\n');
-            if (piece.startsWith('--') || lineEnd === -1) {
-                out += delimiter + piece;
-                continue;
-            }
-            const padding = piece.slice(0, lineEnd + 2);
-            const part = piece.slice(lineEnd + 2);
-            let rebuilt: string;
-            if (part.startsWith('\r\n')) {
-                rebuilt = `\r\n${rewrapEntity('', part.slice(2), width)}`;
-            } else {
-                const gap = part.indexOf('\r\n\r\n');
-                rebuilt =
-                    gap === -1
-                        ? part
-                        : `${part.slice(0, gap)}\r\n\r\n${rewrapEntity(part.slice(0, gap), part.slice(gap + 4), width)}`;
-            }
-            out += delimiter + padding + rebuilt;
+    if (!boundary) return leaf(head, body, top);
+    const delimiter = `\r\n--${boundary}`;
+    const pieces = `\r\n${body}`.split(delimiter);
+    let out = pieces[0] as string;
+    for (let i = 1; i < pieces.length; i++) {
+        const piece = pieces[i] as string;
+        const lineEnd = piece.indexOf('\r\n');
+        if (piece.startsWith('--') || lineEnd === -1) {
+            out += delimiter + piece;
+            continue;
         }
-        return out.slice(2);
+        const padding = piece.slice(0, lineEnd + 2);
+        const part = piece.slice(lineEnd + 2);
+        let rebuilt: string;
+        if (part.startsWith('\r\n')) {
+            rebuilt = `\r\n${mapEntity('', part.slice(2), leaf).body}`;
+        } else {
+            const gap = part.indexOf('\r\n\r\n');
+            if (gap === -1) {
+                rebuilt = part;
+            } else {
+                const mapped = mapEntity(part.slice(0, gap), part.slice(gap + 4), leaf);
+                rebuilt = `${mapped.head}\r\n\r\n${mapped.body}`;
+            }
+        }
+        out += delimiter + padding + rebuilt;
     }
-    const encoding = (headerValue(head, 'content-transfer-encoding') ?? '').trim().toLowerCase();
-    return encoding === 'base64' ? rewrapBase64(body, width) : body;
+    return { head, body: out.slice(2) };
+}
+
+function toggleFinalCrlf(text: string): string {
+    return text.endsWith('\r\n') ? text.slice(0, -2) : `${text}\r\n`;
 }
 
 function canonBody(body: string, mode: string): string {
@@ -113,7 +183,8 @@ function hashOf(canon: string, input: RetryInput): string {
  * Which export artefact, if any, explains the body-hash mismatch.
  *
  * Tries, in order: doubled leading dots undone, line endings converted to CRLF, both, base64
- * lines re-wrapped at 76, 72, 64 or 60 characters. The first
+ * lines re-wrapped at 76, 72, 64 or 60 characters, base64 at 76 with the CRLF before the boundary
+ * toggled, quoted-printable text parts re-encoded after an export stored them decoded. The first
  * candidate whose hash equals the signed one wins. `undefined` means none did.
  */
 export function explainBodyByRetry(raw: Uint8Array, input: RetryInput): ExportArtefact | undefined {
@@ -125,17 +196,28 @@ export function explainBodyByRetry(raw: Uint8Array, input: RetryInput): ExportAr
         ['dot-stuffing', undot(body)],
         ['line-endings', crlf(body)],
         ['dot-stuffing-and-line-endings', crlf(undot(body))],
+        // The last line's CRLF is the first thing an export adds or drops.
+        ['line-endings', toggleFinalCrlf(crlf(body))],
     ];
     for (const [artefact, text] of candidates) {
         if (text === body) continue;
         if (hashOf(canonBody(text, mode), input) === input.bodyHashExpected) return artefact;
     }
-    // The verifier hashes the CRLF form, so the re-wrap starts from it too.
+    // The verifier hashes the CRLF form, so the reversals start from it too.
     const wire = crlf(body);
-    for (const width of BASE64_WIDTHS) {
-        const text = rewrapEntity(head, wire, width);
+    const reversals: [ExportArtefact, Leaf][] = [
+        ...BASE64_WIDTHS.map((width): [ExportArtefact, Leaf] => [
+            'base64-rewrapped',
+            base64Leaf(width, false),
+        ]),
+        ['base64-trailing-newline', base64Leaf(76, true)],
+        ['quoted-printable-decoded', qpLeaf('kept')],
+        ['quoted-printable-decoded', qpLeaf('changed')],
+    ];
+    for (const [artefact, leaf] of reversals) {
+        const text = mapEntity(head, wire, leaf, true).body;
         if (text === wire) continue;
-        if (hashOf(canonBody(text, mode), input) === input.bodyHashExpected) return 'base64-rewrapped';
+        if (hashOf(canonBody(text, mode), input) === input.bodyHashExpected) return artefact;
     }
     return undefined;
 }
