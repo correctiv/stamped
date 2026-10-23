@@ -32,6 +32,7 @@ import {
     planFolder,
     readMboxFile,
     readSource,
+    splitMessage,
     summarise,
     type MboxFlavour,
     type SourceMessage,
@@ -48,6 +49,7 @@ import {
     rollbackBatch,
 } from './index-db.ts';
 import { settleSiblings } from './siblings.ts';
+import { writeUnsignedHeaders } from './unsigned-headers.ts';
 import {
     alreadyImported,
     ensureImportedFiles,
@@ -364,6 +366,10 @@ export async function importSources(
                                     { hash: entry.hash, bytes: entry.bytes, summary: sm, finding },
                                     { fresh: true },
                                 );
+                                // The header is in hand already: cache it, no re-read later.
+                                if (finding.verdict === 'unsigned') {
+                                    writeUnsignedHeaders(db, entry.hash, splitMessage(raw).header);
+                                }
                                 indexed++;
                             } catch (error) {
                                 // Stored and logged already, so the evidence is safe; only the verdict

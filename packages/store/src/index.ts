@@ -160,7 +160,6 @@ export {
     type VerdictChange,
 } from './reverify.ts';
 export {
-    analyseUnsignedHeaders,
     derivedMailboxHashes,
     domainsByVerdict,
     mailboxOf,
@@ -168,12 +167,20 @@ export {
     periodBreakdown,
     rawSetDigest,
     type RawSetDigest,
-    readHeaderBlock,
     type UnsignedBreakdown,
     unsignedBreakdown,
-    type UnsignedHeaderFlags,
     type VerdictDomains,
 } from './breakdown.ts';
+export {
+    analyseUnsignedHeaders,
+    backfillUnsignedHeaders,
+    backfillUnsignedHeadersAll,
+    readHeaderBlock,
+    UNSIGNED_ANALYSER_VERSION,
+    unsignedTotals,
+    unsignedHeadersComplete,
+    type UnsignedHeaderFlags,
+} from './unsigned-headers.ts';
 export {
     type AlteredVerdict,
     type AlterationCount,

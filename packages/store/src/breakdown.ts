@@ -10,16 +10,15 @@
  */
 
 import { createHash } from 'node:crypto';
-import { closeSync, openSync, readSync } from 'node:fs';
 import type { DatabaseSync } from 'node:sqlite';
 
 import { VERDICTS, type Verdict } from '@stamped/core';
-import { type HeaderField, parseHeaderFields, splitMessage } from '@stamped/import';
 
 import type { CasePaths } from './case.ts';
 import { hashScope } from './index-db.ts';
-import { eachLogEntry, type ImportLogEntry, rawPath } from './raw.ts';
+import { eachLogEntry, type ImportLogEntry } from './raw.ts';
 import type { SigningDomain } from './report.ts';
+import { backfillUnsignedHeadersAll, unsignedTotals } from './unsigned-headers.ts';
 
 /** Maildir's own sub-folders: the mailbox is the folder ABOVE them. */
 const MAILDIR_PARTS = new Set(['cur', 'new', 'tmp']);
@@ -141,31 +140,6 @@ export function domainsByVerdict(db: DatabaseSync, limit = 15): VerdictDomains[]
     return out;
 }
 
-/** What the header block of one unsigned message shows. */
-export interface UnsignedHeaderFlags {
-    /** No `Received` header: the message never travelled through a mail server. */
-    readonly neverTransported: boolean;
-    /** A header such as `X-Foo-DKIM-Signature`: a signature that was renamed, not removed. */
-    readonly renamedSignature: boolean;
-    /** `Authentication-Results` reports `dkim=pass` although no signature is left. */
-    readonly authResultsPass: boolean;
-    /** `ARC-Message-Signature` present: an ARC chain without a DKIM signature. */
-    readonly arcOnly: boolean;
-}
-
-/** Read the flags off parsed header fields. Pure, so the rules can be tested without a case. */
-export function analyseUnsignedHeaders(fields: readonly HeaderField[]): UnsignedHeaderFlags {
-    const has = (test: (lower: string) => boolean) => fields.some((field) => test(field.lower));
-    return {
-        neverTransported: !has((name) => name === 'received'),
-        renamedSignature: has((name) => name !== 'dkim-signature' && name.endsWith('dkim-signature')),
-        authResultsPass: fields.some(
-            (field) => field.lower === 'authentication-results' && /\bdkim\s*=\s*pass\b/i.test(field.value),
-        ),
-        arcOnly: has((name) => name === 'arc-message-signature'),
-    };
-}
-
 /**
  * Why messages are unsigned, as far as the header block says.
  *
@@ -183,59 +157,14 @@ export interface UnsignedBreakdown {
     readonly embedded?: number;
 }
 
-/** Bytes read per attempt at the header block; doubled until the blank line shows up. */
-const HEADER_CHUNK = 64 * 1024;
-const HEADER_LIMIT = 4 * 1024 * 1024;
-
-/** The header block of a raw file, without reading the body. `undefined` for an unreadable file. */
-export function readHeaderBlock(path: string): Uint8Array | undefined {
-    let fd: number;
-    try {
-        fd = openSync(path, 'r');
-    } catch {
-        return undefined;
-    }
-    try {
-        for (let size = HEADER_CHUNK; ; size *= 2) {
-            const buffer = new Uint8Array(size);
-            const read = readSync(fd, buffer, 0, size, 0);
-            const { header } = splitMessage(buffer.subarray(0, read));
-            if (read < size || header.length < read || size >= HEADER_LIMIT) return header;
-        }
-    } catch {
-        return undefined;
-    } finally {
-        closeSync(fd);
-    }
-}
-
 /**
- * Count the reasons behind the case's unsigned messages. Reads the header block of every
- * unsigned raw file — the reason this is opt-in.
+ * Count the reasons behind the case's unsigned messages. The header blocks are read once, into
+ * the `unsigned_headers` cache (see `unsigned-headers.ts`); this runs that fill to the end and
+ * then answers with one aggregate query.
  */
 export function unsignedBreakdown(db: DatabaseSync, paths: CasePaths): UnsignedBreakdown {
-    const totals = { examined: 0, neverTransported: 0, renamedSignature: 0, authResultsPass: 0, arcOnly: 0 };
-    const select = db.prepare(
-        "SELECT hash FROM messages WHERE verdict = 'unsigned' AND hash > ? ORDER BY hash LIMIT 5000",
-    );
-    let after = '';
-    for (;;) {
-        const page = select.all(after) as { hash?: string }[];
-        if (page.length === 0) break;
-        for (const row of page) {
-            const hash = String(row.hash ?? '');
-            after = hash;
-            const header = readHeaderBlock(rawPath(paths, hash));
-            if (header === undefined) continue;
-            const flags = analyseUnsignedHeaders(parseHeaderFields(header));
-            totals.examined++;
-            if (flags.neverTransported) totals.neverTransported++;
-            if (flags.renamedSignature) totals.renamedSignature++;
-            if (flags.authResultsPass) totals.authResultsPass++;
-            if (flags.arcOnly) totals.arcOnly++;
-        }
-    }
-    return totals;
+    backfillUnsignedHeadersAll(db, paths);
+    return unsignedTotals(db);
 }
 
 /** A fingerprint of the set of messages the index holds, and how many that is. */

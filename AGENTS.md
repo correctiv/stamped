@@ -120,6 +120,15 @@ message. Queries over an unfilled table are incomplete, never wrong; `addressesC
 which, and the GUI and the CLI say so. The GUI backfills in low-priority idle batches, the CLI
 `people` runs it to the end first.
 
+**The unsigned breakdown has the same kind of table**: `unsigned_headers(hash PRIMARY KEY, flags)`
+caches the four header flags of each unsigned message as a bitmask (bit 16 = header readable; a
+row without it means "looked, unreadable", so the backfill never retries it). Additive, outside
+`createSchema`, `ensureUnsignedHeaders` / `removeMessage` / `backfillUnsignedHeaders` as above
+(`unsigned_headers_cursor` / `_done` in `meta`). The importer fills it for new unsigned mail from
+the bytes it already holds. The rules in `analyseUnsignedHeaders` are versioned:
+`UNSIGNED_ANALYSER_VERSION` — change a rule, bump it, and the cache refills. `unsignedBreakdown`
+runs the backfill to the end, then one aggregate query.
+
 - **One address is one person.** Addresses are lower-cased, display names are listed beside them,
   and nothing is merged by guesswork: whether two mailboxes are one human is the journalist's call.
 - **Timeline buckets are the UTC calendar of `sent_at`** (day when the case spans 62 days or
