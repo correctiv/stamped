@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 21:36+0200\n"
+"POT-Creation-Date: 2026-10-23 21:55+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2443,7 +2443,7 @@ msgid "Published DNS record, looked up with consent"
 msgstr ""
 
 #: app/src/lib/pdf-report.ts:461
-msgid "archive.prove.email (a third party’s snapshots)"
+msgid "archive.prove.email (a third party's snapshots)"
 msgstr ""
 
 #: app/src/lib/pdf-report.ts:462
@@ -2451,10 +2451,14 @@ msgid "Shipped with the archive"
 msgstr ""
 
 #: app/src/lib/pdf-report.ts:463
+msgid "Recovered mathematically from signatures"
+msgstr ""
+
+#: app/src/lib/pdf-report.ts:464
 msgid "Supplied by the operator"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:471
+#: app/src/lib/pdf-report.ts:472
 msgid ""
 "{messages} message waits for a key that is not in the store ({pairs} "
 "distinct selectors in total)."
@@ -2464,14 +2468,14 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:482
+#: app/src/lib/pdf-report.ts:483
 msgid "{count} message could not be checked because its key had expired."
 msgid_plural ""
 "{count} messages could not be checked because their key had expired."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:493
+#: app/src/lib/pdf-report.ts:494
 msgid ""
 "{count} message could not be checked because the published key provably did "
 "not make its signature."
@@ -2481,7 +2485,7 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:504
+#: app/src/lib/pdf-report.ts:505
 msgid ""
 "{count} message counts as body altered against a body hash that no available "
 "key authenticates."
@@ -2491,37 +2495,37 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/pdf-report.ts:514
+#: app/src/lib/pdf-report.ts:515
 msgid "Method and limits"
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:517
+#: app/src/lib/pdf-report.ts:518
 msgid ""
 "Each DKIM signature (RFC 6376) of each message was checked on its own: the "
 "hash of the body, then the signature over the signed header fields, against "
 "the public key published for the signing domain and selector."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:520
+#: app/src/lib/pdf-report.ts:521
 msgid ""
 "A valid signature proves that the signed parts of the message are unchanged "
 "since the signing server added it. It does not prove who wrote the message, "
 "and it says nothing about the parts the signature does not cover."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:523
+#: app/src/lib/pdf-report.ts:524
 msgid ""
 "Keys are taken from the key store of the case. Stamped does not query DNS on "
 "its own; a key that was not supplied is reported as missing, not guessed."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:527
+#: app/src/lib/pdf-report.ts:528
 msgid ""
 "Tool: Stamped {version}. Every figure in this report can be reproduced from "
 "the raw messages with `stamped reverify` and `stamped report`."
 msgstr ""
 
-#: app/src/lib/pdf-report.ts:546
+#: app/src/lib/pdf-report.ts:547
 msgid "{case} · {date}"
 msgstr ""
 
