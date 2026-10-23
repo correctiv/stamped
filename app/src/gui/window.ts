@@ -792,6 +792,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.reading = undefined;
         this._searchEntry.set_text('');
         this._readerStack.set_visible_child_name('empty');
+        // Until the first `fillList` picks `list` or `empty`. Only here, not in `refresh`: that
+        // also runs after every import, key lookup and re-verification, and a list that blanks
+        // out to a spinner each time loses the journalist's place in it.
+        this._listStack.set_visible_child_name('loading');
         // `Adw.WindowTitle` parses no markup, so it takes the path as it is — not the escaped
         // form the view models hand the rows. A case folder called `Mail & Co` would otherwise
         // appear here as `Mail &amp; Co`.
@@ -872,9 +876,6 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const report = await reportOf(session);
         if (!current()) return;
         this.total = report.messages;
-
-        // Show loading state while the list refreshes — an empty list reads as a crash
-        this._listStack.set_visible_child_name('loading');
         const steps: (() => Promise<void> | void)[] = [
             () => this.fillSidebar(session, report),
             () => this.fillList(),
@@ -890,7 +891,6 @@ export class StampedWindow extends Adw.ApplicationWindow {
             await step();
             if (!current()) return;
         }
-        this._listStack.set_visible_child_name('list');
     }
 
     /**
@@ -1219,10 +1219,14 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const session = this.session;
         if (!session) return;
         this.reading = hash;
-        this._readerStack.set_visible_child_name('empty'); // loading state while verifying
+        // Not the previous message's evidence under the new selection while this one verifies.
+        this._readerStack.set_visible_child_name('loading');
         const message = await messageOf(session, hash);
         if (this.session !== session || this.reading !== hash) return;
-        if (!message) return;
+        if (!message) {
+            this._readerStack.set_visible_child_name('empty');
+            return;
+        }
 
         const finding = await verifyStored(session, hash);
         if (this.session !== session || this.reading !== hash) return;
@@ -1650,6 +1654,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
             iconName: 'help-contents-symbolic',
             tooltipText: _('How does DKIM work?'),
             valign: Gtk.Align.CENTER,
+            // Leftwards, for the reason in `help-button.ts`: this is a row suffix at the right
+            // edge of the pane, and GTK clips a popover to the monitor, not to the window.
             direction: Gtk.ArrowType.LEFT,
         });
         button.add_css_class('flat');
