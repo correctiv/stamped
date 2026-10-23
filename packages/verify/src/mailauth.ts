@@ -138,8 +138,15 @@ export async function verifyMessage(
         { source: 'dns' | 'operator' | 'archive' | 'recovered'; since?: string }
     >();
 
+    const messageDate = messageDateOf(raw);
+
     const resolver: DNSResolver = async (name, rrtype) => {
-        const entry = options.keys.lookup(name);
+        // The message's own Date: header, when readable, is what lets a name holding several
+        // era-distinct keys (KeyStore.addEra) answer with the one whose window covers THIS
+        // message rather than always the "current" record. Absent a readable date, `lookup`
+        // falls back to its single-candidate case and, with several, answers `undefined` — a
+        // genuine conflict never gets silently decided for lack of a date to decide it with.
+        const entry = options.keys.lookup(name, messageDate);
         if (entry) {
             sources.set(name.toLowerCase().replace(/\.$/, ''), {
                 source: entry.source,
@@ -162,8 +169,6 @@ export async function verifyMessage(
         // the operator to retry a lookup that was never going to happen.
         throw Object.assign(new Error(_('no key in the store')), { code: 'ENOTFOUND' });
     };
-
-    const messageDate = messageDateOf(raw);
 
     const result = await dkimVerify(withCrlf(raw), {
         resolver,
@@ -204,7 +209,7 @@ export async function verifyMessage(
                 // known key is what tells "body edited" from "signed by another key".
                 let heldRecord: string | undefined;
                 if (!key && signature.status.result !== 'pass') {
-                    const entry = options.keys.lookup(name);
+                    const entry = options.keys.lookup(name, messageDate);
                     if (entry) {
                         key = { source: entry.source, ...(entry.since ? { since: entry.since } : {}) };
                         heldRecord = entry.record;
