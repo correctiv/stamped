@@ -10,7 +10,8 @@
  * llama embedder. The embedder is NOT imported here but registered by `semantic-embedder-llama.ts`,
  * which the entry point imports statically: node-llama-cpp deadlocks when the bundler wraps it in
  * a lazy initialiser, and any module reachable through `await import()` that also imports it gets
- * wrapped. This file is reachable from the window, so it must stay free of that import. GJS reaches the same prebuilt addon as Node, by its own route — that branch lives in
+ * wrapped. This file is reachable from the window, so it must stay free of that import. GJS
+ * reaches the same prebuilt addon as Node, by its own route — that branch lives in
  * `@stamped/semantic/llama-embedder` and is not this file's business.
  *
  * WHAT IS LEFT OF "no runtime here" is the machine nobody built a binary for: llama.cpp ships as
