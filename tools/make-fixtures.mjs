@@ -229,6 +229,20 @@ const rotatedOld = makeKey({
 });
 makeKey({ selector: 'trotated', domain: 'example.com', type: 'rsa', bits: 2048 });
 
+// Signed with one 2048-bit key while a DIFFERENT 2048-bit key is published under the same name:
+// sizes agree, so only the RSA padding of `b=` can tell that the published key did not sign.
+const swapped = makeKey({
+    selector: 'tswapped',
+    domain: 'example.com',
+    type: 'rsa',
+    bits: 2048,
+    publish: false,
+});
+makeKey({ selector: 'tswapped', domain: 'example.com', type: 'rsa', bits: 2048 });
+
+// Its own key, so the base64 fixtures do not depend on the bytes of any older key.
+const base64Key = makeKey({ selector: 'tb64', domain: 'example.com', type: 'rsa', bits: 2048 });
+
 console.log('fixtures:');
 
 // ── confirmed ───────────────────────────────────────────────────────────────────────────────
@@ -431,6 +445,117 @@ write(
         signedHeaders: SIGNED,
     }),
 );
+
+// Same size, different key, body intact: the header signature fails because the published key is
+// not the signer's. Must be `unverifiable`, not `headers-altered`.
+write(
+    'unverifiable-key-swapped.eml',
+    sign({
+        headers: headersFor({ subject: 'Quarterly figures' }),
+        body: BODY,
+        key: swapped.privateKey,
+        domain: swapped.domain,
+        selector: swapped.selector,
+        algorithm: 'rsa-sha256',
+        canonicalization: 'relaxed/relaxed',
+        signedHeaders: SIGNED,
+    }),
+);
+
+// The body is edited AND the published key is not the signer's: the `bh=` in the header is not
+// provably the signer's, so nothing may be said about the text.
+write(
+    'body-altered-key-swapped.eml',
+    sign({
+        headers: headersFor({ subject: 'Quarterly figures' }),
+        body: BODY,
+        key: swapped.privateKey,
+        domain: swapped.domain,
+        selector: swapped.selector,
+        algorithm: 'rsa-sha256',
+        canonicalization: 'relaxed/relaxed',
+        signedHeaders: SIGNED,
+    }).replace('provisional until the audit closes', 'final and the audit has closed'),
+);
+
+// The body is edited and no key exists at all: the claimed body hash is unauthenticated.
+write(
+    'body-altered-no-key.eml',
+    sign({
+        headers: headersFor({ subject: 'Quarterly figures' }),
+        body: BODY,
+        key: absent.privateKey,
+        domain: absent.domain,
+        selector: absent.selector,
+        algorithm: 'rsa-sha256',
+        canonicalization: 'relaxed/relaxed',
+        signedHeaders: SIGNED,
+    }).replace('provisional until the audit closes', 'final and the audit has closed'),
+);
+
+// Base64 line wrapping: signed with 72 characters per line, then an export re-wrapped to 76. The
+// decoded content is identical, the body hash is not.
+{
+    const wrap = (text, width) => `${text.match(new RegExp(`.{1,${width}}`, 'g')).join('\r\n')}\r\n`;
+    const payload = (seed) =>
+        Buffer.from(`${seed} `.repeat(40) + 'Provisional figures, not for release.').toString('base64');
+    const withContent = (extra) =>
+        headersFor({ subject: 'Quarterly figures' })
+            .filter(([name]) => name !== 'Content-Type')
+            .concat(extra);
+    const rewrapped = (headers, bodyOf) => {
+        const signed = sign({
+            headers,
+            body: bodyOf(72),
+            key: base64Key.privateKey,
+            domain: base64Key.domain,
+            selector: base64Key.selector,
+            algorithm: 'rsa-sha256',
+            canonicalization: 'relaxed/relaxed',
+            signedHeaders: SIGNED,
+        });
+        return signed.slice(0, signed.length - bodyOf(72).length) + bodyOf(76);
+    };
+
+    write(
+        'export-base64-single.eml',
+        rewrapped(
+            withContent([
+                ['Content-Type', ' application/octet-stream'],
+                ['Content-Transfer-Encoding', ' base64'],
+            ]),
+            (width) => wrap(payload('single'), width),
+        ),
+    );
+
+    write(
+        'export-base64-multipart.eml',
+        rewrapped(withContent([['Content-Type', ' multipart/mixed; boundary="OUTER"']]), (width) =>
+            [
+                '--OUTER',
+                'Content-Type: text/plain; charset=utf-8',
+                '',
+                'Two attachments follow.',
+                '--OUTER',
+                'Content-Type: application/octet-stream',
+                'Content-Transfer-Encoding: base64',
+                '',
+                wrap(payload('first'), width).replace(/\r\n$/, ''),
+                '--OUTER',
+                'Content-Type: multipart/mixed; boundary="INNER"',
+                '',
+                '--INNER',
+                'Content-Type: application/octet-stream',
+                'Content-Transfer-Encoding: base64',
+                '',
+                wrap(payload('nested'), width).replace(/\r\n$/, ''),
+                '--INNER--',
+                '--OUTER--',
+                '',
+            ].join('\r\n'),
+        ),
+    );
+}
 
 // ── nothing to check against ────────────────────────────────────────────────────────────────
 

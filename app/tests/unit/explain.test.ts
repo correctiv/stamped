@@ -23,6 +23,9 @@ async function explain(file: string, since?: string) {
 const EXPECTED: ReadonlyArray<{ file: string; verdict: string; code: ReasonCode }> = [
     { file: 'export-dot-stuffed.eml', verdict: 'body-altered', code: 'body-export-dot-stuffing' },
     { file: 'export-both.eml', verdict: 'body-altered', code: 'body-export-both' },
+    { file: 'export-base64-single.eml', verdict: 'body-altered', code: 'body-export-base64' },
+    { file: 'export-base64-multipart.eml', verdict: 'body-altered', code: 'body-export-base64' },
+    { file: 'body-altered-key-swapped.eml', verdict: 'unverifiable', code: 'unverifiable-key-mismatch' },
     { file: 'body-altered.eml', verdict: 'body-altered', code: 'body-changed' },
     { file: 'body-altered-length-limited.eml', verdict: 'body-altered', code: 'body-signed-part-changed' },
     { file: 'headers-altered.eml', verdict: 'headers-altered', code: 'headers-changed' },
@@ -62,6 +65,16 @@ export default async () => {
                 expect(explanation?.sentence.includes(EXPORT_SENTENCE)).toBe(true);
             });
         }
+
+        await it('says the signed header is authentic when only the text deviates', async () => {
+            const { explanation } = await explain('body-altered.eml');
+            expect(explanation?.sentence.includes('deviation is in the text only')).toBe(true);
+        });
+
+        await it('does not claim that for a body hash without a key', async () => {
+            const { explanation } = await explain('body-altered-no-key.eml');
+            expect(explanation?.sentence.includes('deviation is in the text only')).toBe(false);
+        });
 
         await it('does NOT explain an altered body', async () => {
             const { finding, explanation } = await explain('body-altered.eml');

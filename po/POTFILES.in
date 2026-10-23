@@ -9,12 +9,14 @@ app/src/commands/status.ts
 app/src/commands/timeline.ts
 app/src/commands/verify.ts
 app/src/gui/activity.ts
+app/src/gui/bench.ts
 app/src/gui/blp.d.ts
 app/src/gui/help-button.blp
 app/src/gui/help-button.d.blp.ts
 app/src/gui/help-button.ts
 app/src/gui/i18n-init.ts
 app/src/gui/main.ts
+app/src/gui/message-row.ts
 app/src/gui/query-channel.ts
 app/src/gui/query-client.ts
 app/src/gui/query-worker.ts
@@ -51,9 +53,11 @@ app/src/lib/import-summary.ts
 app/src/lib/keys.ts
 app/src/lib/model-path.ts
 app/src/lib/open-copy.ts
+app/src/lib/paged-list.ts
 app/src/lib/pairs.ts
 app/src/lib/progress.ts
 app/src/lib/queries.ts
+app/src/lib/refresh-scheduler.ts
 app/src/lib/report.ts
 app/src/lib/self-argv.ts
 app/src/lib/semantic-embedder-llama.ts
@@ -122,3 +126,4 @@ packages/verify/src/evidence.ts
 packages/verify/src/index.ts
 packages/verify/src/mailauth.ts
 packages/verify/src/retry.ts
+packages/verify/src/rsa.ts

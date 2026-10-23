@@ -26,12 +26,70 @@ export interface RetryInput {
     readonly lengthLimit?: number;
 }
 
-/** The body of a raw message, as a Latin-1 string (one char per byte), or undefined if none. */
-function bodyOf(raw: Uint8Array): string {
+/** Header block and body of a raw message, as Latin-1 strings (one char per byte). */
+function splitMessage(raw: Uint8Array): { head: string; body: string } {
     let text = '';
     for (let i = 0; i < raw.length; i++) text += String.fromCharCode(raw[i] as number);
     const match = /\r?\n\r?\n/.exec(text);
-    return match ? text.slice(match.index + match[0].length) : '';
+    return match
+        ? { head: text.slice(0, match.index), body: text.slice(match.index + match[0].length) }
+        : { head: text, body: '' };
+}
+
+/** Line widths mail software commonly wraps base64 at: RFC 2045's 76, then the usual others. */
+const BASE64_WIDTHS = [76, 72, 64, 60];
+
+function headerValue(head: string, name: string): string | undefined {
+    const unfolded = head.replace(/\r?\n[ \t]+/g, ' ');
+    return new RegExp(`^${name}:[ \\t]*(.*)$`, 'im').exec(unfolded)?.[1];
+}
+
+/** Join the base64 lines of one body and wrap them again at `width`. */
+function rewrapBase64(body: string, width: number): string {
+    const trailing = /(\r\n)*$/.exec(body)?.[0] ?? '';
+    const data = body.slice(0, body.length - trailing.length).replace(/[ \t\r\n]+/g, '');
+    if (data.length === 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) return body;
+    const lines: string[] = [];
+    for (let at = 0; at < data.length; at += width) lines.push(data.slice(at, at + width));
+    return lines.join('\r\n') + trailing;
+}
+
+/**
+ * One MIME entity with every base64 body inside it (nested multiparts included) re-wrapped.
+ * `head` is the entity's own header block, `body` its body with CRLF line ends.
+ */
+function rewrapEntity(head: string, body: string, width: number): string {
+    const type = headerValue(head, 'content-type') ?? '';
+    const boundary = /^\s*multipart\/.*?boundary\s*=\s*"?([^";\s]+)"?/i.exec(type)?.[1];
+    if (boundary) {
+        const delimiter = `\r\n--${boundary}`;
+        const pieces = `\r\n${body}`.split(delimiter);
+        let out = pieces[0] as string;
+        for (let i = 1; i < pieces.length; i++) {
+            const piece = pieces[i] as string;
+            const lineEnd = piece.indexOf('\r\n');
+            if (piece.startsWith('--') || lineEnd === -1) {
+                out += delimiter + piece;
+                continue;
+            }
+            const padding = piece.slice(0, lineEnd + 2);
+            const part = piece.slice(lineEnd + 2);
+            let rebuilt: string;
+            if (part.startsWith('\r\n')) {
+                rebuilt = `\r\n${rewrapEntity('', part.slice(2), width)}`;
+            } else {
+                const gap = part.indexOf('\r\n\r\n');
+                rebuilt =
+                    gap === -1
+                        ? part
+                        : `${part.slice(0, gap)}\r\n\r\n${rewrapEntity(part.slice(0, gap), part.slice(gap + 4), width)}`;
+            }
+            out += delimiter + padding + rebuilt;
+        }
+        return out.slice(2);
+    }
+    const encoding = (headerValue(head, 'content-transfer-encoding') ?? '').trim().toLowerCase();
+    return encoding === 'base64' ? rewrapBase64(body, width) : body;
 }
 
 function canonBody(body: string, mode: string): string {
@@ -54,12 +112,13 @@ function hashOf(canon: string, input: RetryInput): string {
 /**
  * Which export artefact, if any, explains the body-hash mismatch.
  *
- * Tries, in order: doubled leading dots undone, line endings converted to CRLF, both. The first
+ * Tries, in order: doubled leading dots undone, line endings converted to CRLF, both, base64
+ * lines re-wrapped at 76, 72, 64 or 60 characters. The first
  * candidate whose hash equals the signed one wins. `undefined` means none did.
  */
 export function explainBodyByRetry(raw: Uint8Array, input: RetryInput): ExportArtefact | undefined {
     const mode = input.canonicalization.split('/')[1] ?? 'simple';
-    const body = bodyOf(raw);
+    const { head, body } = splitMessage(raw);
     const undot = (text: string) => text.replace(/(^|\n)\.\./g, '$1.');
     const crlf = (text: string) => text.replace(/\r?\n/g, '\r\n');
     const candidates: [ExportArtefact, string][] = [
@@ -70,6 +129,13 @@ export function explainBodyByRetry(raw: Uint8Array, input: RetryInput): ExportAr
     for (const [artefact, text] of candidates) {
         if (text === body) continue;
         if (hashOf(canonBody(text, mode), input) === input.bodyHashExpected) return artefact;
+    }
+    // The verifier hashes the CRLF form, so the re-wrap starts from it too.
+    const wire = crlf(body);
+    for (const width of BASE64_WIDTHS) {
+        const text = rewrapEntity(head, wire, width);
+        if (text === wire) continue;
+        if (hashOf(canonBody(text, mode), input) === input.bodyHashExpected) return 'base64-rewrapped';
     }
     return undefined;
 }

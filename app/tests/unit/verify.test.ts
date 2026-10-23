@@ -38,6 +38,11 @@ const EXPECTED: ReadonlyArray<{ file: string; verdict: Verdict; caveats: Caveat[
     { file: 'headers-altered.eml', verdict: 'headers-altered', caveats: [] },
     { file: 'unverifiable-no-key.eml', verdict: 'unverifiable', caveats: [] },
     { file: 'unverifiable-key-mismatch.eml', verdict: 'unverifiable', caveats: [] },
+    { file: 'unverifiable-key-swapped.eml', verdict: 'unverifiable', caveats: [] },
+    { file: 'body-altered-key-swapped.eml', verdict: 'unverifiable', caveats: [] },
+    { file: 'body-altered-no-key.eml', verdict: 'body-altered', caveats: ['body-hash-unauthenticated'] },
+    { file: 'export-base64-single.eml', verdict: 'body-altered', caveats: [] },
+    { file: 'export-base64-multipart.eml', verdict: 'body-altered', caveats: [] },
     { file: 'unsigned.eml', verdict: 'unsigned', caveats: [] },
     // The message verdict is the STRONGEST of the two signatures; the per-signature findings are
     // asserted in their own test below.
@@ -222,6 +227,41 @@ export default async () => {
             const [signature] = (await classify('unverifiable-key-mismatch.eml')).signatures;
             expect(signature.verdict).toBe('unverifiable');
             expect(signature.evidence.unverifiableBecause).toBe('key-mismatch');
+        });
+
+        await it('reports a same-size key that did not sign as key-mismatch', async () => {
+            const [signature] = (await classify('unverifiable-key-swapped.eml')).signatures;
+            expect(signature.verdict).toBe('unverifiable');
+            expect(signature.evidence.keySigned).toBe(false);
+            expect(signature.evidence.unverifiableBecause).toBe('key-mismatch');
+        });
+
+        await it('does not call a body hash edited when the key is another one', async () => {
+            const [signature] = (await classify('body-altered-key-swapped.eml')).signatures;
+            expect(signature.verdict).toBe('unverifiable');
+            expect(signature.evidence.unverifiableBecause).toBe('key-mismatch');
+        });
+
+        await it('keeps headers-altered for an edited header under the right key', async () => {
+            const [signature] = (await classify('headers-altered.eml')).signatures;
+            expect(signature.verdict).toBe('headers-altered');
+            expect(signature.evidence.keySigned).toBe(true);
+            expect(signature.evidence.signedHeadersIntact).toBe(false);
+        });
+
+        await it('shows the signed header is intact when only the body was edited', async () => {
+            const [signature] = (await classify('body-altered.eml')).signatures;
+            expect(signature.verdict).toBe('body-altered');
+            expect(signature.evidence.keySigned).toBe(true);
+            expect(signature.evidence.signedHeadersIntact).toBe(true);
+            expect([...signature.caveats]).toStrictEqual([]);
+        });
+
+        await it('marks a body hash without any key as unauthenticated', async () => {
+            const [signature] = (await classify('body-altered-no-key.eml')).signatures;
+            expect(signature.verdict).toBe('body-altered');
+            expect([...signature.caveats]).toStrictEqual(['body-hash-unauthenticated']);
+            expect(signature.evidence.keySigned).toBe(undefined);
         });
 
         await it('flags a failing header signature whose key postdates the message', async () => {

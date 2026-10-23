@@ -155,6 +155,7 @@ export {
     missingKeyPairs,
     reverifyPairs,
     type ReverifyResult,
+    signedPairs,
     unappliedKeyPairs,
     type VerdictChange,
 } from './reverify.ts';
