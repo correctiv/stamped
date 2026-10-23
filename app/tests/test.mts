@@ -26,6 +26,7 @@ import openCopy from './unit/open-copy.test.ts';
 import selfArgv from './unit/self-argv.test.ts';
 import semantic from './unit/semantic.test.ts';
 import llamaPrompts from './unit/llama-prompts.test.ts';
+import runtimeGc from './unit/runtime-gc.test.ts';
 import indexer from './unit/indexer.test.ts';
 import semanticState from './unit/semantic-state.test.ts';
 import queryWorker from './unit/query-worker.test.ts';
@@ -65,6 +66,7 @@ run({
     selfArgv,
     semantic,
     llamaPrompts,
+    runtimeGc,
     indexer,
     semanticState,
     hybridSearch,

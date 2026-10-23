@@ -27,7 +27,7 @@ import { checkVector, normalize } from './embedder.ts';
 import type { EmbedDocument, Embedder } from './embedder.ts';
 import { BUILD_METADATA_FILE, prebuiltBinsDir } from './prebuilt-bins.ts';
 import { documentPrompt, queryPrompt, truncateVector } from './prompts.ts';
-import { runningOnGjs } from './runtime.ts';
+import { collectGarbage, runningOnGjs } from './runtime.ts';
 
 export const EMBEDDING_GEMMA_MODEL_ID = 'ggml-org/embeddinggemma-2-GGUF:Q8_0';
 
@@ -177,6 +177,8 @@ export async function createLlamaEmbedder(options: LlamaEmbedderOptions): Promis
         async embedDocuments(documents: readonly EmbedDocument[]): Promise<Float32Array[]> {
             const out: Float32Array[] = [];
             for (const doc of documents) out.push(await embed(documentPrompt(doc.subject, doc.body)));
+            // The embedder is called outside any transaction (the indexer writes after it returns).
+            collectGarbage();
             return out;
         },
         async dispose(): Promise<void> {
