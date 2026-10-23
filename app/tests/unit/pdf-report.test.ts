@@ -11,7 +11,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { describe, expect, it } from '@gjsify/unit';
-import type { MessageFinding, Verdict } from '@stamped/core';
+import {
+    formatNumber,
+    setCatalogue,
+    verdictLabel,
+    VERDICTS,
+    type MessageFinding,
+    type Verdict,
+} from '@stamped/core';
 import { encodeLatin1, parseHeaderFields, summarise } from '@stamped/import';
 import {
     analyseUnsignedHeaders,
@@ -32,11 +39,14 @@ import {
 } from '@stamped/store';
 
 import {
+    breakableMailbox,
     buildPdfModel,
     CLUSTER_MIN_MESSAGES,
     clusterRows,
     keyProvenance,
+    percent,
     type PdfReportInput,
+    verdictLegend,
 } from '../../src/lib/pdf-report-model.ts';
 
 function raw(subject: string): Uint8Array {
@@ -136,6 +146,63 @@ export default async () => {
             );
             expect(rows.map((r) => r.mailbox)).toStrictEqual(['M1', 'M2']);
             expect(rows.map((r) => r.messages)).toStrictEqual([90, 10]);
+        });
+    });
+
+    await describe('report formatting', async () => {
+        const german = {
+            messages: new Map<string, readonly string[]>(),
+            nplurals: 2,
+            plural: (n: number) => (n === 1 ? 0 : 1),
+            language: 'de',
+        };
+
+        await it('formats numbers and shares in English by default', async () => {
+            setCatalogue(undefined);
+            expect(formatNumber(421111)).toBe('421,111');
+            expect(percent(0.035)).toBe('3.5%');
+            expect(percent(0.5)).toBe('50%');
+        });
+
+        await it('follows the catalogue language', async () => {
+            setCatalogue(german);
+            try {
+                expect(formatNumber(421111)).toBe('421.111');
+                expect(percent(0.035).replace(/\u00a0/g, ' ')).toBe('3,5 %');
+                expect(percent(0).replace(/\u00a0/g, ' ')).toBe('0 %');
+            } finally {
+                setCatalogue(undefined);
+            }
+        });
+
+        await it('labels every legend line like its table row', async () => {
+            for (const verdict of VERDICTS) {
+                expect(verdictLegend(verdict).startsWith(`${verdictLabel(verdict)}: `)).toBe(true);
+            }
+        });
+
+        await it('breaks mailbox names only after @ and .', async () => {
+            const broken = breakableMailbox('name@alternative.example.de');
+            expect(broken.replace(/\u200b/g, '')).toBe('name@alternative.example.de');
+            expect(broken.split('\u200b')).toStrictEqual(['name@', 'alternative.', 'example.', 'de']);
+        });
+
+        await it('keeps the threshold: a small row is not flagged at any share', async () => {
+            const rows = clusterRows(
+                [
+                    {
+                        mailbox: 'a',
+                        year: 2020,
+                        messages: CLUSTER_MIN_MESSAGES - 1,
+                        bodyAltered: CLUSTER_MIN_MESSAGES - 1,
+                        headersAltered: 0,
+                    },
+                ],
+                0.01,
+                false,
+            );
+            expect(rows[0]?.alteredShare).toBe(1);
+            expect(rows[0]?.flagged).toBe(false);
         });
     });
 

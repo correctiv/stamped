@@ -10,6 +10,8 @@ export {
     activeCatalogue,
     type Catalogue,
     fmt,
+    formatNumber,
+    formatPercent,
     localeCandidates,
     parseMoCatalogue,
     setCatalogue,

@@ -126,6 +126,7 @@ packages/store/src/semantic-setting.ts
 packages/store/src/semantic-status.ts
 packages/store/src/siblings.ts
 packages/store/src/statements.ts
+packages/store/src/unsigned-headers.ts
 packages/verify/src/evidence.ts
 packages/verify/src/index.ts
 packages/verify/src/mailauth.ts
