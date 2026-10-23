@@ -149,7 +149,9 @@ export async function createLlamaEmbedder(options: LlamaEmbedderOptions): Promis
     let session = await openSession(options, false);
 
     const embedOnce = async (text: string): Promise<Float32Array> => {
-        const { vector } = await session.context.getEmbeddingFor(fitTokens(session.model, text, CONTEXT_SIZE));
+        const { vector } = await session.context.getEmbeddingFor(
+            fitTokens(session.model, text, CONTEXT_SIZE),
+        );
         checkVector(vector);
         return dimensions === 768 ? normalize(vector) : truncateVector(vector, dimensions);
     };
