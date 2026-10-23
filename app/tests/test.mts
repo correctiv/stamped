@@ -35,6 +35,7 @@ import semanticGui from './unit/semantic-gui.test.ts';
 import semanticRun from './unit/semantic-run.test.ts';
 import timecheck from './unit/timecheck.test.ts';
 import pagedList from './unit/paged-list.test.ts';
+import refreshScheduler from './unit/refresh-scheduler.test.ts';
 
 run({
     activity,
@@ -69,4 +70,5 @@ run({
     queryWorker,
     timecheck,
     pagedList,
+    refreshScheduler,
 });

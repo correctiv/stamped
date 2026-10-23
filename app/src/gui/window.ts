@@ -41,6 +41,13 @@ import {
     syncSemanticActivity,
     type ReverifyActivity,
 } from '../lib/activity.ts';
+import {
+    type Pane,
+    PANES,
+    panesAfterRun,
+    RefreshScheduler,
+    VERDICT_PANES,
+} from '../lib/refresh-scheduler.ts';
 import { createGuiEmbedder } from '../lib/semantic-embedder.ts';
 import { createSemanticController, type SemanticController } from '../lib/semantic.ts';
 import {
@@ -483,6 +490,18 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * it touches a widget.
      */
     private refreshGeneration = 0;
+    /** Merges bursts of "this pane is stale" into one reload of just those panes. */
+    private readonly refreshScheduler = new RefreshScheduler({
+        delayMs: 250,
+        run: (panes) =>
+            this.refresh(panes).catch((error: unknown) => {
+                if (this.session) void this.fail(error);
+                return [];
+            }),
+        setTimer: (callback, delayMs) =>
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, delayMs, () => (callback(), GLib.SOURCE_REMOVE)),
+        clearTimer: (timer) => GLib.source_remove(timer as number),
+    });
     private listGeneration = 0;
     private peopleGeneration = 0;
     private backfillGeneration = 0;
@@ -745,6 +764,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
     /** Give up on every query chain in flight: whatever answers now may not paint. */
     private cancelQueries(): void {
+        this.refreshScheduler.cancel();
         this.refreshGeneration++;
         this.listGeneration++;
         this.paged.reset(0);
@@ -891,29 +911,39 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * the panes arrive in one burst at the end. A turn of the main loop between them is one
      * rendered frame, so the window fills in visibly rather than sitting blank and then jumping.
      */
-    private async refresh(): Promise<void> {
+    private async refresh(panes: ReadonlySet<Pane> = new Set(PANES)): Promise<readonly Pane[]> {
         const session = this.session;
-        if (!session) return;
+        if (!session) return [];
         const generation = ++this.refreshGeneration;
         const current = (): boolean => this.session === session && this.refreshGeneration === generation;
         const report = await reportOf(session);
-        if (!current()) return;
+        if (!current()) return [];
         this.total = report.messages;
-        const steps: (() => Promise<void> | void)[] = [
-            () => this.fillSidebar(session, report),
-            () => this.fillList(),
-            () => this.fillKeys(session, report),
-            () => this.fillOverview(report),
-            () => this.fillPeople(),
-            () => this.fillTimeline(),
-            () => this.startBackfill(session),
+        const steps: [Pane, () => Promise<void> | void][] = [
+            ['sidebar', () => this.fillSidebar(session, report)],
+            ['list', () => this.fillList()],
+            ['keys', () => this.fillKeys(session, report)],
+            ['overview', () => this.fillOverview(report)],
+            ['people', () => this.fillPeople()],
+            ['timeline', () => this.fillTimeline()],
+            ['backfill', () => this.startBackfill(session)],
         ];
-        for (const step of steps) {
+        for (const [pane, step] of steps) {
+            if (!panes.has(pane)) continue;
             await nextTurn();
-            if (!current()) return;
+            if (!current()) return [];
             await step();
-            if (!current()) return;
+            if (!current()) return [];
         }
+        return [];
+    }
+
+    /**
+     * Reload some panes soon. Calls inside the quiet time merge, so an import that ends beside a
+     * re-verification reloads each pane once.
+     */
+    private refreshSoon(panes: readonly Pane[]): void {
+        this.refreshScheduler.request(panes);
     }
 
     /**
@@ -1151,6 +1181,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private async runBench(): Promise<void> {
         await settle(1000);
         const first = { firstListMs: Math.round(sinceStart()), ...cpuMs(), rssMb: rssMb() };
+        // A burst of three runs ending together: before, each reloaded every pane in turn.
+        const burstBefore = startLap();
+        const withoutBackfill = new Set(PANES.filter((pane) => pane !== 'backfill'));
+        for (let n = 0; n < 3; n++) await this.refresh(withoutBackfill);
+        await settle(500);
+        const burstAll = burstBefore();
+        const burstAfter = startLap();
+        for (let n = 0; n < 3; n++) this.refreshSoon(VERDICT_PANES);
+        await settle(2500);
+        const burstMerged = burstAfter();
         const scroll = startLap();
         for (let n = 0; n < 24; n++) {
             await this.loadMore();
@@ -1173,6 +1213,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
         await settle(1500);
         benchReport({
             first,
+            burstOfThreeFullRefreshes: burstAll,
+            burstOfThreeMergedVerdictRefreshes: burstMerged,
             rowsLoaded: loaded,
             scroll5000: scrolled,
             rssAfterScrollMb: rssScrolled,
@@ -1945,7 +1987,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             // A conflict means the case held a DIFFERENT key for this selector, so its toast is
             // sticky: that is a finding to read, not a confirmation to watch go by.
             showToast(escapeLine(outcome.message) + this.appliedSentence(applied), outcome.conflict ? 0 : 5);
-            await this.refresh();
+            this.refreshSoon(VERDICT_PANES);
         } catch (error) {
             await this.fail(error);
         }
@@ -2072,7 +2114,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
                     this.appliedSentence(applied),
                 outcome.conflicts > 0 ? 0 : 5,
             );
-            await this.refresh();
+            this.refreshSoon(VERDICT_PANES);
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
             registry.fail(keys, reason);
@@ -2234,7 +2276,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         if (argv === null) {
             await importInto(session, paths);
             showToast(_('Imported.'), 5);
-            await this.refresh();
+            this.refreshSoon(PANES);
             return;
         }
 
@@ -2286,7 +2328,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             // One chain, not two requests: the stale scope tables have to be gone before the
             // refresh queries through them, or the first list after an import is the old one.
             this.track(
-                dropFilterCaches(session).then(() => this.refresh()),
+                dropFilterCaches(session).then(() => this.refreshSoon(PANES)),
                 session,
             );
             const failed = ended.orphaned || status.state === 'failed';
@@ -2306,7 +2348,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             // they reload, exactly as after an import — and like an import, a re-verification
             // changes verdicts, so the cached scope tables go first or a filter keeps old hits.
             this.track(
-                dropFilterCaches(session).then(() => this.refresh()),
+                dropFilterCaches(session).then(() => this.refreshSoon(panesAfterRun(ended.kind))),
                 session,
             );
         }

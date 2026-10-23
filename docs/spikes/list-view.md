@@ -39,3 +39,16 @@ Rows are `MessageItem` objects in a `Gio.ListStore`; a `SignalListItemFactory` b
 | 1.5 s idle with 5,000 rows | 850 ms main CPU | 40 ms main CPU |
 
 Wall time for the scroll barely moves: the bench waits for each page from the worker, so that figure is the query, not the widgets. The main thread is free during it.
+
+## Step 3: merged reloads of only the stale panes
+
+A run that ends (import, key lookup, re-verification) used to reload every pane at once, one after the other, and each ending did it again. Now a change names its panes (`app/src/lib/refresh-scheduler.ts`): a key lookup or re-verification touches the sidebar, list, keys and overview, never the people and timeline panes; the people backfill touches only those two; an import still reloads everything. Requests inside 250 ms merge, and one reload runs at a time.
+
+Measured as three runs ending together (the bench calls `refresh()` three times without the backfill step, against three `refreshSoon` calls of the verdict panes):
+
+| Measure | Before | After |
+|---|---|---|
+| Three runs end together, main-thread CPU | 1280 ms (3 full reloads) | 160 ms (one reload of 4 panes) |
+| Wall time | 28.4 s | 2.5 s (the bench's own settle time; the reload ends sooner) |
+
+The wall figure of the "before" row is dominated by the people and timeline queries over 400,000 rows, which the verdict panes do not need.
