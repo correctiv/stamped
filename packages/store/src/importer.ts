@@ -49,6 +49,7 @@ import {
     rollbackBatch,
 } from './index-db.ts';
 import { settleSiblings } from './siblings.ts';
+import { writeBodyExplanations } from './body-explanations.ts';
 import { writeUnsignedHeaders } from './unsigned-headers.ts';
 import {
     alreadyImported,
@@ -370,6 +371,7 @@ export async function importSources(
                                 if (finding.verdict === 'unsigned') {
                                     writeUnsignedHeaders(db, entry.hash, splitMessage(raw).header);
                                 }
+                                writeBodyExplanations(db, entry.hash, finding, raw);
                                 indexed++;
                             } catch (error) {
                                 // Stored and logged already, so the evidence is safe; only the verdict

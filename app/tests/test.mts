@@ -37,6 +37,7 @@ import timecheck from './unit/timecheck.test.ts';
 import pagedList from './unit/paged-list.test.ts';
 import refreshScheduler from './unit/refresh-scheduler.test.ts';
 import pdfReport from './unit/pdf-report.test.ts';
+import bodyExplanations from './unit/body-explanations.test.ts';
 import unsignedHeaders from './unit/unsigned-headers.test.ts';
 import retry from './unit/retry.test.ts';
 
@@ -76,5 +77,6 @@ run({
     refreshScheduler,
     pdfReport,
     unsignedHeaders,
+    bodyExplanations,
     retry,
 });
