@@ -114,7 +114,10 @@ export async function reverifyPairs(
                 selector?: string;
             }[];
             for (const row of rows) {
-                if (typeof row.hash === 'string' && wanted.has(pairKey(row.domain ?? '', row.selector ?? ''))) {
+                if (
+                    typeof row.hash === 'string' &&
+                    wanted.has(pairKey(row.domain ?? '', row.selector ?? ''))
+                ) {
                     affected.add(row.hash);
                 }
             }
