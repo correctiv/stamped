@@ -36,6 +36,7 @@ import {
     type QueryReply,
     type QueryRequest,
 } from '../../src/gui/query-client.ts';
+import { initI18n } from '../../src/lib/i18n.ts';
 import { PAGE_SIZE, runQuery, type QueryContext } from '../../src/lib/queries.ts';
 
 /** Big enough that a full-table query is work, small enough that the suite stays a suite. */
@@ -283,6 +284,20 @@ export default async () => {
             expect(next.value).toBe(1);
             expect(client.restarts).toBe(0);
             client.close();
+        });
+
+        await it('says the timeout in the language of the catalogue', async () => {
+            const { spawn } = fakeChannels();
+            initI18n({ LANG: 'de_DE.UTF-8' });
+            try {
+                const client = new QueryClient(PATHS, spawn, 25);
+                const lost = watch(client.ask('timeline', {}));
+                await settled(lost);
+                expect(lost.error?.includes('nicht geantwortet')).toBe(true);
+                client.close();
+            } finally {
+                initI18n({ LANG: 'C' });
+            }
         });
 
         await it('gives up on a silent worker and answers the next question on a fresh one', async () => {

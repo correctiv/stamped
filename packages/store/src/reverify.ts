@@ -21,13 +21,19 @@ import {
     type PairCount,
     type Verdict,
 } from '@stamped/core';
-import { summarise } from '@stamped/import';
 import { verifyMessage } from '@stamped/verify';
 
 import type { CasePaths } from './case.ts';
-import { indexMessage, openIndex } from './index-db.ts';
+import { beginBatch, commitBatch, openIndex, rollbackBatch, updateFinding } from './index-db.ts';
 import { settleSiblings } from './siblings.ts';
 import { rawPath } from './raw.ts';
+
+/** Messages per write transaction: short enough that a reader never waits long for the lock. */
+const REVERIFY_BATCH = 50;
+
+function pairKey(domain: string, selector: string): string {
+    return `${normaliseKeyName(domain)}\n${selector.toLowerCase()}`;
+}
 
 /** Pairs with `no-key` signatures, and how many distinct messages each affects, most first. */
 function noKeyPairs(db: DatabaseSync): PairCount[] {
@@ -95,38 +101,66 @@ export async function reverifyPairs(
 
     const db = openIndex(paths);
     try {
+        // ONE pass over the signatures, matched in memory. A query per pair compares
+        // `lower(domain)`, which the (domain, selector) index cannot serve, so every pair was a
+        // full scan of the table: for a thousand pairs on a six-figure case, minutes in which no
+        // progress could be reported and the file was busy.
+        const wanted = new Set(active.map((pair) => pairKey(pair.domain, pair.selector)));
         const affected = new Set<string>();
-        const select = db.prepare(
-            'SELECT DISTINCT hash FROM signatures WHERE lower(domain) = ? AND lower(selector) = ?',
-        );
-        for (const pair of active) {
-            const rows = select.all(normaliseKeyName(pair.domain), pair.selector.toLowerCase()) as {
+        if (wanted.size > 0) {
+            const rows = db.prepare('SELECT DISTINCT hash, domain, selector FROM signatures').all() as {
                 hash?: string;
+                domain?: string;
+                selector?: string;
             }[];
-            for (const row of rows) if (typeof row.hash === 'string') affected.add(row.hash);
+            for (const row of rows) {
+                if (typeof row.hash === 'string' && wanted.has(pairKey(row.domain ?? '', row.selector ?? ''))) {
+                    affected.add(row.hash);
+                }
+            }
         }
 
         const before = db.prepare('SELECT verdict FROM messages WHERE hash = ?');
         const changed: VerdictChange[] = [];
         let failed = 0;
         let seen = 0;
+        let open = 0;
+        const commit = (): void => {
+            if (open === 0) return;
+            commitBatch(db);
+            open = 0;
+        };
         onProgress?.(0, affected.size);
-        for (const hash of [...affected].sort()) {
-            await yieldTurn?.();
-            try {
-                const raw = new Uint8Array(readFileSync(rawPath(paths, hash)));
-                const finding = classifyMessage(await verifyMessage(raw, { keys }));
-                const old = (before.get(hash) as { verdict?: string } | undefined)?.verdict as
-                    | Verdict
-                    | undefined;
-                indexMessage(db, { hash, bytes: raw.length, summary: summarise(raw), finding });
-                if (old !== undefined && old !== finding.verdict) {
-                    changed.push({ hash, from: old, to: finding.verdict });
+        try {
+            for (const hash of [...affected].sort()) {
+                await yieldTurn?.();
+                let finding;
+                try {
+                    const raw = new Uint8Array(readFileSync(rawPath(paths, hash)));
+                    finding = classifyMessage(await verifyMessage(raw, { keys }));
+                } catch {
+                    failed++;
                 }
-            } catch {
-                failed++;
+                // A failing write is not a failing message: it rolls the batch back and ends the run.
+                if (finding !== undefined) {
+                    const old = (before.get(hash) as { verdict?: string } | undefined)?.verdict as
+                        | Verdict
+                        | undefined;
+                    if (open === 0) beginBatch(db);
+                    open++;
+                    // Only the verdict side changes with a key; the text index is left alone.
+                    updateFinding(db, hash, finding);
+                    if (old !== undefined && old !== finding.verdict) {
+                        changed.push({ hash, from: old, to: finding.verdict });
+                    }
+                    if (open >= REVERIFY_BATCH) commit();
+                }
+                onProgress?.(++seen, affected.size);
             }
-            onProgress?.(++seen, affected.size);
+            commit();
+        } catch (error) {
+            rollbackBatch(db);
+            throw error;
         }
         await settleSiblings(db, paths, keys, yieldTurn);
         return { checked: affected.size - failed, changed, failed, skippedConflicts };

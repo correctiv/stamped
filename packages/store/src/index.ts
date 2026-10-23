@@ -106,6 +106,7 @@ export {
     type SearchOptions,
     type SignatureQuery,
     signatureHashes,
+    updateFinding,
     verdictHashes,
 } from './index-db.ts';
 export { statementFor } from './statements.ts';

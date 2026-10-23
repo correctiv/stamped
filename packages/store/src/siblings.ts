@@ -12,12 +12,13 @@ import { readFileSync } from 'node:fs';
 import type { DatabaseSync } from 'node:sqlite';
 
 import { classifyMessage, keyNameFor, type KeyStore } from '@stamped/core';
-import { summarise } from '@stamped/import';
 import { verifyMessage } from '@stamped/verify';
 
 import type { CasePaths } from './case.ts';
-import { indexMessage } from './index-db.ts';
+import { beginBatch, commitBatch, rollbackBatch, updateFinding } from './index-db.ts';
 import { rawPath } from './raw.ts';
+
+const SIBLING_BATCH = 50;
 
 /** Names of the pairs that have at least one verified signature in the case. */
 export function confirmedPairNames(db: DatabaseSync): Set<string> {
@@ -49,18 +50,35 @@ export async function settleSiblings(
         )
         .all() as { hash?: string }[];
     let settled = 0;
-    for (const { hash } of candidates) {
-        if (typeof hash !== 'string') continue;
-        await yieldTurn?.();
-        try {
-            const raw = new Uint8Array(readFileSync(rawPath(paths, hash)));
-            const finding = classifyMessage(await verifyMessage(raw, { keys, confirmedPairs: confirmed }));
+    let open = 0;
+    // Short write transactions, committed every few dozen rows: one long one would hold the
+    // write lock for the whole pass, and a statement per commit would pay the journal each time.
+    const commit = (): void => {
+        if (open === 0) return;
+        commitBatch(db);
+        open = 0;
+    };
+    try {
+        for (const { hash } of candidates) {
+            if (typeof hash !== 'string') continue;
+            await yieldTurn?.();
+            let finding;
+            try {
+                const raw = new Uint8Array(readFileSync(rawPath(paths, hash)));
+                finding = classifyMessage(await verifyMessage(raw, { keys, confirmedPairs: confirmed }));
+            } catch {
+                continue; // keeps its old row
+            }
             if (finding.caveats.includes('key-newer-than-message')) continue;
-            indexMessage(db, { hash, bytes: raw.length, summary: summarise(raw), finding });
-            settled++;
-        } catch {
-            // keeps its old row
+            if (open === 0) beginBatch(db);
+            open++;
+            if (updateFinding(db, hash, finding)) settled++;
+            if (open >= SIBLING_BATCH) commit();
         }
+        commit();
+    } catch (error) {
+        rollbackBatch(db);
+        throw error;
     }
     return settled;
 }
