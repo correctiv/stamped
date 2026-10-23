@@ -52,3 +52,9 @@ Measured as three runs ending together (the bench calls `refresh()` three times 
 | Wall time | 28.4 s | 2.5 s (the bench's own settle time; the reload ends sooner) |
 
 The wall figure of the "before" row is dominated by the people and timeline queries over 400,000 rows, which the verdict panes do not need.
+
+## Step 4: `verifyStored` on the query worker
+
+A new `verify` op (`verifyOf` in `app/src/lib/queries.ts`) reads the stored bytes, loads the saved key vault and runs mailauth on the worker thread; the window only awaits the finding. The vault is read from disk per call, so the worker holds no copy that can go stale. The worker bundle now carries `@stamped/verify` (it loads standalone under `gjsify run`). Sync ops still reply synchronously: only `verify` goes through a promise.
+
+Measured on the same case, selecting a row after scrolling (rows have stored copies, but they are tiny synthetic mails): main thread 23 ms (step 3 run) vs 50 ms (this run) — within run-to-run noise, so no gain is claimed here. What moves is the cost for a real message with a large attachment: its hashing no longer runs on the main thread. That is by construction, not measured, because the synthetic mails are small.

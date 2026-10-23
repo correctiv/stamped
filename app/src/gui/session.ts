@@ -19,7 +19,6 @@
  */
 
 import {
-    classifyMessage,
     lookupArchive,
     lookupDns,
     type LookupResult,
@@ -57,7 +56,6 @@ import {
     type Timeline,
     type ReverifyResult,
 } from '@stamped/store';
-import { verifyMessage } from '@stamped/verify';
 
 import { checkVector, type Embedder } from '@stamped/semantic';
 
@@ -257,15 +255,11 @@ export async function messageOf(session: CaseSession, hash: string): Promise<Ind
  * NOT `readMessage(...).verdict`. The index is a cache of a verification that ran at import
  * time, when the vault was whatever it then was — so a key collected since would change the
  * answer and the row would not know. The pane that shows the evidence chain is the pane that
- * must not be stale, so it re-reads the raw bytes and runs the verifier.
+ * must not be stale, so it re-reads the raw bytes and runs the verifier — on the query worker
+ * (`verifyOf` in `lib/queries.ts`), which reads the case's saved key vault itself.
  */
-export async function verifyStored(
-    session: CaseSession,
-    hash: string,
-    raw: Uint8Array | undefined = storedRaw(session, hash),
-): Promise<MessageFinding | undefined> {
-    if (!raw) return undefined;
-    return classifyMessage(await verifyMessage(raw, { keys: session.vault.toKeyStore() }));
+export async function verifyStored(session: CaseSession, hash: string): Promise<MessageFinding | undefined> {
+    return (await session.query.ask('verify', { hash })) ?? undefined;
 }
 
 /**

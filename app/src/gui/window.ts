@@ -1322,7 +1322,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
 
         const raw = storedRaw(session, hash);
-        const finding = await verifyStored(session, hash, raw);
+        const finding = await verifyStored(session, hash);
         if (this.session !== session || this.reading !== hash) return;
         if (finding === undefined || raw === undefined) {
             throw new Error(_('The stored copy of this message is missing from the case’s blob store.'));

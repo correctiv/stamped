@@ -25,9 +25,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { describe, expect, it } from '@gjsify/unit';
-import type { MessageFinding, Verdict } from '@stamped/core';
+import { KeyVault, parseKeyMaterial, type MessageFinding, type Verdict } from '@stamped/core';
 import { encodeLatin1, summarise } from '@stamped/import';
-import { casePaths, digest, indexMessage, openIndex } from '@stamped/store';
+import { casePaths, digest, indexMessage, openIndex, store } from '@stamped/store';
 
 import {
     QueryClient,
@@ -37,7 +37,9 @@ import {
     type QueryRequest,
 } from '../../src/gui/query-client.ts';
 import { initI18n } from '../../src/lib/i18n.ts';
-import { PAGE_SIZE, runQuery, type QueryContext } from '../../src/lib/queries.ts';
+import { PAGE_SIZE, runQuery, runQueryAsync, type QueryContext } from '../../src/lib/queries.ts';
+import { saveVault } from '../../src/lib/vault.ts';
+import { fixture, fixtureKeys } from './fixtures.ts';
 
 /** Big enough that a full-table query is work, small enough that the suite stays a suite. */
 const SCALE_MESSAGES = 3000;
@@ -447,6 +449,40 @@ export default async () => {
                 expect(runQuery(ctx, 'count', { query: { scope } })).toBe(1);
                 expect(runQuery(ctx, 'dropScopes', {})).toBe(null);
                 expect(runQuery(ctx, 'count', { query: { scope } })).toBe(2);
+            });
+        });
+    });
+
+    await describe('verifying a stored message on the worker', async () => {
+        await it('judges against the vault saved NOW, and says null for a hash it does not hold', async () => {
+            await withCase(async (ctx) => {
+                const kept = store(ctx.paths, fixture('confirmed.eml'));
+                const before = await runQueryAsync(ctx, 'verify', { hash: kept.hash });
+                expect(before?.verdict).toBe('unverifiable');
+
+                const parsed = parseKeyMaterial(
+                    fixtureKeys().lookup('t2048._domainkey.example.com')?.record ?? '',
+                );
+                if (parsed.kind !== 'key') throw new Error('expected a key');
+                const vault = new KeyVault();
+                vault.add({
+                    domain: 'example.com',
+                    selector: 't2048',
+                    key: parsed,
+                    origin: 'operator',
+                    fetchedAt: '2026-10-20T10:00:00Z',
+                });
+                saveVault(ctx.paths.root, vault);
+
+                const after = await runQueryAsync(ctx, 'verify', { hash: kept.hash });
+                expect(after?.verdict).toBe('confirmed');
+                expect(await runQueryAsync(ctx, 'verify', { hash: 'f'.repeat(64) })).toBe(null);
+            });
+        });
+
+        await it('answers the synchronous operations through the same entry point', async () => {
+            await withCase(async (ctx) => {
+                expect(await runQueryAsync(ctx, 'total', {})).toBe(0);
             });
         });
     });
