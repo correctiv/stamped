@@ -12,6 +12,7 @@ import {
     lookupArchive,
     lookupDns,
     missingPairs,
+    pairName,
     parseKeyMaterial,
     parsePairList,
     requestTemplate,
@@ -162,6 +163,121 @@ export default async () => {
             expect(again.toJson()).toBe(vault.toJson());
             expect(await rejects(() => KeyVault.fromJson('{"version":2}'))).toBe(true);
             expect(await rejects(() => KeyVault.fromJson('nope'))).toBe(true);
+        });
+
+        await it('never calls two differently-formatted copies of the SAME key a conflict', async () => {
+            // `parseKeyMaterial` normalises whitespace and tag order already, so two records
+            // differing only in THOSE ways land on identical text and never even reach `add` as
+            // different records. A redundant trailing `=` survives normalisation (decodeBase64
+            // strips it) while still changing the stored text — the case worth a test.
+            const vault = new KeyVault();
+            vault.add({ ...pair, key: a, origin: 'archive.prove.email', fetchedAt: '2026-10-20T10:00:00Z' });
+            const redundantPadding = key(`v=DKIM1; k=rsa; p=${rsaP()}=`);
+            expect(redundantPadding.record).not.toBe(a.record);
+            const out = vault.add({
+                ...pair,
+                key: redundantPadding,
+                origin: 'dns',
+                fetchedAt: '2026-10-21T10:00:00Z',
+            });
+            expect(out.status).toBe('conflict'); // different record text, so `add` still keeps both
+            expect(vault.conflicts().length).toBe(0); // but they decode to the same key: not a real conflict
+            expect(vault.toKeyStore().lookup(pairName(pair))?.record).not.toBe(undefined);
+        });
+    });
+
+    await describe('era-aware key selection (issue #128)', async () => {
+        const pair = { domain: 'example.com', selector: 'rot' };
+        const a = key(rsaRecord());
+        const b = key(rsaRecord('t512._domainkey.example.com'));
+
+        await it('is not a conflict when two DIFFERENT keys have non-overlapping, bounded eras', async () => {
+            const vault = new KeyVault();
+            vault.add({
+                ...pair,
+                key: a,
+                origin: 'archive.prove.email',
+                fetchedAt: '2026-10-20T10:00:00Z',
+                seenFrom: '2020-01-01T00:00:00Z',
+                seenTo: '2021-12-31T23:59:59Z',
+            });
+            vault.add({
+                ...pair,
+                key: b,
+                origin: 'archive.prove.email',
+                fetchedAt: '2026-10-20T10:00:00Z',
+                seenFrom: '2022-01-01T00:00:00Z',
+                seenTo: '2023-12-31T23:59:59Z',
+            });
+            expect(vault.conflicts().length).toBe(0);
+
+            const store = vault.toKeyStore();
+            const name = pairName(pair);
+            expect(store.lookup(name, '2020-06-01T00:00:00Z')?.record).toBe(a.record);
+            expect(store.lookup(name, '2023-06-01T00:00:00Z')?.record).toBe(b.record);
+            // No time at all, or a time outside both windows: never guess.
+            expect(store.lookup(name)).toBe(undefined);
+            expect(store.lookup(name, '2024-06-01T00:00:00Z')).toBe(undefined);
+        });
+
+        await it('stays a conflict when two DIFFERENT keys have OVERLAPPING eras', async () => {
+            const vault = new KeyVault();
+            vault.add({
+                ...pair,
+                key: a,
+                origin: 'archive.prove.email',
+                fetchedAt: '2026-10-20T10:00:00Z',
+                seenFrom: '2020-01-01T00:00:00Z',
+                seenTo: '2022-06-30T23:59:59Z',
+            });
+            vault.add({
+                ...pair,
+                key: b,
+                origin: 'archive.prove.email',
+                fetchedAt: '2026-10-20T10:00:00Z',
+                seenFrom: '2022-01-01T00:00:00Z',
+                seenTo: '2023-12-31T23:59:59Z',
+            });
+            expect(vault.conflicts().length).toBe(1);
+            // skipConflicts leaves the pair out entirely: never a silent pick in an overlap.
+            expect(vault.toKeyStore({ skipConflicts: true }).lookup(pairName(pair))).toBe(undefined);
+        });
+
+        await it('stays a conflict when one of the two keys has an UNBOUNDED era', async () => {
+            const vault = new KeyVault();
+            vault.add({ ...pair, key: a, origin: 'operator', fetchedAt: '2026-10-20T10:00:00Z' });
+            vault.add({
+                ...pair,
+                key: b,
+                origin: 'archive.prove.email',
+                fetchedAt: '2026-10-20T10:00:00Z',
+                seenFrom: '2020-01-01T00:00:00Z',
+                seenTo: '2021-12-31T23:59:59Z',
+            });
+            // `a` has no seen range at all ("always"), so it cannot be told apart from `b`'s era.
+            expect(vault.conflicts().length).toBe(1);
+        });
+
+        await it('distinctKeys offers one choice per actual key, and keepOnly resolves the conflict', async () => {
+            const vault = new KeyVault();
+            vault.add({ ...pair, key: a, origin: 'archive.prove.email', fetchedAt: '2026-10-20T10:00:00Z' });
+            vault.add({ ...pair, key: b, origin: 'dns', fetchedAt: '2026-10-21T10:00:00Z' });
+            // a second, differently-formatted copy of `a` must not become a third choice
+            vault.add({
+                ...pair,
+                key: key(`v=DKIM1; k=rsa; p=${rsaP()}`),
+                origin: 'operator',
+                fetchedAt: '2026-10-22T10:00:00Z',
+            });
+            const choices = vault.distinctKeys(pair);
+            expect(choices.length).toBe(2);
+            expect(vault.conflicts().length).toBe(1);
+
+            const keepA = choices.find((c) => c.record === a.record)!;
+            vault.keepOnly(pair, keepA);
+            expect(vault.conflicts().length).toBe(0);
+            expect(vault.recordsFor(pair).every((e) => e.record === a.record)).toBe(true);
+            expect(vault.toKeyStore().lookup(pairName(pair))?.record).toBe(a.record);
         });
     });
 
