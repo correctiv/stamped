@@ -153,11 +153,11 @@ msgstr ""
 msgid "Expected <selector>._domainkey.<domain>, got: {name}"
 msgstr ""
 
-#: app/src/commands/keys.ts:89 app/src/lib/autofetch.ts:235
+#: app/src/commands/keys.ts:89 app/src/lib/autofetch.ts:242
 msgid "  error   {name}: {reason}"
 msgstr ""
 
-#: app/src/commands/keys.ts:93 app/src/lib/autofetch.ts:240
+#: app/src/commands/keys.ts:93 app/src/lib/autofetch.ts:247
 msgid "  no key  {name}: {reason}"
 msgstr ""
 
@@ -179,7 +179,7 @@ msgstr ""
 
 #: app/src/commands/keys.ts:128 app/src/commands/keys.ts:224
 #: app/src/commands/keys.ts:277 app/src/commands/people.ts:37
-#: app/src/commands/people.ts:38 app/src/commands/reverify.ts:24
+#: app/src/commands/people.ts:38 app/src/commands/reverify.ts:27
 #: app/src/commands/semantic.ts:31 app/src/commands/semantic.ts:32
 #: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
 msgid "The case folder"
@@ -285,7 +285,7 @@ msgstr ""
 msgid "Every listed key is already stored."
 msgstr ""
 
-#: app/src/commands/keys.ts:353 app/src/lib/autofetch.ts:228
+#: app/src/commands/keys.ts:353 app/src/lib/autofetch.ts:235
 msgid "Skipped; nothing was sent."
 msgstr ""
 
@@ -293,7 +293,7 @@ msgstr ""
 msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr ""
 
-#: app/src/commands/keys.ts:379 app/src/lib/autofetch.ts:221
+#: app/src/commands/keys.ts:379 app/src/lib/autofetch.ts:228
 msgid ", DIFFERS from a stored key"
 msgstr ""
 
@@ -449,15 +449,19 @@ msgstr ""
 msgid "selector._domainkey.domain"
 msgstr ""
 
-#: app/src/commands/reverify.ts:22
+#: app/src/commands/reverify.ts:24
 msgid "Re-verify messages with the keys the case now holds (offline)"
 msgstr ""
 
-#: app/src/commands/reverify.ts:25
+#: app/src/commands/reverify.ts:29
 msgid "The case folder (default: .stamped)"
 msgstr ""
 
-#: app/src/commands/reverify.ts:32
+#: app/src/commands/reverify.ts:33
+msgid "Re-verify every signed message, not only those a new key bears on"
+msgstr ""
+
+#: app/src/commands/reverify.ts:41
 msgid "No stored key applies to an unverified message."
 msgstr ""
 
@@ -1793,43 +1797,43 @@ msgstr ""
 msgid "Pick a command. Try `stamped verify --help`."
 msgstr ""
 
-#: app/src/lib/autofetch.ts:66
+#: app/src/lib/autofetch.ts:67
 msgid "{count} keys stored from archive.prove.email"
 msgstr ""
 
-#: app/src/lib/autofetch.ts:67
+#: app/src/lib/autofetch.ts:68
 msgid "{count} keys stored from the DNS"
 msgstr ""
 
-#: app/src/lib/autofetch.ts:68
+#: app/src/lib/autofetch.ts:69
 msgid "{count} keys not found"
 msgstr ""
 
-#: app/src/lib/autofetch.ts:72
+#: app/src/lib/autofetch.ts:73
 msgid "{count} lookups failed (rate limit or outage). Retry later."
 msgstr ""
 
-#: app/src/lib/autofetch.ts:77
+#: app/src/lib/autofetch.ts:78
 msgid "{count} differ from a key already stored. Compare them."
 msgstr ""
 
-#: app/src/lib/autofetch.ts:138
+#: app/src/lib/autofetch.ts:139
 msgid "{count} message re-verified, {changed} verdict changed."
 msgid_plural "{count} messages re-verified, {changed} verdicts changed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/autofetch.ts:150
+#: app/src/lib/autofetch.ts:151
 msgid "! {name} holds different keys; its messages were left as they are."
 msgstr ""
 
-#: app/src/lib/autofetch.ts:157
+#: app/src/lib/autofetch.ts:158
 msgid "{failed} message could not be re-verified."
 msgid_plural "{failed} messages could not be re-verified."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/autofetch.ts:196
+#: app/src/lib/autofetch.ts:203
 msgid ""
 "{count} key is missing. No terminal and no --yes, so nothing was looked up; "
 "run `stamped keys fetch --case {path}`."
@@ -1839,7 +1843,7 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/autofetch.ts:218
+#: app/src/lib/autofetch.ts:225
 msgid "  stored  {name} via {origin}{flag}"
 msgstr ""
 

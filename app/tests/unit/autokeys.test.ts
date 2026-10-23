@@ -27,6 +27,7 @@ import {
     openCase,
     openIndex,
     reverifyPairs,
+    signedPairs,
     unappliedKeyPairs,
     type CasePaths,
 } from '@stamped/store';
@@ -225,6 +226,21 @@ export default async () => {
                 } finally {
                     again.close();
                 }
+            });
+        });
+
+        await it('re-reads every signed message when asked for all pairs', async () => {
+            await withCase(async (paths) => {
+                const db = openIndex(paths);
+                const pairs = signedPairs(db);
+                db.close();
+                expect(pairs.map((p) => p.selector).sort()).toStrictEqual(['t2048', 'ted']);
+
+                // No key arrived, so nothing a new key bears on — but `--all` still reads all three.
+                const vault = new KeyVault();
+                const result = await reverifyPairs(paths, pairs, vault);
+                expect(result.checked).toBe(3);
+                expect(result.changed.length).toBe(0);
             });
         });
 

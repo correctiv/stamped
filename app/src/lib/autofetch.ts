@@ -19,6 +19,7 @@ import {
     missingKeyPairs,
     openIndex,
     reverifyPairs,
+    signedPairs,
     unappliedKeyPairs,
     type CasePaths,
     type ReverifyResult,
@@ -161,13 +162,19 @@ function printReverify(result: ReverifyResult): void {
     }
 }
 
-/** Re-verify the messages whose key is in the vault but whose verdict does not use it yet. */
-export async function reverifyApplicable(paths: CasePaths): Promise<ReverifyResult | undefined> {
+/**
+ * Re-verify the messages whose key is in the vault but whose verdict does not use it yet, or with
+ * `all`, every signed message — after an update of Stamped's verifier.
+ */
+export async function reverifyApplicable(
+    paths: CasePaths,
+    all = false,
+): Promise<ReverifyResult | undefined> {
     const vault = loadVault(paths.root);
     const db = openIndex(paths);
     let pairs;
     try {
-        pairs = unappliedKeyPairs(db, vault);
+        pairs = all ? signedPairs(db) : unappliedKeyPairs(db, vault);
     } finally {
         db.close();
     }

@@ -180,11 +180,11 @@ msgstr "  4. Live-DNS (verrät es der Domain):     stamped keys fetch --dns"
 msgid "Expected <selector>._domainkey.<domain>, got: {name}"
 msgstr "Erwartet <Selektor>._domainkey.<Domain>, erhalten: {name}"
 
-#: app/src/commands/keys.ts:89 app/src/lib/autofetch.ts:235
+#: app/src/commands/keys.ts:89 app/src/lib/autofetch.ts:242
 msgid "  error   {name}: {reason}"
 msgstr "  Fehler  {name}: {reason}"
 
-#: app/src/commands/keys.ts:93 app/src/lib/autofetch.ts:240
+#: app/src/commands/keys.ts:93 app/src/lib/autofetch.ts:247
 msgid "  no key  {name}: {reason}"
 msgstr "  kein Schlüssel  {name}: {reason}"
 
@@ -206,7 +206,7 @@ msgstr "Gespeicherte Schlüssel auflisten, mit --pairs auch die noch fehlenden"
 
 #: app/src/commands/keys.ts:128 app/src/commands/keys.ts:224
 #: app/src/commands/keys.ts:277 app/src/commands/people.ts:37
-#: app/src/commands/people.ts:38 app/src/commands/reverify.ts:24
+#: app/src/commands/people.ts:38 app/src/commands/reverify.ts:27
 #: app/src/commands/semantic.ts:31 app/src/commands/semantic.ts:32
 #: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
 msgid "The case folder"
@@ -330,7 +330,7 @@ msgstr ""
 msgid "Every listed key is already stored."
 msgstr "Alle genannten Schlüssel sind bereits gespeichert."
 
-#: app/src/commands/keys.ts:353 app/src/lib/autofetch.ts:228
+#: app/src/commands/keys.ts:353 app/src/lib/autofetch.ts:235
 msgid "Skipped; nothing was sent."
 msgstr "Übersprungen; es wurde nichts gesendet."
 
@@ -338,7 +338,7 @@ msgstr "Übersprungen; es wurde nichts gesendet."
 msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr "  gespeichert  {name}: {algorithm}, {bits} Bit, über {origin}{flag}"
 
-#: app/src/commands/keys.ts:379 app/src/lib/autofetch.ts:221
+#: app/src/commands/keys.ts:379 app/src/lib/autofetch.ts:228
 msgid ", DIFFERS from a stored key"
 msgstr ", WEICHT von einem gespeicherten Schlüssel ab"
 
@@ -508,15 +508,21 @@ msgstr "m. Einschr."
 msgid "selector._domainkey.domain"
 msgstr "Selektor._domainkey.Domain"
 
-#: app/src/commands/reverify.ts:22
+#: app/src/commands/reverify.ts:24
 msgid "Re-verify messages with the keys the case now holds (offline)"
 msgstr "Nachrichten mit den Schlüsseln des Falls erneut prüfen (offline)"
 
-#: app/src/commands/reverify.ts:25
+#: app/src/commands/reverify.ts:29
 msgid "The case folder (default: .stamped)"
 msgstr "Der Fallordner (Standard: .stamped)"
 
-#: app/src/commands/reverify.ts:32
+#: app/src/commands/reverify.ts:33
+msgid "Re-verify every signed message, not only those a new key bears on"
+msgstr ""
+"Alle signierten Nachrichten neu prüfen, nicht nur die, die ein neuer "
+"Schlüssel betrifft"
+
+#: app/src/commands/reverify.ts:41
 msgid "No stored key applies to an unverified message."
 msgstr "Kein gespeicherter Schlüssel betrifft eine ungeprüfte Nachricht."
 
@@ -2010,49 +2016,49 @@ msgstr "stamped <Befehl> [Optionen]"
 msgid "Pick a command. Try `stamped verify --help`."
 msgstr "Bitte einen Befehl wählen, etwa `stamped verify --help`."
 
-#: app/src/lib/autofetch.ts:66
+#: app/src/lib/autofetch.ts:67
 msgid "{count} keys stored from archive.prove.email"
 msgstr "{count} Schlüssel aus archive.prove.email gespeichert"
 
-#: app/src/lib/autofetch.ts:67
+#: app/src/lib/autofetch.ts:68
 msgid "{count} keys stored from the DNS"
 msgstr "{count} Schlüssel aus dem DNS gespeichert"
 
-#: app/src/lib/autofetch.ts:68
+#: app/src/lib/autofetch.ts:69
 msgid "{count} keys not found"
 msgstr "{count} Schlüssel nicht gefunden"
 
-#: app/src/lib/autofetch.ts:72
+#: app/src/lib/autofetch.ts:73
 msgid "{count} lookups failed (rate limit or outage). Retry later."
 msgstr ""
 "{count} Abfragen fehlgeschlagen (Begrenzung oder Ausfall). Später erneut "
 "versuchen."
 
-#: app/src/lib/autofetch.ts:77
+#: app/src/lib/autofetch.ts:78
 msgid "{count} differ from a key already stored. Compare them."
 msgstr ""
 "{count} weichen von einem bereits gespeicherten Schlüssel ab. Bitte "
 "vergleichen."
 
-#: app/src/lib/autofetch.ts:138
+#: app/src/lib/autofetch.ts:139
 msgid "{count} message re-verified, {changed} verdict changed."
 msgid_plural "{count} messages re-verified, {changed} verdicts changed."
 msgstr[0] "{count} Nachricht erneut geprüft, {changed} Befund geändert."
 msgstr[1] "{count} Nachrichten erneut geprüft, {changed} Befunde geändert."
 
-#: app/src/lib/autofetch.ts:150
+#: app/src/lib/autofetch.ts:151
 msgid "! {name} holds different keys; its messages were left as they are."
 msgstr ""
 "! {name} enthält verschiedene Schlüssel; die zugehörigen Nachrichten blieben "
 "unverändert."
 
-#: app/src/lib/autofetch.ts:157
+#: app/src/lib/autofetch.ts:158
 msgid "{failed} message could not be re-verified."
 msgid_plural "{failed} messages could not be re-verified."
 msgstr[0] "{failed} Nachricht konnte nicht erneut geprüft werden."
 msgstr[1] "{failed} Nachrichten konnten nicht erneut geprüft werden."
 
-#: app/src/lib/autofetch.ts:196
+#: app/src/lib/autofetch.ts:203
 msgid ""
 "{count} key is missing. No terminal and no --yes, so nothing was looked up; "
 "run `stamped keys fetch --case {path}`."
@@ -2066,7 +2072,7 @@ msgstr[1] ""
 "{count} Schlüssel fehlen. Kein Terminal und kein --yes, daher wurde nichts "
 "abgefragt; führe `stamped keys fetch --case {path}` aus."
 
-#: app/src/lib/autofetch.ts:218
+#: app/src/lib/autofetch.ts:225
 msgid "  stored  {name} via {origin}{flag}"
 msgstr "  gespeichert  {name} über {origin}{flag}"
 
@@ -3324,24 +3330,6 @@ msgstr "Semantische Suche …"
 msgid "About Stamped"
 msgstr "Über Poststempel"
 
-#~ msgid ""
-#~ "undoing doubled leading dots and converting line endings does not make "
-#~ "the hash match"
-#~ msgstr ""
-#~ "Doppelte führende Punkte zurückzunehmen und Zeilenenden umzuwandeln lässt "
-#~ "den Hash nicht passen"
-
-#~ msgid ""
-#~ "The text of the body is not the text that was signed: something was "
-#~ "added, removed or changed after signing. Two harmless export effects "
-#~ "(doubled leading dots, converted line endings) were tested and do not "
-#~ "explain it."
-#~ msgstr ""
-#~ "Der Text ist nicht der signierte Text: Nach dem Signieren wurde etwas "
-#~ "hinzugefügt, entfernt oder geändert. Zwei harmlose Exporteffekte "
-#~ "(doppelte führende Punkte, umgewandelte Zeilenenden) wurden geprüft und "
-#~ "erklären es nicht."
-
 #~ msgid "The key it is waiting for is {name}."
 #~ msgstr "Sie wartet auf den Schlüssel {name}."
 
@@ -3392,3 +3380,21 @@ msgstr "Über Poststempel"
 #~ msgstr ""
 #~ "Geben Sie --pairs oder --name an: welche Schlüssel abgerufen werden "
 #~ "sollen."
+
+#~ msgid ""
+#~ "undoing doubled leading dots and converting line endings does not make "
+#~ "the hash match"
+#~ msgstr ""
+#~ "Doppelte führende Punkte zurückzunehmen und Zeilenenden umzuwandeln lässt "
+#~ "den Hash nicht passen"
+
+#~ msgid ""
+#~ "The text of the body is not the text that was signed: something was "
+#~ "added, removed or changed after signing. Two harmless export effects "
+#~ "(doubled leading dots, converted line endings) were tested and do not "
+#~ "explain it."
+#~ msgstr ""
+#~ "Der Text ist nicht der signierte Text: Nach dem Signieren wurde etwas "
+#~ "hinzugefügt, entfernt oder geändert. Zwei harmlose Exporteffekte "
+#~ "(doppelte führende Punkte, umgewandelte Zeilenenden) wurden geprüft und "
+#~ "erklären es nicht."

@@ -35,12 +35,12 @@ function pairKey(domain: string, selector: string): string {
     return `${normaliseKeyName(domain)}\n${selector.toLowerCase()}`;
 }
 
-/** Pairs with `no-key` signatures, and how many distinct messages each affects, most first. */
-function noKeyPairs(db: DatabaseSync): PairCount[] {
+/** Pairs, and how many distinct messages each affects, most first. */
+function pairCounts(db: DatabaseSync, where: string): PairCount[] {
     const rows = db
         .prepare(
             `SELECT lower(domain) AS domain, lower(selector) AS selector, count(DISTINCT hash) AS messages
-             FROM signatures WHERE reason = 'no-key'
+             FROM signatures ${where}
              GROUP BY lower(domain), lower(selector)
              ORDER BY messages DESC, domain ASC, selector ASC`,
         )
@@ -52,6 +52,11 @@ function noKeyPairs(db: DatabaseSync): PairCount[] {
     }));
 }
 
+/** Pairs with `no-key` signatures. */
+function noKeyPairs(db: DatabaseSync): PairCount[] {
+    return pairCounts(db, "WHERE reason = 'no-key'");
+}
+
 /** The pairs the vault holds no key for, by the number of messages they leave unverifiable. */
 export function missingKeyPairs(db: DatabaseSync, vault: KeyVault): PairCount[] {
     return missingPairs(noKeyPairs(db), vault);
@@ -61,6 +66,15 @@ export function missingKeyPairs(db: DatabaseSync, vault: KeyVault): PairCount[] 
 export function unappliedKeyPairs(db: DatabaseSync, vault: KeyVault): PairCount[] {
     const missing = new Set(missingKeyPairs(db, vault).map(pairName));
     return noKeyPairs(db).filter((pair) => !missing.has(pairName(pair)));
+}
+
+/**
+ * Every pair that signed a message in the case. Re-verifying all of them re-reads every signed
+ * message: the way to bring a case up to a newer verifier, since the index stores verdicts, not
+ * the evidence behind them.
+ */
+export function signedPairs(db: DatabaseSync): PairCount[] {
+    return pairCounts(db, '');
 }
 
 export interface VerdictChange {
