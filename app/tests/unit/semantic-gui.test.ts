@@ -197,9 +197,16 @@ export default async () => {
     });
 
     await describe('the GUI embedder', async () => {
-        await it('is none under GJS, and never throws', async () => {
-            expect(embedderAvailability({}, true)).toBe('runtime');
-            expect(await createGuiEmbedder({}, true)).toBe(undefined);
+        await it('is none without a prebuilt binary, and never throws', async () => {
+            expect(embedderAvailability({}, false)).toBe('runtime');
+            expect(await createGuiEmbedder({}, false)).toBe(undefined);
+        });
+
+        await it('asks for a model once the machine could run one', async () => {
+            // No STAMPED_EMBED_MODEL, no XDG_DATA_DIRS, a cache that holds nothing: the binary is
+            // there, the model is not, and that difference is what the dialog explains.
+            expect(embedderAvailability({ XDG_CACHE_HOME: '/nonexistent' }, true)).toBe('model');
+            expect(await createGuiEmbedder({ XDG_CACHE_HOME: '/nonexistent' }, true)).toBe(undefined);
         });
     });
 };

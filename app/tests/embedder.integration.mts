@@ -1,10 +1,16 @@
-// Opt-in integration test for the llama embedder, Node only.
+// Opt-in integration test for the llama embedder, on BOTH runtimes.
 //
 // Runs only when STAMPED_EMBED_MODEL points at an EmbeddingGemma 2 GGUF; otherwise it exits 0
-// without loading anything. It is NOT part of `gjsify test`: that bundles for GJS too, and
-// node-llama-cpp neither bundles nor loads there (gjsify/gjsify#2331).
+// without loading anything. It is not part of `gjsify test`, which has to stay a suite anyone can
+// run from a fresh checkout — this one needs a 296 MiB model file on disk.
 //
-//   STAMPED_EMBED_MODEL=/path/model.gguf node --experimental-strip-types tests/embedder.integration.mts
+//   npm run -w stamped-cli test:embedder        # node, straight from source
+//   npm run -w stamped-cli test:embedder:gjs    # gjs, through a bundle
+//
+// THE GJS RUN GOES THROUGH A BUNDLE because that is the only way GJS reaches the addon: the
+// embedder's `@gjsify/napi` route needs the alias map and the prebuilt-bins specifiers the
+// bundler resolves. Running this file unbundled under gjs would fail on the imports, not on the
+// embedder, and would prove nothing about either.
 //
 // SYNTHETIC DATA ONLY.
 import assert from 'node:assert/strict';

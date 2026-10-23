@@ -7,7 +7,9 @@
   "description": "Semantic search primitives: embedder seam, text preparation, vector storage, and reciprocal rank fusion. No model runtime in this package — only interfaces and pure logic.",
   "exports": {
     ".": "./src/index.ts",
+    "./child-process": "./src/child-process.ts",
     "./llama-embedder": "./src/llama-embedder.ts",
+    "./prebuilt-bins": "./src/prebuilt-bins.ts",
     "./prompts": "./src/prompts.ts"
   },
   "scripts": {
@@ -17,6 +19,8 @@
     "src"
   ],
   "dependencies": {
+    "@gjsify/child_process": "0.64.5",
+    "@gjsify/napi": "0.64.5",
     "node-llama-cpp": "3.22.2"
   }
 }

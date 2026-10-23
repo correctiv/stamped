@@ -601,7 +601,7 @@ export default async () => {
         await it('says one thing per state, in one or two lines', () => {
             expect(semanticLines({ kind: 'off' })).toStrictEqual(['Semantic search is off.']);
             expect(semanticLines({ kind: 'unavailable' })).toStrictEqual([
-                'Semantic search is not available on this runtime.',
+                'Semantic search is not available on this machine.',
             ]);
             expect(semanticLines({ kind: 'probing' })).toStrictEqual([
                 'Semantic search is measuring how fast this machine is.',

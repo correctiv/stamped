@@ -44,7 +44,7 @@ export function semanticLines(state: SemanticState): string[] {
         case 'off':
             return [_('Semantic search is off.')];
         case 'unavailable':
-            return [_('Semantic search is not available on this runtime.')];
+            return [_('Semantic search is not available on this machine.')];
         case 'probing':
             return [_('Semantic search is measuring how fast this machine is.')];
         case 'indexing': {
