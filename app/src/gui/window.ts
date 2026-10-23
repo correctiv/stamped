@@ -108,6 +108,7 @@ import {
     type KeyRow,
 } from './view/keys.ts';
 import { escapeLine, noHyphens, plainText } from './view/markup.ts';
+import { BENCH_FILE, cpuMs, report as benchReport, rssMb, settle, sinceStart, startLap } from './bench.ts';
 import { matchBadge } from './view/semantic.ts';
 import type { MatchKind } from '../lib/hybrid-search.ts';
 import {
@@ -1118,6 +1119,52 @@ export class StampedWindow extends Adw.ApplicationWindow {
         } else {
             this._listStack.set_visible_child_name('list');
         }
+        if (BENCH_FILE !== null && !this.benchStarted && this.hits.length > 0) {
+            this.benchStarted = true;
+            this.track(this.runBench());
+        }
+    }
+
+    private benchStarted = false;
+
+    /** The `STAMPED_BENCH` run: see `bench.ts`. Off unless the variable is set. */
+    private async runBench(): Promise<void> {
+        await settle(1000);
+        const first = { firstListMs: Math.round(sinceStart()), ...cpuMs(), rssMb: rssMb() };
+        const scroll = startLap();
+        for (let n = 0; n < 24; n++) {
+            await this.loadMore();
+            await settle(30);
+        }
+        const scrolled = scroll();
+        await settle(1000);
+        const loaded = this.hits.length;
+        const rssScrolled = rssMb();
+        const picks: ReturnType<ReturnType<typeof startLap>>[] = [];
+        for (const index of [loaded - 1, loaded - 11, loaded - 21]) {
+            const lap = startLap();
+            this.benchSelect(index);
+            await settle(1500);
+            picks.push(lap());
+        }
+        const avg = (key: 'wallMs' | 'mainCpuMs' | 'otherCpuMs'): number =>
+            Math.round(picks.reduce((sum, pick) => sum + pick[key], 0) / picks.length);
+        const idle = startLap();
+        await settle(1500);
+        benchReport({
+            first,
+            rowsLoaded: loaded,
+            scroll5000: scrolled,
+            rssAfterScrollMb: rssScrolled,
+            selectAfterScroll: { mainCpuMs: avg('mainCpuMs'), otherCpuMs: avg('otherCpuMs') },
+            idle1500: idle(),
+            rssEndMb: rssMb(),
+        });
+        this.close();
+    }
+
+    private benchSelect(index: number): void {
+        this._messageList.select_row(this._messageList.get_row_at_index(index));
     }
 
     /**
