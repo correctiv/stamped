@@ -458,8 +458,9 @@ function compose(w: Writer, model: PdfReportModel): void {
         [
             [_('Source'), _('Keys')],
             [_('Published DNS record, looked up with consent'), num(p.dns)],
-            [_('archive.prove.email (a third party’s snapshots)'), num(p.archiveProveEmail)],
+            [_("archive.prove.email (a third party's snapshots)"), num(p.archiveProveEmail)],
             [_('Shipped with the archive'), num(p.archive)],
+            [_('Recovered mathematically from signatures'), num(p.recovered)],
             [_('Supplied by the operator'), num(p.operator)],
         ],
         [0.75, 0.25],

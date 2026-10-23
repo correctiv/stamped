@@ -64,6 +64,7 @@ export interface KeyProvenance {
     readonly dns: number;
     readonly archiveProveEmail: number;
     readonly archive: number;
+    readonly recovered: number;
     readonly operator: number;
     /** Messages waiting on a key that is not in the store. */
     readonly messagesWithoutKey: number;
@@ -186,6 +187,7 @@ export function keyProvenance(keys: readonly VaultEntry[], report: CaseReport): 
         dns: count('dns'),
         archiveProveEmail: count('archive.prove.email'),
         archive: count('archive'),
+        recovered: count('recovered'),
         operator: count('operator'),
         messagesWithoutKey: report.reasons.find((r) => r.reason === 'no-key')?.messages ?? 0,
         pairsWithoutKey: report.missing.length,

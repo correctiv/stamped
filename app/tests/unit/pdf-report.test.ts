@@ -18,6 +18,7 @@ import {
     VERDICTS,
     type MessageFinding,
     type Verdict,
+    type VaultEntry,
 } from '@stamped/core';
 import { encodeLatin1, parseHeaderFields, summarise } from '@stamped/import';
 import {
@@ -279,6 +280,27 @@ export default async () => {
             expect(p.messagesKeyMismatch).toBe(3);
             expect(p.messagesUnauthenticatedHash).toBe(2);
             expect(p.messagesExpired).toBe(0);
+        });
+
+        await it('counts recovered keys separately', async () => {
+            const report = {
+                reasons: [],
+                caveats: [],
+                missing: [],
+            } as unknown as CaseReport;
+            const keys = [
+                { origin: 'operator' as const, fetchedAt: '2025-01-01T00:00:00Z' },
+                { origin: 'dns' as const, fetchedAt: '2025-01-02T00:00:00Z' },
+                { origin: 'recovered' as const, fetchedAt: '2025-01-03T00:00:00Z' },
+                { origin: 'recovered' as const, fetchedAt: '2025-01-04T00:00:00Z' },
+            ] as unknown as VaultEntry[];
+            const p = keyProvenance(keys, report);
+            expect(p.keys).toBe(4);
+            expect(p.operator).toBe(1);
+            expect(p.dns).toBe(1);
+            expect(p.recovered).toBe(2);
+            expect(p.archive).toBe(0);
+            expect(p.archiveProveEmail).toBe(0);
         });
     });
 
