@@ -229,6 +229,45 @@ export default async () => {
             });
         });
 
+        await it('brings a stored `expired` verdict up to date with a plain reverify', async () => {
+            const root = mkdtempSync(join(tmpdir(), 'stamped-expired-'));
+            try {
+                const paths = openCase(root);
+                await importSources(paths, [fixturePath('caveat-expired.eml')], { keys: fixtureKeys() });
+                expect(verdictOf(paths, 'caveat-expired.eml')).toBe('confirmed-with-caveats');
+
+                // What an index made before the fix holds for this message.
+                const old = openIndex(paths);
+                old.prepare("UPDATE signatures SET verdict = 'unverifiable', reason = 'expired'").run();
+                old.prepare("UPDATE messages SET verdict = 'unverifiable'").run();
+                old.close();
+
+                const vault = new KeyVault();
+                const pair = { domain: 'example.com', selector: 'texp' };
+                const parsed = parseKeyMaterial(record('texp._domainkey.example.com'));
+                if (parsed.kind !== 'key') throw new Error('fixture key');
+                vault.add({ ...pair, key: parsed, origin: 'dns', fetchedAt: new Date().toISOString() });
+
+                const db = openIndex(paths);
+                const due = unappliedKeyPairs(db, vault);
+                db.close();
+                expect(due.map((p) => p.selector)).toStrictEqual(['texp']);
+
+                const result = await reverifyPairs(paths, due, vault);
+                expect(result.changed.length).toBe(1);
+                expect(verdictOf(paths, 'caveat-expired.eml')).toBe('confirmed-with-caveats');
+
+                const again = openIndex(paths);
+                try {
+                    expect(unappliedKeyPairs(again, vault).length).toBe(0);
+                } finally {
+                    again.close();
+                }
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
         await it('re-reads every signed message when asked for all pairs', async () => {
             await withCase(async (paths) => {
                 const db = openIndex(paths);

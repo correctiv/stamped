@@ -186,6 +186,17 @@ export default async () => {
             expect(caveatsFor(good({ keySource: 'archive' }))).toStrictEqual(['archive-key']);
         });
 
+        await it('caveats a signature whose x= has passed', async () => {
+            expect(caveatsFor(good({ expired: true }))).toStrictEqual(['signature-expired']);
+        });
+
+        await it('caveats an x= that lies before t=', async () => {
+            expect(caveatsFor(good({ signedAt: 2000, expiresAt: 1000 }))).toStrictEqual([
+                'signature-lifetime-invalid',
+            ]);
+            expect(caveatsFor(good({ signedAt: 1000, expiresAt: 2000 }))).toStrictEqual([]);
+        });
+
         await it('reports every caveat at once, in declaration order', async () => {
             const finding = classifySignature(
                 good({

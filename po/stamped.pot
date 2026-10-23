@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 14:39+0200\n"
+"POT-Creation-Date: 2026-10-23 15:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -548,9 +548,9 @@ msgstr ""
 #: app/src/commands/search.ts:118 app/src/commands/search.ts:119
 #: app/src/commands/search.ts:120 app/src/gui/view/message.ts:88
 #: app/src/gui/view/message.ts:89 app/src/gui/view/message.ts:95
-#: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:100
-#: app/src/lib/evidence.ts:107 app/src/lib/evidence.ts:108
-#: app/src/lib/evidence.ts:112 app/src/lib/evidence.ts:118
+#: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:101
+#: app/src/lib/evidence.ts:108 app/src/lib/evidence.ts:109
+#: app/src/lib/evidence.ts:113 app/src/lib/evidence.ts:119
 #: packages/core/src/explain.ts:60
 msgid "(none)"
 msgstr ""
@@ -1064,18 +1064,26 @@ msgstr ""
 
 #: app/src/gui/view/evidence.ts:207
 msgid ""
+"When the signer says it signed (t=) and when it wants the signature to stop "
+"being accepted (x=). The expiry limits live delivery. It does not make an "
+"archived message less genuine, so a passed date is a caveat and not a "
+"failure."
+msgstr ""
+
+#: app/src/gui/view/evidence.ts:211
+msgid ""
 "Why no verdict was possible. Almost always a missing public key, which says "
 "nothing against the message: fetch the key and it gets a verdict."
 msgstr ""
 
-#: app/src/gui/view/evidence.ts:211
+#: app/src/gui/view/evidence.ts:215
 msgid ""
 "The wording of the library that did the cryptography, kept as it came. It is "
 "the line that separates two findings Stamped reports under the same reason, "
 "and a bug report without it cannot be acted on."
 msgstr ""
 
-#: app/src/gui/view/evidence.ts:231
+#: app/src/gui/view/evidence.ts:235
 msgid ""
 "DKIM lets a domain sign the messages it sends. The sending server hashes the "
 "body and some of the headers, signs the result with a private key, and "
@@ -1085,7 +1093,7 @@ msgid ""
 "wrote it, and it says nothing about the parts the signature does not cover."
 msgstr ""
 
-#: app/src/gui/view/evidence.ts:245
+#: app/src/gui/view/evidence.ts:249
 msgid "{count} caveat"
 msgid_plural "{count} caveats"
 msgstr[0] ""
@@ -1966,123 +1974,135 @@ msgstr ""
 msgid "Took {duration}."
 msgstr ""
 
-#: app/src/lib/evidence.ts:82
+#: app/src/lib/evidence.ts:83
 msgid "Signature {position} of {total}, {verdict}"
 msgstr ""
 
-#: app/src/lib/evidence.ts:100 app/src/lib/pdf-report.ts:448
+#: app/src/lib/evidence.ts:101 app/src/lib/pdf-report.ts:448
 msgid "Domain"
 msgstr ""
 
-#: app/src/lib/evidence.ts:103
+#: app/src/lib/evidence.ts:104
 msgid "Author domain"
 msgstr ""
 
-#: app/src/lib/evidence.ts:104
+#: app/src/lib/evidence.ts:105
 msgid "(unknown)"
 msgstr ""
 
-#: app/src/lib/evidence.ts:106
+#: app/src/lib/evidence.ts:107
 msgid "Aligned"
 msgstr ""
 
-#: app/src/lib/evidence.ts:106
+#: app/src/lib/evidence.ts:107
 msgid "yes"
 msgstr ""
 
-#: app/src/lib/evidence.ts:106
+#: app/src/lib/evidence.ts:107
 msgid "no"
 msgstr ""
 
-#: app/src/lib/evidence.ts:107
+#: app/src/lib/evidence.ts:108
 msgid "Selector"
 msgstr ""
 
-#: app/src/lib/evidence.ts:108
+#: app/src/lib/evidence.ts:109
 msgid "Algorithm"
 msgstr ""
 
-#: app/src/lib/evidence.ts:111
+#: app/src/lib/evidence.ts:112
 msgid "Canonicalization"
 msgstr ""
 
-#: app/src/lib/evidence.ts:114
+#: app/src/lib/evidence.ts:115
 msgid "Key"
 msgstr ""
 
-#: app/src/lib/evidence.ts:117
+#: app/src/lib/evidence.ts:118
 msgid "Signed headers"
 msgstr ""
 
-#: app/src/lib/evidence.ts:120
+#: app/src/lib/evidence.ts:121
 msgid "Body hash"
 msgstr ""
 
-#: app/src/lib/evidence.ts:123
+#: app/src/lib/evidence.ts:124
 msgid "Signature"
 msgstr ""
 
-#: app/src/lib/evidence.ts:124
+#: app/src/lib/evidence.ts:125
 msgid "verified"
 msgstr ""
 
-#: app/src/lib/evidence.ts:124
+#: app/src/lib/evidence.ts:125
 msgid "not verified"
 msgstr ""
 
-#: app/src/lib/evidence.ts:131
+#: app/src/lib/evidence.ts:132
 msgid "Length limit (l=)"
 msgstr ""
 
-#: app/src/lib/evidence.ts:138 app/src/lib/pdf-report.ts:340
+#: app/src/lib/evidence.ts:137
+msgid "Lifetime (t=, x=)"
+msgstr ""
+
+#: app/src/lib/evidence.ts:142 app/src/lib/pdf-report.ts:340
 msgid "Reason"
 msgstr ""
 
-#: app/src/lib/evidence.ts:145 packages/core/src/explain.ts:220
+#: app/src/lib/evidence.ts:149 packages/core/src/explain.ts:220
 msgid "Verifier says"
 msgstr ""
 
-#: app/src/lib/evidence.ts:160
+#: app/src/lib/evidence.ts:164
 msgid "none fetched"
 msgstr ""
 
-#: app/src/lib/evidence.ts:166
+#: app/src/lib/evidence.ts:170
 msgid "{bits} bit, {source}"
 msgstr ""
 
-#: app/src/lib/evidence.ts:173
+#: app/src/lib/evidence.ts:177
 msgid "from the DNS"
 msgstr ""
 
-#: app/src/lib/evidence.ts:175
+#: app/src/lib/evidence.ts:179
 msgid "supplied by you"
 msgstr ""
 
-#: app/src/lib/evidence.ts:177
+#: app/src/lib/evidence.ts:181
 msgid "from the archive itself"
 msgstr ""
 
-#: app/src/lib/evidence.ts:191
+#: app/src/lib/evidence.ts:195
 msgid "matches ({hash})"
 msgstr ""
 
-#: app/src/lib/evidence.ts:192
+#: app/src/lib/evidence.ts:196
 msgid "matches"
 msgstr ""
 
-#: app/src/lib/evidence.ts:195
+#: app/src/lib/evidence.ts:199
 msgid "differs. Signed {expected}, message hashes to {actual}"
 msgstr ""
 
-#: app/src/lib/evidence.ts:200
+#: app/src/lib/evidence.ts:204
 msgid "not checked"
 msgstr ""
 
-#: app/src/lib/evidence.ts:207
+#: app/src/lib/evidence.ts:210
+msgid "expires {expires}"
+msgstr ""
+
+#: app/src/lib/evidence.ts:211
+msgid "signed {signed}, expires {expires}"
+msgstr ""
+
+#: app/src/lib/evidence.ts:224
 msgid "{limit} bytes of the body are signed"
 msgstr ""
 
-#: app/src/lib/evidence.ts:209
+#: app/src/lib/evidence.ts:226
 msgid "{limit} bytes of the body are signed, {unsigned} are not"
 msgstr ""
 
@@ -2827,17 +2847,15 @@ msgid ""
 "The key record for {name} does not allow this kind of signature. {nothing}"
 msgstr ""
 
-#: packages/core/src/explain.ts:290
-msgid ""
-"The signature has an expiry time that has passed or lies in the future. "
-"{nothing}"
+#: packages/core/src/explain.ts:289
+msgid "The signature’s expiry date (x=) has passed. {nothing}"
 msgstr ""
 
-#: packages/core/src/explain.ts:300
+#: packages/core/src/explain.ts:297
 msgid "The key lookup failed and may work later. {nothing}"
 msgstr ""
 
-#: packages/core/src/explain.ts:307
+#: packages/core/src/explain.ts:304
 msgid ""
 "The signature algorithm or key type is not supported by this tool. {nothing}"
 msgstr ""
@@ -3097,156 +3115,168 @@ msgid ""
 "have been written by anyone."
 msgstr ""
 
-#: packages/core/src/verdict.ts:291
+#: packages/core/src/verdict.ts:312
 msgid "Confirmed"
 msgstr ""
 
-#: packages/core/src/verdict.ts:293
+#: packages/core/src/verdict.ts:314
 msgid "With caveats"
 msgstr ""
 
-#: packages/core/src/verdict.ts:295
+#: packages/core/src/verdict.ts:316
 msgid "Body altered"
 msgstr ""
 
-#: packages/core/src/verdict.ts:297
+#: packages/core/src/verdict.ts:318
 msgid "Headers altered"
 msgstr ""
 
-#: packages/core/src/verdict.ts:299
+#: packages/core/src/verdict.ts:320
 msgid "Unverifiable"
 msgstr ""
 
-#: packages/core/src/verdict.ts:301
+#: packages/core/src/verdict.ts:322
 msgid "Unsigned"
 msgstr ""
 
-#: packages/core/src/verdict.ts:314
+#: packages/core/src/verdict.ts:335
 msgid "Confirmed: a valid signature covers this message as it stands."
 msgstr ""
 
-#: packages/core/src/verdict.ts:316
+#: packages/core/src/verdict.ts:337
 msgid ""
 "Confirmed with caveats: the signature is valid but covers less than it "
 "appears to."
 msgstr ""
 
-#: packages/core/src/verdict.ts:318
+#: packages/core/src/verdict.ts:339
 msgid "Body altered: the body is not the body that was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:320
+#: packages/core/src/verdict.ts:341
 msgid "Headers altered: a signed header field is not what was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:322
+#: packages/core/src/verdict.ts:343
 msgid "Unverifiable: a signature is present, but nothing here can check it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:324
+#: packages/core/src/verdict.ts:345
 msgid ""
 "Unsigned: no DKIM signature. This says nothing about the message either way."
 msgstr ""
 
-#: packages/core/src/verdict.ts:337
+#: packages/core/src/verdict.ts:358
 msgid ""
 "Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
 "carry a valid signature (RFC 8301)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:340
+#: packages/core/src/verdict.ts:361
 msgid ""
 "The RSA key is shorter than 1024 bits and can be factored with ordinary "
 "resources."
 msgstr ""
 
-#: packages/core/src/verdict.ts:343
+#: packages/core/src/verdict.ts:364
 msgid ""
 "An l= tag limits the signature to the start of the body. Anything appended "
 "after that is unsigned."
 msgstr ""
 
-#: packages/core/src/verdict.ts:346
+#: packages/core/src/verdict.ts:367
 msgid ""
 "Subject is not signed: the subject line could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:348
+#: packages/core/src/verdict.ts:369
 msgid "To is not signed: the recipient could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:350
+#: packages/core/src/verdict.ts:371
 msgid "Date is not signed: the date could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:353
+#: packages/core/src/verdict.ts:374
 msgid ""
 "The public key came from the archive itself, so it proves consistency rather "
 "than authenticity."
 msgstr ""
 
-#: packages/core/src/verdict.ts:357
+#: packages/core/src/verdict.ts:378
+msgid ""
+"The signature was valid when it was made; its expiry date (x=) has since "
+"passed. That matters for live delivery, not for an archive."
+msgstr ""
+
+#: packages/core/src/verdict.ts:382
+msgid ""
+"The signature header contradicts itself: its expiry date (x=) lies before "
+"the time it was made (t=). The signature itself verifies."
+msgstr ""
+
+#: packages/core/src/verdict.ts:386
 msgid ""
 "The key was first seen after this message was sent. The selector may have "
 "been rotated, so this failure may come from a wrong key rather than an edit."
 msgstr ""
 
-#: packages/core/src/verdict.ts:361
+#: packages/core/src/verdict.ts:390
 msgid ""
 "No public key is available, so the body hash claimed in the signature could "
 "not be confirmed as the signer’s. Whoever changed the body could have "
 "rewritten the hash too."
 msgstr ""
 
-#: packages/core/src/verdict.ts:367
+#: packages/core/src/verdict.ts:396
 msgid ""
 "The signature is from {signer}, but the message claims to be from {author}. "
 "It proves only that {signer} handled the message, not that {author} sent it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:369
+#: packages/core/src/verdict.ts:398
 msgid "(unknown domain)"
 msgstr ""
 
-#: packages/core/src/verdict.ts:372
+#: packages/core/src/verdict.ts:401
 msgid ""
 "The signing domain is not the From domain, so the signature does not vouch "
 "for the author."
 msgstr ""
 
-#: packages/core/src/verdict.ts:381
+#: packages/core/src/verdict.ts:410
 msgid "No public key for this selector and domain."
 msgstr ""
 
-#: packages/core/src/verdict.ts:383
+#: packages/core/src/verdict.ts:412
 msgid "The public key record is unusable."
 msgstr ""
 
-#: packages/core/src/verdict.ts:385
+#: packages/core/src/verdict.ts:414
 msgid "The DKIM-Signature header does not parse."
 msgstr ""
 
-#: packages/core/src/verdict.ts:387
+#: packages/core/src/verdict.ts:416
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:389
-msgid "The signature is expired or its timestamp lies in the future."
+#: packages/core/src/verdict.ts:418
+msgid "The signature’s expiry date (x=) has passed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:391
+#: packages/core/src/verdict.ts:420
 msgid "The key lookup failed and may succeed later."
 msgstr ""
 
-#: packages/core/src/verdict.ts:394
+#: packages/core/src/verdict.ts:423
 msgid ""
 "The key does not match the signature (different size or type), so it cannot "
 "have produced it. The selector was probably rotated."
 msgstr ""
 
-#: packages/core/src/verdict.ts:397
+#: packages/core/src/verdict.ts:426
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 

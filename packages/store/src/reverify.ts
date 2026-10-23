@@ -63,10 +63,33 @@ export function missingKeyPairs(db: DatabaseSync, vault: KeyVault): PairCount[] 
     return missingPairs(noKeyPairs(db), vault);
 }
 
-/** Pairs the vault HAS a key for but whose messages still say `no-key`: a reverify is due. */
+/**
+ * Pairs whose stored `expired` verdict predates the fix: a signature whose x= had passed used to
+ * be filed as unverifiable. The verifier no longer produces that reason, so every such row is
+ * stale and a plain reverify brings it up to date — no schema bump.
+ */
+function legacyExpiredPairs(db: DatabaseSync): PairCount[] {
+    return pairCounts(db, "WHERE reason = 'expired'");
+}
+
+/**
+ * Pairs a plain reverify is due for: the vault HAS a key for them but their messages still say
+ * `no-key`, or their rows carry the retired `expired` reason.
+ */
 export function unappliedKeyPairs(db: DatabaseSync, vault: KeyVault): PairCount[] {
     const missing = new Set(missingKeyPairs(db, vault).map(pairName));
-    return noKeyPairs(db).filter((pair) => !missing.has(pairName(pair)));
+    const merged = new Map<string, PairCount>();
+    for (const pair of noKeyPairs(db)) {
+        if (!missing.has(pairName(pair))) merged.set(pairName(pair), pair);
+    }
+    for (const pair of legacyExpiredPairs(db)) {
+        const known = merged.get(pairName(pair));
+        merged.set(
+            pairName(pair),
+            known === undefined ? pair : { ...pair, mails: (known.mails ?? 0) + (pair.mails ?? 0) },
+        );
+    }
+    return [...merged.values()];
 }
 
 /**
