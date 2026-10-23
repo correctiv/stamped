@@ -22,8 +22,9 @@ import type { KeyStore } from '@stamped/core';
 import { keyNameFor, _ } from '@stamped/core';
 import type { DKIMResult, DNSResolver } from 'mailauth/lib/types';
 
-import { evidenceFrom, type RawSignatureResult } from './evidence.ts';
+import { evidenceFrom, keyAlgorithmOf, type RawSignatureResult } from './evidence.ts';
 import { explainBodyByRetry } from './retry.ts';
+import { headerDigest, proveRsa, sameBytes } from './rsa.ts';
 
 /** What `dkimVerify` is, as this module uses it. */
 type DkimVerify = (
@@ -194,7 +195,18 @@ export async function verifyMessage(
             .filter((signature) => signature.status.result !== 'none')
             .map((signature) => {
                 const name = keyNameFor(signature.signingDomain ?? '', signature.selector ?? '');
-                const key = sources.get(name);
+                let key = sources.get(name);
+                // On a body-hash mismatch mailauth never reaches the key, so the resolver above
+                // was not asked. The store is still consulted here (offline, no fallback): a
+                // known key is what tells "body edited" from "signed by another key".
+                let heldRecord: string | undefined;
+                if (!key && signature.status.result !== 'pass') {
+                    const entry = options.keys.lookup(name);
+                    if (entry) {
+                        key = { source: entry.source, ...(entry.since ? { since: entry.since } : {}) };
+                        heldRecord = entry.record;
+                    }
+                }
                 const evidence = evidenceFrom(signature as RawSignatureResult, {
                     keyConfirmsOthers: options.confirmedPairs?.has(name) ?? false,
                     authorDomain: author.authorDomain,
@@ -202,10 +214,52 @@ export async function verifyMessage(
                     keySince: key?.since,
                     messageDate,
                 });
-                return withRetry(raw, evidence);
+                const proven = withKeyProof(raw, signature as RawSignatureResult, evidence, heldRecord);
+                return withRetry(raw, proven);
             })
     );
 }
+
+/**
+ * For a signature that did not verify and has a key, record whether that key made it
+ * (`keySigned`) and whether the signed header block is still intact (`signedHeadersIntact`).
+ * Passing signatures skip the modular exponentiation entirely.
+ */
+function withKeyProof(
+    raw: string | Uint8Array,
+    result: RawSignatureResult,
+    evidence: ReturnType<typeof evidenceFrom>,
+    heldRecord: string | undefined,
+) {
+    if (evidence.signatureOk || evidence.unverifiableBecause) return evidence;
+    const record = evidence.keyRecord ?? heldRecord;
+    if (!record) return evidence;
+    const keyAlgorithm = keyAlgorithmOf(record);
+    const out: Mutable<ReturnType<typeof evidenceFrom>> = {
+        ...evidence,
+        keyRecord: record,
+        ...(keyAlgorithm ? { keyAlgorithm } : {}),
+    };
+    if (keyAlgorithm !== 'rsa' || typeof result.signature !== 'string') return out;
+    const hash = evidence.algorithm.toLowerCase().endsWith('sha1') ? 'sha1' : 'sha256';
+    const proof = proveRsa(record, result.signature, hash);
+    if (!proof) return out;
+    if (out.keyBits === undefined) out.keyBits = proof.bits;
+    out.keySigned = proof.signed;
+    if (proof.signed && proof.digest) {
+        const digest = headerDigest(
+            raw,
+            evidence.signedHeaders,
+            evidence.canonicalization,
+            result.signature,
+            hash,
+        );
+        if (digest) out.signedHeadersIntact = sameBytes(digest, proof.digest);
+    }
+    return out;
+}
+
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 /**
  * For a body-hash mismatch, record whether undoing a common export artefact brings the signed

@@ -78,6 +78,37 @@ export default async () => {
         });
     });
 
+    await describe('a key that did not make the signature', async () => {
+        await it('calls a failed signature of the wrong key unverifiable, not headers-altered', async () => {
+            const finding = classifySignature(good({ signatureOk: false, keySigned: false }));
+            expect(finding.verdict).toBe('unverifiable');
+            expect(finding.evidence.unverifiableBecause).toBe('key-mismatch');
+        });
+
+        await it('calls a body mismatch under the wrong key unverifiable, not body-altered', async () => {
+            const finding = classifySignature(
+                good({ bodyHashOk: false, signatureOk: false, keySigned: false }),
+            );
+            expect(finding.verdict).toBe('unverifiable');
+            expect(finding.evidence.unverifiableBecause).toBe('key-mismatch');
+        });
+
+        await it('keeps body-altered when the key did sign the header', async () => {
+            const finding = classifySignature(
+                good({ bodyHashOk: false, signatureOk: false, keySigned: true, signedHeadersIntact: true }),
+            );
+            expect(finding.verdict).toBe('body-altered');
+        });
+
+        await it('flags a body-altered signature that has no key at all', async () => {
+            const finding = classifySignature(
+                good({ bodyHashOk: false, signatureOk: false, keySource: undefined }),
+            );
+            expect(finding.verdict).toBe('body-altered');
+            expect(finding.caveats).toContain('body-hash-unauthenticated');
+        });
+    });
+
     await describe('a key that cannot have signed', async () => {
         await it('calls a size mismatch unverifiable, not headers-altered', async () => {
             const finding = classifySignature(

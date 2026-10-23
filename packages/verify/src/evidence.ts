@@ -116,7 +116,7 @@ export function evidenceFrom(raw: RawSignatureResult, context: EvidenceContext =
 }
 
 /** `k=` of a key record; RFC 6376 defaults it to rsa. */
-function keyAlgorithmOf(record: string): 'rsa' | 'ed25519' | undefined {
+export function keyAlgorithmOf(record: string): 'rsa' | 'ed25519' | undefined {
     const kind = /(?:^|;)\s*k\s*=\s*([A-Za-z0-9]+)/.exec(record)?.[1]?.toLowerCase() ?? 'rsa';
     return kind === 'rsa' || kind === 'ed25519' ? kind : undefined;
 }

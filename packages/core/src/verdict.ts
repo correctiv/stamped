@@ -81,6 +81,12 @@ export const CAVEATS = [
      * may have been rotated and the failure may be a wrong key rather than an edit.
      */
     'key-newer-than-message',
+    /**
+     * Only on `body-altered`, and only without any key: the `bh=` the signature claims is itself
+     * unauthenticated. Without the signer's key, whoever changed the body could have rewritten
+     * the claimed hash too, so "the body differs from the signed one" is a claim, not a proof.
+     */
+    'body-hash-unauthenticated',
 ] as const;
 
 /** One reason a confirmation covers less than it appears to. */
@@ -134,7 +140,9 @@ export type ExportArtefact =
     /** Line endings were converted (LF instead of CRLF). */
     | 'line-endings'
     /** Both. */
-    | 'dot-stuffing-and-line-endings';
+    | 'dot-stuffing-and-line-endings'
+    /** Base64 lines were re-wrapped to another width; the decoded content is unchanged. */
+    | 'base64-rewrapped';
 
 /** Where a public key came from, which is the whole of the `archive-key` caveat. */
 export type KeySource =
@@ -197,6 +205,18 @@ export interface SignatureEvidence {
      * unlikely. Set by a caller that has seen more than one message; absent otherwise.
      */
     readonly keyConfirmsOthers?: boolean;
+    /**
+     * Could the key have made this signature at all? For an RSA key: does `b=` raised to the
+     * public exponent give a well-formed PKCS#1 v1.5 block for the `a=` hash? False means the
+     * signature was made by another key (the selector was rotated or swapped). Measured only for
+     * a signature that failed, and absent for Ed25519 or when no key was available.
+     */
+    readonly keySigned?: boolean;
+    /**
+     * Only with `keySigned`: does the digest the key signed equal the hash of the headers as they
+     * stand now? True means the signed header block, `bh=` included, is authentic and unchanged.
+     */
+    readonly signedHeadersIntact?: boolean;
     /** The key record as it was read, for the record. */
     readonly keyRecord?: string;
     /** The body hash Stamped computed (base64). */
@@ -331,6 +351,10 @@ export function describeCaveat(caveat: Caveat, evidence?: SignatureEvidence): st
         case 'key-newer-than-message':
             return _(
                 'The key was first seen after this message was sent. The selector may have been rotated, so this failure may come from a wrong key rather than an edit.',
+            );
+        case 'body-hash-unauthenticated':
+            return _(
+                'No public key is available, so the body hash claimed in the signature could not be confirmed as the signer’s. Whoever changed the body could have rewritten the hash too.',
             );
         case 'signer-not-author':
             return evidence

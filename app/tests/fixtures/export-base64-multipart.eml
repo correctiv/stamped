@@ -1,0 +1,37 @@
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=tb64; t=1709631660; h=from:to:subject:date; bh=XerUH7SU7+pSiCUJAE6N8uyTxsKt2Ciyfo7u+RrcPrE=; b=n7J4gSbVfpwe9bDwGT8lkY7jVIfWVvSmtoxhdJPVXeUlX83K8ZR2+U07ZplnuUoIquic7tgo9tNc3sCiZ1Gs8DN1waRv4JRjMONQ8jbjROmtrmxKC2t099QmvFspFF6tc871OGRjVch65D+i2ZhS3qvz2ryFzsF6zDkZqV0nhZj/cGOzxGHHvgpVuYkLaUaDSEeAtqlebsPyPhxlDtOMhRK3buATebquQAW5y/RGFJGgtE/EXIJ9+afj9O6Ip3jRpo7wzMWGraL82oYVjkFRPQJb+Oy3qwQ8QhBwPJ9K13EpYAD760AcjQaXshaMWjiuXKAblP9/NXCfzJupuV1RVA==
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Quarterly figures
+Date: Tue, 05 Mar 2024 09:40:00 +0000
+Message-ID: <fixture-01@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="OUTER"
+
+--OUTER
+Content-Type: text/plain; charset=utf-8
+
+Two attachments follow.
+--OUTER
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+
+Zmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmly
+c3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3Qg
+Zmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmly
+c3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3QgZmlyc3Qg
+Zmlyc3QgZmlyc3QgUHJvdmlzaW9uYWwgZmlndXJlcywgbm90IGZvciByZWxlYXNlLg==
+--OUTER
+Content-Type: multipart/mixed; boundary="INNER"
+
+--INNER
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+
+bmVzdGVkIG5lc3RlZCBuZXN0ZWQgbmVzdGVkIG5lc3RlZCBuZXN0ZWQgbmVzdGVkIG5lc3RlZCBu
+ZXN0ZWQgbmVzdGVkIG5lc3RlZCBuZXN0ZWQgbmVzdGVkIG5lc3RlZCBuZXN0ZWQgbmVzdGVkIG5l
+c3RlZCBuZXN0ZWQgbmVzdGVkIG5lc3RlZCBuZXN0ZWQgbmVzdGVkIG5lc3RlZCBuZXN0ZWQgbmVz
+dGVkIG5lc3RlZCBuZXN0ZWQgbmVzdGVkIG5lc3RlZCBuZXN0ZWQgbmVzdGVkIG5lc3RlZCBuZXN0
+ZWQgbmVzdGVkIG5lc3RlZCBuZXN0ZWQgbmVzdGVkIG5lc3RlZCBuZXN0ZWQgbmVzdGVkIFByb3Zp
+c2lvbmFsIGZpZ3VyZXMsIG5vdCBmb3IgcmVsZWFzZS4=
+--INNER--
+--OUTER--

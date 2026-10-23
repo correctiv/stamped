@@ -42,7 +42,9 @@ export const WEAK_RSA_BITS = 1024;
  *     "body hash did not match", which would accuse somebody of tampering on no evidence.
  *  2. The body hash next. It is computed from the message alone, so it is known even when no key
  *     was ever fetched, and it answers a different question from the signature: the BYTES of the
- *     body are not the bytes that were signed.
+ *     body are not the bytes that were signed. But `bh=` is only as good as the signature that
+ *     covers it: a key that cannot have made the signature turns this into `unverifiable`, and
+ *     no key at all leaves `body-altered` with the `body-hash-unauthenticated` caveat.
  *  3. The signature last. The body hash matched, so the body is intact and what changed is one
  *     of the header fields in `h=`.
  */
@@ -51,17 +53,17 @@ export function classifySignature(evidence: SignatureEvidence): SignatureFinding
         return { verdict: 'unverifiable', caveats: [], evidence };
     }
     if (!evidence.bodyHashOk) {
-        return { verdict: 'body-altered', caveats: [], evidence };
+        // The same wrong-key test as below: a `bh=` that no key of the signer vouches for must
+        // not be reported as "the body was altered" — the key may simply be another one.
+        if (keyCannotHaveSigned(evidence)) return keyMismatch(evidence);
+        // Without any key the claimed `bh=` is unauthenticated: it differs from the body, but
+        // whoever changed the body could have rewritten the hash as well.
+        const noKey = evidence.keyRecord === undefined && evidence.keySource === undefined;
+        return { verdict: 'body-altered', caveats: noKey ? ['body-hash-unauthenticated'] : [], evidence };
     }
     if (!evidence.signatureOk) {
         // A key that cannot have produced the signature says nothing about the headers.
-        if (keyCannotHaveSigned(evidence)) {
-            return {
-                verdict: 'unverifiable',
-                caveats: [],
-                evidence: { ...evidence, unverifiableBecause: 'key-mismatch' },
-            };
-        }
+        if (keyCannotHaveSigned(evidence)) return keyMismatch(evidence);
         return {
             verdict: 'headers-altered',
             caveats: keyPostdatesMessage(evidence) ? ['key-newer-than-message'] : [],
@@ -76,13 +78,24 @@ export function classifySignature(evidence: SignatureEvidence): SignatureFinding
     };
 }
 
+function keyMismatch(evidence: SignatureEvidence): SignatureFinding {
+    return {
+        verdict: 'unverifiable',
+        caveats: [],
+        evidence: { ...evidence, unverifiableBecause: 'key-mismatch' },
+    };
+}
+
 /**
  * Is it certain that the key did not make this signature?
  *
- * Deterministic, from sizes and types alone: an RSA signature is exactly as long as the modulus,
- * and an ed25519 key cannot sign an `rsa-` signature. Missing facts never answer yes.
+ * Deterministic: `keySigned === false` is the verifier's proof (the signature, raised to the
+ * public exponent, is no well-formed block), and beyond it sizes and types alone — an RSA
+ * signature is exactly as long as the modulus, and an ed25519 key cannot sign an `rsa-`
+ * signature. Missing facts never answer yes.
  */
 export function keyCannotHaveSigned(evidence: SignatureEvidence): boolean {
+    if (evidence.keySigned === false) return true;
     const type = evidence.algorithm.split('-')[0]?.toLowerCase();
     if (evidence.keyAlgorithm !== undefined && (type === 'rsa' || type === 'ed25519')) {
         if (type !== evidence.keyAlgorithm) return true;

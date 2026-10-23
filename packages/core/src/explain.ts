@@ -18,6 +18,7 @@ export const REASON_CODES = [
     'body-export-dot-stuffing',
     'body-export-line-endings',
     'body-export-both',
+    'body-export-base64',
     'body-signed-part-changed',
     'body-changed',
     'headers-key-maybe-rotated',
@@ -105,6 +106,19 @@ function explainBody(finding: SignatureFinding): Explanation {
         details.push({ label: _('l= limit'), value: String(evidence.lengthLimit) });
     }
     const artefact = evidence.exportArtefact;
+    if (artefact === 'base64-rewrapped') {
+        details.push({
+            label: _('Retry'),
+            value: _('re-wrapping the base64 lines makes the hash match'),
+        });
+        return {
+            code: 'body-export-base64',
+            sentence: _(
+                'Base64 line wrapping was changed by the export. The decoded content is identical to what was signed. The verdict stays body altered: this is an explanation, not a confirmation.',
+            ),
+            details,
+        };
+    }
     if (artefact) {
         details.push({
             label: _('Retry'),
@@ -140,30 +154,40 @@ function explainBody(finding: SignatureFinding): Explanation {
     if (evidence.exportRetried) {
         details.push({
             label: _('Retry'),
-            value: _('undoing doubled leading dots and converting line endings does not make the hash match'),
+            value: _(
+                'undoing doubled leading dots, converting line endings and re-wrapping base64 does not make the hash match',
+            ),
         });
     }
+    const headersIntact = evidence.keySigned === true && evidence.signedHeadersIntact === true;
+    const intactNote = headersIntact
+        ? _(
+              ' The signed header, including the body hash, is authentic and unchanged, so the deviation is in the text only.',
+          )
+        : '';
     if (evidence.lengthLimit !== undefined) {
         return {
             code: 'body-signed-part-changed',
-            sentence: fmt(
-                _(
-                    'The signature covers only the first {limit} bytes of the body, and even those are not what was signed. Text inside the signed part was added, removed or changed.',
-                ),
-                { limit: String(evidence.lengthLimit) },
-            ),
+            sentence:
+                fmt(
+                    _(
+                        'The signature covers only the first {limit} bytes of the body, and even those are not what was signed. Text inside the signed part was added, removed or changed.',
+                    ),
+                    { limit: String(evidence.lengthLimit) },
+                ) + intactNote,
             details,
         };
     }
     return {
         code: 'body-changed',
-        sentence: evidence.exportRetried
-            ? _(
-                  'The text of the body is not the text that was signed: something was added, removed or changed after signing. Two harmless export effects (doubled leading dots, converted line endings) were tested and do not explain it.',
-              )
-            : _(
-                  'The text of the body is not the text that was signed: something was added, removed or changed after signing.',
-              ),
+        sentence:
+            (evidence.exportRetried
+                ? _(
+                      'The text of the body is not the text that was signed: something was added, removed or changed after signing. Three harmless export effects (doubled leading dots, converted line endings, re-wrapped base64) were tested and do not explain it.',
+                  )
+                : _(
+                      'The text of the body is not the text that was signed: something was added, removed or changed after signing.',
+                  )) + intactNote,
         details,
     };
 }
