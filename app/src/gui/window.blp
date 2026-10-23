@@ -271,9 +271,7 @@ template $StampedWindow: Adw.ApplicationWindow {
                       hscrollbar-policy: never;
                       vexpand: true;
 
-                      child: Gtk.ListBox messageList {
-                        selection-mode: single;
-
+                      child: Gtk.ListView messageList {
                         styles [
                           "navigation-sidebar",
                         ]

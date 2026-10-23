@@ -59,7 +59,7 @@ export interface Children {
     _caseTitle: Adw.WindowTitle;
     _innerSplit: Adw.NavigationSplitView;
     _listStack: Gtk.Stack;
-    _messageList: Gtk.ListBox;
+    _messageList: Gtk.ListView;
     _emptyState: Adw.StatusPage;
     _listTitle: Adw.WindowTitle;
     _searchEntry: Gtk.SearchEntry;

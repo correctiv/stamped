@@ -14,7 +14,7 @@
  * booleans, arrays and objects — see `docs/spikes/query-worker.md` for the measurements.
  */
 
-import type { UnverifiableReason, Verdict } from '@stamped/core';
+import { classifyMessage, type MessageFinding, type UnverifiableReason, type Verdict } from '@stamped/core';
 import { openVectorDbForSearch } from '@stamped/semantic';
 import {
     addressesComplete,
@@ -30,6 +30,7 @@ import {
     periodScope,
     personScope,
     readMessage,
+    readRaw,
     searchHits,
     signatureHashes,
     sourceHashes,
@@ -47,7 +48,10 @@ import {
     type Timeline,
 } from '@stamped/store';
 
+import { verifyMessage } from '@stamped/verify';
+
 import { fuseHybrid, type HybridHit } from './hybrid-search.ts';
+import { loadVault } from './vault.ts';
 
 /**
  * What a query runs against: the case on disk, one index connection, and the scope tables.
@@ -383,6 +387,7 @@ export interface QueryRequests {
     readonly sources: Record<string, never>;
     readonly report: Record<string, never>;
     readonly message: { readonly hash: string };
+    readonly verify: { readonly hash: string };
     readonly dropScopes: Record<string, never>;
 }
 
@@ -399,6 +404,7 @@ export interface QueryResults {
     readonly sources: LogSource[];
     readonly report: CaseReport;
     readonly message: IndexedMessage | null;
+    readonly verify: MessageFinding | null;
     readonly dropScopes: null;
 }
 
@@ -407,11 +413,30 @@ export type QueryOp = keyof QueryRequests;
 
 /** Is this string one of the operations? The worker's guard against a message it cannot serve. */
 export function isQueryOp(op: string): op is QueryOp {
-    return op in handlers;
+    return op in handlers || op === 'verify';
+}
+
+/** The operations that answer at once. `verify` waits on the crypto and has {@link verifyOf}. */
+export type SyncQueryOp = Exclude<QueryOp, 'verify'>;
+
+/**
+ * Verify one stored message again, now, against the keys the case holds NOW.
+ *
+ * NOT the index row's verdict: that is a cache of the verification at import time, when the vault
+ * was whatever it then was. The pane that shows the evidence chain must not be stale, so this
+ * re-reads the raw bytes and runs the verifier — on the worker, because a message with a large
+ * attachment is tens of megabytes of hashing. The vault is read from disk at each call: the
+ * window saves it as it changes, and this thread holds no copy that could go stale.
+ */
+export async function verifyOf(ctx: QueryContext, hash: string): Promise<MessageFinding | null> {
+    const raw = readRaw(ctx.paths, hash);
+    if (!raw) return null;
+    const keys = loadVault(ctx.paths.root).toKeyStore();
+    return classifyMessage(await verifyMessage(raw, { keys }));
 }
 
 const handlers: {
-    [Op in QueryOp]: (ctx: QueryContext, params: QueryRequests[Op]) => QueryResults[Op];
+    [Op in SyncQueryOp]: (ctx: QueryContext, params: QueryRequests[Op]) => QueryResults[Op];
 } = {
     page: (ctx, params) => pageOf(ctx, params.query, params.offset ?? 0),
     hybrid: (ctx, params) => hybridPageOf(ctx, params.query, params.vector, params.model),
@@ -438,7 +463,7 @@ const handlers: {
  * ({@link isQueryOp}), and the compiler still checks every pairing of parameters and result.
  * Tests call this directly with a context of their own — no Worker, no bundle, same code path.
  */
-export function runQuery<Op extends QueryOp>(
+export function runQuery<Op extends SyncQueryOp>(
     ctx: QueryContext,
     op: Op,
     params: QueryRequests[Op],
@@ -447,4 +472,14 @@ export function runQuery<Op extends QueryOp>(
     // a type variable gives TypeScript a union of signatures it will not call.
     const handler = handlers[op] as (ctx: QueryContext, params: QueryRequests[Op]) => QueryResults[Op];
     return handler(ctx, params);
+}
+
+/** {@link runQuery} for every operation, the ones that wait included. What the worker calls. */
+export async function runQueryAsync<Op extends QueryOp>(
+    ctx: QueryContext,
+    op: Op,
+    params: QueryRequests[Op],
+): Promise<QueryResults[Op]> {
+    if (op === 'verify') return (await verifyOf(ctx, (params as QueryRequests['verify']).hash)) as QueryResults[Op];
+    return runQuery(ctx, op as SyncQueryOp, params as QueryRequests[SyncQueryOp]) as QueryResults[Op];
 }

@@ -21,7 +21,14 @@ import { parentPort } from 'node:worker_threads';
 import { _ } from '@stamped/core';
 import { openIndex, type CasePaths } from '@stamped/store';
 
-import { isQueryOp, runQuery, type QueryContext, type QueryRequests } from '../lib/queries.ts';
+import {
+    isQueryOp,
+    runQuery,
+    runQueryAsync,
+    type QueryContext,
+    type QueryRequests,
+    type SyncQueryOp,
+} from '../lib/queries.ts';
 import { READY_ID, type QueryReply, type QueryRequest } from './query-client.ts';
 
 /**
@@ -47,7 +54,11 @@ function open(paths: CasePaths): void {
     context = { paths, db };
 }
 
-function handle(request: QueryRequest): QueryReply['result'] {
+/**
+ * Synchronous for every op but `verify`: a reply that waits on a promise job is a reply the GJS
+ * worker thread was not seen to deliver, so the ops that can answer at once do.
+ */
+function handle(request: QueryRequest): QueryReply['result'] | Promise<QueryReply['result']> {
     if (request.op === 'open') {
         open((request.params as { paths: CasePaths }).paths);
         return null;
@@ -55,21 +66,29 @@ function handle(request: QueryRequest): QueryReply['result'] {
     if (request.op === 'ping') return 'pong';
     if (context === undefined) throw new Error(_('No case is open in the index reader.'));
     if (!isQueryOp(request.op)) throw new Error(`unknown query op ${request.op}`);
-    return runQuery(context, request.op, request.params as QueryRequests[typeof request.op]);
+    if (request.op === 'verify')
+        return runQueryAsync(context, request.op, request.params as QueryRequests[typeof request.op]);
+    return runQuery(context, request.op, request.params as QueryRequests[SyncQueryOp]);
 }
 
 const port = parentPort;
 if (port !== null) {
     port.on('message', (request: QueryRequest) => {
-        let reply: QueryReply;
+        // The message only — a stack from a bundled worker names a line nobody can look up,
+        // and this string reaches the person as a toast.
+        const reply = (message: QueryReply): void => port.postMessage(message);
+        const fail = (error: unknown): void =>
+            reply({ id: request.id, ok: false, error: String((error as Error)?.message ?? error) });
         try {
-            reply = { id: request.id, ok: true, result: handle(request) };
+            const result = handle(request);
+            if (result instanceof Promise) {
+                result.then((value) => reply({ id: request.id, ok: true, result: value }), fail);
+            } else {
+                reply({ id: request.id, ok: true, result });
+            }
         } catch (error) {
-            // The message only — a stack from a bundled worker names a line nobody can look up,
-            // and this string reaches the person as a toast.
-            reply = { id: request.id, ok: false, error: String((error as Error)?.message ?? error) };
+            fail(error);
         }
-        port.postMessage(reply);
     });
     // LAST, and only after the handler is attached: on GJS anything the client posted before
     // this module finished evaluating was dropped, so this reply is what tells it to send.
