@@ -35,6 +35,8 @@ export interface Catalogue {
     readonly nplurals: number;
     /** Which form index to use for `n`. English's rule when the catalogue does not say. */
     readonly plural: (n: number) => number;
+    /** The catalogue's `Language:` header (`de`), which number formatting follows. */
+    readonly language?: string;
 }
 
 /** The English plural rule, and the fallback whenever a catalogue declares none. */
@@ -100,6 +102,34 @@ export function fmt(template: string, values: Record<string, string | number>): 
     return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
         name in values ? String(values[name]) : whole,
     );
+}
+
+/** The language of the installed catalogue, or English. An unusable tag falls back to English. */
+function numberLocale(): string {
+    const language = catalogue?.language;
+    if (!language) return 'en';
+    try {
+        return Intl.NumberFormat.supportedLocalesOf(language).length > 0 ? language : 'en';
+    } catch {
+        return 'en';
+    }
+}
+
+/** A number with the active language's digit grouping and decimal mark: `421,111` / `421.111`. */
+export function formatNumber(value: number, fractionDigits = 0): string {
+    return new Intl.NumberFormat(numberLocale(), {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+    }).format(value);
+}
+
+/** A 0..1 share as a percentage in the active language: `3.5%` / `3,5 %`. */
+export function formatPercent(share: number, fractionDigits = 0): string {
+    return new Intl.NumberFormat(numberLocale(), {
+        style: 'percent',
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+    }).format(share);
 }
 
 function lookup(key: string, form: number): string | undefined {
@@ -208,7 +238,8 @@ export function parseMoCatalogue(bytes: Uint8Array): Catalogue {
     }
 
     const { nplurals, plural } = parsePluralForms(header);
-    return { messages, nplurals, plural };
+    const language = /^Language:\s*(\S+)/im.exec(header)?.[1];
+    return { messages, nplurals, plural, ...(language ? { language } : {}) };
 }
 
 /** Read `Plural-Forms: nplurals=2; plural=n != 1;` out of a catalogue header. */

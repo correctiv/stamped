@@ -10,9 +10,17 @@
  * real one. The same code runs both, so the two cannot disagree.
  */
 
-import { describeVerdict, fmt, verdictLabel, _, _n } from '@stamped/core';
+import { fmt, formatNumber as num, verdictLabel, _, _n } from '@stamped/core';
 
-import { CLUSTER_FACTOR, CLUSTER_MIN_MESSAGES, TOP_DOMAINS, type PdfReportModel } from './pdf-report-model.ts';
+import {
+    breakableMailbox,
+    CLUSTER_FACTOR,
+    CLUSTER_MIN_MESSAGES,
+    percent,
+    TOP_DOMAINS,
+    verdictLegend,
+    type PdfReportModel,
+} from './pdf-report-model.ts';
 
 /** A4 in PostScript points. */
 const PAGE_W = 595;
@@ -231,11 +239,6 @@ interface TableOptions {
     readonly highlight?: readonly number[];
 }
 
-function percent(share: number): string {
-    const pct = share * 100;
-    return `${pct >= 10 || pct === 0 ? Math.round(pct) : pct.toFixed(1)}%`;
-}
-
 /** Lay the whole document out on `writer`. Every user-visible string is built here, at call time. */
 function compose(w: Writer, model: PdfReportModel): void {
     // --- cover ---
@@ -251,17 +254,17 @@ function compose(w: Writer, model: PdfReportModel): void {
                 _('Messages'),
                 model.earliest !== undefined && model.latest !== undefined
                     ? fmt(_('{count} (dated {earliest} to {latest})'), {
-                          count: String(model.messages),
+                          count: num(model.messages),
                           earliest: model.earliest,
                           latest: model.latest,
                       })
-                    : String(model.messages),
+                    : num(model.messages),
             ],
             [
                 _('Key coverage'),
                 model.provenance.lastFetched !== undefined
                     ? fmt(_('{count} keys in the key store, the latest obtained on {date}'), {
-                          count: String(model.provenance.keys),
+                          count: num(model.provenance.keys),
                           date: model.provenance.lastFetched.slice(0, 10),
                       })
                     : _('No keys in the key store'),
@@ -282,19 +285,19 @@ function compose(w: Writer, model: PdfReportModel): void {
     w.heading(_('Summary'));
     w.text(
         fmt(_n('{count} message was checked.', '{count} messages were checked.', model.messages), {
-            count: String(model.messages),
+            count: num(model.messages),
         }),
     );
     w.table(
         [
             [_('Verdict'), _('Messages'), _('Share'), ''],
-            ...model.verdicts.map((v) => [verdictLabel(v.verdict), String(v.messages), percent(v.share), '']),
+            ...model.verdicts.map((v) => [verdictLabel(v.verdict), num(v.messages), percent(v.share), '']),
         ],
         [0.35, 0.2, 0.15, 0.3],
         { rightAligned: [1, 2] },
     );
     for (const v of model.verdicts) {
-        if (v.messages > 0) w.text(describeVerdict(v.verdict), { size: 9, color: MUTED, gapAfter: 3 });
+        if (v.messages > 0) w.text(verdictLegend(v.verdict), { size: 9, color: MUTED, gapAfter: 3 });
     }
 
     // --- what the verdicts mean ---
@@ -328,18 +331,18 @@ function compose(w: Writer, model: PdfReportModel): void {
                     'Read from the header blocks of {count} unsigned messages. The groups overlap: one message can be in several.',
                     u.examined,
                 ),
-                { count: String(u.examined) },
+                { count: num(u.examined) },
             ),
             { size: 9 },
         );
         const rows: string[][] = [
             [_('Reason'), _('Messages')],
-            [_('Never transported (no Received header)'), String(u.neverTransported)],
-            [_('Signature header renamed'), String(u.renamedSignature)],
-            [_('dkim=pass in Authentication-Results'), String(u.authResultsPass)],
-            [_('ARC signature only'), String(u.arcOnly)],
+            [_('Never transported (no Received header)'), num(u.neverTransported)],
+            [_('Signature header renamed'), num(u.renamedSignature)],
+            [_('dkim=pass in Authentication-Results'), num(u.authResultsPass)],
+            [_('ARC signature only'), num(u.arcOnly)],
         ];
-        if (u.embedded !== undefined) rows.push([_('Signature only in an embedded message'), String(u.embedded)]);
+        if (u.embedded !== undefined) rows.push([_('Signature only in an embedded message'), num(u.embedded)]);
         w.table(rows, [0.75, 0.25], { rightAligned: [1] });
     }
 
@@ -354,8 +357,8 @@ function compose(w: Writer, model: PdfReportModel): void {
                     'A row is flagged when it holds at least {min} messages and its altered share is at least {factor} times the share of the whole case ({share}).',
                 ),
                 {
-                    min: String(CLUSTER_MIN_MESSAGES),
-                    factor: String(CLUSTER_FACTOR),
+                    min: num(CLUSTER_MIN_MESSAGES),
+                    factor: num(CLUSTER_FACTOR),
                     share: percent(model.caseAlteredShare),
                 },
             ),
@@ -368,10 +371,10 @@ function compose(w: Writer, model: PdfReportModel): void {
         const rows: string[][] = [
             [_('Mailbox'), _('Year'), _('Messages'), _('Altered'), _('Share'), ''],
             ...shown.map((c) => [
-                c.mailbox ?? _('(unnamed)'),
-                c.year === undefined ? _('undated') : String(c.year),
-                String(c.messages),
-                String(c.bodyAltered + c.headersAltered),
+                c.mailbox === undefined ? _('(unnamed)') : breakableMailbox(c.mailbox),
+                c.year === undefined ? _('undated') : num(c.year),
+                num(c.messages),
+                num(c.bodyAltered + c.headersAltered),
                 percent(c.alteredShare),
                 c.flagged ? _('Flagged') : '',
             ]),
@@ -383,17 +386,23 @@ function compose(w: Writer, model: PdfReportModel): void {
         if (model.clusters.length > shown.length) {
             w.text(
                 fmt(_('{count} further rows are not shown.'), {
-                    count: String(model.clusters.length - shown.length),
+                    count: num(model.clusters.length - shown.length),
                 }),
                 { size: 9, color: MUTED },
             );
         }
+        w.text(
+            fmt(_('Rows below {min} messages are never flagged, however high their altered share.'), {
+                min: num(CLUSTER_MIN_MESSAGES),
+            }),
+            { size: 9, color: MUTED },
+        );
         if (model.clusters.some((c) => c.flagged)) {
             w.box(
                 _('Notable concentration'),
                 [
                     _(
-                        'Notable concentration – points to a common technical cause (e.g. archive or export software); no statement about individual messages.',
+                        'Points to a common technical cause (e.g. archive or export software); no statement about individual messages.',
                     ),
                 ],
                 FLAG_FILL,
@@ -402,14 +411,14 @@ function compose(w: Writer, model: PdfReportModel): void {
     }
 
     // --- domains ---
-    w.heading(fmt(_('Top {n} signing domains per verdict'), { n: String(TOP_DOMAINS) }));
+    w.heading(fmt(_('Top {n} signing domains per verdict'), { n: num(TOP_DOMAINS) }));
     if (model.domains.length === 0) {
         w.text(_('No message carries a signature.'), { size: 9 });
     }
     for (const entry of model.domains) {
         w.subheading(verdictLabel(entry.verdict));
         w.table(
-            [[_('Domain'), _('Messages')], ...entry.domains.map((d) => [d.domain, String(d.messages)])],
+            [[_('Domain'), _('Messages')], ...entry.domains.map((d) => [d.domain, num(d.messages)])],
             [0.75, 0.25],
             { rightAligned: [1] },
         );
@@ -421,10 +430,10 @@ function compose(w: Writer, model: PdfReportModel): void {
     w.table(
         [
             [_('Source'), _('Keys')],
-            [_('Published DNS record, looked up with consent'), String(p.dns)],
-            [_('archive.prove.email (a third party’s snapshots)'), String(p.archiveProveEmail)],
-            [_('Shipped with the archive'), String(p.archive)],
-            [_('Supplied by the operator'), String(p.operator)],
+            [_('Published DNS record, looked up with consent'), num(p.dns)],
+            [_('archive.prove.email (a third party’s snapshots)'), num(p.archiveProveEmail)],
+            [_('Shipped with the archive'), num(p.archive)],
+            [_('Supplied by the operator'), num(p.operator)],
         ],
         [0.75, 0.25],
         { rightAligned: [1] },
@@ -436,7 +445,7 @@ function compose(w: Writer, model: PdfReportModel): void {
                 '{messages} messages wait for a key that is not in the store ({pairs} distinct selectors in total).',
                 p.messagesWithoutKey,
             ),
-            { messages: String(p.messagesWithoutKey), pairs: String(p.pairsWithoutKey) },
+            { messages: num(p.messagesWithoutKey), pairs: num(p.pairsWithoutKey) },
         ),
         { size: 9 },
     );
@@ -447,7 +456,7 @@ function compose(w: Writer, model: PdfReportModel): void {
                 '{count} messages could not be checked because their key had expired.',
                 p.messagesExpired,
             ),
-            { count: String(p.messagesExpired) },
+            { count: num(p.messagesExpired) },
         ),
         { size: 9 },
     );
@@ -458,7 +467,7 @@ function compose(w: Writer, model: PdfReportModel): void {
                 '{count} messages could not be checked because the published key provably did not make their signature.',
                 p.messagesKeyMismatch,
             ),
-            { count: String(p.messagesKeyMismatch) },
+            { count: num(p.messagesKeyMismatch) },
         ),
         { size: 9 },
     );
@@ -469,7 +478,7 @@ function compose(w: Writer, model: PdfReportModel): void {
                 '{count} messages count as body altered against a body hash that no available key authenticates.',
                 p.messagesUnauthenticatedHash,
             ),
-            { count: String(p.messagesUnauthenticatedHash) },
+            { count: num(p.messagesUnauthenticatedHash) },
         ),
         { size: 9 },
     );

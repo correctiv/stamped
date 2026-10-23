@@ -7,7 +7,7 @@
  */
 
 import type { Verdict, VaultEntry } from '@stamped/core';
-import { VERDICTS } from '@stamped/core';
+import { describeVerdict, formatPercent, VERDICTS, verdictLabel } from '@stamped/core';
 import type {
     CaseReport,
     PeriodRow,
@@ -92,6 +92,27 @@ export interface PdfReportModel {
     readonly anonymized: boolean;
     readonly domains: readonly VerdictDomains[];
     readonly provenance: KeyProvenance;
+}
+
+/** A share as the report prints it: whole percent from 10, one decimal below, in the active language. */
+export function percent(share: number): string {
+    const pct = share * 100;
+    return formatPercent(share, pct >= 10 || pct === 0 ? 0 : 1);
+}
+
+/**
+ * A verdict's legend line: the same label the table uses, then the explanation. The sentence from
+ * `describeVerdict` opens with its own wording of the name, which would be a second label.
+ */
+export function verdictLegend(verdict: Verdict): string {
+    const sentence = describeVerdict(verdict);
+    const at = sentence.indexOf(': ');
+    return `${verdictLabel(verdict)}: ${at < 0 || at > 40 ? sentence : sentence.slice(at + 2)}`;
+}
+
+/** Zero-width spaces after `@` and `.`, so a long address wraps there and not in the middle of a word. */
+export function breakableMailbox(name: string): string {
+    return name.replace(/([@.])/g, '$1\u200b');
 }
 
 /** An epoch millisecond as a plain UTC date. */
