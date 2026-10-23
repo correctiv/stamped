@@ -18,9 +18,12 @@ import {
     appendLog,
     caseReport,
     digest,
+    derivedMailboxHashes,
     domainsByVerdict,
+    hashScope,
     indexMessage,
     mailboxOf,
+    mailboxScope,
     openCase,
     openIndex,
     periodBreakdown,
@@ -262,6 +265,150 @@ export default async () => {
                         const bytes = readFileSync(file);
                         expect(new TextDecoder().decode(bytes.subarray(0, 5))).toBe('%PDF-');
                         expect(pages > 1).toBe(true);
+                    }
+                } finally {
+                    db.close();
+                }
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+    });
+
+    await describe('batched scopes', async () => {
+        await it('hashScope admits exactly the set, past the batch size', async () => {
+            const root = mkdtempSync(join(tmpdir(), 'stamped-scope-'));
+            try {
+                const db = openIndex(openCase(root));
+                try {
+                    const hashes = Array.from({ length: 1234 }, (_, i) => `h${i}`);
+                    const scope = hashScope(db, [...hashes, ...hashes.slice(0, 100)]);
+                    try {
+                        expect(scope.size).toBe(1234);
+                        expect(hashes.every((h) => scope.has(h))).toBe(true);
+                        expect(scope.has('h1234')).toBe(false);
+                    } finally {
+                        scope.close();
+                    }
+                    expect(hashScope(db, []).size).toBe(0);
+                } finally {
+                    db.close();
+                }
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
+        await it('mailboxScope yields the same rows as one scope per mailbox', async () => {
+            const root = mkdtempSync(join(tmpdir(), 'stamped-period-'));
+            try {
+                const paths = openCase(root);
+                const db = openIndex(paths);
+                try {
+                    const put = (subject: string, verdict: Verdict, date: string | undefined) => {
+                        const bytes = encodeLatin1(
+                            [
+                                'From: Ada <ada@example.com>',
+                                `Subject: ${subject}`,
+                                ...(date ? [`Date: ${date}`] : []),
+                                '',
+                                'body',
+                                '',
+                            ].join('\n'),
+                        );
+                        const hash = digest(bytes);
+                        indexMessage(db, {
+                            hash,
+                            bytes: bytes.length,
+                            summary: summarise(bytes),
+                            finding: finding(verdict, 'example.com'),
+                        });
+                        return { hash, bytes: bytes.length };
+                    };
+                    const log = (m: { hash: string; bytes: number }, source: string) => ({
+                        hash: m.hash,
+                        source,
+                        offset: 0,
+                        kind: 'mbox',
+                        bytes: m.bytes,
+                        at: '2024-01-01T00:00:00Z',
+                        duplicate: false,
+                    });
+                    const a = put('a', 'body-altered', 'Tue, 05 Mar 2024 09:40:00 +0000');
+                    const b = put('b', 'confirmed', 'Mon, 05 Mar 2023 09:40:00 +0000');
+                    const c = put('c', 'headers-altered', undefined);
+                    const d = put('d', 'confirmed', 'Tue, 05 Mar 2024 09:40:00 +0000');
+                    const ghost = { hash: digest(encodeLatin1('never indexed')), bytes: 1 };
+                    appendLog(paths, [
+                        log(a, '/leak/ada@example.com/p.mbox'),
+                        log(b, '/leak/ada@example.com/p.mbox'),
+                        log(c, '/leak/grace@example.net/p.mbox'),
+                        log(a, '/leak/grace@example.net/p.mbox'),
+                        log(d, '/leak/zed@example.org/p.mbox'),
+                        log(ghost, '/leak/zed@example.org/p.mbox'),
+                    ]);
+
+                    // The old algorithm: one scope and one query per mailbox.
+                    const old: unknown[] = [];
+                    for (const [mailbox, hashes] of derivedMailboxHashes(paths)) {
+                        const scope = hashScope(db, hashes);
+                        try {
+                            const found = db
+                                .prepare(
+                                    `SELECT CAST(strftime('%Y', m.sent_at / 1000, 'unixepoch') AS INTEGER) AS year,
+                                            m.verdict AS verdict, count(m.hash) AS total
+                                     FROM messages m, ${scope.table} s WHERE s.hash = m.hash GROUP BY 1, 2`,
+                                )
+                                .all() as { year?: number | null; verdict?: string; total?: number }[];
+                            const byYear = new Map<number | undefined, [number, number, number]>();
+                            for (const row of found) {
+                                const year = row.year == null ? undefined : Number(row.year);
+                                const cell = byYear.get(year) ?? [0, 0, 0];
+                                const n = Number(row.total);
+                                cell[0] += n;
+                                if (row.verdict === 'body-altered') cell[1] += n;
+                                if (row.verdict === 'headers-altered') cell[2] += n;
+                                byYear.set(year, cell);
+                            }
+                            for (const [year, cell] of byYear) {
+                                old.push({
+                                    mailbox,
+                                    ...(year === undefined ? {} : { year }),
+                                    messages: cell[0],
+                                    bodyAltered: cell[1],
+                                    headersAltered: cell[2],
+                                });
+                            }
+                        } finally {
+                            scope.close();
+                        }
+                    }
+
+                    const rows = periodBreakdown(db, paths);
+                    const key = (r: unknown) => JSON.stringify(r);
+                    expect(rows.map(key).sort()).toStrictEqual(old.map(key).sort());
+                    expect(rows.map((r) => r.mailbox)).toStrictEqual(
+                        old.map((r) => (r as { mailbox: string }).mailbox),
+                    );
+                    // `a` sits in two mailboxes and counts under both; the ghost counts nowhere.
+                    expect(rows.filter((r) => r.year === 2024).reduce((n, r) => n + r.messages, 0)).toBe(3);
+                    expect(
+                        rows.find((r) => r.mailbox === 'grace@example.net' && r.year === undefined)
+                            ?.headersAltered,
+                    ).toBe(1);
+                    expect(rows.find((r) => r.mailbox === 'zed@example.org')?.messages).toBe(1);
+
+                    const scope = mailboxScope(db, [
+                        ['x', ['h1']],
+                        ['y', ['h1', 'h2']],
+                    ]);
+                    try {
+                        const n = (
+                            db.prepare(`SELECT count(*) AS n FROM ${scope.table}`).get() as { n: number }
+                        ).n;
+                        expect(Number(n)).toBe(3);
+                    } finally {
+                        scope.close();
                     }
                 } finally {
                     db.close();

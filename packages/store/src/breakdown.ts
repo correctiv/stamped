@@ -15,7 +15,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { VERDICTS, type Verdict } from '@stamped/core';
 
 import type { CasePaths } from './case.ts';
-import { hashScope } from './index-db.ts';
+import { mailboxScope } from './index-db.ts';
 import { eachLogEntry, type ImportLogEntry } from './raw.ts';
 import type { SigningDomain } from './report.ts';
 import { backfillUnsignedHeadersAll, unsignedTotals } from './unsigned-headers.ts';
@@ -70,39 +70,45 @@ export interface PeriodRow {
  * mailboxes counts under both.
  */
 export function periodBreakdown(db: DatabaseSync, paths: CasePaths): PeriodRow[] {
+    const byMailbox = derivedMailboxHashes(paths);
+    // One scope table and one query for all mailboxes: a scope per mailbox cost a statement per hash.
+    const scope = mailboxScope(db, byMailbox);
+    const cells = new Map<string, Map<number | undefined, { m: number; b: number; h: number }>>();
+    for (const mailbox of byMailbox.keys()) cells.set(mailbox, new Map());
+    try {
+        const found = db
+            .prepare(
+                `SELECT s.mailbox AS mailbox,
+                        CAST(strftime('%Y', m.sent_at / 1000, 'unixepoch') AS INTEGER) AS year,
+                        m.verdict AS verdict, count(m.hash) AS total
+                 FROM ${scope.table} s JOIN messages m ON m.hash = s.hash
+                 GROUP BY 1, 2, 3 ORDER BY 2, 3`,
+            )
+            .all() as { mailbox?: string; year?: number | null; verdict?: string; total?: number }[];
+        for (const row of found) {
+            const byYear = cells.get(row.mailbox ?? '');
+            if (byYear === undefined) continue;
+            const year = row.year === null || row.year === undefined ? undefined : Number(row.year);
+            const cell = byYear.get(year) ?? { m: 0, b: 0, h: 0 };
+            const n = Number(row.total ?? 0);
+            cell.m += n;
+            if (row.verdict === 'body-altered') cell.b += n;
+            if (row.verdict === 'headers-altered') cell.h += n;
+            byYear.set(year, cell);
+        }
+    } finally {
+        scope.close();
+    }
     const rows: PeriodRow[] = [];
-    for (const [mailbox, hashes] of derivedMailboxHashes(paths)) {
-        const scope = hashScope(db, hashes);
-        try {
-            const found = db
-                .prepare(
-                    `SELECT CAST(strftime('%Y', m.sent_at / 1000, 'unixepoch') AS INTEGER) AS year,
-                            m.verdict AS verdict, count(m.hash) AS total
-                     FROM messages m, ${scope.table} s WHERE s.hash = m.hash
-                     GROUP BY 1, 2`,
-                )
-                .all() as { year?: number | null; verdict?: string; total?: number }[];
-            const byYear = new Map<number | undefined, { m: number; b: number; h: number }>();
-            for (const row of found) {
-                const year = row.year === null || row.year === undefined ? undefined : Number(row.year);
-                const cell = byYear.get(year) ?? { m: 0, b: 0, h: 0 };
-                const n = Number(row.total ?? 0);
-                cell.m += n;
-                if (row.verdict === 'body-altered') cell.b += n;
-                if (row.verdict === 'headers-altered') cell.h += n;
-                byYear.set(year, cell);
-            }
-            for (const [year, cell] of byYear) {
-                rows.push({
-                    mailbox,
-                    ...(year === undefined ? {} : { year }),
-                    messages: cell.m,
-                    bodyAltered: cell.b,
-                    headersAltered: cell.h,
-                });
-            }
-        } finally {
-            scope.close();
+    for (const [mailbox, byYear] of cells) {
+        for (const [year, cell] of byYear) {
+            rows.push({
+                mailbox,
+                ...(year === undefined ? {} : { year }),
+                messages: cell.m,
+                bodyAltered: cell.b,
+                headersAltered: cell.h,
+            });
         }
     }
     return rows;
