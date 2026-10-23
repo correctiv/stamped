@@ -83,8 +83,8 @@ function notRsa(): Error {
 /** DER of the OID rsaEncryption, 1.2.840.113549.1.1.1. */
 const RSA_OID = [0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01];
 
-/** Bit length of the modulus of an RSA SubjectPublicKeyInfo. */
-export function rsaModulusBits(spki: Uint8Array): number {
+/** The modulus of an RSA SubjectPublicKeyInfo, leading zero padding stripped. */
+function rsaModulusBytes(spki: Uint8Array): Uint8Array {
     const outer = readTlv(spki, 0);
     if (outer.tag !== 0x30) throw notRsa();
     const algorithm = readTlv(spki, outer.start);
@@ -99,7 +99,13 @@ export function rsaModulusBits(spki: Uint8Array): number {
     if (modulus.tag !== 0x02) throw notRsa();
     let start = modulus.start;
     while (start < modulus.end - 1 && spki[start] === 0) start++;
-    return (modulus.end - start - 1) * 8 + (32 - Math.clz32(spki[start] ?? 0));
+    return spki.subarray(start, modulus.end);
+}
+
+/** Bit length of the modulus of an RSA SubjectPublicKeyInfo. */
+export function rsaModulusBits(spki: Uint8Array): number {
+    const modulus = rsaModulusBytes(spki);
+    return (modulus.length - 1) * 8 + (32 - Math.clz32(modulus[0] ?? 0));
 }
 
 /** The tags of a DKIM key record, lowercased by name. */
@@ -160,6 +166,33 @@ function fromRecord(record: string): KeyMaterial {
         algorithm: 'rsa',
         bits: rsaModulusBits(bytes),
     };
+}
+
+/** Bytes as lowercase hex, for a fingerprint that is a string a `Set`/`Map` key can compare. */
+function toHex(bytes: Uint8Array): string {
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * A fingerprint of the DECODED key material a record carries — the RSA modulus, or the raw 32
+ * Ed25519 bytes — rather than the record text. Two records that are the same key in different
+ * formatting (whitespace, flags, base64 padding, a leading zero byte in the modulus) fingerprint
+ * identically; a record that fails to parse, or whose `p=` is empty (revoked), fingerprints as
+ * `undefined`, which never equals another `undefined` — two things that both fail to decode must
+ * not be read as "the same key" by a caller comparing fingerprints.
+ */
+export function keyFingerprint(record: string): string | undefined {
+    try {
+        const material = fromRecord(record);
+        if (material.kind !== 'key') return undefined;
+        const p = (tagsOf(material.record).get('p') ?? '').replace(/\s+/g, '');
+        const bytes = decodeBase64(p);
+        return material.algorithm === 'ed25519'
+            ? `ed25519:${toHex(bytes)}`
+            : `rsa:${toHex(rsaModulusBytes(bytes))}`;
+    } catch {
+        return undefined;
+    }
 }
 
 /**
