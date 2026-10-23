@@ -55,6 +55,8 @@ app/src/lib/model-path.ts
 app/src/lib/open-copy.ts
 app/src/lib/paged-list.ts
 app/src/lib/pairs.ts
+app/src/lib/pdf-report-model.ts
+app/src/lib/pdf-report.ts
 app/src/lib/progress.ts
 app/src/lib/queries.ts
 app/src/lib/refresh-scheduler.ts
@@ -68,6 +70,7 @@ app/src/lib/semantic-status.ts
 app/src/lib/semantic.ts
 app/src/lib/status.ts
 app/src/lib/vault.ts
+app/src/lib/version.ts
 packages/core/src/autokeys.ts
 packages/core/src/classify.ts
 packages/core/src/explain.ts
@@ -107,6 +110,7 @@ packages/semantic/src/runtime.ts
 packages/semantic/src/vector-db.ts
 packages/store/src/activity-status.ts
 packages/store/src/addresses-db.ts
+packages/store/src/breakdown.ts
 packages/store/src/case.ts
 packages/store/src/document-source.ts
 packages/store/src/imported-files.ts
