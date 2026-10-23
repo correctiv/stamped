@@ -22,10 +22,12 @@ import {
     type LookupChannel,
     type PairCount,
     type LookupResult,
+    type VaultEntry,
     _,
     _n,
 } from '@stamped/core';
-import { missingKeyPairs, openIndex } from '@stamped/store';
+import { missingKeyPairs, openIndex, reverifyPairs } from '@stamped/store';
+import { createInterface } from 'node:readline';
 import type { CommandModule } from 'yargs';
 
 import {
@@ -108,6 +110,7 @@ export function keysCommand(): CommandModule<unknown, CaseArgs> {
                 .command(addCommand())
                 .command(fetchCommand())
                 .command(templateCommand())
+                .command(resolveCommand())
                 .demandCommand(1, _('Pick a subcommand. Try `stamped keys --help`.'))
                 .epilog(explain()),
         handler: () => undefined,
@@ -445,6 +448,108 @@ function templateCommand(): CommandModule<CaseArgs, TemplateArgs> {
                     ...(args.period ? { period: args.period } : {}),
                 }),
             );
+        },
+    };
+}
+
+function describeCandidate(e: VaultEntry): string {
+    const range = e.seenFrom ? `, ${e.seenFrom.slice(0, 10)} – ${(e.seenTo ?? '').slice(0, 10)}` : '';
+    return `${e.algorithm} ${e.bits} bit, ${e.origin}, ${e.fetchedAt.slice(0, 10)}${range}`;
+}
+
+/** `y/n` from stdin, defaulting to no on anything else. */
+async function askChoice(prompt: string): Promise<string> {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    try {
+        return await new Promise<string>((done) => rl.question(prompt, done));
+    } finally {
+        rl.close();
+    }
+}
+
+interface ResolveArgs extends CaseArgs {
+    name: string;
+    choose?: number;
+}
+
+function resolveCommand(): CommandModule<CaseArgs, ResolveArgs> {
+    return {
+        command: 'resolve <name> [folder]',
+        describe: _('Decide which of two conflicting keys for a pair is the real one'),
+        builder: (yargs) =>
+            yargs
+                .positional('name', {
+                    describe: _('<selector>._domainkey.<domain>'),
+                    type: 'string',
+                    demandOption: true,
+                })
+                .positional('folder', { describe: _('The case folder'), type: 'string' })
+                .option('choose', {
+                    describe: _('Pick candidate N (1-based) without the interactive prompt'),
+                    type: 'number',
+                }),
+        handler: async (args) => {
+            const pair = splitName(args.name);
+            const dir = caseDir('resolve', args);
+            const vault = loadVault(dir);
+            const candidates = vault.distinctKeys(pair);
+            if (candidates.length === 0) {
+                throw new Error(fmt(_('No key stored for {name}.'), { name: args.name }));
+            }
+            if (candidates.length === 1) {
+                console.log(fmt(_('{name} holds one key already; nothing to resolve.'), { name: args.name }));
+                return;
+            }
+            console.log(
+                fmt(_('{name} holds {count} candidate keys. A key rotation, or a forgery — your call:'), {
+                    name: args.name,
+                    count: candidates.length,
+                }),
+            );
+            candidates.forEach((e, i) => console.log(`  ${i + 1}. ${describeCandidate(e)}`));
+            let choice = args.choose;
+            if (choice === undefined) {
+                const answer = await askChoice(
+                    fmt(_('Keep which one? [1-{count}, or empty to leave both] '), {
+                        count: candidates.length,
+                    }),
+                );
+                const trimmed = answer.trim();
+                if (trimmed === '') {
+                    console.log(_('Left as a conflict; nothing was changed.'));
+                    return;
+                }
+                choice = Number(trimmed);
+            }
+            const chosen = Number.isInteger(choice) ? candidates[choice - 1] : undefined;
+            if (!chosen) {
+                throw new Error(
+                    fmt(_('{choice} is not one of the listed candidates.'), { choice: String(choice) }),
+                );
+            }
+            vault.keepOnly(pair, chosen);
+            saveVault(dir, vault);
+            console.log(
+                fmt(
+                    _(
+                        'Kept the {algorithm} {bits} bit key from {origin}. Every other record for {name} was dropped.',
+                    ),
+                    {
+                        algorithm: chosen.algorithm,
+                        bits: chosen.bits,
+                        origin: chosen.origin,
+                        name: args.name,
+                    },
+                ),
+            );
+            if (existsSync(dir + '/case.json')) {
+                const result = await reverifyPairs(caseOrThrow(dir), [pair], vault);
+                console.log(
+                    fmt(_n('{count} message re-verified.', '{count} messages re-verified.', result.checked), {
+                        count: result.checked,
+                    }),
+                );
+            }
         },
     };
 }
