@@ -32,6 +32,7 @@ const keyDir = join(fixtureDir, 'keys');
 
 /** A fixed timestamp, so a regenerated fixture differs only where a key forced it to. */
 const SIGN_TIME = Math.floor(Date.parse('2024-03-05T09:41:00Z') / 1000);
+const FUTURE_SIGN_TIME = Math.floor(Date.parse('2200-01-01T00:00:00Z') / 1000);
 
 // ── RFC 6376 § 3.4: canonicalization ────────────────────────────────────────────────────────
 
@@ -92,11 +93,13 @@ function sign({
     signedHeaders,
     lengthLimit,
     expiresAt,
+    signedAt,
 }) {
     const [headerCanon, bodyCanon] = canonicalization.split('/');
     const canonHeader = headerCanon === 'simple' ? simpleHeader : relaxedHeader;
     const canonBody = bodyCanon === 'simple' ? simpleBody : relaxedBody;
     const hashName = algorithm.endsWith('sha1') ? 'sha1' : 'sha256';
+    const t = signedAt === undefined ? SIGN_TIME : signedAt;
 
     let bodyBytes = Buffer.from(canonBody(body), 'binary');
     if (lengthLimit !== undefined) bodyBytes = bodyBytes.subarray(0, lengthLimit);
@@ -108,7 +111,7 @@ function sign({
         `c=${canonicalization}`,
         `d=${domain}`,
         `s=${selector}`,
-        `t=${SIGN_TIME}`,
+        `t=${t}`,
         ...(expiresAt === undefined ? [] : [`x=${expiresAt}`]),
         `h=${signedHeaders.join(':')}`,
         ...(lengthLimit === undefined ? [] : [`l=${lengthLimit}`]),
@@ -686,7 +689,7 @@ write(
 // ── signature lifetime (x=) ─────────────────────────────────────────────────────────────────
 
 // x= a day after t=, which is long past: the signature is genuine, only its stated lifetime is over.
-const signExpiring = (expiresAt, body = BODY) =>
+const signExpiring = (expiresAt, body = BODY, signedAt) =>
     sign({
         headers: headersFor({ subject: 'Quarterly figures' }),
         body,
@@ -697,12 +700,16 @@ const signExpiring = (expiresAt, body = BODY) =>
         canonicalization: 'relaxed/relaxed',
         signedHeaders: SIGNED,
         expiresAt,
+        ...(signedAt === undefined ? {} : { signedAt }),
     });
 
 write('caveat-expired.eml', signExpiring(SIGN_TIME + 86400));
 
 // x= BEFORE t=: the header contradicts itself.
 write('caveat-lifetime-invalid.eml', signExpiring(SIGN_TIME - 3600));
+
+// x= BEFORE t= but both in the future: the header contradicts itself but neither is expired.
+write('caveat-lifetime-invalid-future.eml', signExpiring(FUTURE_SIGN_TIME - 3600, BODY, FUTURE_SIGN_TIME));
 
 // An expired x= must not hide an altered body.
 write(

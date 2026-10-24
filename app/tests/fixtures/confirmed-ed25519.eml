@@ -1,4 +1,4 @@
-DKIM-Signature: v=1; a=ed25519-sha256; c=simple/simple; d=example.com; s=ted; t=1709631660; h=From:To:Subject:Date; bh=uRFUPYnBH+fzHqIcBIwsDehNNS5stfaQIFJFa2dJlHI=; b=Rm5XBp0fEFZvAIzArxtAhMxfgLb6dSp96Vp9ST3qJ/6Y60C2n11Z4zM+NPhs9Z/pRnaVjP1mNhFhi85MUwhEAg==
+DKIM-Signature: v=1; a=ed25519-sha256; c=simple/simple; d=example.com; s=ted; t=1709631660; h=From:To:Subject:Date; bh=uRFUPYnBH+fzHqIcBIwsDehNNS5stfaQIFJFa2dJlHI=; b=LeVPxN7jsBeDGujOpQqWjqbcECo96Dhjfr4upTR1Cyop4vEkxRMc+wx330h8juIoSkH5ZXOxCcNPRDcnlobzCg==
 From: Ada Lovelace <ada@example.com>
 To: Grace Hopper <grace@example.net>
 Subject: Quarterly figures
