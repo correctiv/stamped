@@ -56,6 +56,26 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.3.0" date="2026-10-24">
+      <description>
+        <p>Stamped now writes a PDF verification report and explains why a message failed, instead of only stating that it did.</p>
+        <p xml:lang="de">Stamped erstellt jetzt einen PDF-Prüfbericht und erklärt, warum eine Nachricht durchgefallen ist, statt es nur festzustellen.</p>
+        <ul>
+          <li>PDF verification report for a whole case</li>
+          <li xml:lang="de">PDF-Prüfbericht für einen ganzen Fall</li>
+          <li>Altered-body messages come with possible explanations such as a mailing-list footer</li>
+          <li xml:lang="de">Bei geänderten Nachrichten stehen mögliche Erklärungen, etwa eine Fußzeile der Mailingliste</li>
+          <li>After a key rotation, the key that matches the date of the message is used</li>
+          <li xml:lang="de">Bei einem getauschten Schlüssel wird der passende nach dem Datum der Nachricht gewählt</li>
+          <li>Keys recovered from the signatures themselves are marked as such</li>
+          <li xml:lang="de">Aus den Signaturen selbst gewonnene Schlüssel sind als solche gekennzeichnet</li>
+          <li>An expired signature still verifies, with a caveat</li>
+          <li xml:lang="de">Eine abgelaufene Signatur wird weiterhin geprüft, mit Hinweis</li>
+          <li>A faster message list and a faster reverify on large cases</li>
+          <li xml:lang="de">Eine schnellere Nachrichtenliste und ein schnelleres Neuprüfen bei großen Fällen</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.1" date="2026-10-22">
       <description>
         <p>On a Mac without Homebrew, Stamped now shows its own font and translates the toolkit's menus and buttons.</p>
