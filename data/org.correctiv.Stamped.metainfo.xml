@@ -56,6 +56,12 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.3.1" date="2026-10-24">
+      <description>
+        <p>The first downloadable build with everything from 0.3.0, whose packages could not be built.</p>
+        <p xml:lang="de">Der erste herunterladbare Stand mit allem aus 0.3.0, dessen Pakete sich nicht bauen ließen.</p>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-10-24">
       <description>
         <p>Stamped now writes a PDF verification report and explains why a message failed, instead of only stating that it did.</p>
