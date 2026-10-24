@@ -83,6 +83,8 @@ export function unappliedKeyPairs(db: DatabaseSync, vault: KeyVault): PairCount[
         if (!missing.has(pairName(pair))) merged.set(pairName(pair), pair);
     }
     for (const pair of legacyExpiredPairs(db)) {
+        if (missing.has(pairName(pair))) continue;
+        if (vault.recordsFor(pair).length === 0) continue;
         const known = merged.get(pairName(pair));
         merged.set(
             pairName(pair),
