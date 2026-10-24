@@ -268,6 +268,45 @@ export default async () => {
             }
         });
 
+        await it('skips a legacy `expired` row whose key is absent from the vault and keeps its reason', async () => {
+            const root = mkdtempSync(join(tmpdir(), 'stamped-expired-missing-'));
+            try {
+                const paths = openCase(root);
+                await importSources(paths, [fixturePath('caveat-expired.eml')], { keys: fixtureKeys() });
+
+                const old = openIndex(paths);
+                old.prepare("UPDATE signatures SET verdict = 'unverifiable', reason = 'expired'").run();
+                old.prepare("UPDATE messages SET verdict = 'unverifiable'").run();
+                old.close();
+
+                const db = openIndex(paths);
+                const due = unappliedKeyPairs(db, new KeyVault());
+                db.close();
+                expect(due.length).toBe(0);
+
+                const result = await reverifyPairs(paths, [], new KeyVault());
+                expect(result.checked).toBe(0);
+                expect(result.changed.length).toBe(0);
+
+                const check = openIndex(paths);
+                try {
+                    const sig = check
+                        .prepare("SELECT verdict, reason FROM signatures WHERE selector = 'texp'")
+                        .get() as { verdict?: string; reason?: string } | undefined;
+                    expect(sig?.verdict).toBe('unverifiable');
+                    expect(sig?.reason).toBe('expired');
+                    const msg = check.prepare('SELECT verdict FROM messages').get() as
+                        | { verdict?: string }
+                        | undefined;
+                    expect(msg?.verdict).toBe('unverifiable');
+                } finally {
+                    check.close();
+                }
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
         await it('re-reads every signed message when asked for all pairs', async () => {
             await withCase(async (paths) => {
                 const db = openIndex(paths);
