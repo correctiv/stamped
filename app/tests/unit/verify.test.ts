@@ -41,6 +41,11 @@ const EXPECTED: ReadonlyArray<{ file: string; verdict: Verdict; caveats: Caveat[
         verdict: 'confirmed-with-caveats',
         caveats: ['signature-expired', 'signature-lifetime-invalid'],
     },
+    {
+        file: 'caveat-lifetime-invalid-future.eml',
+        verdict: 'confirmed-with-caveats',
+        caveats: ['signature-lifetime-invalid'],
+    },
     { file: 'body-altered-expired.eml', verdict: 'body-altered', caveats: [] },
     { file: 'body-altered.eml', verdict: 'body-altered', caveats: [] },
     { file: 'headers-altered.eml', verdict: 'headers-altered', caveats: [] },
