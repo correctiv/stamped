@@ -97,16 +97,20 @@ jobs:
           node --experimental-strip-types app/scripts/fetch-model.mts ship-config --on
           cd app && gjsify ship linux --skip-build --target appimage
 
-      # Naming the target installs the os/cpu-gated runtime packages a plain install skips.
-      - name: Ship macOS (arm64)
-        run: |
-          gjsify install --os darwin --cpu arm64 --immutable
-          cd app && gjsify ship darwin --arch arm64 --skip-build --target macos-app-zip
-
+      # Naming the target installs the os/cpu-gated runtime packages a plain install skips. Installs
+      # ADD to node_modules, they never remove, and `@node-llama-cpp/mac-arm64-metal` declares
+      # `cpu: [arm64, x64]`, so ship cannot tell it is the wrong one for an x64 app once it is on
+      # disk. x64 therefore goes FIRST: the arm64 build is not installed yet, and `mac-x64` (cpu x64
+      # only) is filtered out of the arm64 app by its own manifest.
       - name: Ship macOS (x64)
         run: |
           gjsify install --os darwin --cpu x64 --immutable
           cd app && gjsify ship darwin --arch x64 --skip-build --target macos-app-zip
+
+      - name: Ship macOS (arm64)
+        run: |
+          gjsify install --os darwin --cpu arm64 --immutable
+          cd app && gjsify ship darwin --arch arm64 --skip-build --target macos-app-zip
 
       # The Windows artifacts carry no model: the ship config goes off before them, so the 296 MiB
       # stay out of the .zip and the .msi.
