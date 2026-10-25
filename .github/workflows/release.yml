@@ -177,10 +177,70 @@ jobs:
           path: app/ship/out/*
           compression-level: 0
 
+  # THE ARTIFACTS ARE OPENED, not just listed. v0.3.0 and v0.3.1 shipped a macOS .app that exited at
+  # its first import (`node-llama-cpp` was not in the bundle), and nothing in this workflow ever
+  # started one. Each leg runs the artifact on the OS and CPU it was built for, and the release is
+  # published only when all of them pass.
+  smoke:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-14, zip: "*.macos.arm64.zip" }
+          - { os: windows-latest, zip: "*.windows.x64.zip" }
+          - { os: windows-11-arm, zip: "*.windows.arm64.zip" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: packages
+
+      # `check-app.mjs` launches the .app under a sandbox that denies Homebrew, waits for the
+      # window's process, and fails on a host library, a missing font or catalogue, or an import error.
+      - name: Open the macOS app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -eu
+          mkdir opened
+          ditto -x -k packages/${{ matrix.zip }} opened
+          node app/tests/macos/check-app.mjs opened/Stamped.app
+
+      # `--help` runs the whole module graph: the interpreter, node-gi, the GTK closure and every
+      # import, `node-llama-cpp` included, are loaded before yargs prints anything.
+      - name: Open the Windows program
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $zip = (Get-ChildItem "packages/${{ matrix.zip }}").FullName
+          Expand-Archive $zip -DestinationPath opened
+          $out = & cmd /c "opened\Stamped\stamped.cmd --help 2>&1" | Out-String
+          Write-Host $out
+          if ($LASTEXITCODE -ne 0 -or $out -notmatch 'stamped verify') { throw "stamped.cmd --help failed (exit $LASTEXITCODE)" }
+
+  publish:
+    needs: [package, smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: packages
+
       # Only for a tag; a manual run exercises the chain without publishing.
       - name: Create the release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release create "$GITHUB_REF_NAME" app/ship/out/* --title "$GITHUB_REF_NAME" --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" packages/* --title "$GITHUB_REF_NAME" --generate-notes
