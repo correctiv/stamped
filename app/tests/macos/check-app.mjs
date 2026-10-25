@@ -217,13 +217,21 @@ while (Date.now() < deadline && !bundlePid) {
     if (!bundlePid) await new Promise((r) => setTimeout(r, 500));
 }
 
-// give it a moment to map fonts + open catalogs
-if (bundlePid) await new Promise((r) => setTimeout(r, 4000));
-
+// The window maps its font and catalogues some time after the process exists: a cold start (first
+// launch after unzipping, a CI runner) took longer than the fixed 4 s this used to wait, and the
+// three checks below failed on a healthy app. Poll until all three are mapped, up to 30 s; a
+// genuinely missing one still fails, after the deadline.
+const mapped = (text) =>
+    /AdwaitaSans[^\s/]*\.ttf/i.test(text) &&
+    ['gtk40', 'libadwaita'].every((domain) => text.includes(`/gtk/share/locale/de/LC_MESSAGES/${domain}.mo`));
 let lsofOut = '';
 if (bundlePid) {
-    const r = spawnSync('lsof', ['-p', bundlePid], { encoding: 'utf8' });
-    lsofOut = r.stdout || '';
+    const settle = Date.now() + 30000;
+    for (;;) {
+        await new Promise((r) => setTimeout(r, 1000));
+        lsofOut = spawnSync('lsof', ['-p', bundlePid], { encoding: 'utf8' }).stdout || '';
+        if (mapped(lsofOut) || Date.now() > settle) break;
+    }
 }
 
 // kill everything
