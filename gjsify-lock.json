@@ -28,9 +28,11 @@
     "@gjsify/node-gi@0.64.10",
     "@gjsify/gtk-runtime-darwin-arm64@0.64.10",
     "@gjsify/gtk-runtime-darwin-x64@0.64.10",
+    "@gjsify/gtk-runtime-win32-arm64@0.64.10",
     "@gjsify/gtk-runtime-win32-x64@0.64.10",
     "@gjsify/node-runtime-darwin-arm64@0.64.10",
     "@gjsify/node-runtime-darwin-x64@0.64.10",
+    "@gjsify/node-runtime-win32-arm64@0.64.10",
     "@gjsify/node-runtime-win32-x64@0.64.10",
     "@gjsify/child_process@0.64.10",
     "node-llama-cpp@3.22.2",
@@ -1316,6 +1318,18 @@
       ],
       "optional": true
     },
+    "node_modules/@gjsify/gtk-runtime-win32-arm64": {
+      "version": "0.64.10",
+      "resolved": "https://registry.npmjs.org/@gjsify/gtk-runtime-win32-arm64/-/gtk-runtime-win32-arm64-0.64.10.tgz",
+      "integrity": "sha512-vH05VDTJVx7tL+FbAah9pg03/TCkMWPNe31BHRchjBSMSHpH5QHa1fhVfC93dRNVAYEGTN1aBh8m7ueKG1glEg==",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "optional": true
+    },
     "node_modules/@gjsify/gtk-runtime-win32-x64": {
       "version": "0.64.10",
       "resolved": "https://registry.npmjs.org/@gjsify/gtk-runtime-win32-x64/-/gtk-runtime-win32-x64-0.64.10.tgz",
@@ -1783,6 +1797,18 @@
       ],
       "cpu": [
         "x64"
+      ],
+      "optional": true
+    },
+    "node_modules/@gjsify/node-runtime-win32-arm64": {
+      "version": "0.64.10",
+      "resolved": "https://registry.npmjs.org/@gjsify/node-runtime-win32-arm64/-/node-runtime-win32-arm64-0.64.10.tgz",
+      "integrity": "sha512-/ihjGKid9Ii6M3bh8ObMmIHqCvvaM1Ud8JHWNR7ulT5VCA8PMqk1atTXx7MCvG7eT/hVtapVgVZrrozbtfoV+g==",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "arm64"
       ],
       "optional": true
     },

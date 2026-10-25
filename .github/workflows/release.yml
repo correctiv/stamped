@@ -116,6 +116,13 @@ jobs:
           gjsify install --os win32 --cpu x64 --immutable
           cd app && gjsify ship windows --arch x64 --skip-build --target windows-dir-zip,msi
 
+      # Windows on ARM: the interpreter and the GTK closure are native arm64, only the GUI launcher
+      # stub is x64 (Prism). No .msi: the zip is what the smoke test below opens.
+      - name: Ship Windows (arm64)
+        run: |
+          gjsify install --os win32 --cpu arm64 --immutable
+          cd app && gjsify ship windows --arch arm64 --skip-build --target windows-dir-zip
+
       # `ship` exits 0 after writing nothing when every target is filtered away: assert by name.
       - name: Assert the artifacts arrived
         working-directory: app/ship/out
@@ -130,6 +137,7 @@ jobs:
             "stamped-${version}-1.macos.arm64.zip" \
             "stamped-${version}-1.macos.x86_64.zip" \
             "stamped-${version}-1.windows.x64.zip" \
+            "stamped-${version}-1.windows.arm64.zip" \
             "stamped-${version}-1.x64.msi"; do
             [ -s "$f" ] || { echo "::error::missing or empty artifact: $f"; exit 1; }
           done
@@ -156,10 +164,12 @@ jobs:
               *) echo "::error::$macos does not carry the model"; exit 1 ;;
             esac
           done
-          names=$(unzip -Z1 app/ship/out/*windows*.zip)
-          case "$names" in
-            *embeddinggemma-2-Q8_0.gguf*) echo "::error::the Windows artifact carries the model"; exit 1 ;;
-          esac
+          for windows in app/ship/out/*windows*.zip; do
+            names=$(unzip -Z1 "$windows")
+            case "$names" in
+              *embeddinggemma-2-Q8_0.gguf*) echo "::error::$windows carries the model"; exit 1 ;;
+            esac
+          done
 
       - uses: actions/upload-artifact@v4
         with:

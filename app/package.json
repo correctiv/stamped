@@ -161,9 +161,11 @@
   "optionalDependencies": {
     "@gjsify/gtk-runtime-darwin-arm64": "0.64.10",
     "@gjsify/gtk-runtime-darwin-x64": "0.64.10",
+    "@gjsify/gtk-runtime-win32-arm64": "0.64.10",
     "@gjsify/gtk-runtime-win32-x64": "0.64.10",
     "@gjsify/node-runtime-darwin-arm64": "0.64.10",
     "@gjsify/node-runtime-darwin-x64": "0.64.10",
+    "@gjsify/node-runtime-win32-arm64": "0.64.10",
     "@gjsify/node-runtime-win32-x64": "0.64.10"
   }
 }
