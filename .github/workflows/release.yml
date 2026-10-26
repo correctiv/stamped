@@ -119,10 +119,12 @@ jobs:
 
       # The Windows artifacts carry no model: the ship config goes off before them, so the 296 MiB
       # stay out of the .zip and the .msi.
+      # `@node-llama-cpp/win-arm64` declares `cpu: [arm64, x64]` as well (see the macOS x64 step).
       - name: Ship Windows (x64)
         run: |
           node --experimental-strip-types app/scripts/fetch-model.mts ship-config --off
           gjsify install --os win32 --cpu x64 --immutable
+          rm -rf node_modules/@node-llama-cpp/win-arm64
           cd app && gjsify ship windows --arch x64 --skip-build --target windows-dir-zip,msi
 
       # Windows on ARM: the interpreter and the GTK closure are native arm64, only the GUI launcher
