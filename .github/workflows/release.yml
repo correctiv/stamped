@@ -203,7 +203,11 @@ jobs:
           - { os: windows-11-arm, zip: "*.windows.arm64.zip" }
     runs-on: ${{ matrix.os }}
     steps:
+      # Only the check script: the fixtures hold a Maildir file name with a `:`, which Windows
+      # cannot create, so a full checkout fails there.
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: app/tests/macos
 
       - uses: actions/setup-node@v4
         with:

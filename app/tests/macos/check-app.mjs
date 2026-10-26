@@ -282,6 +282,15 @@ if (!bundlePid) {
     }
     if (/Fontconfig error/i.test(stderr)) fail('stderr contains "Fontconfig error"');
     else pass('no Fontconfig error on stderr');
+    if (failed > 0) {
+        // Whether the app was alive and what it said tells a missing file from a window that
+        // never opened (a runner without a display session).
+        const alive = spawnSync('ps', ['-p', bundlePid, '-o', 'pid=,stat=,etime='], {
+            encoding: 'utf8',
+        }).stdout.trim();
+        console.log(`      process: ${alive || 'gone'}; ${opened.length} open files`);
+        console.log(`      stderr (last 1500 chars): ${stderr.slice(-1500) || '(empty)'}`);
+    }
 }
 
 killAll();
