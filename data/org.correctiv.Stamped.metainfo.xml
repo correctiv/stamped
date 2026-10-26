@@ -56,6 +56,12 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.3.2" date="2026-10-26">
+      <description>
+        <p>The macOS app starts again, and Windows on ARM64 is supported; macOS 15 or newer is required.</p>
+        <p xml:lang="de">Die macOS-App startet wieder, und Windows auf ARM64 wird unterstützt; macOS 15 oder neuer ist nötig.</p>
+      </description>
+    </release>
     <release version="0.3.1" date="2026-10-24">
       <description>
         <p>The first downloadable build with everything from 0.3.0, whose packages could not be built.</p>
