@@ -210,6 +210,18 @@ function findBundlePid() {
     return r.stdout.trim().split('\n').filter(Boolean).pop() || null;
 }
 
+// Every process running out of the bundle: the launcher and the node that owns the window can be
+// two processes, and the files the window maps belong to the second.
+function bundlePids() {
+    const r = spawnSync('pgrep', ['-f', `${appPath}/Contents`], { encoding: 'utf8' });
+    return r.stdout.trim().split('\n').filter(Boolean);
+}
+function lsofAll() {
+    return bundlePids()
+        .map((pid) => spawnSync('lsof', ['-p', pid], { encoding: 'utf8' }).stdout || '')
+        .join('\n');
+}
+
 let bundlePid = null;
 const deadline = Date.now() + 20000;
 while (Date.now() < deadline && !bundlePid) {
@@ -229,7 +241,7 @@ if (bundlePid) {
     const settle = Date.now() + 30000;
     for (;;) {
         await new Promise((r) => setTimeout(r, 1000));
-        lsofOut = spawnSync('lsof', ['-p', bundlePid], { encoding: 'utf8' }).stdout || '';
+        lsofOut = lsofAll();
         if (mapped(lsofOut) || Date.now() > settle) break;
     }
 }
@@ -285,10 +297,11 @@ if (!bundlePid) {
     if (failed > 0) {
         // Whether the app was alive and what it said tells a missing file from a window that
         // never opened (a runner without a display session).
-        const alive = spawnSync('ps', ['-p', bundlePid, '-o', 'pid=,stat=,etime='], {
-            encoding: 'utf8',
-        }).stdout.trim();
-        console.log(`      process: ${alive || 'gone'}; ${opened.length} open files`);
+        const alive = spawnSync('ps', ['-ax', '-o', 'pid=,ppid=,stat=,etime=,command='], { encoding: 'utf8' })
+            .stdout.split('\n')
+            .filter((l) => l.includes(`${appPath}/Contents`))
+            .map((l) => l.trim().replace(appPath, '<app>').slice(0, 200));
+        console.log(`      processes: ${alive.join(' | ') || 'gone'}; ${opened.length} open files`);
         console.log(`      stderr (last 1500 chars): ${stderr.slice(-1500) || '(empty)'}`);
     }
 }
