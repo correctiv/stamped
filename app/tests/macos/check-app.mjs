@@ -302,6 +302,12 @@ if (!bundlePid) {
             .filter((l) => l.includes(`${appPath}/Contents`))
             .map((l) => l.trim().replace(appPath, '<app>').slice(0, 200));
         console.log(`      processes: ${alive.join(' | ') || 'gone'}; ${opened.length} open files`);
+        const files = [...new Set(opened)]
+            .filter((p) => p.startsWith('/') && !/\.(dylib|so)$/.test(p) && !p.startsWith('/dev/'))
+            .map((p) => p.replace(appPath, '<app>'));
+        console.log(
+            `      open files that are not libraries (${files.length}):\n        ${files.slice(0, 80).join('\n        ')}`,
+        );
         console.log(`      stderr (last 1500 chars): ${stderr.slice(-1500) || '(empty)'}`);
     }
 }
