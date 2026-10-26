@@ -198,14 +198,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-14, zip: "*.macos.arm64.zip" }
+          # macOS 15 is the floor: the GTK runtime is built for 15.0 and its libfreetype links
+          # /usr/lib/libhvf.dylib, which macOS 14 does not have (the app fails at dlopen there).
+          - { os: macos-15, zip: "*.macos.arm64.zip" }
           - { os: windows-latest, zip: "*.windows.x64.zip" }
           - { os: windows-11-arm, zip: "*.windows.arm64.zip" }
     runs-on: ${{ matrix.os }}
     steps:
-      # Only the check script: the fixtures hold a Maildir file name with a `:`, which Windows
-      # cannot create, so a full checkout fails there.
+      # Only macOS needs the repo, and only for the check script. Windows must not check out at
+      # all: the fixtures hold a Maildir file name with a `:`, which git refuses on Windows even
+      # with a sparse checkout.
       - uses: actions/checkout@v4
+        if: runner.os == 'macOS'
         with:
           sparse-checkout: app/tests/macos
 
