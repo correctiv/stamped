@@ -229,11 +229,6 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # GTK picks its language from the system settings on macOS, not from LANG, and the check
-          # asserts the GERMAN catalogues are mapped: a runner set to English never loads them.
-          defaults write -g AppleLanguages -array de
-          defaults write -g AppleLocale -string de_DE
-          defaults read -g AppleLanguages
           mkdir opened
           ditto -x -k packages/${{ matrix.zip }} opened
           node app/tests/macos/check-app.mjs opened/Stamped.app

@@ -184,13 +184,19 @@ writeFileSync(
         '\n',
 );
 
+// LC_* and LANGUAGE beat LANG, and a hosted runner sets LC_ALL to en_US: without this the app
+// loads the English catalogues and the German ones are never mapped.
+const inherited = Object.fromEntries(
+    Object.entries(process.env).filter(([k]) => !k.startsWith('LC_') && k !== 'LANGUAGE'),
+);
 const env = {
-    ...process.env,
+    ...inherited,
     HOME: home,
     XDG_CONFIG_HOME: join(home, '.config'),
     XDG_DATA_HOME: join(home, '.local', 'share'),
     XDG_CACHE_HOME: join(home, '.cache'),
     LANG: 'de_DE.UTF-8',
+    LANGUAGE: 'de',
 };
 const child = spawn('sandbox-exec', ['-f', profile, execPath], {
     env,
