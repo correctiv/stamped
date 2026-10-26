@@ -184,13 +184,19 @@ writeFileSync(
         '\n',
 );
 
+// LC_* and LANGUAGE beat LANG, and a hosted runner sets LC_ALL to en_US: without this the app
+// loads the English catalogues and the German ones are never mapped.
+const inherited = Object.fromEntries(
+    Object.entries(process.env).filter(([k]) => !k.startsWith('LC_') && k !== 'LANGUAGE'),
+);
 const env = {
-    ...process.env,
+    ...inherited,
     HOME: home,
     XDG_CONFIG_HOME: join(home, '.config'),
     XDG_DATA_HOME: join(home, '.local', 'share'),
     XDG_CACHE_HOME: join(home, '.cache'),
     LANG: 'de_DE.UTF-8',
+    LANGUAGE: 'de',
 };
 const child = spawn('sandbox-exec', ['-f', profile, execPath], {
     env,
@@ -210,6 +216,18 @@ function findBundlePid() {
     return r.stdout.trim().split('\n').filter(Boolean).pop() || null;
 }
 
+// Every process running out of the bundle: the launcher and the node that owns the window can be
+// two processes, and the files the window maps belong to the second.
+function bundlePids() {
+    const r = spawnSync('pgrep', ['-f', `${appPath}/Contents`], { encoding: 'utf8' });
+    return r.stdout.trim().split('\n').filter(Boolean);
+}
+function lsofAll() {
+    return bundlePids()
+        .map((pid) => spawnSync('lsof', ['-p', pid], { encoding: 'utf8' }).stdout || '')
+        .join('\n');
+}
+
 let bundlePid = null;
 const deadline = Date.now() + 20000;
 while (Date.now() < deadline && !bundlePid) {
@@ -217,13 +235,21 @@ while (Date.now() < deadline && !bundlePid) {
     if (!bundlePid) await new Promise((r) => setTimeout(r, 500));
 }
 
-// give it a moment to map fonts + open catalogs
-if (bundlePid) await new Promise((r) => setTimeout(r, 4000));
-
+// The window maps its font and catalogues some time after the process exists: a cold start (first
+// launch after unzipping, a CI runner) took longer than the fixed 4 s this used to wait, and the
+// three checks below failed on a healthy app. Poll until all three are mapped, up to 30 s; a
+// genuinely missing one still fails, after the deadline.
+const mapped = (text) =>
+    /AdwaitaSans[^\s/]*\.ttf/i.test(text) &&
+    ['gtk40', 'libadwaita'].every((domain) => text.includes(`/gtk/share/locale/de/LC_MESSAGES/${domain}.mo`));
 let lsofOut = '';
 if (bundlePid) {
-    const r = spawnSync('lsof', ['-p', bundlePid], { encoding: 'utf8' });
-    lsofOut = r.stdout || '';
+    const settle = Date.now() + 30000;
+    for (;;) {
+        await new Promise((r) => setTimeout(r, 1000));
+        lsofOut = lsofAll();
+        if (mapped(lsofOut) || Date.now() > settle) break;
+    }
 }
 
 // kill everything
@@ -274,6 +300,22 @@ if (!bundlePid) {
     }
     if (/Fontconfig error/i.test(stderr)) fail('stderr contains "Fontconfig error"');
     else pass('no Fontconfig error on stderr');
+    if (failed > 0) {
+        // Whether the app was alive and what it said tells a missing file from a window that
+        // never opened (a runner without a display session).
+        const alive = spawnSync('ps', ['-ax', '-o', 'pid=,ppid=,stat=,etime=,command='], { encoding: 'utf8' })
+            .stdout.split('\n')
+            .filter((l) => l.includes(`${appPath}/Contents`))
+            .map((l) => l.trim().replace(appPath, '<app>').slice(0, 200));
+        console.log(`      processes: ${alive.join(' | ') || 'gone'}; ${opened.length} open files`);
+        const files = [...new Set(opened)]
+            .filter((p) => p.startsWith('/') && !/\.(dylib|so)$/.test(p) && !p.startsWith('/dev/'))
+            .map((p) => p.replace(appPath, '<app>'));
+        console.log(
+            `      open files that are not libraries (${files.length}):\n        ${files.slice(0, 80).join('\n        ')}`,
+        );
+        console.log(`      stderr (last 1500 chars): ${stderr.slice(-1500) || '(empty)'}`);
+    }
 }
 
 killAll();

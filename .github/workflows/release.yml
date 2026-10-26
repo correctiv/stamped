@@ -97,24 +97,42 @@ jobs:
           node --experimental-strip-types app/scripts/fetch-model.mts ship-config --on
           cd app && gjsify ship linux --skip-build --target appimage
 
-      # Naming the target installs the os/cpu-gated runtime packages a plain install skips.
+      # Naming the target installs the os/cpu-gated runtime packages a plain install skips. Installs
+      # ADD to node_modules, they never remove, and `@node-llama-cpp/mac-arm64-metal` declares
+      # `cpu: [arm64, x64]`, so ship cannot tell it is the wrong one for an x64 app once it is on
+      # disk, and an x64 install pulls it in too (measured: the x64 ship refused the payload as
+      # arm64). So the x64 app removes it before it ships; `mac-x64` (cpu x64 only) is filtered
+      # out of the arm64 app by its own manifest, and the arm64 install below puts the arm64
+      # build back. The ship config's `nodeModulesExclude` is a flat list and would drop it from
+      # the arm64 app too.
+      # gjsify gap (unfixed): no per-architecture `nodeModulesExclude`.
+      - name: Ship macOS (x64)
+        run: |
+          gjsify install --os darwin --cpu x64 --immutable
+          rm -rf node_modules/@node-llama-cpp/mac-arm64-metal
+          cd app && gjsify ship darwin --arch x64 --skip-build --target macos-app-zip
+
       - name: Ship macOS (arm64)
         run: |
           gjsify install --os darwin --cpu arm64 --immutable
           cd app && gjsify ship darwin --arch arm64 --skip-build --target macos-app-zip
 
-      - name: Ship macOS (x64)
-        run: |
-          gjsify install --os darwin --cpu x64 --immutable
-          cd app && gjsify ship darwin --arch x64 --skip-build --target macos-app-zip
-
       # The Windows artifacts carry no model: the ship config goes off before them, so the 296 MiB
       # stay out of the .zip and the .msi.
+      # `@node-llama-cpp/win-arm64` declares `cpu: [arm64, x64]` as well (see the macOS x64 step).
       - name: Ship Windows (x64)
         run: |
           node --experimental-strip-types app/scripts/fetch-model.mts ship-config --off
           gjsify install --os win32 --cpu x64 --immutable
+          rm -rf node_modules/@node-llama-cpp/win-arm64
           cd app && gjsify ship windows --arch x64 --skip-build --target windows-dir-zip,msi
+
+      # Windows on ARM: the interpreter and the GTK closure are native arm64, only the GUI launcher
+      # stub is x64 (Prism). No .msi: the zip is what the smoke test below opens.
+      - name: Ship Windows (arm64)
+        run: |
+          gjsify install --os win32 --cpu arm64 --immutable
+          cd app && gjsify ship windows --arch arm64 --skip-build --target windows-dir-zip
 
       # `ship` exits 0 after writing nothing when every target is filtered away: assert by name.
       - name: Assert the artifacts arrived
@@ -130,6 +148,7 @@ jobs:
             "stamped-${version}-1.macos.arm64.zip" \
             "stamped-${version}-1.macos.x86_64.zip" \
             "stamped-${version}-1.windows.x64.zip" \
+            "stamped-${version}-1.windows.arm64.zip" \
             "stamped-${version}-1.x64.msi"; do
             [ -s "$f" ] || { echo "::error::missing or empty artifact: $f"; exit 1; }
           done
@@ -156,10 +175,12 @@ jobs:
               *) echo "::error::$macos does not carry the model"; exit 1 ;;
             esac
           done
-          names=$(unzip -Z1 app/ship/out/*windows*.zip)
-          case "$names" in
-            *embeddinggemma-2-Q8_0.gguf*) echo "::error::the Windows artifact carries the model"; exit 1 ;;
-          esac
+          for windows in app/ship/out/*windows*.zip; do
+            names=$(unzip -Z1 "$windows")
+            case "$names" in
+              *embeddinggemma-2-Q8_0.gguf*) echo "::error::$windows carries the model"; exit 1 ;;
+            esac
+          done
 
       - uses: actions/upload-artifact@v4
         with:
@@ -167,10 +188,78 @@ jobs:
           path: app/ship/out/*
           compression-level: 0
 
+  # THE ARTIFACTS ARE OPENED, not just listed. v0.3.0 and v0.3.1 shipped a macOS .app that exited at
+  # its first import (`node-llama-cpp` was not in the bundle), and nothing in this workflow ever
+  # started one. Each leg runs the artifact on the OS and CPU it was built for, and the release is
+  # published only when all of them pass.
+  smoke:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS 15 is the floor: the GTK runtime is built for 15.0 and its libfreetype links
+          # /usr/lib/libhvf.dylib, which macOS 14 does not have (the app fails at dlopen there).
+          - { os: macos-15, zip: "*.macos.arm64.zip" }
+          - { os: windows-latest, zip: "*.windows.x64.zip" }
+          - { os: windows-11-arm, zip: "*.windows.arm64.zip" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Only macOS needs the repo, and only for the check script. Windows must not check out at
+      # all: the fixtures hold a Maildir file name with a `:`, which git refuses on Windows even
+      # with a sparse checkout.
+      - uses: actions/checkout@v4
+        if: runner.os == 'macOS'
+        with:
+          sparse-checkout: app/tests/macos
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: packages
+
+      # `check-app.mjs` launches the .app under a sandbox that denies Homebrew, waits for the
+      # window's process, and fails on a host library, a missing font or catalogue, or an import error.
+      - name: Open the macOS app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -eu
+          mkdir opened
+          ditto -x -k packages/${{ matrix.zip }} opened
+          node app/tests/macos/check-app.mjs opened/Stamped.app
+
+      # `--help` runs the whole module graph: the interpreter, node-gi, the GTK closure and every
+      # import, `node-llama-cpp` included, are loaded before yargs prints anything.
+      - name: Open the Windows program
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $zip = (Get-ChildItem "packages/${{ matrix.zip }}").FullName
+          Expand-Archive $zip -DestinationPath opened
+          $out = & cmd /c "opened\Stamped\stamped.cmd --help 2>&1" | Out-String
+          Write-Host $out
+          if ($LASTEXITCODE -ne 0 -or $out -notmatch 'stamped verify') { throw "stamped.cmd --help failed (exit $LASTEXITCODE)" }
+
+  publish:
+    needs: [package, smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: packages
+
       # Only for a tag; a manual run exercises the chain without publishing.
       - name: Create the release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release create "$GITHUB_REF_NAME" app/ship/out/* --title "$GITHUB_REF_NAME" --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" packages/* --title "$GITHUB_REF_NAME" --generate-notes
