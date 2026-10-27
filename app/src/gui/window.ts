@@ -863,9 +863,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 onBattery,
                 onProgress: (state) => syncSemanticActivity(this.activity.registry, state),
             });
-        const argv = semanticArgv(selfArgv(process), GLib.find_program_in_path('stamped'), session.root);
+        const self = selfArgv(process);
+        const found = GLib.find_program_in_path('stamped');
+        const argv = semanticArgv(self, found, session.root);
+        const probeArgv = semanticArgv(self, found, session.root, 'probe');
         this.semanticSource = reader;
-        if (argv === null) {
+        if (argv === null || probeArgv === null) {
             const controller = inProcess();
             this.semantic = controller;
             if (controller.setting()?.enabled === true) void controller.start().catch(() => undefined);
@@ -874,7 +877,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const sub = createSubprocessSemantic({
             paths: session.paths,
             spawn: () => spawnSemantic(argv),
-            probeController: inProcess,
+            spawnProbe: () => spawnSemantic(probeArgv),
             importRunning: () => importRunning(importStatusOf(session)),
             onState: (state) => syncSemanticActivity(this.activity.registry, state, !sub.external()),
         });
@@ -2414,7 +2417,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 }
 
-/** Start `stamped semantic index` as a child of the window; SIGTERM ends it with the vectors kept. */
+/** Start `stamped semantic <index|probe>` as a child of the window; SIGTERM ends it with the vectors kept. */
 function spawnSemantic(argv: string[]): SemanticProcess {
     const proc = Gio.Subprocess.new(
         argv,

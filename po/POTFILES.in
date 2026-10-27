@@ -98,6 +98,7 @@ packages/import/src/reading.ts
 packages/import/src/source.ts
 packages/semantic/src/child-process.ts
 packages/semantic/src/embedder.ts
+packages/semantic/src/gpu-guard.ts
 packages/semantic/src/indexer.ts
 packages/semantic/src/index.ts
 packages/semantic/src/llama-embedder.ts

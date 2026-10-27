@@ -34,8 +34,9 @@ export function semanticArgv(
     self: readonly string[] | null,
     found: string | null,
     root: string,
+    subcommand: 'index' | 'probe' = 'index',
 ): string[] | null {
-    const tail = ['semantic', 'index', '--case', root];
+    const tail = ['semantic', subcommand, '--case', root];
     if (self !== null) return [...self, ...tail];
     if (found !== null) return [found, ...tail];
     return null;
@@ -103,8 +104,13 @@ export interface SubprocessSemanticOptions {
     readonly paths: CasePaths;
     /** Start `stamped semantic index` for this case. */
     readonly spawn: () => SemanticProcess;
-    /** A fresh in-process controller, used only to measure the machine (`probeOnly`). */
-    readonly probeController: () => SemanticController;
+    /**
+     * Start `stamped semantic probe` for this case. The measurement is a model load and a few
+     * embeddings, the moment a GPU hang can end the process — and it must not be the window's.
+     */
+    readonly spawnProbe: () => SemanticProcess;
+    /** How long a probe may take before the window stops waiting for it. Default two minutes. */
+    readonly probeTimeoutMs?: number;
     /** Is an import running? The index waits for it. */
     readonly importRunning: () => boolean;
     /** Called with the derived state on every {@link SubprocessSemantic.poll}. */
@@ -130,6 +136,8 @@ export function createSubprocessSemantic(options: SubprocessSemanticOptions): Su
     /** Something wanted a start while an import ran; it happens when the import is over. */
     let deferred = false;
     let wasImporting = false;
+    /** The probe that is going; a second ask joins it instead of loading a second model. */
+    let probing: Promise<void> | undefined;
 
     const setting = (): SemanticSetting | undefined => readSemanticSetting(options.paths);
 
@@ -160,6 +168,24 @@ export function createSubprocessSemantic(options: SubprocessSemanticOptions): Su
         started.exited.then(forget, forget);
     };
 
+    /** Run the probe subprocess to its end; a crash, a hang or a missing model is no measurement. */
+    const probe = async (): Promise<void> => {
+        const child = options.spawnProbe();
+        const timeout = options.probeTimeoutMs ?? 120_000;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const expired = new Promise<void>((resolve) => {
+            timer = setTimeout(() => {
+                child.terminate();
+                resolve();
+            }, timeout);
+        });
+        try {
+            await Promise.race([child.exited.catch(() => undefined), expired]);
+        } finally {
+            clearTimeout(timer);
+        }
+    };
+
     const terminate = async (): Promise<void> => {
         const running = proc;
         if (running === undefined) return;
@@ -170,6 +196,9 @@ export function createSubprocessSemantic(options: SubprocessSemanticOptions): Su
     const start = async (): Promise<SemanticState> => {
         const current = setting();
         if (current === undefined || !current.enabled) return state();
+        // A probe is about to write the estimate the indexer would otherwise measure itself. Not
+        // awaited when there is none: `poll` expects a start to spawn within the same tick.
+        if (probing !== undefined) await probing;
         if (proc !== undefined || live() || held) return state();
         if (options.importRunning()) {
             deferred = true;
@@ -203,7 +232,12 @@ export function createSubprocessSemantic(options: SubprocessSemanticOptions): Su
         async probeOnly() {
             // A run that is going has measured already, and a second model load would compete.
             if (proc !== undefined || live()) return setting();
-            return options.probeController().probeOnly();
+            probing ??= probe().finally(() => {
+                probing = undefined;
+            });
+            await probing;
+            // The subprocess wrote the file; whatever it said, or did not, is what is there now.
+            return setting();
         },
         async stop() {
             deferred = false;
