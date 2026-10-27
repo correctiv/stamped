@@ -42,6 +42,7 @@ import bodyExplanations from './unit/body-explanations.test.ts';
 import unsignedHeaders from './unit/unsigned-headers.test.ts';
 import retry from './unit/retry.test.ts';
 import gpuBackend from './unit/gpu-backend.test.ts';
+import gpuGuard from './unit/gpu-guard.test.ts';
 
 run({
     activity,
@@ -83,4 +84,5 @@ run({
     bodyExplanations,
     retry,
     gpuBackend,
+    gpuGuard,
 });

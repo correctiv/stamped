@@ -87,9 +87,21 @@ export function systemProbe(): MachineProbe {
 }
 
 const GPU_OFF_VALUES = new Set(['off', '0', 'false', 'no', 'cpu']);
+const GPU_ON_VALUES = new Set(['on', '1', 'true', 'yes', 'gpu']);
 
-/** `STAMPED_SEMANTIC_GPU=off` is the escape hatch: a driver that misbehaves must not be a dead end. */
+/**
+ * `STAMPED_SEMANTIC_GPU=off` is the escape hatch: a driver that misbehaves must not be a dead end.
+ * `on` is its counterpart: it lifts the CPU pin a GPU hang leaves behind (`gpu-guard.ts`).
+ */
 export const GPU_ENV = 'STAMPED_SEMANTIC_GPU';
+
+export type GpuSetting = 'off' | 'on' | 'auto';
+
+export function gpuSetting(env: Readonly<Record<string, string | undefined>> = process.env): GpuSetting {
+    const value = (env[GPU_ENV] ?? '').trim().toLowerCase();
+    if (GPU_OFF_VALUES.has(value)) return 'off';
+    return GPU_ON_VALUES.has(value) ? 'on' : 'auto';
+}
 
 const LIBRARY_DIRS = [
     '/usr/lib',
@@ -145,7 +157,7 @@ export function backendCandidates(
 ): string[] {
     const gpu = `${target}-vulkan`;
     if (PREBUILT_BINS[gpu] === undefined) return [target];
-    if (GPU_OFF_VALUES.has((probe.env[GPU_ENV] ?? '').trim().toLowerCase())) return [target];
+    if (gpuSetting(probe.env) === 'off') return [target];
     return hasVulkan(probe) ? [gpu, target] : [target];
 }
 

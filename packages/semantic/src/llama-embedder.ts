@@ -25,7 +25,15 @@ import { getLlama, Llama, LlamaLogLevel } from 'node-llama-cpp';
 
 import { checkVector, normalize } from './embedder.ts';
 import type { EmbedDocument, Embedder } from './embedder.ts';
-import { BUILD_METADATA_FILE, backendCandidates, currentTarget, prebuiltBinsDir } from './prebuilt-bins.ts';
+import { gpuGuard } from './gpu-guard.ts';
+import {
+    BUILD_METADATA_FILE,
+    GPU_ENV,
+    backendCandidates,
+    currentTarget,
+    gpuSetting,
+    prebuiltBinsDir,
+} from './prebuilt-bins.ts';
 import { documentPrompt, fitTokens, queryPrompt, truncateVector } from './prompts.ts';
 import { collectGarbage, runningOnGjs } from './runtime.ts';
 
@@ -162,15 +170,48 @@ async function openSessionOnGjs(options: LlamaEmbedderOptions, forceCpu: boolean
     throw new Error('no llama.cpp build to try');
 }
 
+/**
+ * Does an earlier GPU hang pin this machine to the CPU? Said once per process, on stderr: the user
+ * is told why a fast machine got slow and how to lift it. `STAMPED_SEMANTIC_GPU=on` lifts it.
+ */
+let pinReported = false;
+function gpuPinned(): boolean {
+    const setting = gpuSetting();
+    const guard = gpuGuard();
+    if (setting === 'on') {
+        guard.clear();
+        return false;
+    }
+    if (setting === 'off') return true;
+    const pin = guard.pin();
+    if (pin === undefined) return false;
+    if (!pinReported) {
+        pinReported = true;
+        console.error(
+            `The GPU is switched off: process ${pin.pid} died while using it (${pin.at}). ` +
+                `Set ${GPU_ENV}=on to try it again.`,
+        );
+    }
+    return true;
+}
+
 async function openSession(options: LlamaEmbedderOptions, forceCpu: boolean): Promise<Session> {
-    if (runningOnGjs()) return openSessionOnGjs(options, forceCpu);
-    return openOn(await createLlamaOnNode(options, forceCpu), options);
+    const cpuOnly = forceCpu || options.gpu === false || gpuPinned();
+    const open = async (): Promise<Session> =>
+        runningOnGjs()
+            ? openSessionOnGjs(options, cpuOnly)
+            : openOn(await createLlamaOnNode(options, cpuOnly), options);
+    // A CPU session cannot lose a device; only the GPU attempt is marked.
+    return cpuOnly ? open() : gpuGuard().during(open);
 }
 
 async function closeSession(session: Session): Promise<void> {
-    await session.context.dispose();
-    await session.model.dispose();
-    await session.llama.dispose();
+    const close = async (): Promise<void> => {
+        await session.context.dispose();
+        await session.model.dispose();
+        await session.llama.dispose();
+    };
+    await (session.gpu ? gpuGuard().during(close) : close());
 }
 
 export async function createLlamaEmbedder(options: LlamaEmbedderOptions): Promise<LlamaEmbedder> {
@@ -198,6 +239,11 @@ export async function createLlamaEmbedder(options: LlamaEmbedderOptions): Promis
         }
     };
 
+    // One marker per call, not per text: the batch is what a hang interrupts, and a file per
+    // message would be hundreds of writes a second for nothing.
+    const guarded = <T>(work: () => Promise<T>): Promise<T> =>
+        session.gpu ? gpuGuard().during(work) : work();
+
     return {
         modelId: EMBEDDING_GEMMA_MODEL_ID,
         dimensions,
@@ -205,11 +251,14 @@ export async function createLlamaEmbedder(options: LlamaEmbedderOptions): Promis
             return session.gpu ? 'gpu' : 'cpu';
         },
         embedQuery(text: string): Promise<Float32Array> {
-            return embed(queryPrompt(text));
+            return guarded(() => embed(queryPrompt(text)));
         },
         async embedDocuments(documents: readonly EmbedDocument[]): Promise<Float32Array[]> {
-            const out: Float32Array[] = [];
-            for (const doc of documents) out.push(await embed(documentPrompt(doc.subject, doc.body)));
+            const out = await guarded(async () => {
+                const vectors: Float32Array[] = [];
+                for (const doc of documents) vectors.push(await embed(documentPrompt(doc.subject, doc.body)));
+                return vectors;
+            });
             // The embedder is called outside any transaction (the indexer writes after it returns).
             collectGarbage();
             return out;
