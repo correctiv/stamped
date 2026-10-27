@@ -41,6 +41,7 @@ import pdfReport from './unit/pdf-report.test.ts';
 import bodyExplanations from './unit/body-explanations.test.ts';
 import unsignedHeaders from './unit/unsigned-headers.test.ts';
 import retry from './unit/retry.test.ts';
+import gpuBackend from './unit/gpu-backend.test.ts';
 
 run({
     activity,
@@ -81,4 +82,5 @@ run({
     unsignedHeaders,
     bodyExplanations,
     retry,
+    gpuBackend,
 });
