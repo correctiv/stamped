@@ -240,6 +240,7 @@ export default async () => {
             expect(view.sensitive).toBe(false);
             expect(view.note === undefined).toBe(false);
             expect(view.lines).toStrictEqual([]);
+            expect(view.pinNote).toBeUndefined();
         });
 
         await it('shows the state line and estimate when the runtime is there', async () => {
@@ -248,6 +249,53 @@ export default async () => {
             expect(view.active).toBe(false);
             expect(view.lines).toStrictEqual(['Semantic search is off.']);
             expect(view.estimate === undefined).toBe(false);
+            expect(view.pinNote).toBeUndefined();
+        });
+
+        await it('says where a running index runs, and nothing once it is done', async () => {
+            const running = semanticSettingsView(
+                'ready',
+                { kind: 'indexing', done: 1, total: 10 },
+                probed,
+                10,
+                {
+                    backend: 'gpu',
+                },
+            );
+            expect(running.lines[0]).toBe('Runs on the graphics card.');
+            const done = semanticSettingsView(
+                'ready',
+                { kind: 'ready', total: 10 } as SemanticState,
+                probed,
+                10,
+                {
+                    backend: 'gpu',
+                },
+            );
+            expect(done.lines.includes('Runs on the graphics card.')).toBe(false);
+        });
+
+        await it('explains a GPU pin, naming the process and the full graphics memory', async () => {
+            const pin = { at: '2026-10-22T10:00:00Z', pid: 1234 };
+            const view = semanticSettingsView('ready', { kind: 'indexing', done: 1, total: 10 }, probed, 10, {
+                backend: 'cpu',
+                pin,
+            });
+            expect(view.lines[0]).toBe('Runs on the processor.');
+            expect(view.pinNote?.includes('1234')).toBe(true);
+            expect(view.pinNote?.includes('graphics memory')).toBe(true);
+        });
+
+        await it('has no pin note when the environment decides the GPU, or nothing can embed', async () => {
+            const pin = { at: '2026-10-22T10:00:00Z', pid: 1234 };
+            for (const gpu of ['on', 'off'] as const) {
+                expect(
+                    semanticSettingsView('ready', { kind: 'off' }, probed, 10, { pin, gpu }).pinNote,
+                ).toBeUndefined();
+            }
+            expect(
+                semanticSettingsView('runtime', { kind: 'off' }, probed, 10, { pin }).pinNote,
+            ).toBeUndefined();
         });
 
         await it('marks hits the meaning found, and only those', async () => {

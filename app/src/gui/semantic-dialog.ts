@@ -7,8 +7,11 @@
 
 import Adw from '@girs/adw-1';
 import GLib from '@girs/glib-2.0';
-import type Gtk from '@girs/gtk-4.0';
+import Gtk from '@girs/gtk-4.0';
 import { _ } from '@stamped/core';
+import { gpuGuard } from '@stamped/semantic/gpu-guard';
+import { gpuSetting } from '@stamped/semantic/prebuilt-bins';
+import { readSemanticRunStatus, type CasePaths } from '@stamped/store';
 
 import { embedderAvailability } from '../lib/semantic-embedder.ts';
 import type { SemanticController } from '../lib/semantic.ts';
@@ -24,6 +27,7 @@ export function presentSemanticSettings(
     parent: Gtk.Widget,
     controller: SemanticController,
     total: number,
+    paths?: CasePaths,
 ): void {
     const dialog = new Adw.PreferencesDialog({ title: _('Semantic search') });
     const page = new Adw.PreferencesPage();
@@ -41,13 +45,21 @@ export function presentSemanticSettings(
     dialog.add(page);
 
     let rows: Adw.ActionRow[] = [];
+    let liftRow: Adw.ActionRow | undefined;
     let settingUp = false;
     const render = (): void => {
+        const run = paths === undefined ? undefined : readSemanticRunStatus(paths);
+        const pin = gpuGuard().pin();
         const view = semanticSettingsView(
             embedderAvailability(),
             controller.state(),
             controller.setting(),
             total,
+            {
+                ...(run?.backend === undefined ? {} : { backend: run.backend }),
+                ...(pin === undefined ? {} : { pin }),
+                gpu: gpuSetting(),
+            },
         );
         settingUp = true;
         toggle.set_active(view.active);
@@ -58,6 +70,34 @@ export function presentSemanticSettings(
         if (view.estimate !== undefined) texts.push(view.estimate);
         rows = texts.map(textRow);
         for (const row of rows) info.add(row);
+        // Rebuilt only when it changes: the dialog renders every second, and a button replaced
+        // under the pointer loses the click.
+        if (liftRow !== undefined && liftRow.get_title() !== view.pinNote) {
+            info.remove(liftRow);
+            liftRow = undefined;
+        }
+        if (view.pinNote !== undefined && liftRow === undefined) {
+            liftRow = new Adw.ActionRow({ title: view.pinNote, title_lines: 0 });
+            const button = new Gtk.Button({
+                label: _('Use the graphics card again'),
+                valign: Gtk.Align.CENTER,
+            });
+            button.connect('clicked', () => {
+                gpuGuard().clear();
+                // A run going on the processor keeps it until it ends; a new process asks the
+                // guard again. Restarted only when the search is on — the button lifts the pin,
+                // it does not switch anything on.
+                if (controller.setting()?.enabled === true) {
+                    void controller
+                        .stop()
+                        .then(() => controller.start())
+                        .then(render, render);
+                }
+                render();
+            });
+            liftRow.add_suffix(button);
+            info.add(liftRow);
+        }
     };
 
     toggle.connect('notify::active', () => {

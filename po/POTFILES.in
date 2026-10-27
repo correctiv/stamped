@@ -67,6 +67,7 @@ app/src/lib/queries.ts
 app/src/lib/refresh-scheduler.ts
 app/src/lib/report.ts
 app/src/lib/self-argv.ts
+app/src/lib/semantic-auto.ts
 app/src/lib/semantic-embedder-llama.ts
 app/src/lib/semantic-embedder.ts
 app/src/lib/semantic-run.ts
@@ -101,6 +102,7 @@ packages/import/src/mime.ts
 packages/import/src/reading.ts
 packages/import/src/source.ts
 packages/semantic/src/child-process.ts
+packages/semantic/src/context-pool.ts
 packages/semantic/src/embedder.ts
 packages/semantic/src/gpu-guard.ts
 packages/semantic/src/indexer.ts
