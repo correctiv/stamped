@@ -106,14 +106,57 @@ function indexCommand(): CommandModule<unknown, IndexArgs> {
     };
 }
 
+function probeCommand(): CommandModule<unknown, IndexArgs> {
+    return {
+        command: 'probe [folder]',
+        describe: _('Measure how fast this machine embeds, and keep the estimate in the case'),
+        builder: (yargs) =>
+            yargs.positional('folder', { describe: _('The case folder'), type: 'string' }).option('case', {
+                describe: _('The case folder'),
+                type: 'string',
+            }),
+        handler: async (args) => {
+            const paths = caseOrThrow(caseRoot('semantic probe', args.case, [args.folder]).root);
+            refuseLiveRun(paths);
+            const db = openIndex(paths);
+            try {
+                const controller = createSemanticController({
+                    paths,
+                    createEmbedder: createGuiEmbedder,
+                    source: indexDocumentSource(db, paths),
+                    onBattery,
+                });
+                const probe = (await controller.probeOnly())?.probe;
+                if (probe === undefined) {
+                    console.log(_('No estimate: no model here, or nothing to embed'));
+                    return;
+                }
+                console.log(
+                    fmt(
+                        _('{rate} tokens/s, about {hours} h for the case, recommendation: {recommendation}'),
+                        {
+                            rate: Math.round(probe.tokensPerSecond),
+                            hours: probe.estimatedHours.toFixed(1),
+                            recommendation: probe.recommendation,
+                        },
+                    ),
+                );
+            } finally {
+                db.close();
+            }
+        },
+    };
+}
+
 /** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
 export function semanticCommand(): CommandModule<unknown, unknown> {
     return {
         command: 'semantic',
-        describe: _('Semantic search: build the index of a case'),
+        describe: _('Semantic search: build the index of a case, or measure how long it takes'),
         builder: (yargs) =>
             yargs
                 .command(indexCommand())
+                .command(probeCommand())
                 .demandCommand(1, _('Pick a subcommand. Try `stamped semantic --help`.')),
         handler: () => undefined,
     };

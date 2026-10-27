@@ -142,6 +142,16 @@ export default async () => {
             ]);
             expect(semanticArgv(null, null, '/c')).toBe(null);
         });
+
+        await it('names the probe when asked for it', async () => {
+            expect(semanticArgv(null, '/bin/stamped', '/c', 'probe')).toStrictEqual([
+                '/bin/stamped',
+                'semantic',
+                'probe',
+                '--case',
+                '/c',
+            ]);
+        });
     });
 
     await describe('liveSemanticRun', async () => {
@@ -293,7 +303,7 @@ export default async () => {
                     spawned.push(proc);
                     return proc;
                 },
-                probeController: () => {
+                spawnProbe: () => {
                     throw new Error('not needed');
                 },
                 importRunning: () => flags.importing,
@@ -402,6 +412,122 @@ export default async () => {
                 await sub.disable();
                 expect(spawned[1]?.terminated).toBe(1);
                 expect(sub.setting()?.enabled).toBe(false);
+            });
+        });
+    });
+
+    await describe('probeOnly through a subprocess', async () => {
+        const probeRecord = {
+            modelId: 'fake/model',
+            tokensPerSecond: 500,
+            estimatedHours: 2,
+            recommendation: 'on' as const,
+            measuredAt: '2026-10-27T12:00:00.000Z',
+        };
+
+        function make(paths: CasePaths, probeTimeoutMs?: number) {
+            const probes: ReturnType<typeof fakeProcess>[] = [];
+            const indexers: ReturnType<typeof fakeProcess>[] = [];
+            const sub = createSubprocessSemantic({
+                paths,
+                spawn: () => {
+                    const proc = fakeProcess();
+                    indexers.push(proc);
+                    return proc;
+                },
+                spawnProbe: () => {
+                    const proc = fakeProcess();
+                    probes.push(proc);
+                    return proc;
+                },
+                ...(probeTimeoutMs === undefined ? {} : { probeTimeoutMs }),
+                importRunning: () => false,
+                now: () => T0 + 1000,
+                alive: () => false,
+            });
+            return { sub, probes, indexers };
+        }
+
+        /** What the real subprocess does: write the measurement, then end. */
+        function finishWithEstimate(paths: CasePaths, proc: ReturnType<typeof fakeProcess>): void {
+            writeSemanticSetting(paths, {
+                version: SEMANTIC_SETTING_VERSION,
+                enabled: false,
+                modelId: 'fake/model',
+                dimensions: 4,
+                probe: probeRecord,
+            });
+            proc.exit();
+        }
+
+        await it('returns what the subprocess wrote, and loads no model itself', async () => {
+            await withCase(async (paths) => {
+                const { sub, probes } = make(paths);
+                const asked = sub.probeOnly();
+                expect(probes.length).toBe(1);
+                finishWithEstimate(paths, probes[0]!);
+                expect((await asked)?.probe?.tokensPerSecond).toBe(500);
+            });
+        });
+
+        await it('answers with the old setting when the subprocess dies without measuring', async () => {
+            await withCase(async (paths) => {
+                const { sub, probes } = make(paths);
+                const asked = sub.probeOnly();
+                probes[0]!.exit();
+                expect(await asked).toBe(undefined);
+            });
+        });
+
+        await it('lets a second ask join the probe that is going', async () => {
+            await withCase(async (paths) => {
+                const { sub, probes } = make(paths);
+                const first = sub.probeOnly();
+                const second = sub.probeOnly();
+                expect(probes.length).toBe(1);
+                finishWithEstimate(paths, probes[0]!);
+                expect((await first)?.probe?.recommendation).toBe('on');
+                expect((await second)?.probe?.recommendation).toBe('on');
+                // Done: a later ask measures again.
+                void sub.probeOnly();
+                expect(probes.length).toBe(2);
+                probes[1]!.exit();
+            });
+        });
+
+        await it('stops waiting for a probe that hangs, and ends it', async () => {
+            await withCase(async (paths) => {
+                const { sub, probes } = make(paths, 20);
+                const asked = sub.probeOnly();
+                // The fake exits on terminate, so this also proves terminate was called.
+                expect(await asked).toBe(undefined);
+                expect(probes[0]?.terminated).toBe(1);
+            });
+        });
+
+        await it('does not probe beside a live indexer', async () => {
+            await withCase(async (paths) => {
+                enable(paths);
+                const { sub, probes, indexers } = make(paths);
+                await sub.start();
+                expect(indexers.length).toBe(1);
+                await sub.probeOnly();
+                expect(probes.length).toBe(0);
+            });
+        });
+
+        await it('starts the indexer only after the probe has written its estimate', async () => {
+            await withCase(async (paths) => {
+                enable(paths);
+                const { sub, probes, indexers } = make(paths);
+                const asked = sub.probeOnly();
+                const started = sub.start();
+                await Promise.resolve();
+                expect(indexers.length).toBe(0);
+                probes[0]!.exit();
+                await asked;
+                await started;
+                expect(indexers.length).toBe(1);
             });
         });
     });
