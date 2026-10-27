@@ -104,3 +104,8 @@ export function matchBadge(match: MatchKind): string | undefined {
     if (match === 'both') return _('Text and meaning');
     return undefined;
 }
+
+/** The line under the list title while the meaning's hits are still coming. */
+export function meaningPendingLine(loading: boolean): string {
+    return loading ? _('Loading semantic search…') : _('Searching by meaning…');
+}

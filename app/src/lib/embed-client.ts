@@ -15,9 +15,16 @@
  * lifecycle can be tested without one.
  */
 
-import type { Embedder } from '@stamped/semantic';
+import type { Embedder, VectorSearchHit } from '@stamped/semantic';
 
-import { parseHelperMessage, type HelperReady, type HelperRequest } from './embed-protocol.ts';
+import {
+    parseHelperMessage,
+    type HelperAnswer,
+    type HelperReady,
+    type HelperRequest,
+    type HelperVectors,
+    NO_VECTORS,
+} from './embed-protocol.ts';
 
 export interface HelperChannel {
     /** Write one line to the helper's stdin. */
@@ -35,30 +42,63 @@ export interface HelperEmbedderOptions {
     readonly spawn: (onLine: (line: string) => void) => HelperChannel;
     /** Quiet time before the helper is ended. Default five minutes. */
     readonly idleMs?: number;
+    /**
+     * Quiet time while the helper holds the case's vectors. Default thirty minutes: reading them
+     * again takes ~40 s at 400,000 mails, far longer than starting the model.
+     */
+    readonly residentIdleMs?: number;
     /** How long loading the model may take. Default two minutes. */
     readonly startMs?: number;
     /** How long one query may take. Default one minute: a query is a few tokens. */
     readonly requestMs?: number;
+    /**
+     * How long a search may wait for the helper to finish reading the case's vectors. Default
+     * thirty minutes: reading is not the GPU and does not hang, so the one-minute query timeout
+     * must not kill a helper that is merely loading a large case.
+     */
+    readonly loadMs?: number;
 }
 
 export interface HelperEmbedder extends Embedder {
+    /**
+     * Search the case's vectors in the helper: the hits for a query text, best first, or
+     * `undefined` when this helper cannot search (an older one, or started without a case) and the
+     * caller should take its own way. An empty list means the helper holds nothing to search.
+     */
+    search(text: string, limit: number): Promise<VectorSearchHit[] | undefined>;
+    /** Is the helper still reading the case's vectors — or about to start, after a quiet spell? */
+    vectorsLoading(): boolean;
     /** End the helper now (the window closes). */
     dispose(): void;
+}
+
+interface Pending {
+    resolve: (answer: HelperAnswer) => void;
+    reject: (error: Error) => void;
 }
 
 interface Running {
     readonly channel: HelperChannel;
     readonly ready: Promise<HelperReady | undefined>;
-    readonly pending: Map<number, { resolve: (v: Float32Array) => void; reject: (e: Error) => void }>;
+    readonly pending: Map<number, Pending>;
+    /** What the helper last said about its resident vectors; `undefined` before it says anything. */
+    vectors: HelperVectors | undefined;
 }
 
 const FIVE_MINUTES = 5 * 60_000;
+const THIRTY_MINUTES = 30 * 60_000;
+
+function holdsVectors(running: Running | undefined): boolean {
+    return running?.vectors?.state === 'ready' && running.vectors.count > 0;
+}
 
 /** The embedder, or `undefined` when the helper says this machine has no model (or never answers). */
 export async function createHelperEmbedder(options: HelperEmbedderOptions): Promise<HelperEmbedder | undefined> {
     const idleMs = options.idleMs ?? FIVE_MINUTES;
+    const residentIdleMs = Math.max(idleMs, options.residentIdleMs ?? THIRTY_MINUTES);
     const startMs = options.startMs ?? 120_000;
     const requestMs = options.requestMs ?? 60_000;
+    const loadMs = options.loadMs ?? 30 * 60_000;
 
     let current: Running | undefined;
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -77,7 +117,7 @@ export async function createHelperEmbedder(options: HelperEmbedderOptions): Prom
             if (running === undefined || running.pending.size > 0) return;
             current = undefined;
             running.channel.close();
-        }, idleMs);
+        }, holdsVectors(current) ? residentIdleMs : idleMs);
     };
 
     const spawn = (): Running => {
@@ -90,16 +130,20 @@ export async function createHelperEmbedder(options: HelperEmbedderOptions): Prom
             const message = parseHelperMessage(line);
             if (message === undefined) return;
             if ('type' in message) {
+                if (message.type === 'vectors') {
+                    running.vectors = message;
+                    return;
+                }
                 settle(message.type === 'ready' ? message : undefined);
                 return;
             }
             const waiting = pending.get(message.id);
             if (waiting === undefined) return;
             pending.delete(message.id);
-            if (message.vector !== undefined) waiting.resolve(Float32Array.from(message.vector));
-            else waiting.reject(new Error(message.error ?? 'The embedding helper gave no vector'));
+            if (message.error !== undefined) waiting.reject(new Error(message.error));
+            else waiting.resolve(message);
         });
-        const running: Running = { channel, ready, pending };
+        const running: Running = { channel, ready, pending, vectors: undefined };
         const gone = (): void => {
             if (current === running) current = undefined;
             settle(undefined);
@@ -136,7 +180,8 @@ export async function createHelperEmbedder(options: HelperEmbedderOptions): Prom
     }
     startIdle();
 
-    const ask = async (text: string): Promise<Float32Array> => {
+    /** One request and its answer. The timeout is the GPU's: a helper that stops answering is killed. */
+    const request = async (text: string, limit?: number): Promise<HelperAnswer> => {
         stopIdle();
         try {
             let running = current;
@@ -151,26 +196,38 @@ export async function createHelperEmbedder(options: HelperEmbedderOptions): Prom
                 throw new Error('The embedding helper came up with another model');
             }
             const target = running;
-            return await new Promise<Float32Array>((resolve, reject) => {
+            return await new Promise<HelperAnswer>((resolve, reject) => {
                 const id = nextId++;
-                const timer = setTimeout(() => {
-                    target.pending.delete(id);
-                    // A helper that does not answer a query is stuck in the GPU: end it hard.
-                    target.channel.kill();
-                    reject(new Error('The embedding helper did not answer'));
-                }, requestMs);
+                const startedAt = Date.now();
+                let timer: ReturnType<typeof setTimeout> | undefined;
+                const arm = (): void => {
+                    timer = setTimeout(() => {
+                        // Reading the vectors is the helper's own work and not a hang: a search
+                        // keeps waiting while it says `loading`, up to `loadMs`.
+                        const loading = target.vectors?.state === 'loading';
+                        if (limit !== undefined && loading && Date.now() - startedAt < loadMs) {
+                            arm();
+                            return;
+                        }
+                        target.pending.delete(id);
+                        // A helper that does not answer a query is stuck in the GPU: end it hard.
+                        target.channel.kill();
+                        reject(new Error('The embedding helper did not answer'));
+                    }, requestMs);
+                };
+                arm();
                 target.pending.set(id, {
-                    resolve: (vector) => {
+                    resolve: (answer) => {
                         clearTimeout(timer);
-                        resolve(vector);
+                        resolve(answer);
                     },
                     reject: (error) => {
                         clearTimeout(timer);
                         reject(error);
                     },
                 });
-                const request: HelperRequest = { id, text };
-                target.channel.send(JSON.stringify(request));
+                const message: HelperRequest = limit === undefined ? { id, text } : { id, text, limit };
+                target.channel.send(JSON.stringify(message));
             });
         } finally {
             startIdle();
@@ -180,7 +237,27 @@ export async function createHelperEmbedder(options: HelperEmbedderOptions): Prom
     return {
         modelId: info.modelId,
         dimensions: info.dimensions,
-        embedQuery: ask,
+        async embedQuery(text: string): Promise<Float32Array> {
+            const answer = await request(text);
+            if (answer.vector === undefined) throw new Error('The embedding helper gave no vector');
+            return Float32Array.from(answer.vector);
+        },
+        async search(text: string, limit: number): Promise<VectorSearchHit[] | undefined> {
+            let answer: HelperAnswer;
+            try {
+                answer = await request(text, Math.max(1, Math.trunc(limit)));
+            } catch (error) {
+                // "No vectors here" is the helper's own refusal, not a failure of the helper.
+                if (error instanceof Error && error.message === NO_VECTORS) return undefined;
+                throw error;
+            }
+            // A vector back means a helper that does not know search: take the old way.
+            return answer.hits === undefined ? undefined : answer.hits.map(({ hash, score }) => ({ hash, score }));
+        },
+        vectorsLoading(): boolean {
+            // No helper right now (the quiet spell ended it): the next search starts one, and it loads.
+            return current === undefined || current.vectors?.state === 'loading';
+        },
         embedDocuments(): Promise<Float32Array[]> {
             return Promise.reject(new Error('The query embedder does not embed documents'));
         },

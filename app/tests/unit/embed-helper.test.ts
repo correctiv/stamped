@@ -155,6 +155,34 @@ export default async () => {
         });
     });
 
+    await describe('search protocol', async () => {
+        await it('parses vector states and hits, and keeps the old shapes', async () => {
+            expect(parseHelperMessage('{"type":"vectors","state":"loading","count":3}')).toStrictEqual({
+                type: 'vectors',
+                state: 'loading',
+                count: 3,
+            });
+            expect(parseHelperMessage('{"type":"vectors","state":"odd"}')).toBeUndefined();
+            expect(parseHelperMessage('{"id":2,"hits":[{"hash":"a","score":0.5}]}')).toStrictEqual({
+                id: 2,
+                hits: [{ hash: 'a', score: 0.5 }],
+            });
+            expect(parseHelperMessage('{"id":2,"hits":[{"hash":1}]}')).toBeUndefined();
+            expect(parseHelperMessage('{"id":2,"vector":[1]}')).toStrictEqual({ id: 2, vector: [1] });
+        });
+
+        await it('parses a search request and rejects a bad limit', async () => {
+            expect(parseHelperRequest('{"id":1,"text":"x","limit":5.9}')).toStrictEqual({
+                id: 1,
+                text: 'x',
+                limit: 5,
+            });
+            expect(parseHelperRequest('{"id":1,"text":"x"}')).toStrictEqual({ id: 1, text: 'x' });
+            expect(parseHelperRequest('{"id":1,"text":"x","limit":0}')).toBeUndefined();
+            expect(parseHelperRequest('{"id":1,"text":"x","limit":"5"}')).toBeUndefined();
+        });
+    });
+
     await describe('bufferedLines', async () => {
         await it('keeps lines that arrive before anyone reads, then ends with the source', async () => {
             const handlers: Record<string, (line: string) => void> = {};
@@ -305,6 +333,22 @@ export default async () => {
             expect(world.channels[0]?.killed).toBe(0);
             expect(Array.from(await embedder!.embedQuery('abc'))).toStrictEqual([3, 0.5]);
             expect(world.channels.length).toBe(2);
+            embedder?.dispose();
+        });
+
+        await it('keeps a helper that holds the vectors through the short quiet spell', async () => {
+            const world = fakeWorld(answering());
+            const embedder = await createHelperEmbedder({
+                spawn: world.spawn,
+                idleMs: 20,
+                residentIdleMs: 200,
+            });
+            world.channels[0]!.emit({ type: 'vectors', state: 'ready', count: 3 });
+            await embedder!.embedQuery('a');
+            await sleep(60);
+            expect(world.channels[0]?.closed).toBe(0);
+            await sleep(240);
+            expect(world.channels[0]?.closed).toBe(1);
             embedder?.dispose();
         });
 

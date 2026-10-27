@@ -62,6 +62,11 @@ export interface HybridSearchRequest {
 export interface HybridFuseRequest extends Omit<HybridSearchRequest, 'embedder'> {
     /** The embedded query, when the main thread could produce one. */
     readonly vector?: Float32Array;
+    /**
+     * Hits somebody else already found in the vectors (the query helper's resident copy). When
+     * given, `vectors` and `vector` are not used: the same filter, rank and score rules apply.
+     */
+    readonly semantic?: readonly { readonly hash: string; readonly score: number }[];
 }
 
 /**
@@ -171,11 +176,16 @@ export function fuseHybrid(request: HybridFuseRequest): HybridHit[] {
  */
 function semanticHitsFor(request: HybridFuseRequest, candidates: number): SearchHit[] {
     const { vectors, vector } = request;
-    if (!vectors || !vector) return [];
+    if (!request.semantic && (!vectors || !vector)) return [];
     try {
-        // An empty table is not an error: the case is simply not indexed yet.
-        if (countVectors(vectors) === 0) return [];
-        const found = searchVectors(vectors, vector, candidates);
+        let found: readonly { hash: string; score: number }[];
+        if (request.semantic) {
+            found = request.semantic;
+        } else {
+            // An empty table is not an error: the case is simply not indexed yet.
+            if (countVectors(vectors!) === 0) return [];
+            found = searchVectors(vectors!, vector!, candidates);
+        }
         // A vector that points in another direction is not a match. The score is not comparable
         // across models, but its SIGN is: a cosine of zero or less means the query and the
         // message share nothing, and offering that as a "semantic match" would put an unrelated
@@ -228,6 +238,6 @@ function clampLimit(limit: number): number {
 }
 
 /** The candidates each half offers for a page of `limit` hits. */
-function candidateCount(limit: number): number {
+export function candidateCount(limit: number): number {
     return Math.max(MIN_CANDIDATES, Math.min(MAX_CANDIDATES, limit * CANDIDATE_FACTOR));
 }

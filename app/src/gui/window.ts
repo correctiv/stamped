@@ -122,7 +122,8 @@ import { escapeLine, noHyphens, plainText } from './view/markup.ts';
 import { BENCH_FILE, cpuMs, report as benchReport, rssMb, settle, sinceStart, startLap } from './bench.ts';
 import { MessageItem, MessageRowView } from './message-row.ts';
 import { nearEnd, PagedList } from '../lib/paged-list.ts';
-import { matchBadge } from './view/semantic.ts';
+import { matchBadge, meaningPendingLine } from './view/semantic.ts';
+import type { HybridHit } from '../lib/hybrid-search.ts';
 import type { MatchKind } from '../lib/hybrid-search.ts';
 import {
     emptyList,
@@ -1299,7 +1300,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * the in-process embedder, as before.
      */
     private async openQueryEmbedder(): Promise<Embedder | undefined> {
-        const argv = embedArgv(selfArgv(process), GLib.find_program_in_path('stamped'));
+        const argv = embedArgv(selfArgv(process), GLib.find_program_in_path('stamped'), this.session?.root);
         if (argv === null) return createGuiEmbedder();
         const helper = await createHelperEmbedder({ spawn: (onLine) => spawnEmbedHelper(argv, onLine) });
         this.embedHelper = helper;
@@ -1318,7 +1319,17 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.queryEmbedder ??= this.openQueryEmbedder();
             const embedder = await this.queryEmbedder;
             if (!embedder) return;
-            const merged = await hybridPageOf(session, query, embedder);
+            const shown = this._listTitle.get_subtitle();
+            const helper = this.embedHelper;
+            if (helper) this._listTitle.set_subtitle(meaningPendingLine(helper.vectorsLoading()));
+            let merged: HybridHit[] | undefined;
+            try {
+                merged = await hybridPageOf(session, query, embedder);
+            } finally {
+                if (session === this.session && query.text === this.currentQuery().text) {
+                    this._listTitle.set_subtitle(shown);
+                }
+            }
             if (!merged || session !== this.session || query.text !== this.currentQuery().text) return;
             if (!merged.some((hit) => hit.match !== 'text')) return;
             this.matches = new Map(merged.map((hit) => [hit.hash, hit.match]));

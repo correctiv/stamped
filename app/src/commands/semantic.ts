@@ -11,7 +11,7 @@
 import { createInterface } from 'node:readline';
 
 import { fmt, _ } from '@stamped/core';
-import { onBattery } from '@stamped/semantic';
+import { onBattery, ResidentVectors } from '@stamped/semantic';
 import {
     indexDocumentSource,
     openIndex,
@@ -156,18 +156,35 @@ function probeCommand(): CommandModule<unknown, IndexArgs> {
  * for a person — the protocol is `lib/embed-protocol.ts`. Stdout is the wire, so anything else
  * the process says goes to stderr.
  */
-function embedCommand(): CommandModule<unknown, unknown> {
+function embedCommand(): CommandModule<unknown, IndexArgs> {
     return {
-        command: 'embed',
+        command: 'embed [folder]',
         describe: _('Answer search queries with their meaning, for the window (not for typing)'),
-        handler: async () => {
+        builder: (yargs) =>
+            yargs.positional('folder', { describe: _('The case folder'), type: 'string' }).option('case', {
+                describe: _('The case folder, whose vectors are then searched from memory'),
+                type: 'string',
+            }),
+        handler: async (args) => {
+            // Without a case the helper only embeds, as before.
+            const root = args.case ?? args.folder;
+            const vectorsPath = root === undefined || root === '' ? undefined : caseOrThrow(root).vectors;
             const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
-            await serveEmbedder(createGuiEmbedder, {
-                lines: bufferedLines(rl),
-                write: (line) => {
-                    process.stdout.write(`${line}\n`);
+            await serveEmbedder(
+                createGuiEmbedder,
+                {
+                    lines: bufferedLines(rl),
+                    write: (line) => {
+                        process.stdout.write(`${line}\n`);
+                    },
                 },
-            });
+                vectorsPath === undefined
+                    ? {}
+                    : {
+                          resident: (model, onState) =>
+                              new ResidentVectors({ path: vectorsPath, model, onState }),
+                      },
+            );
         },
     };
 }

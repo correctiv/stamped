@@ -11,9 +11,9 @@
  * would only queue inside it.
  */
 
-import type { Embedder } from '@stamped/semantic';
+import type { Embedder, ResidentState, VectorHit } from '@stamped/semantic';
 
-import { parseHelperRequest, type HelperMessage } from './embed-protocol.ts';
+import { NO_VECTORS, parseHelperRequest, type HelperMessage } from './embed-protocol.ts';
 
 export interface ServeIo {
     /** One request per line; ends when the window closes the pipe. */
@@ -61,9 +61,29 @@ export function bufferedLines(source: {
     };
 }
 
+/** The helper's resident copy of the case's vectors — `ResidentVectors` in production, a fake in a test. */
+export interface ResidentSearch {
+    load(): Promise<void>;
+    search(query: Float32Array, limit: number): Promise<VectorHit[]>;
+    close(): void;
+}
+
+export interface ServeOptions {
+    /**
+     * Make the resident vectors for the model that loaded. Absent when the helper was started
+     * without a case: it then embeds only, and answers a search with an error so the window
+     * takes its own way.
+     */
+    readonly resident?: (
+        model: { modelId: string; dimensions: number },
+        onState: (state: ResidentState, count: number) => void,
+    ) => ResidentSearch;
+}
+
 export async function serveEmbedder(
     createEmbedder: () => Promise<Embedder | undefined>,
     io: ServeIo,
+    options: ServeOptions = {},
 ): Promise<void> {
     const send = (message: HelperMessage): void => io.write(JSON.stringify(message));
 
@@ -75,6 +95,14 @@ export async function serveEmbedder(
     }
     send({ type: 'ready', modelId: embedder.modelId, dimensions: embedder.dimensions });
 
+    // AFTER `ready`, in the background: the window can already ask for query vectors while the
+    // case's vectors are still being read, and a search simply waits for the read.
+    const resident = options.resident?.(
+        { modelId: embedder.modelId, dimensions: embedder.dimensions },
+        (state, count) => send({ type: 'vectors', state, count }),
+    );
+    void resident?.load();
+
     let queue: Promise<void> = Promise.resolve();
     for await (const line of io.lines) {
         const request = parseHelperRequest(line);
@@ -82,13 +110,20 @@ export async function serveEmbedder(
         queue = queue.then(async () => {
             try {
                 const vector = await embedder.embedQuery(request.text);
-                send({ id: request.id, vector: Array.from(vector) });
+                if (request.limit === undefined) {
+                    send({ id: request.id, vector: Array.from(vector) });
+                    return;
+                }
+                if (resident === undefined) throw new Error(NO_VECTORS);
+                const hits = await resident.search(vector, request.limit);
+                send({ id: request.id, hits: hits.map(({ hash, score }) => ({ hash, score })) });
             } catch (error) {
                 send({ id: request.id, error: error instanceof Error ? error.message : String(error) });
             }
         });
     }
     await queue;
+    resident?.close();
     const closable = embedder as { dispose?: () => Promise<void> };
     await closable.dispose?.();
 }

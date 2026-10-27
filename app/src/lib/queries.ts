@@ -266,29 +266,45 @@ export interface QueryModel {
 export function hybridPageOf(
     ctx: QueryContext,
     query: Query,
-    vector: readonly number[],
-    model: QueryModel,
+    input: HybridInput,
 ): HybridHit[] | null {
     const text = query.text?.trim() ?? '';
     if (text === '') return null;
-    const vectors = openVectorDbForSearch(ctx.paths.vectors, model);
+    const scope = scopeOf(ctx, query);
+    const options = {
+        ...(query.verdict ? { verdict: query.verdict } : {}),
+        ...(scope ? { scope } : {}),
+        limit: PAGE_SIZE,
+    };
+    // The helper searched its resident vectors: no vector database is opened here at all.
+    if (input.semantic !== undefined) {
+        return fuseHybrid({ index: ctx.db, semantic: input.semantic, query: text, options });
+    }
+    if (input.vector === undefined || input.model === undefined) return null;
+    const vectors = openVectorDbForSearch(ctx.paths.vectors, input.model);
     if (vectors === undefined) return null;
     try {
-        const scope = scopeOf(ctx, query);
         return fuseHybrid({
             index: ctx.db,
             vectors,
-            vector: Float32Array.from(vector),
+            vector: Float32Array.from(input.vector),
             query: text,
-            options: {
-                ...(query.verdict ? { verdict: query.verdict } : {}),
-                ...(scope ? { scope } : {}),
-                limit: PAGE_SIZE,
-            },
+            options,
         });
     } finally {
         vectors.close();
     }
+}
+
+/**
+ * What the meaning half of a hybrid search arrives as: either the hits the query helper found in
+ * its resident vectors (`semantic`), or — when there is no helper — the embedded query, which this
+ * thread then searches in `vectors.db` itself, the old way.
+ */
+export interface HybridInput {
+    readonly semantic?: readonly { readonly hash: string; readonly score: number }[];
+    readonly vector?: readonly number[];
+    readonly model?: QueryModel;
 }
 
 /** How many messages a filter admits — the length of the list behind {@link pageOf}. */
@@ -375,8 +391,10 @@ export interface QueryRequests {
     readonly hybrid: {
         readonly query: Query;
         /** The embedded query, as plain numbers — a typed array does not cross. */
-        readonly vector: readonly number[];
-        readonly model: QueryModel;
+        readonly vector?: readonly number[];
+        readonly model?: QueryModel;
+        /** The hits the helper found in memory; when given, `vector` and `model` are not used. */
+        readonly semantic?: HybridInput['semantic'];
     };
     readonly count: { readonly query: Query };
     readonly people: { readonly search: string; readonly limit?: number };
@@ -439,7 +457,7 @@ const handlers: {
     [Op in SyncQueryOp]: (ctx: QueryContext, params: QueryRequests[Op]) => QueryResults[Op];
 } = {
     page: (ctx, params) => pageOf(ctx, params.query, params.offset ?? 0),
-    hybrid: (ctx, params) => hybridPageOf(ctx, params.query, params.vector, params.model),
+    hybrid: (ctx, params) => hybridPageOf(ctx, params.query, params),
     count: (ctx, params) => filteredCount(ctx, params.query),
     people: (ctx, params) => peopleOf(ctx, params.search, params.limit ?? 100),
     timeline: (ctx) => timelineOf(ctx),
