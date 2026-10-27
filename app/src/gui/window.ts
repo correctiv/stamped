@@ -49,7 +49,8 @@ import {
     VERDICT_PANES,
 } from '../lib/refresh-scheduler.ts';
 import { createHelperEmbedder, type HelperEmbedder } from '../lib/embed-client.ts';
-import { createGuiEmbedder } from '../lib/semantic-embedder.ts';
+import { autoEnableSemantic, markingDecisions } from '../lib/semantic-auto.ts';
+import { createGuiEmbedder, embedderAvailability } from '../lib/semantic-embedder.ts';
 import { createSemanticController, type SemanticController } from '../lib/semantic.ts';
 import {
     createSubprocessSemantic,
@@ -417,6 +418,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private semanticSub?: SubprocessSemantic;
     /** The connection that controller walks the case through — closed after it stops. */
     private semanticSource?: SemanticSource;
+    /** The person flipped the switch for the open case; the automatic switch-on then stands down. */
+    private semanticDecided = false;
     private queryEmbedder?: Promise<Embedder | undefined>;
     private embedHelper?: HelperEmbedder;
     /** How the meaning found a hit, by hash; empty for a plain text list. */
@@ -529,7 +532,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.addAction('import', () => void this.importFrom('files'));
         this.addAction('import-folder', () => void this.importFrom('folder'));
         this.addAction('semantic-settings', () => {
-            if (this.semantic) presentSemanticSettings(this, this.semantic, this.total);
+            if (this.semantic) {
+                const marked = markingDecisions(this.semantic, () => {
+                    this.semanticDecided = true;
+                });
+                presentSemanticSettings(this, marked, this.total);
+            }
         });
 
         this._searchEntry.connect('search-changed', () => this.onSearchChanged());
@@ -873,10 +881,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const argv = semanticArgv(self, found, session.root);
         const probeArgv = semanticArgv(self, found, session.root, 'probe');
         this.semanticSource = reader;
+        this.semanticDecided = false;
         if (argv === null || probeArgv === null) {
             const controller = inProcess();
             this.semantic = controller;
             if (controller.setting()?.enabled === true) void controller.start().catch(() => undefined);
+            else this.autoEnable(controller);
             return;
         }
         const sub = createSubprocessSemantic({
@@ -890,6 +900,20 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.semanticSub = sub;
         sub.poll();
         if (sub.setting()?.enabled === true) void sub.start().catch(() => undefined);
+        else this.autoEnable(sub);
+    }
+
+    /**
+     * A case nobody has decided about is measured in the background and switched on when the
+     * machine is fast enough. A case closed in the meantime counts as decided: its controller is
+     * gone, and switching it on would start an index for a case that is no longer open.
+     */
+    private autoEnable(controller: SemanticController): void {
+        void autoEnableSemantic(controller, {
+            ready: () => embedderAvailability() === 'ready',
+            onBattery,
+            decided: () => this.semanticDecided || this.semantic !== controller,
+        }).catch(() => undefined);
     }
 
     /** Stop the index before the connection it reads through is closed — in that order. */

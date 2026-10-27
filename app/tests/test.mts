@@ -34,6 +34,7 @@ import hybridSearch from './unit/hybrid-search.test.ts';
 import modelPath from './unit/model-path.test.ts';
 import semanticGui from './unit/semantic-gui.test.ts';
 import semanticRun from './unit/semantic-run.test.ts';
+import semanticAuto from './unit/semantic-auto.test.ts';
 import embedHelper from './unit/embed-helper.test.ts';
 import timecheck from './unit/timecheck.test.ts';
 import pagedList from './unit/paged-list.test.ts';
@@ -77,6 +78,7 @@ run({
     modelPath,
     semanticGui,
     semanticRun,
+    semanticAuto,
     embedHelper,
     queryWorker,
     timecheck,
