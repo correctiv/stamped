@@ -7,7 +7,13 @@
 
 import { describe, expect, it } from '@gjsify/unit';
 
-import { backendCandidates, GPU_ENV, hasVulkan, type MachineProbe } from '@stamped/semantic/prebuilt-bins';
+import {
+    backendCandidates,
+    GPU_ENV,
+    gpuSetting,
+    hasVulkan,
+    type MachineProbe,
+} from '@stamped/semantic/prebuilt-bins';
 
 function machine(
     paths: string[],
@@ -85,6 +91,15 @@ export default async () => {
         await it('does not treat any other value of the escape hatch as off', async () => {
             const probe = machine([LOADER], DRIVER, { [GPU_ENV]: 'on' });
             expect(backendCandidates('linux-x64', probe)).toStrictEqual(['linux-x64-vulkan', 'linux-x64']);
+        });
+    });
+
+    await describe('gpuSetting', async () => {
+        await it('reads off, on and everything else as auto', async () => {
+            expect(gpuSetting({ [GPU_ENV]: ' Off ' })).toBe('off');
+            expect(gpuSetting({ [GPU_ENV]: 'ON' })).toBe('on');
+            expect(gpuSetting({ [GPU_ENV]: 'maybe' })).toBe('auto');
+            expect(gpuSetting({})).toBe('auto');
         });
     });
 };

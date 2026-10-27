@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./child-process": "./src/child-process.ts",
+    "./gpu-guard": "./src/gpu-guard.ts",
     "./llama-embedder": "./src/llama-embedder.ts",
     "./prebuilt-bins": "./src/prebuilt-bins.ts",
     "./prompts": "./src/prompts.ts",
