@@ -48,10 +48,12 @@ import {
     RefreshScheduler,
     VERDICT_PANES,
 } from '../lib/refresh-scheduler.ts';
+import { createHelperEmbedder, type HelperEmbedder } from '../lib/embed-client.ts';
 import { createGuiEmbedder } from '../lib/semantic-embedder.ts';
 import { createSemanticController, type SemanticController } from '../lib/semantic.ts';
 import {
     createSubprocessSemantic,
+    embedArgv,
     semanticArgv,
     type SemanticProcess,
     type SubprocessSemantic,
@@ -59,6 +61,7 @@ import {
 import { openCopy } from '../lib/open-copy.ts';
 import { selfArgv } from '../lib/self-argv.ts';
 import { ActivityController } from './activity.ts';
+import { spawnEmbedHelper } from './embed-spawn.ts';
 import { presentSemanticSettings } from './semantic-dialog.ts';
 import { StampedHelpButton } from './help-button.ts';
 import {
@@ -415,6 +418,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** The connection that controller walks the case through — closed after it stops. */
     private semanticSource?: SemanticSource;
     private queryEmbedder?: Promise<Embedder | undefined>;
+    private embedHelper?: HelperEmbedder;
     /** How the meaning found a hit, by hash; empty for a plain text list. */
     private matches = new Map<string, MatchKind>();
 
@@ -608,6 +612,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.stopActivityPoll();
             this.activity.dispose();
             this.endSemantic();
+            this.embedHelper?.dispose();
             if (this.session) closeSession(this.session);
             this.session = undefined;
             return false;
@@ -1265,6 +1270,19 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /**
+     * The query embedder, in a process of its own when one can be started: a GPU hang while
+     * embedding a query then ends the helper and not the window. Without a binary to spawn it is
+     * the in-process embedder, as before.
+     */
+    private async openQueryEmbedder(): Promise<Embedder | undefined> {
+        const argv = embedArgv(selfArgv(process), GLib.find_program_in_path('stamped'));
+        if (argv === null) return createGuiEmbedder();
+        const helper = await createHelperEmbedder({ spawn: (onLine) => spawnEmbedHelper(argv, onLine) });
+        this.embedHelper = helper;
+        return helper;
+    }
+
+    /**
      * Add what the meaning found to the first page, once the text page is already on screen.
      * Only with a finished or running index and an embedder; any failure leaves the text list.
      */
@@ -1273,7 +1291,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const kind = this.semantic?.state().kind;
         if (!session || query.text === undefined || (kind !== 'ready' && kind !== 'indexing')) return;
         try {
-            this.queryEmbedder ??= createGuiEmbedder();
+            this.queryEmbedder ??= this.openQueryEmbedder();
             const embedder = await this.queryEmbedder;
             if (!embedder) return;
             const merged = await hybridPageOf(session, query, embedder);

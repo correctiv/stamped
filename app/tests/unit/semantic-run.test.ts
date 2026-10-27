@@ -40,6 +40,7 @@ import {
     createSubprocessSemantic,
     liveSemanticRun,
     runSemanticIndex,
+    embedArgv,
     semanticArgv,
     type SemanticProcess,
 } from '../../src/lib/semantic-run.ts';
@@ -141,6 +142,18 @@ export default async () => {
                 '/c',
             ]);
             expect(semanticArgv(null, null, '/c')).toBe(null);
+        });
+
+        await it('builds the query helper argv without a case', async () => {
+            expect(embedArgv(['gjs', '-m', 'a.mjs'], '/bin/stamped')).toStrictEqual([
+                'gjs',
+                '-m',
+                'a.mjs',
+                'semantic',
+                'embed',
+            ]);
+            expect(embedArgv(null, '/bin/stamped')).toStrictEqual(['/bin/stamped', 'semantic', 'embed']);
+            expect(embedArgv(null, null)).toBe(null);
         });
 
         await it('names the probe when asked for it', async () => {

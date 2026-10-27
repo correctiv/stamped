@@ -11,6 +11,7 @@ app/src/commands/verify.ts
 app/src/gui/activity.ts
 app/src/gui/bench.ts
 app/src/gui/blp.d.ts
+app/src/gui/embed-spawn.ts
 app/src/gui/help-button.blp
 app/src/gui/help-button.d.blp.ts
 app/src/gui/help-button.ts
@@ -46,7 +47,10 @@ app/src/lib/case.ts
 app/src/lib/consent.ts
 app/src/lib/dns.ts
 app/src/lib/duration.ts
+app/src/lib/embed-client.ts
 app/src/lib/embedder.ts
+app/src/lib/embed-protocol.ts
+app/src/lib/embed-serve.ts
 app/src/lib/evidence.ts
 app/src/lib/hybrid-search.ts
 app/src/lib/i18n.ts
