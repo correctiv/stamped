@@ -44,6 +44,7 @@ import unsignedHeaders from './unit/unsigned-headers.test.ts';
 import retry from './unit/retry.test.ts';
 import gpuBackend from './unit/gpu-backend.test.ts';
 import gpuGuard from './unit/gpu-guard.test.ts';
+import contextPool from './unit/context-pool.test.ts';
 
 run({
     activity,
@@ -87,4 +88,5 @@ run({
     retry,
     gpuBackend,
     gpuGuard,
+    contextPool,
 });

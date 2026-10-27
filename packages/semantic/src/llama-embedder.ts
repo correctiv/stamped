@@ -23,6 +23,7 @@ import { join } from 'node:path';
 
 import { getLlama, Llama, LlamaLogLevel } from 'node-llama-cpp';
 
+import { embedAcross } from './context-pool.ts';
 import { checkVector, normalize } from './embedder.ts';
 import type { EmbedDocument, Embedder } from './embedder.ts';
 import { gpuGuard } from './gpu-guard.ts';
@@ -48,6 +49,15 @@ const CONTEXT_SIZE = 512;
 /** Two, not "all cores": the indexer runs for hours next to the journalist's own work. */
 export const DEFAULT_THREADS = 2;
 
+/**
+ * Embedding contexts that evaluate side by side on a GPU. One context holds ONE sequence, and
+ * node-llama-cpp serialises every call on it behind a lock, so a lone context leaves the device
+ * idle between calls. Measured on an RX 6600, 400 mails in batches of 16: one context 24.6
+ * mails/s, two 27.5, four and six no more than two. Each context adds only its own small KV
+ * cache; the model's weights are shared. The CPU keeps one: there the threads are the budget.
+ */
+export const DEFAULT_GPU_CONTEXTS = 2;
+
 export interface LlamaEmbedderOptions {
     /** Path of the GGUF file; the embedder never downloads. */
     modelPath: string;
@@ -57,6 +67,8 @@ export interface LlamaEmbedderOptions {
     threads?: number;
     /** 768 is the model's native size; 256 is the Matryoshka truncation. Default 768. */
     dimensions?: 768 | 256;
+    /** Contexts that embed side by side on a GPU. Default {@link DEFAULT_GPU_CONTEXTS}; the CPU uses one. */
+    gpuContexts?: number;
 }
 
 export interface LlamaEmbedder extends Embedder {
@@ -85,7 +97,7 @@ interface LlamaLike {
 interface Session {
     llama: LlamaLike;
     model: ModelLike;
-    context: EmbeddingContextLike;
+    contexts: EmbeddingContextLike[];
     gpu: boolean;
 }
 
@@ -135,14 +147,22 @@ async function createLlamaOnNode(options: LlamaEmbedderOptions, forceCpu: boolea
 }
 
 async function openOn(llama: LlamaLike, options: LlamaEmbedderOptions): Promise<Session> {
+    const gpu = llama.gpu !== false;
+    const count = gpu ? Math.max(1, Math.trunc(options.gpuContexts ?? DEFAULT_GPU_CONTEXTS)) : 1;
     const model = await llama.loadModel({ modelPath: options.modelPath });
+    const contexts: EmbeddingContextLike[] = [];
     try {
-        const context = await model.createEmbeddingContext({
-            contextSize: CONTEXT_SIZE,
-            threads: options.threads ?? DEFAULT_THREADS,
-        });
-        return { llama, model, context, gpu: llama.gpu !== false };
+        for (let i = 0; i < count; i++) {
+            contexts.push(
+                await model.createEmbeddingContext({
+                    contextSize: CONTEXT_SIZE,
+                    threads: options.threads ?? DEFAULT_THREADS,
+                }),
+            );
+        }
+        return { llama, model, contexts, gpu };
     } catch (err) {
+        await Promise.all(contexts.map((context) => context.dispose().catch(() => undefined)));
         await model.dispose();
         throw err;
     }
@@ -207,7 +227,7 @@ async function openSession(options: LlamaEmbedderOptions, forceCpu: boolean): Pr
 
 async function closeSession(session: Session): Promise<void> {
     const close = async (): Promise<void> => {
-        await session.context.dispose();
+        await Promise.all(session.contexts.map((context) => context.dispose()));
         await session.model.dispose();
         await session.llama.dispose();
     };
@@ -218,25 +238,33 @@ export async function createLlamaEmbedder(options: LlamaEmbedderOptions): Promis
     const dimensions = options.dimensions ?? 768;
     let session = await openSession(options, false);
 
-    const embedOnce = async (text: string): Promise<Float32Array> => {
-        const { vector } = await session.context.getEmbeddingFor(
-            fitTokens(session.model, text, CONTEXT_SIZE),
-        );
+    const embedOnce = async (
+        on: Session,
+        context: EmbeddingContextLike,
+        text: string,
+    ): Promise<Float32Array> => {
+        const { vector } = await context.getEmbeddingFor(fitTokens(on.model, text, CONTEXT_SIZE));
         checkVector(vector);
         return dimensions === 768 ? normalize(vector) : truncateVector(vector, dimensions);
     };
 
-    // A GPU backend can return NaN or zeros for this model (float16 overflow). The one retry
-    // reopens on the CPU; on the CPU a bad vector is a real error and is thrown.
-    const embed = async (text: string): Promise<Float32Array> => {
-        try {
-            return await embedOnce(text);
-        } catch (err) {
-            if (!session.gpu) throw err;
-            await closeSession(session);
+    // A GPU backend can return NaN or zeros for this model (float16 overflow). The pool has let
+    // every context settle by then, so the session is reopened on the CPU, which embeds what is
+    // missing; there a bad vector is a real error and is thrown.
+    const embed = async (texts: readonly string[]): Promise<Float32Array[]> => {
+        const current = session;
+        const { vectors, failure } = await embedAcross(current.contexts, texts, (context, text) =>
+            embedOnce(current, context, text),
+        );
+        if (failure !== undefined) {
+            if (!current.gpu) throw failure.error;
+            await closeSession(current);
             session = await openSession(options, true);
-            return embedOnce(text);
+            for (const [index, text] of texts.entries()) {
+                vectors[index] ??= await embedOnce(session, session.contexts[0], text);
+            }
         }
+        return vectors as Float32Array[];
     };
 
     // One marker per call, not per text: the batch is what a hang interrupts, and a file per
@@ -250,15 +278,14 @@ export async function createLlamaEmbedder(options: LlamaEmbedderOptions): Promis
         get backend(): 'gpu' | 'cpu' {
             return session.gpu ? 'gpu' : 'cpu';
         },
-        embedQuery(text: string): Promise<Float32Array> {
-            return guarded(() => embed(queryPrompt(text)));
+        async embedQuery(text: string): Promise<Float32Array> {
+            const [vector] = await guarded(() => embed([queryPrompt(text)]));
+            return vector;
         },
         async embedDocuments(documents: readonly EmbedDocument[]): Promise<Float32Array[]> {
-            const out = await guarded(async () => {
-                const vectors: Float32Array[] = [];
-                for (const doc of documents) vectors.push(await embed(documentPrompt(doc.subject, doc.body)));
-                return vectors;
-            });
+            const out = await guarded(() =>
+                embed(documents.map((doc) => documentPrompt(doc.subject, doc.body))),
+            );
             // The embedder is called outside any transaction (the indexer writes after it returns).
             collectGarbage();
             return out;
