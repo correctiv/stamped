@@ -26,6 +26,26 @@ if (!modelPath) {
 const norm = (v: ArrayLike<number>): number => Math.sqrt(Array.from(v).reduce((s, x) => s + x * x, 0));
 const dot = (a: Float32Array, b: Float32Array): number => a.reduce((s, x, i) => s + x * b[i], 0);
 
+// The default: whatever backend the machine offers. Which one is machine-specific, so it is
+// printed, and asserted only when STAMPED_EXPECT_BACKEND (gpu | cpu) says what to expect. It runs
+// BEFORE the forced-CPU blocks so that a GPU build and a CPU build are loaded one after the
+// other in this process — the fallback path does exactly that.
+const auto = await createLlamaEmbedder({ modelPath });
+try {
+    const started = Date.now();
+    const [a, b] = await auto.embedDocuments([
+        { subject: 'Invoice approved', body: 'The finance director signed off the invoice.' },
+        { subject: 'Picnic', body: 'The office picnic is moved to Friday.' },
+    ]);
+    assert.ok(Array.from(a).every(Number.isFinite) && Array.from(b).every(Number.isFinite));
+    assert.ok(Math.abs(norm(a) - 1) < 1e-4);
+    console.log(`auto: backend=${auto.backend} (${Date.now() - started} ms for 2 documents, incl. warm-up)`);
+    const expected = process.env.STAMPED_EXPECT_BACKEND;
+    if (expected) assert.equal(auto.backend, expected);
+} finally {
+    await auto.dispose();
+}
+
 const embedder = await createLlamaEmbedder({ modelPath, gpu: false, threads: 4 });
 try {
     const query = await embedder.embedQuery('who approved the payment to the supplier');

@@ -25,7 +25,7 @@ import { getLlama, Llama, LlamaLogLevel } from 'node-llama-cpp';
 
 import { checkVector, normalize } from './embedder.ts';
 import type { EmbedDocument, Embedder } from './embedder.ts';
-import { BUILD_METADATA_FILE, prebuiltBinsDir } from './prebuilt-bins.ts';
+import { BUILD_METADATA_FILE, backendCandidates, currentTarget, prebuiltBinsDir } from './prebuilt-bins.ts';
 import { documentPrompt, fitTokens, queryPrompt, truncateVector } from './prompts.ts';
 import { collectGarbage, runningOnGjs } from './runtime.ts';
 
@@ -94,12 +94,12 @@ interface Session {
  * `extBackendsPath`, because the ggml backends are separate shared objects beside it. Without the
  * second the first model load segfaults with "no backends are loaded" rather than failing.
  *
- * CPU ONLY. Picking a GPU backend means node-llama-cpp's own detection across several prebuilt
- * packages; the CPU package is the one measured to work here. {@link LlamaEmbedder.backend}
- * therefore reads `'cpu'` under GJS, and the GPU retry in {@link createLlamaEmbedder} never fires.
+ * WHICH BUILD is the caller's choice ({@link backendCandidates}): `getLlama()`'s own detection is
+ * not available here, so the Vulkan build is picked by looking for the loader and a driver, and
+ * what `llama.gpu` says after loading is the truth.
  */
-async function createLlamaOnGjs(options: LlamaEmbedderOptions): Promise<LlamaLike> {
-    const [{ loadAddon }, binsDir] = await Promise.all([import('@gjsify/napi'), prebuiltBinsDir()]);
+async function createLlamaOnGjs(target: string, options: LlamaEmbedderOptions): Promise<LlamaLike> {
+    const [{ loadAddon }, binsDir] = await Promise.all([import('@gjsify/napi'), prebuiltBinsDir(target)]);
     const bindingPath = join(binsDir, 'llama-addon.node');
     const create = Llama as unknown as { _create(options: Record<string, unknown>): Promise<LlamaLike> };
     return await create._create({
@@ -126,16 +126,45 @@ async function createLlamaOnNode(options: LlamaEmbedderOptions, forceCpu: boolea
     })) as unknown as LlamaLike;
 }
 
-async function openSession(options: LlamaEmbedderOptions, forceCpu: boolean): Promise<Session> {
-    const llama = runningOnGjs()
-        ? await createLlamaOnGjs(options)
-        : await createLlamaOnNode(options, forceCpu);
+async function openOn(llama: LlamaLike, options: LlamaEmbedderOptions): Promise<Session> {
     const model = await llama.loadModel({ modelPath: options.modelPath });
-    const context = await model.createEmbeddingContext({
-        contextSize: CONTEXT_SIZE,
-        threads: options.threads ?? DEFAULT_THREADS,
-    });
-    return { llama, model, context, gpu: llama.gpu !== false };
+    try {
+        const context = await model.createEmbeddingContext({
+            contextSize: CONTEXT_SIZE,
+            threads: options.threads ?? DEFAULT_THREADS,
+        });
+        return { llama, model, context, gpu: llama.gpu !== false };
+    } catch (err) {
+        await model.dispose();
+        throw err;
+    }
+}
+
+/**
+ * The GPU build first when the machine looks like it has one, the CPU build when that build does
+ * not come up, comes up without a GPU (a loader but no usable device), or cannot run the model.
+ * `candidates.at(-1)` is the CPU build and has nothing to fall back to, so its error is thrown.
+ */
+async function openSessionOnGjs(options: LlamaEmbedderOptions, forceCpu: boolean): Promise<Session> {
+    const candidates = forceCpu || options.gpu === false ? [currentTarget()] : backendCandidates();
+    for (const [index, target] of candidates.entries()) {
+        const last = index === candidates.length - 1;
+        let llama: LlamaLike | undefined;
+        try {
+            llama = await createLlamaOnGjs(target, options);
+            if (!last && llama.gpu === false) throw new Error(`${target} found no GPU`);
+            return await openOn(llama, options);
+        } catch (err) {
+            await llama?.dispose().catch(() => undefined);
+            if (last) throw err;
+        }
+    }
+    throw new Error('no llama.cpp build to try');
+}
+
+async function openSession(options: LlamaEmbedderOptions, forceCpu: boolean): Promise<Session> {
+    if (runningOnGjs()) return openSessionOnGjs(options, forceCpu);
+    return openOn(await createLlamaOnNode(options, forceCpu), options);
 }
 
 async function closeSession(session: Session): Promise<void> {
