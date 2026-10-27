@@ -113,9 +113,11 @@ packages/semantic/src/prebuilt-bins.ts
 packages/semantic/src/prepare.ts
 packages/semantic/src/probe.ts
 packages/semantic/src/prompts.ts
+packages/semantic/src/resident-vectors.ts
 packages/semantic/src/rrf.ts
 packages/semantic/src/runtime.ts
 packages/semantic/src/vector-db.ts
+packages/semantic/src/vector-index.ts
 packages/store/src/activity-status.ts
 packages/store/src/addresses-db.ts
 packages/store/src/body-explanations.ts

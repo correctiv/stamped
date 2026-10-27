@@ -155,6 +155,34 @@ export default async () => {
         });
     });
 
+    await describe('search protocol', async () => {
+        await it('parses vector states and hits, and keeps the old shapes', async () => {
+            expect(parseHelperMessage('{"type":"vectors","state":"loading","count":3}')).toStrictEqual({
+                type: 'vectors',
+                state: 'loading',
+                count: 3,
+            });
+            expect(parseHelperMessage('{"type":"vectors","state":"odd"}')).toBeUndefined();
+            expect(parseHelperMessage('{"id":2,"hits":[{"hash":"a","score":0.5}]}')).toStrictEqual({
+                id: 2,
+                hits: [{ hash: 'a', score: 0.5 }],
+            });
+            expect(parseHelperMessage('{"id":2,"hits":[{"hash":1}]}')).toBeUndefined();
+            expect(parseHelperMessage('{"id":2,"vector":[1]}')).toStrictEqual({ id: 2, vector: [1] });
+        });
+
+        await it('parses a search request and rejects a bad limit', async () => {
+            expect(parseHelperRequest('{"id":1,"text":"x","limit":5.9}')).toStrictEqual({
+                id: 1,
+                text: 'x',
+                limit: 5,
+            });
+            expect(parseHelperRequest('{"id":1,"text":"x"}')).toStrictEqual({ id: 1, text: 'x' });
+            expect(parseHelperRequest('{"id":1,"text":"x","limit":0}')).toBeUndefined();
+            expect(parseHelperRequest('{"id":1,"text":"x","limit":"5"}')).toBeUndefined();
+        });
+    });
+
     await describe('bufferedLines', async () => {
         await it('keeps lines that arrive before anyone reads, then ends with the source', async () => {
             const handlers: Record<string, (line: string) => void> = {};

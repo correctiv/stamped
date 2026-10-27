@@ -3,6 +3,7 @@
 // test file.
 import { run } from '@gjsify/unit';
 
+import vectorIndex from './unit/vector-index.test.ts';
 import activity from './unit/activity.test.ts';
 import autokeys from './unit/autokeys.test.ts';
 import cli from './unit/cli.test.ts';
@@ -91,4 +92,5 @@ run({
     gpuBackend,
     gpuGuard,
     contextPool,
+    vectorIndex,
 });

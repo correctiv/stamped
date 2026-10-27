@@ -42,9 +42,16 @@ export function semanticArgv(
     return null;
 }
 
-/** `[…interpreter, 'semantic', 'embed']`: the query helper has no case, the model is the machine's. */
-export function embedArgv(self: readonly string[] | null, found: string | null): string[] | null {
-    const tail = ['semantic', 'embed'];
+/**
+ * `[…interpreter, 'semantic', 'embed']`, plus `--case <root>` when the helper is to hold that
+ * case's vectors. The model is the machine's either way.
+ */
+export function embedArgv(
+    self: readonly string[] | null,
+    found: string | null,
+    root?: string,
+): string[] | null {
+    const tail = root === undefined ? ['semantic', 'embed'] : ['semantic', 'embed', '--case', root];
     if (self !== null) return [...self, ...tail];
     if (found !== null) return [found, ...tail];
     return null;

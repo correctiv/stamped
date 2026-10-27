@@ -60,9 +60,10 @@ import {
 import { checkVector, type Embedder } from '@stamped/semantic';
 
 import { caseOrThrow } from '../lib/case.ts';
-import { asksForMeaning, type HybridHit } from '../lib/hybrid-search.ts';
+import type { HelperEmbedder } from '../lib/embed-client.ts';
+import { asksForMeaning, candidateCount, type HybridHit } from '../lib/hybrid-search.ts';
 import { resolveTxt } from '../lib/dns.ts';
-import type { Query } from '../lib/queries.ts';
+import { PAGE_SIZE, type Query } from '../lib/queries.ts';
 import { loadVault, saveVault } from '../lib/vault.ts';
 import { workerChannel } from './query-channel.ts';
 import { QueryClient } from './query-client.ts';
@@ -148,6 +149,12 @@ export async function pageOf(session: CaseSession, query: Query, offset = 0): Pr
     return session.query.ask('page', { query, offset });
 }
 
+/** The helper's resident search, when this embedder is one that has it. */
+function resident(embedder: Embedder): Pick<HelperEmbedder, 'search'> | undefined {
+    const search = (embedder as Partial<HelperEmbedder>).search;
+    return typeof search === 'function' ? { search: search.bind(embedder) } : undefined;
+}
+
 /**
  * The first page of a text query with the meaning's hits merged in, or `undefined` when there is
  * nothing to merge (no query, no vectors). The caller keeps the text page it already has.
@@ -162,6 +169,9 @@ export async function hybridPageOf(
     // The ONE step that stays here: the model runtime was loaded in this process and a worker
     // cannot borrow it. Everything the vector is then used for — the vector table, the FTS5
     // half, the rows behind both — happens over there.
+    const found = await resident(embedder)?.search(text, candidateCount(PAGE_SIZE));
+    if (found !== undefined)
+        return (await session.query.ask('hybrid', { query, semantic: found })) ?? undefined;
     const vector = await embedder.embedQuery(text);
     checkVector(vector);
     const model = { modelId: embedder.modelId, dimensions: embedder.dimensions };

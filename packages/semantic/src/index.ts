@@ -16,8 +16,14 @@ export {
     countVectors,
     missingVectors,
     searchVectors,
+    sqliteVectorSource,
+    vectorDbMatches,
     VECTOR_SCHEMA_VERSION,
 } from './vector-db.ts';
+export type { VectorHit, VectorIndexOptions, VectorRow, VectorRowSource } from './vector-index.ts';
+export { DEFAULT_LOAD_BATCH, VectorIndex } from './vector-index.ts';
+export type { ResidentState, ResidentVectorsOptions } from './resident-vectors.ts';
+export { ResidentVectors } from './resident-vectors.ts';
 export { fuseRrf } from './rrf.ts';
 export type {
     DocumentSource,

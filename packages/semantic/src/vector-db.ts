@@ -20,6 +20,8 @@
 import { existsSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
+import type { VectorRow, VectorRowSource } from './vector-index.ts';
+
 export interface VectorDbOptions {
     /** Identifies the model that produced the vectors; a different one means a reindex. */
     readonly modelId: string;
@@ -147,6 +149,16 @@ function needsRebuild(db: DatabaseSync, options: VectorDbOptions): boolean {
     if (model?.value !== options.modelId) return true;
     if (Number(dimensions?.value) !== options.dimensions) return true;
     return false;
+}
+
+/**
+ * Is this database still the one for this model?
+ *
+ * For a reader that holds a connection open: the indexer may have dropped and recreated the table
+ * for another model since it was opened, and what the reader loaded then means nothing now.
+ */
+export function vectorDbMatches(db: DatabaseSync, options: VectorDbOptions): boolean {
+    return !needsRebuild(db, options);
 }
 
 /** Drop whatever is there and lay out the current schema. */
@@ -283,4 +295,38 @@ export function searchVectors(db: DatabaseSync, query: Float32Array, limit: numb
     // reshuffles between two runs of the same search reads as a bug in the ranking.
     hits.sort((a, b) => (b.score !== a.score ? b.score - a.score : a.hash < b.hash ? -1 : 1));
     return hits.slice(0, limit);
+}
+
+/**
+ * The table as rowid-ordered batches, for {@link VectorIndex}.
+ *
+ * `vectors` is a rowid table (`hash TEXT PRIMARY KEY` is not the rowid), so `rowid` exists and
+ * only ever grows for new inserts. `INSERT OR REPLACE` gives a replaced row a NEW rowid, which
+ * the index handles by hash.
+ */
+export function sqliteVectorSource(db: DatabaseSync): VectorRowSource {
+    const batch = db.prepare(
+        'SELECT rowid AS id, hash, vector FROM vectors WHERE rowid > ? ORDER BY rowid LIMIT ?',
+    );
+    return {
+        readAfter(after: number, limit: number): VectorRow[] {
+            const rows = batch.all(after, limit) as Array<{
+                id: number | bigint;
+                hash: string;
+                vector: unknown;
+            }>;
+            return rows.map((row) => ({
+                rowid: Number(row.id),
+                hash: row.hash,
+                vector: blobBytes(row.vector),
+            }));
+        },
+        count: () => countVectors(db),
+        maxRowid(): number {
+            const row = db.prepare('SELECT max(rowid) AS n FROM vectors').get() as
+                | { n?: number | bigint | null }
+                | undefined;
+            return Number(row?.n ?? 0);
+        },
+    };
 }
