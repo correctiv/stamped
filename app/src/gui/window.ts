@@ -536,7 +536,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 const marked = markingDecisions(this.semantic, () => {
                     this.semanticDecided = true;
                 });
-                presentSemanticSettings(this, marked, this.total);
+                presentSemanticSettings(this, marked, this.total, this.session?.paths);
             }
         });
 

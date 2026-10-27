@@ -124,6 +124,7 @@ export function createSemanticController(options: SemanticControllerOptions): Se
     let indexer: Indexer | undefined;
     let vectors: DatabaseSync | undefined;
     let running: Promise<void> | undefined;
+    let currentEmbedder: Embedder | undefined;
     /** Whether the PERSON paused the run; the battery is the other reason, and it is not this one. */
     let userPaused = false;
     let writtenAt = 0;
@@ -160,12 +161,14 @@ export function createSemanticController(options: SemanticControllerOptions): Se
         // "The run paused" is a fact a reader in another terminal must not miss because the last
         // progress line was a second ago.
         const changed = run === undefined || run.state !== next.state;
+        const backend = currentEmbedder?.backend;
         run = {
             version: SEMANTIC_STATUS_VERSION,
             done: 0,
             total: 0,
             updatedAt: new Date(now()).toISOString(),
             pid: typeof process.pid === 'number' ? process.pid : 0,
+            ...(backend === undefined ? {} : { backend }),
             ...next,
         };
         writeRun(force || changed);
@@ -260,6 +263,7 @@ export function createSemanticController(options: SemanticControllerOptions): Se
         if (running !== undefined) return state();
 
         const embedder = await options.createEmbedder();
+        currentEmbedder = embedder;
         if (embedder === undefined) {
             // No model runtime here. Said plainly, and the app carries on without it.
             setRun({ state: 'unavailable' }, true);
@@ -349,6 +353,7 @@ export function createSemanticController(options: SemanticControllerOptions): Se
                 vectors = undefined;
                 if (indexer === started) indexer = undefined;
                 running = undefined;
+                currentEmbedder = undefined;
             });
         return state();
     };

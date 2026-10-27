@@ -66,6 +66,8 @@ export interface SemanticRunStatus {
     readonly updatedAt: string;
     /** The process doing the work; 0 when the runtime does not say. */
     readonly pid: number;
+    /** Which backend is doing the work, if known. */
+    readonly backend?: 'gpu' | 'cpu';
 }
 
 /** The file's path inside a case folder. */
@@ -107,6 +109,9 @@ export function readSemanticRunStatus(paths: CasePaths): SemanticRunStatus | und
     if (parsed.error !== undefined && typeof parsed.error !== 'string') return undefined;
     if (typeof parsed.updatedAt !== 'string') return undefined;
     if (typeof parsed.pid !== 'number') return undefined;
+    if (parsed.backend !== undefined && parsed.backend !== 'gpu' && parsed.backend !== 'cpu') {
+        delete (parsed as Record<string, unknown>).backend;
+    }
     return parsed as SemanticRunStatus;
 }
 

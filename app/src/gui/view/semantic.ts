@@ -7,6 +7,8 @@
 
 import { fmt, _, _n } from '@stamped/core';
 import type { SemanticSetting } from '@stamped/store';
+import type { GpuPin } from '@stamped/semantic/gpu-guard';
+import type { GpuSetting } from '@stamped/semantic/prebuilt-bins';
 
 import type { EmbedderAvailability } from '../../lib/semantic-embedder.ts';
 import type { MatchKind } from '../../lib/hybrid-search.ts';
@@ -25,6 +27,8 @@ export interface SemanticSettingsView {
     readonly estimate: string | undefined;
     /** Why the switch is dead, when it is. */
     readonly note: string | undefined;
+    /** Why the graphics card is not used, when a crash pinned the CPU; the dialog offers to undo it. */
+    readonly pinNote: string | undefined;
 }
 
 /** The estimate sentence, or `undefined` before the machine has been measured. */
@@ -47,19 +51,50 @@ function unavailableNote(availability: EmbedderAvailability): string | undefined
     return undefined;
 }
 
+/** What the dialog knows about where the vectors are computed. */
+export interface SemanticBackendInfo {
+    /** The backend of the run the status file describes. */
+    readonly backend?: 'gpu' | 'cpu';
+    /** The CPU pin a dead GPU session left behind. */
+    readonly pin?: GpuPin;
+    /** `STAMPED_SEMANTIC_GPU`: with `on` or `off` the environment decides and a pin means nothing. */
+    readonly gpu?: GpuSetting;
+}
+
 export function semanticSettingsView(
     availability: EmbedderAvailability,
     state: SemanticState,
     setting: SemanticSetting | undefined,
     total: number,
+    info: SemanticBackendInfo = {},
 ): SemanticSettingsView {
     const note = unavailableNote(availability);
+    const lines: string[] = [];
+    if (note === undefined) {
+        // Only while something runs: a finished index runs nowhere, and a stale "graphics card"
+        // after a crash would contradict the pin note below it.
+        const working = state.kind === 'indexing' || state.kind === 'probing';
+        if (working && info.backend === 'gpu') lines.push(_('Runs on the graphics card.'));
+        if (working && info.backend === 'cpu') lines.push(_('Runs on the processor.'));
+        lines.push(...semanticLines(state));
+    }
+    const pin = note === undefined && (info.gpu ?? 'auto') === 'auto' ? info.pin : undefined;
+    const pinNote =
+        pin === undefined
+            ? undefined
+            : fmt(
+                  _(
+                      'The graphics card is not used: process {pid} stopped while using it ({time}). That can be a driver fault, or another program that had filled the graphics memory.',
+                  ),
+                  { pid: String(pin.pid), time: new Date(pin.at).toLocaleString() },
+              );
     return {
         active: setting?.enabled === true,
         sensitive: availability === 'ready',
-        lines: note === undefined ? semanticLines(state) : [],
+        lines,
         estimate: note === undefined && state.kind !== 'ready' ? semanticEstimate(setting, total) : undefined,
         note,
+        pinNote,
     };
 }
 

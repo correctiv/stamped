@@ -20,6 +20,8 @@ export interface EmbedDocument {
 export interface Embedder {
     readonly modelId: string;
     readonly dimensions: number;
+    /** Where the vectors are computed right now, when the embedder knows; it can change mid-run. */
+    readonly backend?: 'gpu' | 'cpu';
     embedQuery(text: string): Promise<Float32Array>;
     embedDocuments(documents: readonly EmbedDocument[]): Promise<Float32Array[]>;
 }
