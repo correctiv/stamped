@@ -336,6 +336,22 @@ export default async () => {
             embedder?.dispose();
         });
 
+        await it('keeps a helper that holds the vectors through the short quiet spell', async () => {
+            const world = fakeWorld(answering());
+            const embedder = await createHelperEmbedder({
+                spawn: world.spawn,
+                idleMs: 20,
+                residentIdleMs: 200,
+            });
+            world.channels[0]!.emit({ type: 'vectors', state: 'ready', count: 3 });
+            await embedder!.embedQuery('a');
+            await sleep(60);
+            expect(world.channels[0]?.closed).toBe(0);
+            await sleep(240);
+            expect(world.channels[0]?.closed).toBe(1);
+            embedder?.dispose();
+        });
+
         await it('does not trust a respawned helper that loaded another model', async () => {
             const world = fakeWorld((channel, nth) =>
                 answering(nth === 1 ? 'fake/model' : 'other/model')(channel, nth),

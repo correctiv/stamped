@@ -42,6 +42,11 @@ export interface HelperEmbedderOptions {
     readonly spawn: (onLine: (line: string) => void) => HelperChannel;
     /** Quiet time before the helper is ended. Default five minutes. */
     readonly idleMs?: number;
+    /**
+     * Quiet time while the helper holds the case's vectors. Default thirty minutes: reading them
+     * again takes ~40 s at 400,000 mails, far longer than starting the model.
+     */
+    readonly residentIdleMs?: number;
     /** How long loading the model may take. Default two minutes. */
     readonly startMs?: number;
     /** How long one query may take. Default one minute: a query is a few tokens. */
@@ -81,10 +86,16 @@ interface Running {
 }
 
 const FIVE_MINUTES = 5 * 60_000;
+const THIRTY_MINUTES = 30 * 60_000;
+
+function holdsVectors(running: Running | undefined): boolean {
+    return running?.vectors?.state === 'ready' && running.vectors.count > 0;
+}
 
 /** The embedder, or `undefined` when the helper says this machine has no model (or never answers). */
 export async function createHelperEmbedder(options: HelperEmbedderOptions): Promise<HelperEmbedder | undefined> {
     const idleMs = options.idleMs ?? FIVE_MINUTES;
+    const residentIdleMs = Math.max(idleMs, options.residentIdleMs ?? THIRTY_MINUTES);
     const startMs = options.startMs ?? 120_000;
     const requestMs = options.requestMs ?? 60_000;
     const loadMs = options.loadMs ?? 30 * 60_000;
@@ -106,7 +117,7 @@ export async function createHelperEmbedder(options: HelperEmbedderOptions): Prom
             if (running === undefined || running.pending.size > 0) return;
             current = undefined;
             running.channel.close();
-        }, idleMs);
+        }, holdsVectors(current) ? residentIdleMs : idleMs);
     };
 
     const spawn = (): Running => {
