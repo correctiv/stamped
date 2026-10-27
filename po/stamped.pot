@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-27 19:49+0100\n"
+"POT-Creation-Date: 2026-10-27 20:05+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -180,9 +180,9 @@ msgstr ""
 #: app/src/commands/keys.ts:131 app/src/commands/keys.ts:228
 #: app/src/commands/keys.ts:286 app/src/commands/keys.ts:486
 #: app/src/commands/people.ts:37 app/src/commands/people.ts:38
-#: app/src/commands/reverify.ts:27 app/src/commands/semantic.ts:73
-#: app/src/commands/semantic.ts:74 app/src/commands/semantic.ts:114
-#: app/src/commands/semantic.ts:115 app/src/commands/timeline.ts:28
+#: app/src/commands/reverify.ts:27 app/src/commands/semantic.ts:76
+#: app/src/commands/semantic.ts:77 app/src/commands/semantic.ts:117
+#: app/src/commands/semantic.ts:118 app/src/commands/timeline.ts:28
 #: app/src/commands/timeline.ts:29
 msgid "The case folder"
 msgstr ""
@@ -446,7 +446,7 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:140 app/src/gui/window.ts:2165
+#: app/src/commands/report.ts:140 app/src/gui/window.ts:2183
 #: app/src/gui/window.blp:166
 msgid "Verdicts"
 msgstr ""
@@ -643,46 +643,51 @@ msgid ""
 "`column : word` to search one field."
 msgstr ""
 
-#: app/src/commands/semantic.ts:44
+#: app/src/commands/semantic.ts:47
 msgid ""
 "A semantic index run is already going for this case (pid {pid}). Wait for it "
 "to end, or end that process first."
 msgstr ""
 
-#: app/src/commands/semantic.ts:51
+#: app/src/commands/semantic.ts:54
 msgid ""
 "A semantic index run is already going for this case. Wait for it to end, or "
 "end that process first."
 msgstr ""
 
-#: app/src/commands/semantic.ts:71
+#: app/src/commands/semantic.ts:74
 msgid "Build or continue the semantic index of a case (needs it switched on)"
 msgstr ""
 
-#: app/src/commands/semantic.ts:100
+#: app/src/commands/semantic.ts:103
 msgid "Semantic index: {state}"
 msgstr ""
 
-#: app/src/commands/semantic.ts:112
+#: app/src/commands/semantic.ts:115
 msgid "Measure how fast this machine embeds, and keep the estimate in the case"
 msgstr ""
 
-#: app/src/commands/semantic.ts:131
+#: app/src/commands/semantic.ts:134
 msgid "No estimate: no model here, or nothing to embed"
 msgstr ""
 
-#: app/src/commands/semantic.ts:135
+#: app/src/commands/semantic.ts:139
 msgid ""
 "{rate} tokens/s, about {hours} h for the case, recommendation: "
 "{recommendation}"
 msgstr ""
 
-#: app/src/commands/semantic.ts:152
+#: app/src/commands/semantic.ts:162
+msgid ""
+"Answer search queries with their meaning, for the window (not for typing)"
+msgstr ""
+
+#: app/src/commands/semantic.ts:179
 msgid ""
 "Semantic search: build the index of a case, or measure how long it takes"
 msgstr ""
 
-#: app/src/commands/semantic.ts:157
+#: app/src/commands/semantic.ts:185
 msgid "Pick a subcommand. Try `stamped semantic --help`."
 msgstr ""
 
@@ -747,8 +752,8 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1544
-#: app/src/gui/window.ts:1975 app/src/gui/window.ts:2259
+#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1562
+#: app/src/gui/window.ts:1993 app/src/gui/window.ts:2277
 msgid "Cancel"
 msgstr ""
 
@@ -1359,11 +1364,11 @@ msgstr ""
 msgid "From"
 msgstr ""
 
-#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:1447
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:1465
 msgid "To"
 msgstr ""
 
-#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:1448
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:1466
 msgid "Cc"
 msgstr ""
 
@@ -1690,65 +1695,65 @@ msgstr ""
 msgid "{shown} of {total} shown"
 msgstr ""
 
-#: app/src/gui/window.ts:349
+#: app/src/gui/window.ts:352
 msgid "All files"
 msgstr ""
 
-#: app/src/gui/window.ts:351
+#: app/src/gui/window.ts:354
 msgid "Mail archives"
 msgstr ""
 
-#: app/src/gui/window.ts:663
+#: app/src/gui/window.ts:668
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
-#: app/src/gui/window.ts:1331
+#: app/src/gui/window.ts:1349
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 
-#: app/src/gui/window.ts:1423
+#: app/src/gui/window.ts:1441
 msgid "Open With…"
 msgstr ""
 
-#: app/src/gui/window.ts:1424
+#: app/src/gui/window.ts:1442
 msgid "Open a read-only copy in the program you choose"
 msgstr ""
 
-#: app/src/gui/window.ts:1454
+#: app/src/gui/window.ts:1472
 msgid "The stored copy could not be read."
 msgstr ""
 
-#: app/src/gui/window.ts:1471
+#: app/src/gui/window.ts:1489
 msgid "(no text)"
 msgstr ""
 
-#: app/src/gui/window.ts:1483
+#: app/src/gui/window.ts:1501
 msgid "Shown as text; the HTML was not rendered."
 msgstr ""
 
-#: app/src/gui/window.ts:1484
+#: app/src/gui/window.ts:1502
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 
-#: app/src/gui/window.ts:1496 app/src/lib/pdf-report.ts:401
+#: app/src/gui/window.ts:1514 app/src/lib/pdf-report.ts:401
 msgid "(unnamed)"
 msgstr ""
 
-#: app/src/gui/window.ts:1526
+#: app/src/gui/window.ts:1544
 msgid "Open in a mail program?"
 msgstr ""
 
-#: app/src/gui/window.ts:1528
+#: app/src/gui/window.ts:1546
 msgid ""
 "A mail program may load remote content. Only the verdict proves a message "
 "genuine."
 msgstr ""
 
-#: app/src/gui/window.ts:1533
+#: app/src/gui/window.ts:1551
 msgid "What does that mean?"
 msgstr ""
 
-#: app/src/gui/window.ts:1538
+#: app/src/gui/window.ts:1556
 msgid ""
 "A mail program that loads remote content tells the sender’s server that "
 "someone is reading this message right now. How a program displays a message "
@@ -1756,166 +1761,166 @@ msgid ""
 "copy outside the case."
 msgstr ""
 
-#: app/src/gui/window.ts:1545
+#: app/src/gui/window.ts:1563
 msgid "Open"
 msgstr ""
 
-#: app/src/gui/window.ts:1554
+#: app/src/gui/window.ts:1572
 msgid "The stored copy of this message is missing."
 msgstr ""
 
-#: app/src/gui/window.ts:1562
+#: app/src/gui/window.ts:1580
 msgid "Could not open the message: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:1615
+#: app/src/gui/window.ts:1633
 msgid "Look Up Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:1633 app/src/gui/window.blp:328
+#: app/src/gui/window.ts:1651 app/src/gui/window.blp:328
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:1652
+#: app/src/gui/window.ts:1670
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:1661
+#: app/src/gui/window.ts:1679
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:1677
+#: app/src/gui/window.ts:1695
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:1752
+#: app/src/gui/window.ts:1770
 msgid "How does DKIM work?"
 msgstr ""
 
-#: app/src/gui/window.ts:1772
+#: app/src/gui/window.ts:1790
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:1777
+#: app/src/gui/window.ts:1795
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:1780
+#: app/src/gui/window.ts:1798
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:1812
+#: app/src/gui/window.ts:1830
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:1824
+#: app/src/gui/window.ts:1842
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:1862
+#: app/src/gui/window.ts:1880
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:1871
+#: app/src/gui/window.ts:1889
 msgid "Copy Request…"
 msgstr ""
 
-#: app/src/gui/window.ts:1872
+#: app/src/gui/window.ts:1890
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 
-#: app/src/gui/window.ts:1876
+#: app/src/gui/window.ts:1894
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr ""
 
-#: app/src/gui/window.ts:1904
+#: app/src/gui/window.ts:1922
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:1954
+#: app/src/gui/window.ts:1972
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:1956
+#: app/src/gui/window.ts:1974
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:1976
+#: app/src/gui/window.ts:1994
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:2091
+#: app/src/gui/window.ts:2109
 msgid "Looking up keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:2124
+#: app/src/gui/window.ts:2142
 msgid "Key lookup failed: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:2158
+#: app/src/gui/window.ts:2176
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:2167
+#: app/src/gui/window.ts:2185
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:2223
+#: app/src/gui/window.ts:2241
 msgid "Folder for the Case"
 msgstr ""
 
-#: app/src/gui/window.ts:2223
+#: app/src/gui/window.ts:2241
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:2244
+#: app/src/gui/window.ts:2262
 msgid "Create the case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:2244
+#: app/src/gui/window.ts:2262
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:2248
+#: app/src/gui/window.ts:2266
 msgid ""
 "Stamped creates the case in {path}. It holds the working copy of the "
 "messages and the search index. The archive stays where it is."
 msgstr ""
 
-#: app/src/gui/window.ts:2254
+#: app/src/gui/window.ts:2272
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:2258
+#: app/src/gui/window.ts:2276
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:2281
+#: app/src/gui/window.ts:2299
 msgid "Imported."
 msgstr ""
 
-#: app/src/gui/window.ts:2374
+#: app/src/gui/window.ts:2392
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:2374
+#: app/src/gui/window.ts:2392
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:2416
+#: app/src/gui/window.ts:2434
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:2416
+#: app/src/gui/window.ts:2434
 msgid "Close"
 msgstr ""
 

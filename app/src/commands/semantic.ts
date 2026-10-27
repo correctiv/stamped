@@ -8,6 +8,8 @@
  * beside a live one is refused, as in the window (`liveSemanticRun`).
  */
 
+import { createInterface } from 'node:readline';
+
 import { fmt, _ } from '@stamped/core';
 import { onBattery } from '@stamped/semantic';
 import {
@@ -21,6 +23,7 @@ import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
 import { durationLine } from '../lib/duration.ts';
+import { bufferedLines, serveEmbedder } from '../lib/embed-serve.ts';
 import { createGuiEmbedder } from '../lib/semantic-embedder.ts';
 import { liveSemanticRun, runSemanticIndex } from '../lib/semantic-run.ts';
 import { createSemanticController } from '../lib/semantic.ts';
@@ -148,6 +151,27 @@ function probeCommand(): CommandModule<unknown, IndexArgs> {
     };
 }
 
+/**
+ * The window's query helper: lines in, lines out, until the window closes the pipe. Not meant
+ * for a person — the protocol is `lib/embed-protocol.ts`. Stdout is the wire, so anything else
+ * the process says goes to stderr.
+ */
+function embedCommand(): CommandModule<unknown, unknown> {
+    return {
+        command: 'embed',
+        describe: _('Answer search queries with their meaning, for the window (not for typing)'),
+        handler: async () => {
+            const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+            await serveEmbedder(createGuiEmbedder, {
+                lines: bufferedLines(rl),
+                write: (line) => {
+                    process.stdout.write(`${line}\n`);
+                },
+            });
+        },
+    };
+}
+
 /** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
 export function semanticCommand(): CommandModule<unknown, unknown> {
     return {
@@ -157,6 +181,7 @@ export function semanticCommand(): CommandModule<unknown, unknown> {
             yargs
                 .command(indexCommand())
                 .command(probeCommand())
+                .command(embedCommand())
                 .demandCommand(1, _('Pick a subcommand. Try `stamped semantic --help`.')),
         handler: () => undefined,
     };

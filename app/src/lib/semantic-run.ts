@@ -42,6 +42,14 @@ export function semanticArgv(
     return null;
 }
 
+/** `[…interpreter, 'semantic', 'embed']`: the query helper has no case, the model is the machine's. */
+export function embedArgv(self: readonly string[] | null, found: string | null): string[] | null {
+    const tail = ['semantic', 'embed'];
+    if (self !== null) return [...self, ...tail];
+    if (found !== null) return [found, ...tail];
+    return null;
+}
+
 /**
  * Is a process working on this case's index right now?
  *
