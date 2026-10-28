@@ -11,13 +11,18 @@
  *
  * BOUNDED WHILE LOADING: rows come in rowid-ordered batches, each copied into the big array and
  * dropped, so the transient cost is one batch, not a second copy of the table. Between batches
- * the loop yields, so the process that owns the index keeps answering its pipe.
+ * the loop yields, so the process that owns the index keeps answering its pipe, and collects
+ * garbage: each batch leaves libgda result objects whose memory is native, so GJS sees a small
+ * heap and never collects on its own. Without that, 400,000 vectors (a 1.2 GB array) peaked at
+ * 4.56 GB on GJS; with one collection per batch, 1.38 GB, at about the same load time (#162).
  *
  * SCORES ARE THE ONES `searchVectors` gives. Stored vectors are normalised by the embedder, but
  * the cosine still divides by both norms (a truncated vector is not unit length), so the norm of
  * every stored vector is computed once at load, in the same order and in the same double
  * arithmetic, and the query's once per search. Same operations, same bits.
  */
+
+import { collectGarbage } from './runtime.ts';
 
 /** One stored vector, as the table has it. */
 export interface VectorRow {
@@ -181,6 +186,7 @@ export class VectorIndex {
             for (const row of rows) this.add(row);
             this.lastRowid = rows[rows.length - 1].rowid;
             this.onProgress?.(this.used);
+            collectGarbage();
             if (rows.length < this.batchSize) return;
             await this.yieldTo();
         }
