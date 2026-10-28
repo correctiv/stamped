@@ -90,7 +90,7 @@ interface ModelLike {
 }
 interface LlamaLike {
     gpu: false | string;
-    loadModel(options: { modelPath: string }): Promise<ModelLike>;
+    loadModel(options: { modelPath: string; gpuLayers?: number }): Promise<ModelLike>;
     dispose(): Promise<void>;
 }
 
@@ -139,17 +139,42 @@ async function createLlamaOnGjs(target: string, options: LlamaEmbedderOptions): 
     });
 }
 
-/** The Node route: `getLlama()` finds, tests and loads the binary, and chooses the backend. */
-async function createLlamaOnNode(options: LlamaEmbedderOptions, forceCpu: boolean): Promise<LlamaLike> {
-    return (await getLlama({
-        gpu: forceCpu || options.gpu === false ? false : 'auto',
-    })) as unknown as LlamaLike;
+/**
+ * The Node route: `getLlama()` finds, tests and loads the binary, and chooses the backend.
+ *
+ * `onCpu` says the model must compute on the CPU even though the instance may report a GPU.
+ * Asking `getLlama({ gpu: false })` is the obvious way, but it wants a CPU-only prebuilt, and
+ * macOS on Apple silicon has none: the one prebuilt there is the Metal build. node-llama-cpp then
+ * COMPILES llama.cpp from source — cmake and Xcode, four minutes, and a failure on every machine
+ * that has no toolchain, which is every journalist's. So the CPU request is tried against the
+ * prebuilts only (`build: 'never'`), and when none fits, the Metal build is loaded and the model
+ * kept off the GPU with `gpuLayers: 0` (see {@link openOn}); that build carries the CPU kernels.
+ */
+async function createLlamaOnNode(
+    options: LlamaEmbedderOptions,
+    forceCpu: boolean,
+): Promise<{ llama: LlamaLike; onCpu: boolean }> {
+    if (!forceCpu && options.gpu !== false) {
+        return { llama: (await getLlama({ gpu: 'auto' })) as unknown as LlamaLike, onCpu: false };
+    }
+    try {
+        return {
+            llama: (await getLlama({ gpu: false, build: 'never' })) as unknown as LlamaLike,
+            onCpu: false,
+        };
+    } catch {
+        const llama = (await getLlama({ gpu: 'auto', build: 'never' })) as unknown as LlamaLike;
+        return { llama, onCpu: llama.gpu !== false };
+    }
 }
 
-async function openOn(llama: LlamaLike, options: LlamaEmbedderOptions): Promise<Session> {
-    const gpu = llama.gpu !== false;
+async function openOn(llama: LlamaLike, options: LlamaEmbedderOptions, onCpu = false): Promise<Session> {
+    const gpu = llama.gpu !== false && !onCpu;
     const count = gpu ? Math.max(1, Math.trunc(options.gpuContexts ?? DEFAULT_GPU_CONTEXTS)) : 1;
-    const model = await llama.loadModel({ modelPath: options.modelPath });
+    const model = await llama.loadModel({
+        modelPath: options.modelPath,
+        ...(onCpu ? { gpuLayers: 0 } : {}),
+    });
     const contexts: EmbeddingContextLike[] = [];
     try {
         for (let i = 0; i < count; i++) {
@@ -217,10 +242,11 @@ function gpuPinned(): boolean {
 
 async function openSession(options: LlamaEmbedderOptions, forceCpu: boolean): Promise<Session> {
     const cpuOnly = forceCpu || options.gpu === false || gpuPinned();
-    const open = async (): Promise<Session> =>
-        runningOnGjs()
-            ? openSessionOnGjs(options, cpuOnly)
-            : openOn(await createLlamaOnNode(options, cpuOnly), options);
+    const open = async (): Promise<Session> => {
+        if (runningOnGjs()) return openSessionOnGjs(options, cpuOnly);
+        const { llama, onCpu } = await createLlamaOnNode(options, cpuOnly);
+        return openOn(llama, options, onCpu);
+    };
     // A CPU session cannot lose a device; only the GPU attempt is marked.
     return cpuOnly ? open() : gpuGuard().during(open);
 }

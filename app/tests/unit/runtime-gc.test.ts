@@ -14,5 +14,15 @@ export default async () => {
         await it('knows which runtime it is on', async () => {
             expect(typeof runningOnGjs()).toBe('boolean');
         });
+
+        await it('does not take Node with node-gi for GJS', async () => {
+            // node-gi defines `imports` on Node too; the macOS and Windows apps are that, and the
+            // GJS route (`@gjsify/napi`) cannot run there.
+            const gi = { gi: {} };
+            expect(runningOnGjs({ imports: gi, process: { versions: {} } })).toBe(false);
+            expect(runningOnGjs({ imports: gi })).toBe(false);
+            expect(runningOnGjs({ process: { versions: { gjs: '1.86.0' } } })).toBe(false);
+            expect(runningOnGjs({ imports: gi, process: { versions: { gjs: '1.86.0' } } })).toBe(true);
+        });
     });
 };

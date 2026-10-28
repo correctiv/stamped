@@ -11,6 +11,7 @@ import {
     backendCandidates,
     GPU_ENV,
     gpuSetting,
+    hasPrebuiltBins,
     hasVulkan,
     type MachineProbe,
 } from '@stamped/semantic/prebuilt-bins';
@@ -91,6 +92,20 @@ export default async () => {
         await it('does not treat any other value of the escape hatch as off', async () => {
             const probe = machine([LOADER], DRIVER, { [GPU_ENV]: 'on' });
             expect(backendCandidates('linux-x64', probe)).toStrictEqual(['linux-x64-vulkan', 'linux-x64']);
+        });
+    });
+
+    await describe('hasPrebuiltBins', async () => {
+        await it('answers Node from the platforms node-llama-cpp ships, not from the GJS table', async () => {
+            for (const target of ['darwin-arm64', 'darwin-x64', 'win32-x64', 'win32-arm64', 'linux-x64']) {
+                expect(hasPrebuiltBins(target, false)).toBe(true);
+            }
+            expect(hasPrebuiltBins('freebsd-x64', false)).toBe(false);
+        });
+
+        await it('answers GJS from the table, which is what it can be handed a path to', async () => {
+            expect(hasPrebuiltBins('linux-x64', true)).toBe(true);
+            expect(hasPrebuiltBins('darwin-arm64', true)).toBe(false);
         });
     });
 
