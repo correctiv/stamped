@@ -159,11 +159,7 @@ async function createLlamaOnNode(
     }
     try {
         return {
-            llama: (await getLlama({
-                gpu: false,
-                build: 'never',
-                logLevel: LlamaLogLevel.error,
-            })) as unknown as LlamaLike,
+            llama: (await getLlama({ gpu: false, build: 'never' })) as unknown as LlamaLike,
             onCpu: false,
         };
     } catch {
@@ -177,7 +173,7 @@ async function openOn(llama: LlamaLike, options: LlamaEmbedderOptions, onCpu = f
     const count = gpu ? Math.max(1, Math.trunc(options.gpuContexts ?? DEFAULT_GPU_CONTEXTS)) : 1;
     const model = await llama.loadModel({
         modelPath: options.modelPath,
-        ...(llama.gpu !== false && onCpu ? { gpuLayers: 0 } : {}),
+        ...(onCpu ? { gpuLayers: 0 } : {}),
     });
     const contexts: EmbeddingContextLike[] = [];
     try {
