@@ -6,9 +6,23 @@
  * the app: the package that needs the branch owns the question.
  */
 
-/** Is this GJS? Node has no `imports`. */
-export function runningOnGjs(): boolean {
-    return typeof (globalThis as { imports?: unknown }).imports !== 'undefined';
+/** What {@link runningOnGjs} looks at; injected so the Node-with-node-gi case is testable. */
+export interface RuntimeHost {
+    imports?: unknown;
+    process?: { versions?: { gjs?: string } };
+}
+
+/**
+ * Is this GJS?
+ *
+ * NOT "is there an `imports`": node-gi defines `globalThis.imports` (with `gi`) on NODE as well, so
+ * that GJS-style code can run there, and the macOS and Windows apps are exactly that — Node plus
+ * node-gi. Asking only for `imports` sent them down the GJS route (`@gjsify/napi`, which Node
+ * cannot load), and the model reported itself "not available here" on every Mac. gjsify's
+ * `process.versions.gjs` is the marker `self-argv.ts` already trusts to tell the two apart.
+ */
+export function runningOnGjs(host: RuntimeHost = globalThis as RuntimeHost): boolean {
+    return host.imports !== undefined && host.process?.versions?.gjs !== undefined;
 }
 
 /**

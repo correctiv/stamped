@@ -10,6 +10,8 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { runningOnGjs } from './runtime.ts';
+
 /** The build description node-llama-cpp writes beside every prebuilt binary. */
 export const BUILD_METADATA_FILE = '_nlcBuildMetadata.json';
 
@@ -167,13 +169,32 @@ export function currentTarget(): string {
 }
 
 /**
+ * The machines node-llama-cpp ships a prebuilt binary for, which `getLlama()` finds on its own.
+ * macOS (Metal on Apple silicon, CPU on Intel) and Windows are here and nowhere in
+ * {@link PREBUILT_BINS}: that table exists for the GJS route, which has to be handed a path.
+ */
+const NODE_PREBUILT_TARGETS: ReadonlySet<string> = new Set([
+    'darwin-arm64',
+    'darwin-x64',
+    'win32-arm64',
+    'win32-x64',
+    'linux-arm64',
+    'linux-x64',
+]);
+
+/**
  * Is there a prebuilt binary for this machine? A table lookup, so it is free to ask.
  *
  * `true` does not promise that the model will load — only that the program carries something to
  * load it with. The one thing it rules out is the machine nobody built a binary for.
+ *
+ * TWO ANSWERS, BECAUSE THE RUNTIMES REACH THE BINARY DIFFERENTLY. Under GJS the embedder is handed
+ * a directory, so only the targets in {@link PREBUILT_BINS} can work. Under Node `getLlama()`
+ * looks for the binary itself, and answering from the GJS table there switched semantic search
+ * off on every Mac and every Windows PC: the app said "not available here" with the model beside it.
  */
-export function hasPrebuiltBins(target: string = currentTarget()): boolean {
-    return PREBUILT_BINS[target] !== undefined;
+export function hasPrebuiltBins(target: string = currentTarget(), onGjs: boolean = runningOnGjs()): boolean {
+    return onGjs ? PREBUILT_BINS[target] !== undefined : NODE_PREBUILT_TARGETS.has(target);
 }
 
 /** The directory holding the addon and its backends, or an error naming the machine. */
