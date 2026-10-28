@@ -7,17 +7,20 @@
 
 import { Worker } from 'node:worker_threads';
 
+import { runningOnGjs } from '@stamped/semantic/runtime';
+
 import type { QueryChannel, QueryReply, QueryRequest } from './query-client.ts';
 
 /**
  * Which bundle the worker has to be, since both targets' files sit in the same `dist/`.
  *
- * `imports` is GJS's own global and exists nowhere else, which is the same test the spike used.
- * Asked at call time rather than at module level: a bundle is built per target, but the test
- * suite runs the SAME source on both runtimes.
+ * `runningOnGjs()`, not "is there an `imports`": node-gi defines `imports` on Node too, and the
+ * macOS and Windows apps are Node plus node-gi — they asked for `query-worker.gjs.mjs`, which the
+ * Node bundle does not carry, and no case ever loaded. Asked at call time rather than at module
+ * level: a bundle is built per target, but the test suite runs the SAME source on both runtimes.
  */
 function target(): 'gjs' | 'node' {
-    return typeof (globalThis as { imports?: unknown }).imports !== 'undefined' ? 'gjs' : 'node';
+    return runningOnGjs() ? 'gjs' : 'node';
 }
 
 /**
