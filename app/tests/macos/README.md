@@ -23,3 +23,13 @@ Run:
 
 Exit code is 0 only when every FAIL check passes (warnings are allowed).
 Part of #46.
+
+## Semantic search in the .app
+
+`check-semantic.mjs` runs the .app's own launcher against a synthetic case — import, probe, index,
+then a query that shares no word with the mail — with a scrubbed environment (no
+`STAMPED_EMBED_MODEL`, a private HOME). It fails when the bundled model is not found, when the
+runtime is mistaken for GJS, when the CPU fallback needs a compiler, or when the case window's
+worker file is missing.
+
+    node app/tests/macos/check-semantic.mjs app/ship/out/Stamped.app

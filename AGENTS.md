@@ -328,6 +328,13 @@ Yahoo/Epstein archives — the app has to be shown doing a real DKIM verificatio
 - **`@gjsify/unit`'s `toEqual` compares with `==`, not deeply.** Use `toStrictEqual` for every
   array and object assertion (or `toEqualArray`). An array compared with `toEqual` passes by
   stringification and will happily accept the wrong contents.
+- **Never tell GJS from Node by `globalThis.imports`.** node-gi defines it on Node too, and the
+  macOS and Windows apps are Node plus node-gi. Use `runningOnGjs()` from `@stamped/semantic/runtime`
+  (`process.versions.gjs`, which only `@gjsify/process` sets). Four things broke on a Mac because of
+  that test: the model route, `hasPrebuiltBins`, the query worker's file name, and "no model here".
+  Likewise `XDG_DATA_DIRS`: the GTK runtime puts its own `share` FIRST, so search every entry.
+- **A macOS change is checked on the built `.app`**, not on the source: `app/tests/macos/check-app.mjs`
+  (bundle, sandboxed launch) and `check-semantic.mjs` (import, probe, index, a query by meaning).
 - **No TypeScript parameter properties** (`constructor(private x: T)`). Node's
   `--experimental-strip-types` rejects them, which silently breaks the Node test run.
 - SQLite runs on **libgda** through gjsify's `node:sqlite` wrapper, not sqlite3. FTS5 is available

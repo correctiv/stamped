@@ -233,6 +233,13 @@ jobs:
           ditto -x -k packages/${{ matrix.zip }} opened
           node app/tests/macos/check-app.mjs opened/Stamped.app
 
+      # Starting the window proves nothing about the model: import, probe, index and a query that
+      # shares no word with the mail run against the .app's own interpreter and bundled model.
+      - name: Search the macOS app by meaning
+        if: runner.os == 'macOS'
+        shell: bash
+        run: node app/tests/macos/check-semantic.mjs opened/Stamped.app
+
       # `--help` runs the whole module graph: the interpreter, node-gi, the GTK closure and every
       # import, `node-llama-cpp` included, are loaded before yargs prints anything.
       - name: Open the Windows program
