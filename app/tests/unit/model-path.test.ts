@@ -17,6 +17,7 @@ import { describe, expect, it } from '@gjsify/unit';
 
 import {
     bundledDataDir,
+    bundledDataDirs,
     developmentCacheDir,
     EMBEDDING_MODEL_BYTES,
     EMBEDDING_MODEL_ENV,
@@ -48,6 +49,27 @@ export default async () => {
                 const dataDir = join(root, 'share');
                 const expected = modelFile(join(dataDir, 'models'));
                 const found = resolveEmbeddingModel({ env: {}, dataDir });
+                expect(found?.path).toBe(expected);
+                expect(found?.source).toBe('bundled');
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
+        await it('finds the model when the GTK runtime put its own share in front', async () => {
+            // The macOS and Windows apps start with `<gtk>/share:<app>/share`: the first entry is
+            // GTK's, the app's comes second, and only looking at the first found no model at all.
+            const root = scratch();
+            try {
+                const gtk = join(root, 'gtk', 'share');
+                const app = join(root, 'Resources', 'share');
+                mkdirSync(gtk, { recursive: true });
+                const expected = modelFile(join(app, 'models'));
+                const found = resolveEmbeddingModel({
+                    env: {},
+                    dataDir: gtk,
+                    dataDirs: bundledDataDirs({ XDG_DATA_DIRS: `${gtk}:${app}:/usr/share` }),
+                });
                 expect(found?.path).toBe(expected);
                 expect(found?.source).toBe('bundled');
             } finally {
@@ -168,6 +190,13 @@ export default async () => {
         await it('has none when nothing is exported', async () => {
             expect(bundledDataDir({})).toBeUndefined();
             expect(bundledDataDir({ XDG_DATA_DIRS: '' })).toBeUndefined();
+        });
+    });
+
+    await describe('bundledDataDirs', async () => {
+        await it('lists every entry in order and skips the empty ones', async () => {
+            expect(bundledDataDirs({ XDG_DATA_DIRS: '/a: /b::/c' })).toStrictEqual(['/a', '/b', '/c']);
+            expect(bundledDataDirs({})).toStrictEqual([]);
         });
     });
 

@@ -72,6 +72,13 @@ export interface ModelPathOptions {
      * exports. This is where `share/` lands in every layout.
      */
     dataDir?: string;
+    /**
+     * Every entry of `XDG_DATA_DIRS`, in order, searched after {@link dataDir}. The app's own
+     * directory is NOT always first: the GTK runtime of the macOS and Windows apps puts its own
+     * `share` in front at startup, so "the first entry" was the GTK one and the bundled model was
+     * never found.
+     */
+    dataDirs?: readonly string[];
     /** The mounted AppImage root (`APPDIR`), for a run that has no launcher exports. */
     appDir?: string;
     /** The development cache directory — `$XDG_CACHE_HOME/stamped/models`. */
@@ -94,6 +101,14 @@ export function bundledDataDir(env: Record<string, string | undefined>): string 
     return first === undefined || first === '' ? undefined : first;
 }
 
+/** Every `XDG_DATA_DIRS` entry, in order — see {@link ModelPathOptions.dataDirs} for why not just the first. */
+export function bundledDataDirs(env: Record<string, string | undefined>): string[] {
+    return (env.XDG_DATA_DIRS ?? '')
+        .split(':')
+        .map((dir) => dir.trim())
+        .filter((dir) => dir !== '');
+}
+
 /** The development cache: `$XDG_CACHE_HOME/stamped/models`, else `~/.cache/stamped/models`. */
 export function developmentCacheDir(
     env: Record<string, string | undefined>,
@@ -114,8 +129,10 @@ export function developmentCacheDir(
  */
 function bundledModelDirs(options: ModelPathOptions): string[] {
     const dirs: string[] = [];
-    if (options.dataDir !== undefined && options.dataDir !== '') {
-        dirs.push(join(options.dataDir, 'models'));
+    for (const dir of [options.dataDir, ...(options.dataDirs ?? [])]) {
+        if (dir === undefined || dir === '') continue;
+        const models = join(dir, 'models');
+        if (!dirs.includes(models)) dirs.push(models);
     }
     if (options.appDir !== undefined && options.appDir !== '') {
         dirs.push(join(options.appDir, 'usr', 'share', 'models'));
@@ -178,6 +195,7 @@ export function resolveEmbeddingModelFromEnv(
     return resolveEmbeddingModel({
         env,
         dataDir: bundledDataDir(env),
+        dataDirs: bundledDataDirs(env),
         appDir: env.APPDIR,
         cacheDir: developmentCacheDir(env),
     });
