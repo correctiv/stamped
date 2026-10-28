@@ -44,4 +44,4 @@ export {
     PROBE_SAMPLE_SIZE,
     sampleForProbe,
 } from './probe.ts';
-export { onBattery } from './power.ts';
+export { onBattery, onBatteryMac } from './power.ts';

@@ -15,6 +15,7 @@ import {
     createIndexer,
     hasVector,
     onBattery,
+    onBatteryMac,
     openVectorDb,
     PROBE_MAX_ARCHIVE_HOURS,
     PROBE_SAMPLE_SIZE,
@@ -513,8 +514,21 @@ export default async () => {
     });
 
     await describe('the battery check', async () => {
+        await it('reads the power source from macOS pmset, and an unknown as mains', async () => {
+            const batt = (source: string): string =>
+                `Now drawing from '${source}'\n -InternalBattery-0 (id=1)\t80%; discharging; 3:10 remaining present: true\n`;
+            expect(onBatteryMac(batt('Battery Power'))).toBe(true);
+            expect(onBatteryMac(batt('AC Power'))).toBe(false);
+            expect(onBatteryMac(batt('UPS Power'))).toBe(false);
+            expect(onBatteryMac(undefined)).toBe(false);
+            expect(onBatteryMac('')).toBe(false);
+            // On darwin the sysfs directory is never looked at, whatever is passed.
+            expect(onBattery('/nonexistent', 'darwin', () => batt('Battery Power'))).toBe(true);
+            expect(onBattery('/nonexistent', 'darwin', () => undefined)).toBe(false);
+        });
+
         await it('is false where there is no power_supply directory', async () => {
-            expect(onBattery('/nonexistent/power_supply')).toBe(false);
+            expect(onBattery('/nonexistent/power_supply', 'linux')).toBe(false);
         });
 
         await it('ignores a discharging peripheral, counts the machine battery', async () => {
@@ -526,11 +540,11 @@ export default async () => {
                         writeFileSync(join(root, name, file), `${value}\n`);
                 };
                 supply('hidpp_battery_0', { type: 'Battery', status: 'Discharging', scope: 'Device' });
-                expect(onBattery(root)).toBe(false);
+                expect(onBattery(root, 'linux')).toBe(false);
                 supply('BAT0', { type: 'Battery', status: 'Discharging', scope: 'System' });
-                expect(onBattery(root)).toBe(true);
+                expect(onBattery(root, 'linux')).toBe(true);
                 supply('AC', { type: 'Mains', online: '1' });
-                expect(onBattery(root)).toBe(false);
+                expect(onBattery(root, 'linux')).toBe(false);
             } finally {
                 rmSync(root, { recursive: true, force: true });
             }
