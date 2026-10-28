@@ -48,6 +48,9 @@ try {
 
 const embedder = await createLlamaEmbedder({ modelPath, gpu: false, threads: 4 });
 try {
+    // Forced CPU must not need a compiler: macOS on Apple silicon has only a Metal prebuilt, and
+    // asking node-llama-cpp for a CPU build there compiled llama.cpp from source.
+    assert.equal(embedder.backend, 'cpu');
     const query = await embedder.embedQuery('who approved the payment to the supplier');
     const [relevant, unrelated] = await embedder.embedDocuments([
         {
