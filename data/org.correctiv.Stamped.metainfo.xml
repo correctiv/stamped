@@ -56,6 +56,12 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.3.3" date="2026-10-28">
+      <description>
+        <p>Search by meaning: Stamped finds mail that says the same thing in other words, on the GPU where there is one. It also works in the macOS app now, which found no model before.</p>
+        <p xml:lang="de">Suche nach Bedeutung: Stamped findet Mails, die dasselbe mit anderen Worten sagen, wo vorhanden auf der GPU. In der macOS-App funktioniert sie jetzt auch; sie fand bisher kein Modell.</p>
+      </description>
+    </release>
     <release version="0.3.2" date="2026-10-26">
       <description>
         <p>The macOS app starts again, and Windows on ARM64 is supported; macOS 15 or newer is required.</p>
