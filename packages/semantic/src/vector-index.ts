@@ -12,7 +12,7 @@
  * BOUNDED WHILE LOADING: rows come in rowid-ordered batches, each copied into the big array and
  * dropped, so the transient cost is one batch, not a second copy of the table. Between batches
  * the loop yields, so the process that owns the index keeps answering its pipe, and collects
- * garbage: each batch leaves libgda result objects whose memory is native, so GJS sees a small
+ * garbage: each batch leaves result objects whose memory is native (measured on libgda), so GJS sees a small
  * heap and never collects on its own. Without that, 400,000 vectors (a 1.2 GB array) peaked at
  * 4.56 GB on GJS; with one collection per batch, 1.38 GB, at about the same load time (#162).
  *

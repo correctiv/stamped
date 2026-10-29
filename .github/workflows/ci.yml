@@ -16,9 +16,9 @@ jobs:
     container:
       image: fedora:44
     steps:
-      # gjs runs the bundle. libgda-sqlite backs gjsify's `node:sqlite`, which is what the FTS5
-      # suite asserts against — without it that suite fails on the database handle rather than on
-      # the capability it is there to measure. gettext is `msgfmt`, which `build` runs over `po/`
+      # gjs runs the bundle. sqlite-libs is the libsqlite3 that `@gjsify/sqlite-native` (behind
+      # gjsify's `node:sqlite`) links against, and the FTS5 suite asserts against it — without it
+      # that suite fails on the database handle rather than on the capability it is there to measure. gettext is `msgfmt`, which `build` runs over `po/`
       # into `dist/locale`; the compile step only warns when it is missing, so a build without it
       # is silently English.
       #
@@ -32,12 +32,12 @@ jobs:
       # become top-level imports that resolve at module load. Without the typelibs even
       # `stamped --version` dies on `Typelib file for namespace 'Gtk' not found`, long before
       # anything decides whether this invocation wanted a window. No display is needed for that.
-      - name: Install system prerequisites (gjs + gtk4 + libgda + libsoup3 + gettext)
+      - name: Install system prerequisites (gjs + gtk4 + sqlite + libsoup3 + gettext)
         run: >
           dnf install -y --setopt=install_weak_deps=False
           git tar xz findutils gjs
           gtk4 libadwaita
-          libgda libgda-sqlite
+          sqlite-libs
           libsoup3
           gettext
 

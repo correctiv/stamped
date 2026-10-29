@@ -23,7 +23,7 @@ jobs:
           dnf install -y --setopt=install_weak_deps=False
           git tar xz findutils gh
           gjs libsoup3 json-glib gnutls libnghttp2
-          libgda libgda-sqlite
+          sqlite-libs
           gettext glib2 msitools zip unzip file
           squashfs-tools
 
