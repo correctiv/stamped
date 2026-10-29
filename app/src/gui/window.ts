@@ -122,8 +122,15 @@ import { escapeLine, noHyphens, plainText } from './view/markup.ts';
 import { BENCH_FILE, cpuMs, report as benchReport, rssMb, settle, sinceStart, startLap } from './bench.ts';
 import { MessageItem, MessageRowView } from './message-row.ts';
 import { nearEnd, PagedList } from '../lib/paged-list.ts';
-import { matchBadge, meaningPendingLine } from './view/semantic.ts';
-import type { HybridHit } from '../lib/hybrid-search.ts';
+import {
+    addsMeaning,
+    mergeSemantic,
+    PROGRESS_DELAY_MS,
+    searchPhaseOf,
+    SearchRuns,
+} from '../lib/search-progress.ts';
+import type { SearchPhase } from '../lib/search-progress.ts';
+import { matchBadge, searchProgressLine } from './view/semantic.ts';
 import type { MatchKind } from '../lib/hybrid-search.ts';
 import {
     emptyList,
@@ -153,7 +160,7 @@ import {
     type BarSegment,
 } from './view/people.ts';
 import { allSources, baseName, shortPath, sourceRows } from './view/sources.ts';
-import { explainVerdict, filterSummary, verdictFilters } from './view/verdict.ts';
+import { explainVerdict, filterSummary, partialSummary, verdictFilters } from './view/verdict.ts';
 
 import Template, { GTypeName, InternalChildren, type Children } from './window.blp';
 
@@ -242,10 +249,18 @@ const BodyScroller = GObject.registerClass(
  * coordinates photographs whichever widget sits there after the header bar shifts by a few
  * pixels. `STAMPED_SHOT_VERDICT` opens the first message of one verdict — a confirmed one for the
  * evidence chain, an unverifiable one for the missing-key card — and `STAMPED_SHOT_EVIDENCE` pops
- * the ⓘ of that numbered fact row open. Both are null in every normal run.
+ * the ⓘ of that numbered fact row open.
+ *
+ * `STAMPED_SHOT_SEARCH` types a query, and `STAMPED_SHOT_PHASE` pins the progress row open: the
+ * state worth a picture — the words already answered, the meaning still coming — lasts exactly
+ * as long as a model takes to load, which is not a length a screenshot can aim at. The row and
+ * its words are the real ones and the results under it are a real search; only the timing is
+ * held still. Every one of them is null in a normal run.
  */
 const SHOT_VERDICT = GLib.getenv('STAMPED_SHOT_VERDICT');
 const SHOT_EVIDENCE = GLib.getenv('STAMPED_SHOT_EVIDENCE');
+const SHOT_SEARCH = GLib.getenv('STAMPED_SHOT_SEARCH');
+const SHOT_PHASE = GLib.getenv('STAMPED_SHOT_PHASE');
 
 /** True when the person closed a portal or chooser dialog rather than it failing. */
 function isDismissed(error: unknown): boolean {
@@ -456,6 +471,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private importWatcher!: ImportWatcher;
     /** How many messages the current filter admits, for the counter under the list. */
     private filteredTotal = 0;
+    /** Unset until the count for the list on screen has answered — see {@link partialSummary}. */
+    private filteredCounted = false;
+    /** Which half of the search is still out, and the timer that lets a quick one stay silent. */
+    private progressPhase: SearchPhase = 'idle';
+    private progressTimer = 0;
     /** The archive behind each `sourceList` row; `undefined` at index 0 — the "all" row. */
     private sources: (string | undefined)[] = [];
     /** The verdict behind each `verdictList` row, with the same rule at index 0. */
@@ -510,7 +530,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, delayMs, () => (callback(), GLib.SOURCE_REMOVE)),
         clearTimer: (timer) => GLib.source_remove(timer as number),
     });
-    private listGeneration = 0;
+    /** Which fill of the message list is the current one; see {@link SearchRuns}. */
+    private readonly listRuns = new SearchRuns();
     private peopleGeneration = 0;
     private backfillGeneration = 0;
     /** Whether a key lookup is running. */
@@ -617,6 +638,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
             if (this.peopleTimer !== 0) GLib.source_remove(this.peopleTimer);
             this.peopleTimer = 0;
             this.cancelQueries();
+            if (this.progressTimer !== 0) GLib.source_remove(this.progressTimer);
+            this.progressTimer = 0;
             this.stopImportPoll();
             this.stopActivityPoll();
             this.activity.dispose();
@@ -657,6 +680,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.verdict = SHOT_VERDICT as Verdict;
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
                 this.messageSelection.set_selected(0);
+                return GLib.SOURCE_REMOVE;
+            });
+        }
+        const shotPhase = SHOT_PHASE === null ? undefined : searchPhaseOf(SHOT_PHASE);
+        if (shotPhase !== undefined) {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+                this.progressPhase = shotPhase;
+                this._searchProgressLabel.set_label(searchProgressLine(shotPhase));
+                this._searchProgress.set_reveal_child(true);
                 return GLib.SOURCE_REMOVE;
             });
         }
@@ -780,7 +812,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private cancelQueries(): void {
         this.refreshScheduler.cancel();
         this.refreshGeneration++;
-        this.listGeneration++;
+        this.listRuns.cancel();
+        this.setSearchPhase('idle');
         this.paged.reset(0);
         this.peopleGeneration++;
         this.backfillGeneration++;
@@ -842,12 +875,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.importPoll = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => this.pollImport());
         this.activityWatcher.reset();
         this.activityPoll = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => this.pollActivity());
-        this.text = '';
+        // `SHOT_SEARCH` is applied HERE and not only in the constructor: adopting a case drops the
+        // filters, so a query typed before the open would be cleared again a moment later — and
+        // the shot needs it in place before the `refresh` at the end of this method fills the list.
+        this.text = SHOT_SEARCH ?? '';
         this.verdict = undefined;
         this.source = undefined;
         this.scope = undefined;
         this.reading = undefined;
-        this._searchEntry.set_text('');
+        this._searchEntry.set_text(this.text);
         this._readerStack.set_visible_child_name('empty');
         // Until the first `fillList` picks `list` or `empty`. Only here, not in `refresh`: that
         // also runs after every import, key lookup and re-verification, and a list that blanks
@@ -1169,43 +1205,95 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /**
      * Rebuild the message list from the filters as they stand now.
      *
-     * The empty state is decided after the first page has landed, not before: the count and the
-     * page are two round trips to the worker, and the answer to "is this list empty" is the page.
-     * A list that is only being refilled keeps its rows until then, so the pane does not blink.
+     * THE PAGE COMES BEFORE THE COUNT, and that order is the point. Both are round trips to the
+     * worker, but for a text query the count is a full search of its own — it runs the FTS5 half
+     * with a limit twenty-five times the page — while the page is one ranked page. Counting
+     * first left the pane empty for as long as that took, with the answer already cheap to get,
+     * and then showed everything at once. So the page lands, the list paints, the number under
+     * it fills in afterwards ({@link partialSummary} says only what is known meanwhile).
+     *
+     * The empty state is decided from the page for the same reason: the answer to "is this list
+     * empty" is the page. A list that is only being refilled keeps its rows until then, so the
+     * pane does not blink.
      */
     private async fillList(): Promise<void> {
         const session = this.session;
         if (!session) return;
-        const generation = ++this.listGeneration;
+        const run = this.listRuns.start();
         const query = this.currentQuery();
+        const current = (): boolean => this.session === session && this.listRuns.isCurrent(run);
         this.updateFilterBanner();
-        this.paged.reset(0);
-        const total = await filteredCount(session, query);
-        if (this.session !== session || this.listGeneration !== generation) return;
-        this.filteredTotal = total;
-        this.paged.reset(total);
-
         this.matches = new Map();
-        await this.loadMore(query);
-        if (this.session !== session || this.listGeneration !== generation) return;
-        void this.mergeMeaning(query);
+        this.filteredCounted = false;
+        // No total yet; the count below fills it in. See `PagedList.reset`.
+        this.paged.reset();
+        if (query.text !== undefined) this.setSearchPhase('text');
 
-        // Plain text, not markup: see `adopt` on `Adw.WindowTitle`.
-        if (this.messageStore.get_n_items() === 0) {
-            const empty = emptyList(this.total, query.text);
-            this._emptyState.set_title(empty.title);
-            this._emptyState.set_description(empty.description);
-            this._emptyState.set_icon_name(empty.icon);
-            this._listStack.set_visible_child_name('empty');
-            this._readerStack.set_visible_child_name('empty');
-            this.reading = undefined;
-        } else {
-            this._listStack.set_visible_child_name('list');
-        }
+        await this.loadMore(query);
+        if (!current()) return;
+        this.showListOrEmpty(query);
+        // Not awaited: the meaning takes a model, and the count below is not waiting for it.
+        void this.mergeMeaning(query, run);
+
+        const total = await filteredCount(session, query);
+        if (!current()) return;
+        this.filteredTotal = total;
+        this.filteredCounted = true;
+        this.paged.setTotal(total);
+        this.showCount(this.paged.loaded);
         if (BENCH_FILE !== null && !this.benchStarted && this.messageStore.get_n_items() > 0) {
             this.benchStarted = true;
             this.track(this.runBench());
         }
+    }
+
+    /**
+     * Show the list or the empty page, from what the store holds right now.
+     *
+     * Called twice per fill: once when the text page has landed and again if the meaning adds
+     * rows afterwards. Without the second call a search that only the meaning answers stays on
+     * the empty page with its hits sitting invisible in the store — which reads as "the mail is
+     * not in the leak", the one answer this tool must never give by accident.
+     */
+    private showListOrEmpty(query: Query): void {
+        if (this.messageStore.get_n_items() > 0) {
+            this._listStack.set_visible_child_name('list');
+            return;
+        }
+        // Plain text, not markup: see `adopt` on `Adw.WindowTitle`.
+        const empty = emptyList(this.total, query.text);
+        this._emptyState.set_title(empty.title);
+        this._emptyState.set_description(empty.description);
+        this._emptyState.set_icon_name(empty.icon);
+        this._listStack.set_visible_child_name('empty');
+        this._readerStack.set_visible_child_name('empty');
+        this.reading = undefined;
+    }
+
+    /**
+     * Say which half of the search is still out — or stop saying it.
+     *
+     * The row is revealed only once the phase has lasted {@link PROGRESS_DELAY_MS}: a search
+     * that answers at once must draw nothing, or the indicator flickers on every keystroke and
+     * people learn to ignore it. A phase that follows another while the row is already up only
+     * changes the words, so the meaning taking over from the text search does not re-animate.
+     */
+    private setSearchPhase(phase: SearchPhase): void {
+        if (phase === this.progressPhase) return;
+        this.progressPhase = phase;
+        if (phase === 'idle') {
+            if (this.progressTimer !== 0) GLib.source_remove(this.progressTimer);
+            this.progressTimer = 0;
+            this._searchProgress.set_reveal_child(false);
+            return;
+        }
+        this._searchProgressLabel.set_label(searchProgressLine(phase));
+        if (this._searchProgress.get_reveal_child() || this.progressTimer !== 0) return;
+        this.progressTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, PROGRESS_DELAY_MS, () => {
+            this.progressTimer = 0;
+            if (this.progressPhase !== 'idle') this._searchProgress.set_reveal_child(true);
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     private benchStarted = false;
@@ -1271,10 +1359,25 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private async loadMore(query: Query = this.currentQuery()): Promise<void> {
         const session = this.session;
         if (!session) return;
-        const generation = this.listGeneration;
+        const run = this.listRuns.token;
         const landed = await this.paged.loadMore((offset) => pageOf(session, query, offset));
-        if (!landed || this.session !== session || this.listGeneration !== generation) return;
-        this._listTitle.set_subtitle(filterSummary(this.paged.loaded, this.filteredTotal));
+        if (!landed || this.session !== session || !this.listRuns.isCurrent(run)) return;
+        this.showCount(this.paged.loaded);
+    }
+
+    /**
+     * The counter under the list title, with or without its denominator.
+     *
+     * The denominator is never below what is on screen. The count is the TEXT search's, and the
+     * meaning can add messages it never counted — "205 of 198 shown" would be the counter
+     * contradicting the list it sits over.
+     */
+    private showCount(shown: number): void {
+        this._listTitle.set_subtitle(
+            this.filteredCounted
+                ? filterSummary(shown, Math.max(shown, this.filteredTotal))
+                : partialSummary(shown),
+        );
     }
 
     private appendPage(page: readonly SearchHit[], replace: boolean): void {
@@ -1308,37 +1411,64 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /**
-     * Add what the meaning found to the first page, once the text page is already on screen.
-     * Only with a finished or running index and an embedder; any failure leaves the text list.
+     * Add what the meaning found to the list the words already filled.
+     *
+     * Only with a finished or running index and an embedder; any failure leaves the text list
+     * exactly as it stands — a search that cannot be semantic must still be a search.
+     *
+     * THE HITS ARE APPENDED, NOT SWAPPED IN. The old code replaced the whole store with the
+     * fused page, which re-ranked rows the person was already reading and dropped the selection
+     * and the scroll position with them. What the meaning contributes is the tail: the messages
+     * the words did not find. The rows on screen keep their places and their badges — a row's
+     * marker is baked in when its page arrives, and re-making the shown items to upgrade a
+     * "text" hit to "text and meaning" is the jump this is here to avoid.
+     *
+     * `run` is the fill this merge belongs to and is re-checked after EVERY await: a filter
+     * flipped while the model loads starts another fill, and this one's answer is about a list
+     * that is gone. Comparing the query text alone missed exactly that case.
      */
-    private async mergeMeaning(query: Query): Promise<void> {
+    private async mergeMeaning(query: Query, run: number): Promise<void> {
         const session = this.session;
         const kind = this.semantic?.state().kind;
-        if (!session || query.text === undefined || (kind !== 'ready' && kind !== 'indexing')) return;
+        const current = (): boolean => this.session === session && this.listRuns.isCurrent(run);
+        if (!session || query.text === undefined || (kind !== 'ready' && kind !== 'indexing')) {
+            if (current()) this.setSearchPhase('idle');
+            return;
+        }
         try {
             this.queryEmbedder ??= this.openQueryEmbedder();
+            if (current()) this.setSearchPhase('loading-model');
             const embedder = await this.queryEmbedder;
-            if (!embedder) return;
-            const shown = this._listTitle.get_subtitle();
-            const helper = this.embedHelper;
-            if (helper) this._listTitle.set_subtitle(meaningPendingLine(helper.vectorsLoading()));
-            let merged: HybridHit[] | undefined;
-            try {
-                merged = await hybridPageOf(session, query, embedder);
-            } finally {
-                if (session === this.session && query.text === this.currentQuery().text) {
-                    this._listTitle.set_subtitle(shown);
-                }
-            }
-            if (!merged || session !== this.session || query.text !== this.currentQuery().text) return;
-            if (!merged.some((hit) => hit.match !== 'text')) return;
+            if (!current() || !embedder) return;
+            // The count under the title stays put: it is a fact about the list on screen, and
+            // the row under the search entry is where "still working" belongs. Both embedders
+            // report, where only the out-of-process one used to.
+            this.setSearchPhase(this.embedHelper?.vectorsLoading() === true ? 'loading-model' : 'meaning');
+            const merged = await hybridPageOf(session, query, embedder);
+            if (!merged || !current() || !addsMeaning(merged)) return;
+            const shown = this.rowHashes();
+            const { append, total } = mergeSemantic(shown, merged);
             this.matches = new Map(merged.map((hit) => [hit.hash, hit.match]));
-            this.paged.finish(merged.length);
-            this.appendPage(merged, true);
-            this._listTitle.set_subtitle(filterSummary(merged.length, this.filteredTotal));
+            // The fused page is the whole answer: there is no page two of a ranked search.
+            this.paged.finish(total);
+            if (append.length > 0) this.appendPage(append, false);
+            this.showCount(total);
+            this.showListOrEmpty(query);
         } catch {
             // Text search already answered.
+        } finally {
+            if (current()) this.setSearchPhase('idle');
         }
+    }
+
+    /** The hashes of the rows on screen, in the order they are shown. */
+    private rowHashes(): string[] {
+        const hashes: string[] = [];
+        for (let index = 0; index < this.messageStore.get_n_items(); index++) {
+            const item = this.messageStore.get_item(index);
+            if (item) hashes.push(item.row.hash);
+        }
+        return hashes;
     }
 
     /** Triggered by the scroller: pull the next page when the bottom comes into view. */

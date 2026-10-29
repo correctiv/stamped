@@ -12,6 +12,7 @@ import type { GpuSetting } from '@stamped/semantic/prebuilt-bins';
 
 import type { EmbedderAvailability } from '../../lib/semantic-embedder.ts';
 import type { MatchKind } from '../../lib/hybrid-search.ts';
+import type { SearchPhase } from '../../lib/search-progress.ts';
 import type { SemanticState } from '../../lib/semantic-state.ts';
 import { remainingTime, semanticLines } from '../../lib/semantic-status.ts';
 
@@ -105,7 +106,15 @@ export function matchBadge(match: MatchKind): string | undefined {
     return undefined;
 }
 
-/** The line under the list title while the meaning's hits are still coming. */
-export function meaningPendingLine(loading: boolean): string {
-    return loading ? _('Loading semantic search…') : _('Searching by meaning…');
+/**
+ * The line beside the spinner under the search entry, for a search half that is still out.
+ *
+ * It names WHICH half, because the two take very different times and the difference is the
+ * person's to judge: words that are already on screen while the meaning is loading a model is a
+ * different situation from a word search that is itself slow.
+ */
+export function searchProgressLine(phase: Exclude<SearchPhase, 'idle'>): string {
+    if (phase === 'text') return _('Searching…');
+    if (phase === 'loading-model') return _('Loading semantic search…');
+    return _('Searching by meaning…');
 }

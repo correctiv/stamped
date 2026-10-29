@@ -240,6 +240,38 @@ template $StampedWindow: Adw.ApplicationWindow {
                   margin-end: 12;
                 }
 
+                // Which half of the search is still out. Revealed from the code and only after
+                // a quarter second (see `PROGRESS_DELAY_MS`), so a search that answers at once
+                // draws nothing: one thin dim line, never a dialog and never over the results —
+                // what the words already found stays readable while the meaning is still coming.
+                [top]
+                Gtk.Revealer searchProgress {
+                  transition-type: slide_down;
+
+                  child: Gtk.Box {
+                    spacing: 8;
+                    margin-start: 12;
+                    margin-end: 12;
+                    margin-bottom: 6;
+
+                    Adw.Spinner {
+                      width-request: 16;
+                      height-request: 16;
+                      valign: center;
+                    }
+
+                    Gtk.Label searchProgressLabel {
+                      xalign: 0;
+                      ellipsize: end;
+
+                      styles [
+                        "caption",
+                        "dimmed",
+                      ]
+                    }
+                  };
+                }
+
                 // What the list is narrowed to by a tap on the overview — a mailbox, a signer,
                 // a key. Revealed from the code, never here: a banner that starts out saying
                 // "clear filter" over an unfiltered list is a lie in the header bar.

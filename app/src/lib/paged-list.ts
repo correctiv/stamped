@@ -21,6 +21,8 @@ export class PagedList<T> {
     private more = true;
     private fetched = 0;
     private total = 0;
+    /** Whether the last page came back full — without it a revised total cannot say `hasMore`. */
+    private lastFull = true;
     private readonly pageSize: number;
     private readonly onPage: (page: readonly T[], replace: boolean) => void;
 
@@ -45,13 +47,25 @@ export class PagedList<T> {
     /**
      * Start a new list of `total` rows. Whatever fetch is still out belongs to the old list and
      * its answer is dropped when it lands.
+     *
+     * `total` is OPTIONAL because counting can be the slower half: for a text query the count is
+     * a full search of its own, and waiting for it before fetching the first page left the list
+     * empty while its first page was already cheap to get. Without a total the list fetches
+     * until a short page ends it, and {@link setTotal} fills the number in when it arrives.
      */
-    reset(total: number): void {
+    reset(total?: number): void {
         this.generation++;
         this.loading = false;
-        this.more = total > 0;
         this.fetched = 0;
+        this.lastFull = true;
+        this.total = total ?? Number.POSITIVE_INFINITY;
+        this.more = this.total > 0;
+    }
+
+    /** The row count, once the count has answered. The pages already delivered stay. */
+    setTotal(total: number): void {
         this.total = total;
+        this.more = this.lastFull && this.fetched < total;
     }
 
     /**
@@ -74,15 +88,17 @@ export class PagedList<T> {
         if (generation !== this.generation) return false;
         this.onPage(page, offset === 0);
         this.fetched += page.length;
-        this.more = page.length === this.pageSize && this.fetched < this.total;
+        this.lastFull = page.length === this.pageSize;
+        this.more = this.lastFull && this.fetched < this.total;
         return true;
     }
 
-    /** Declare the list complete as it stands — a merged result replaces the pages. */
+    /** Declare the list complete as it stands — a merged result ends the paging. */
     finish(loaded: number): void {
         this.generation++;
         this.loading = false;
         this.more = false;
+        this.lastFull = false;
         this.fetched = loaded;
     }
 }
