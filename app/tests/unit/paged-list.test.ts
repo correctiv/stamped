@@ -89,6 +89,46 @@ export default async () => {
             expect(list.loaded).toBe(5);
         });
 
+        await it('fetches before the count has answered, then takes the total', async () => {
+            const { list, landed } = make(3);
+            list.reset();
+            expect(list.hasMore).toBe(true);
+            await list.loadMore(async (offset) => rows(offset, 3));
+            expect(landed.length).toBe(1);
+            list.setTotal(7);
+            expect(list.hasMore).toBe(true);
+            await list.loadMore(async (offset) => rows(offset, 3));
+            await list.loadMore(async (offset) => rows(offset, 1));
+            expect(list.loaded).toBe(7);
+            expect(list.hasMore).toBe(false);
+        });
+
+        await it('a total below what is loaded ends the list', async () => {
+            const { list } = make(3);
+            list.reset();
+            await list.loadMore(async (offset) => rows(offset, 3));
+            list.setTotal(2);
+            expect(list.hasMore).toBe(false);
+        });
+
+        await it('a total landing after a short page does not reopen the list', async () => {
+            const { list } = make(5);
+            list.reset();
+            await list.loadMore(async (offset) => rows(offset, 2));
+            expect(list.hasMore).toBe(false);
+            list.setTotal(900);
+            expect(list.hasMore).toBe(false);
+        });
+
+        await it('a total landing after finish does not reopen the list', async () => {
+            const { list } = make(5);
+            list.reset();
+            await list.loadMore(async (offset) => rows(offset, 5));
+            list.finish(9);
+            list.setTotal(900);
+            expect(list.hasMore).toBe(false);
+        });
+
         await it('lets the next call retry after a failed fetch', async () => {
             const { list } = make(2);
             list.reset(10);

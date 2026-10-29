@@ -199,3 +199,15 @@ export function verdictFilters(counts: readonly VerdictCount[]): VerdictFilter[]
 export function filterSummary(shown: number, total: number): string {
     return fmt(_('{shown} of {total} shown'), { shown: String(shown), total: String(total) });
 }
+
+/**
+ * The same line while the count is still being taken.
+ *
+ * The first page of a text query arrives long before the number of hits behind it does, and the
+ * denominator left over from the previous query would be a lie in exactly the place this tool
+ * must not tell one: "200 of 1,204" about a search that has not been counted invites the reader
+ * to conclude something about the archive. So the line says only what is known.
+ */
+export function partialSummary(shown: number): string {
+    return fmt(_('{shown} shown'), { shown: String(shown) });
+}
