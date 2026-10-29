@@ -13,6 +13,10 @@
  * and whether a collection lands inside the sampled window decided between a flat line and a
  * climb of 10 MiB per 50 messages, run to run, with the code unchanged. What the store does to
  * make that garbage smaller (`statementFor`) is asserted on its own, by the second test.
+ *
+ * gjsify gap (unfixed, gjsify#2454): on Node, `System.gc()` only collects when Node runs with
+ * `--expose-gc`, and `gjsify test` does not pass it, so the `test` script sets it through
+ * NODE_OPTIONS. Without it this test failed on Node in two runs out of four.
  */
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
