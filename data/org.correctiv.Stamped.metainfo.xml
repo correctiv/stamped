@@ -56,6 +56,12 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.3.4" date="2026-10-29">
+      <description>
+        <p>Search shows its first results while it is still counting, and says that it is searching. The archive index now runs on its own SQLite binding instead of libgda.</p>
+        <p xml:lang="de">Die Suche zeigt erste Treffer, während sie noch zählt, und zeigt an, dass sie sucht. Der Archiv-Index läuft jetzt auf einer eigenen SQLite-Anbindung statt auf libgda.</p>
+      </description>
+    </release>
     <release version="0.3.3" date="2026-10-28">
       <description>
         <p>Search by meaning: Stamped finds mail that says the same thing in other words, on the GPU where there is one. It also works in the macOS app now, which found no model before.</p>

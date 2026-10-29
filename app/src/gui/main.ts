@@ -100,7 +100,7 @@ if (wantsCli) {
             applicationName: _p('application name', 'Stamped'),
             applicationIcon: 'org.correctiv.Stamped',
             developerName: 'CORRECTIV',
-            version: '0.3.3',
+            version: '0.3.4',
             website: 'https://correctiv.github.io/stamped/',
             issueUrl: 'https://github.com/correctiv/stamped/issues',
             copyright: '© 2026 CORRECTIV',
