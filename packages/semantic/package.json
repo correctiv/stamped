@@ -22,8 +22,8 @@
     "src"
   ],
   "dependencies": {
-    "@gjsify/child_process": "0.64.11",
-    "@gjsify/napi": "0.64.11",
+    "@gjsify/child_process": "0.64.12",
+    "@gjsify/napi": "0.64.12",
     "node-llama-cpp": "3.22.2"
   }
 }

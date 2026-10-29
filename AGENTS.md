@@ -219,7 +219,7 @@ caveat* instead of refusing to look. Stamped applies policy on top; mailauth app
 ## Run / build / test
 
 - Deps: **`gjsify install`** — NEVER `npm install`, it prunes gjsify deps.
-- All `@gjsify/*` packages are pinned to the **same exact version** (0.64.11). gjsify ships as one
+- All `@gjsify/*` packages are pinned to the **same exact version** (0.64.12). gjsify ships as one
   release train; a CLI ↔ libs skew produces silently broken bundles. Bump them together.
 - `typescript` is pinned `^6.0.3`, **not** 7: `gjsify tsc` runs a bundle with TypeScript 6.0.3
   baked in, so a local 7 would give a different diagnostic set than CI.
@@ -337,8 +337,8 @@ Yahoo/Epstein archives — the app has to be shown doing a real DKIM verificatio
   (bundle, sandboxed launch) and `check-semantic.mjs` (import, probe, index, a query by meaning).
 - **No TypeScript parameter properties** (`constructor(private x: T)`). Node's
   `--experimental-strip-types` rejects them, which silently breaks the Node test run.
-- SQLite runs on **libgda** through gjsify's `node:sqlite` wrapper, not sqlite3. FTS5 is available
-  on both runtimes (measured, [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md)).
+- SQLite runs on **`@gjsify/sqlite-native`** (gjsify's own SQLite binding) through its `node:sqlite`
+  wrapper, not sqlite3 and no longer libgda. FTS5 is available on both runtimes (measured, [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md)).
 - Conventional commits (`feat(verify): …`, `fix(core): …`), imperative, subject ≤ 50 chars. Run
   `gjsify foreach -A check`, `gjsify format --check .`, `gjsify lint .` and the tests before
   committing. A fresh worktree needs `./dev/i18n.sh compile` first, or the catalogue test fails. No

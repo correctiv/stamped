@@ -2,9 +2,9 @@
  * The FTS5 spike, kept as a test.
  *
  * Stamped's second half — exploring an archive of a few hundred thousand messages — rests on
- * SQLite full-text search. But gjsify's `node:sqlite` is a **libgda wrapper**, not a sqlite3
- * binding, so "SQLite has FTS5" is a claim about a different library than the one this actually
- * runs on. If the module were missing or its tokenizer inactive, a search would answer "no
+ * SQLite full-text search. But gjsify's `node:sqlite` is its own binding (`@gjsify/sqlite-native`,
+ * libgda before it) over whatever libsqlite3 the system ships, so "SQLite has FTS5" is a claim
+ * about a different build than the one this actually runs on. If the module were missing or its tokenizer inactive, a search would answer "no
  * results" to everything and look like an empty archive rather than a broken build — the kind
  * of failure that makes a journalist conclude a mail is not in the leak.
  *

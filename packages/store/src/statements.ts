@@ -4,7 +4,7 @@ const prepared = new WeakMap<DatabaseSync, Map<string, StatementSync>>();
 
 /**
  * The statement for `sql` on `db`, prepared once. Indexing runs the same few statements per
- * message; on Gjs every `prepare()` is a fresh libgda parse, which costs time and leaves every
+ * message; on Gjs every `prepare()` is a fresh native parse (measured on libgda), which costs time and leaves every
  * bound text as garbage the collector reaches late — it cannot see that native memory, so RSS
  * between two collections grew with the mail count.
  *
