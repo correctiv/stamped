@@ -263,10 +263,30 @@ jobs:
           name: packages
           path: packages
 
-      # Only for a tag; a manual run exercises the chain without publishing.
+      # Only for a tag; a manual run exercises the chain without publishing. The body is the tag's
+      # `<release>` entry in the hand-written metainfo the root `package.json` names
+      # (`gjsify.site.metainfo`), so it runs from the root, not `app/`. `release-notes` exits 1
+      # when the tag has no entry, so a release fails loudly instead of publishing an empty body.
+      - uses: actions/checkout@v4
+        if: startsWith(github.ref, 'refs/tags/v')
+
+      - uses: actions/setup-node@v4
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          node-version: "24"
+
+      - name: Generate the release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -eu
+          VERSION=$(node -p "require('./app/package.json').devDependencies['@gjsify/cli']")
+          npm install -g "@gjsify/cli@$VERSION"
+          gjsify release-notes "$GITHUB_REF_NAME" --compare > "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md"
+
       - name: Create the release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release create "$GITHUB_REF_NAME" packages/* --title "$GITHUB_REF_NAME" --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" packages/* --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"

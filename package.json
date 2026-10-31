@@ -38,7 +38,7 @@
     }
   },
   "devDependencies": {
-    "@gjsify/cli": "0.64.12",
-    "@gjsify/site": "0.64.12"
+    "@gjsify/cli": "0.64.14",
+    "@gjsify/site": "0.64.14"
   }
 }
