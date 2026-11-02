@@ -4,6 +4,14 @@ Question: can Stamped run every index.db query inside a `node:worker_threads` Wo
 
 Short answer: yes on both targets, with five constraints that shape the design. The harness lives in `app/spike/` and builds separately per target. It uses synthetic data only. Numbers come from one workstation, one run each, so read them as orders of magnitude.
 
+## Status: moved to `@gjsify/web-worker`
+
+The findings below are the spike's. The implementation has since moved from `node:worker_threads` to the WHATWG `Worker` of `@gjsify/web-worker` with Comlink RPC (`app/src/gui/query-channel.ts`, `query-worker.ts`). What changed against the text below:
+
+- The bundler follows `new Worker(new URL('./query-worker.ts', import.meta.url))` and emits `query-worker.worker.mjs` beside the bundle (gjsify 0.64.16 or newer). The second build entry is gone. A global `gjsify` older than 0.64.16 leaves the URL unrewritten, so build with the project-local CLI.
+- Comlink replaces the `{ id, op, params }` protocol. gjsify buffers messages sent before the worker is ready, so the `READY_ID` handshake (gap 6) is gone.
+- The serial queue, the timeout with restart, and the single read connection are unchanged. Tests cover the timeout and restart path with a fake channel.
+
 ## 1. Starting a Worker from a built bundle
 
 A Worker starts on gjs and node. `new Worker(new URL('./worker.mjs', import.meta.url))` works when `worker.mjs` is a separately built file next to the main bundle. In the gjs bundle `import.meta.url` stays the real file URL of the bundle.
