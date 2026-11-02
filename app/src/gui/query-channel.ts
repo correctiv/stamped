@@ -8,6 +8,9 @@
 
 import * as Comlink from 'comlink';
 
+// Explicit, not the global: Node 24 has no `Worker`, and only the gjs build gets one injected.
+import { Worker } from '@gjsify/web-worker';
+
 import type { QueryChannel } from './query-client.ts';
 import type { QueryWorkerApi } from './query-worker.ts';
 
@@ -34,7 +37,7 @@ export function workerChannel(): QueryChannel {
             worker.addEventListener('error', (event) => {
                 // Ours to report: the client restarts, and the default would only log it too.
                 event.preventDefault();
-                if (!closed) handler(event.message || 'worker failed');
+                if (!closed) handler((event as unknown as ErrorEvent).message || 'worker failed');
             });
         },
         close(): void {
