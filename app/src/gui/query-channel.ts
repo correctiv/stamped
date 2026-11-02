@@ -1,67 +1,48 @@
 /**
- * The real transport behind {@link QueryClient}: one `node:worker_threads` worker per case.
+ * The real transport behind {@link QueryClient}: one WHATWG `Worker` per case, driven through
+ * Comlink.
  *
- * Separate from `query-client.ts` so the protocol — queueing, timeout, restart — can be tested
+ * Separate from `query-client.ts` so the rules — queueing, timeout, restart — can be tested
  * without a worker at all. Everything thread-shaped is here; everything rule-shaped is there.
  */
 
-import { Worker } from 'node:worker_threads';
+import * as Comlink from 'comlink';
 
-import { runningOnGjs } from '@stamped/semantic/runtime';
-
-import type { QueryChannel, QueryReply, QueryRequest } from './query-client.ts';
-
-/**
- * Which bundle the worker has to be, since both targets' files sit in the same `dist/`.
- *
- * `runningOnGjs()`, not "is there an `imports`": node-gi defines `imports` on Node too, and the
- * macOS and Windows apps are Node plus node-gi — they asked for `query-worker.gjs.mjs`, which the
- * Node bundle does not carry, and no case ever loaded. Asked at call time rather than at module
- * level: a bundle is built per target, but the test suite runs the SAME source on both runtimes.
- */
-function target(): 'gjs' | 'node' {
-    return runningOnGjs() ? 'gjs' : 'node';
-}
+import type { QueryChannel } from './query-client.ts';
+import type { QueryWorkerApi } from './query-worker.ts';
 
 /**
- * Start a query worker beside the bundle that starts it.
+ * Start a query worker.
  *
- * `new URL('./…', import.meta.url)` is what makes `gjsify ship` work without a ship-config
- * change: the worker file is staged next to the bundle, and the URL resolves to wherever that
- * pair ended up — a `dist/` in the source tree, a staged payload, an installed prefix.
- *
- * On GJS this spawns a `gjs` from PATH (measured in the spike), so the launcher the package
- * writes has to provide one — which it does, since that is what runs the bundle itself.
+ * The literal `new Worker(new URL('./…', import.meta.url))` is what the gjsify bundler looks
+ * for: it builds the worker file beside the bundle and rewrites the URL to it, so `gjsify ship`
+ * stages the pair together and the URL resolves to wherever that ended up. Keep it a literal —
+ * a computed specifier is left alone and the worker is then simply not shipped.
  */
 export function workerChannel(): QueryChannel {
-    const url = new URL(`./query-worker.${target()}.mjs`, import.meta.url);
-    const worker = new Worker(url);
+    const worker = new Worker(new URL('./query-worker.ts', import.meta.url), { type: 'module' });
+    const api = Comlink.wrap<QueryWorkerApi>(worker as unknown as Comlink.Endpoint);
     let closed = false;
     return {
-        post(request: QueryRequest): void {
-            if (!closed) worker.postMessage(request);
-        },
-        onMessage(handler: (reply: QueryReply) => void): void {
-            worker.on('message', (message: QueryReply) => {
-                if (!closed) handler(message);
-            });
+        call(op: string, params: unknown): Promise<unknown> {
+            if (op === 'open')
+                return api.open((params as { paths: Parameters<QueryWorkerApi['open']>[0] }).paths);
+            if (op === 'ping') return api.ping();
+            return api.run(op, params);
         },
         onClose(handler: (reason: string) => void): void {
-            // Node emits both for a thread that dies, GJS emits neither — so the client treats
-            // them as one signal and relies on its timeout where there is none.
-            worker.on('error', (error: Error) => {
-                if (!closed) handler(String(error.message ?? error));
-            });
-            worker.on('exit', (code: number) => {
-                if (!closed) handler(`worker exited with code ${code}`);
+            worker.addEventListener('error', (event) => {
+                // Ours to report: the client restarts, and the default would only log it too.
+                event.preventDefault();
+                if (!closed) handler(event.message || 'worker failed');
             });
         },
         close(): void {
             if (closed) return;
             closed = true;
-            // Fire and forget: `terminate()` is a ~0.5 s hard kill on GJS and blocks on Node, and
-            // nothing the window does next depends on the thread being gone.
-            void Promise.resolve(worker.terminate()).catch(() => undefined);
+            // `terminate()` is a hard kill on GJS and nothing the window does next depends on the
+            // thread being gone, so do not wait for it.
+            worker.terminate();
         },
     };
 }

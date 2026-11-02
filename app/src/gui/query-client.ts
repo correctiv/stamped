@@ -12,16 +12,13 @@
  * - **Serial.** One request in flight, the rest queued in order. SQLite on one connection is
  *   serial anyway, so concurrency would buy nothing, and it makes "what does a timeout cancel?"
  *   answerable: the one request that timed out.
- * - **Timeout, then restart.** On GJS a worker that dies emits no `error` and no `exit` event
- *   (measured; Node emits both), so a lost worker is only ever detectable as an answer that
- *   never came. The timeout is therefore not a safety net but the primary detection, and the
- *   repair is a fresh worker on the next request.
- * - **The channel is injected.** {@link QueryChannel} is the whole transport, so the protocol —
- *   queueing, timeout, restart, error propagation — is testable in-process on both runtimes
- *   without a built worker file.
- *
- * And one handshake, which is not a design choice but a measured necessity — see
- * {@link READY_ID}.
+ * - **Timeout, then restart.** On GJS a worker that dies can go unnoticed (an unhandled rejection
+ *   or a hang emits no `error` and no `exit`), so a lost worker is only reliably detectable as an
+ *   answer that never came. The timeout is therefore not a safety net but the primary detection,
+ *   and the repair is a fresh worker on the next request.
+ * - **The channel is injected.** {@link QueryChannel} is the whole transport (a Comlink proxy
+ *   over a WHATWG `Worker` in production), so queueing, timeout, restart and error propagation
+ *   are testable in-process on both runtimes without a built worker file.
  */
 
 import { _, fmt } from '@stamped/core';
@@ -29,31 +26,15 @@ import type { CasePaths } from '@stamped/store';
 
 import type { QueryOp, QueryRequests, QueryResults } from '../lib/queries.ts';
 
-/** One question on the wire. `id` pairs it with its answer; `op` names the operation. */
-export interface QueryRequest {
-    readonly id: number;
-    readonly op: string;
-    readonly params: unknown;
-}
-
-/** One answer. `ok` decides which of the other two fields is meant. */
-export interface QueryReply {
-    readonly id: number;
-    readonly ok: boolean;
-    readonly result?: unknown;
-    readonly error?: string;
-}
-
 /**
  * The transport to one worker, and the only thing {@link QueryClient} knows about threads.
  *
- * `onClose` covers both of Node's death signals (`error`, `exit`) collapsed into one, because the
- * client does the same thing for either: reject what was in flight and start again. On GJS it
- * simply never fires.
+ * `onClose` is the worker's death signal collapsed into one, because the client does the same
+ * thing for any of them: reject what was in flight and start again. It may never fire.
  */
 export interface QueryChannel {
-    post(request: QueryRequest): void;
-    onMessage(handler: (reply: QueryReply) => void): void;
+    /** Run one operation on the worker. Rejects with the worker's error. */
+    call(op: string, params: unknown): Promise<unknown>;
     onClose(handler: (reason: string) => void): void;
     close(): void;
 }
@@ -70,32 +51,11 @@ export type QueryChannelFactory = () => QueryChannel;
  */
 const REQUEST_TIMEOUT_MS = 60_000;
 
-/** The id of the implicit `open`: no caller waits for it, so it never collides with a request. */
-const OPEN_ID = 0;
-
-/**
- * The id the worker announces itself with, once — and the reason a handshake exists at all.
- *
- * gjsify gap (unfixed, no upstream issue yet): on GJS a message posted to a worker BEFORE that
- * worker's module has finished evaluating is dropped without a trace — no reply, no `error`, no
- * `exit`. Measured with a two-line reproducer: a `ping` posted right after `new Worker(url)` is
- * never answered, the same `ping` posted two seconds later answers in under a millisecond. Node
- * buffers those messages, which is why the protocol tests saw none of this.
- *
- * So the worker posts one reply of its own as soon as it is listening, and the client holds
- * everything — including the implicit `open` — until it arrives. Negative so that it can never
- * be a request id: those count up from {@link OPEN_ID}.
- */
-export const READY_ID = -1;
-
 interface Pending {
-    readonly id: number;
     readonly generation: number;
-    resolve(value: unknown): void;
     reject(error: Error): void;
 }
 
-/** A question the client has not sent yet, with the promise waiting on it. */
 export class QueryClient {
     private readonly paths: CasePaths;
     private readonly spawn: QueryChannelFactory;
@@ -104,15 +64,12 @@ export class QueryClient {
     private channel: QueryChannel | undefined;
     /**
      * Which worker the current requests belong to. Bumped on every spawn and every drop, so a
-     * reply from a worker that was given up on cannot resolve a request the next one owns.
+     * death report from a worker that was given up on cannot affect the next one.
      */
     private generation = 0;
-    private seq = OPEN_ID;
     private pending: Pending | undefined;
-    /** Has the current worker announced itself? Reset with every spawn. */
-    private ready = false;
-    /** What was asked before it did. Emptied in order the moment it does. */
-    private outbox: QueryRequest[] = [];
+    /** The `open` of the current worker; every request waits for it. Never rejects. */
+    private opening: Promise<void> = Promise.resolve();
     /** The queue, as a promise chain: each request waits for the previous one to settle. */
     private tail: Promise<void> = Promise.resolve();
     private closed = false;
@@ -162,8 +119,6 @@ export class QueryClient {
         this.pending = undefined;
         const channel = this.channel;
         this.channel = undefined;
-        this.ready = false;
-        this.outbox = [];
         pending?.reject(new Error(_('The case was closed while the index was being read.')));
         channel?.close();
     }
@@ -174,51 +129,49 @@ export class QueryClient {
         }
         this.ensure();
         const generation = this.generation;
-        const id = ++this.seq;
+        const channel = this.channel as QueryChannel;
+        const opening = this.opening;
         return new Promise<unknown>((resolve, reject) => {
-            const timer = setTimeout(() => {
-                if (this.pending?.id !== id) return;
-                this.pending = undefined;
-                this.restart(generation);
-                reject(
-                    new Error(
-                        fmt(
-                            _(
-                                'The index did not answer within {seconds} seconds. Reading it was started over.',
-                            ),
-                            { seconds: Math.round(this.timeoutMs / 1000) },
-                        ),
-                    ),
-                );
-            }, this.timeoutMs);
-            this.pending = {
-                id,
-                generation,
-                resolve: (value) => {
-                    clearTimeout(timer);
-                    resolve(value);
-                },
-                reject: (error) => {
-                    clearTimeout(timer);
-                    reject(error);
-                },
+            let settled = false;
+            const finish = (settle: () => void): void => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                if (this.pending === entry) this.pending = undefined;
+                settle();
             };
-            this.post({ id, op, params });
+            const timer = setTimeout(() => {
+                finish(() => {
+                    this.restart(generation);
+                    reject(
+                        new Error(
+                            fmt(
+                                _(
+                                    'The index did not answer within {seconds} seconds. Reading it was started over.',
+                                ),
+                                { seconds: Math.round(this.timeoutMs / 1000) },
+                            ),
+                        ),
+                    );
+                });
+            }, this.timeoutMs);
+            const entry: Pending = { generation, reject: (error) => finish(() => reject(error)) };
+            this.pending = entry;
+            // An answer that arrives after the timeout finds `settled` and is dropped.
+            opening
+                .then(() => channel.call(op, params))
+                .then(
+                    (value) => finish(() => resolve(value)),
+                    (error: unknown) =>
+                        finish(() =>
+                            reject(
+                                error instanceof Error
+                                    ? error
+                                    : new Error(String(error ?? _('The index could not answer that.'))),
+                            ),
+                        ),
+                );
         });
-    }
-
-    /**
-     * Out to the worker, or into the outbox until it says it is listening.
-     *
-     * The request's own timeout covers the wait: a worker that never announces itself looks
-     * exactly like one that never answers, and the repair is the same.
-     */
-    private post(request: QueryRequest): void {
-        if (!this.ready) {
-            this.outbox.push(request);
-            return;
-        }
-        this.channel?.post(request);
     }
 
     /**
@@ -232,27 +185,8 @@ export class QueryClient {
         if (this.channel !== undefined) return;
         this.generation++;
         const generation = this.generation;
-        this.ready = false;
-        this.outbox = [];
         const channel = this.spawn();
         this.channel = channel;
-        channel.onMessage((reply) => {
-            if (reply.id === READY_ID) {
-                if (this.generation !== generation) return;
-                this.ready = true;
-                const queued = this.outbox;
-                this.outbox = [];
-                for (const request of queued) channel.post(request);
-                return;
-            }
-            const pending = this.pending;
-            if (pending === undefined || pending.generation !== generation || pending.id !== reply.id) {
-                return;
-            }
-            this.pending = undefined;
-            if (reply.ok) pending.resolve(reply.result);
-            else pending.reject(new Error(reply.error ?? _('The index could not answer that.')));
-        });
         channel.onClose((reason) => {
             if (this.generation !== generation) return;
             this.restart(generation);
@@ -260,7 +194,10 @@ export class QueryClient {
             this.pending = undefined;
             pending?.reject(new Error(reason));
         });
-        this.post({ id: OPEN_ID, op: 'open', params: { paths: this.paths } });
+        this.opening = channel.call('open', { paths: this.paths }).then(
+            () => undefined,
+            () => undefined,
+        );
     }
 
     /** Give up on this worker. The next request starts a fresh one through {@link ensure}. */
@@ -268,8 +205,6 @@ export class QueryClient {
         if (this.generation !== generation) return;
         const channel = this.channel;
         this.channel = undefined;
-        this.ready = false;
-        this.outbox = [];
         this.restartCount++;
         channel?.close();
     }
