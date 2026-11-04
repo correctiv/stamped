@@ -4,7 +4,7 @@
  *
  * Two halves, deliberately not one:
  *
- * - **The protocol** is tested against a FAKE channel, so queueing, the timeout, the restart and
+ * - **The client** is tested against a FAKE channel, so queueing, the timeout, the restart and
  *   the error path are exercised in-process on GJS and Node both — without a built worker file,
  *   without a thread, and without waiting a minute for a real timeout. The fake is hostile where
  *   it matters: it goes on delivering replies after it was closed, because the client's
@@ -29,13 +29,7 @@ import { KeyVault, parseKeyMaterial, type MessageFinding, type Verdict } from '@
 import { encodeLatin1, summarise } from '@stamped/import';
 import { casePaths, digest, indexMessage, openIndex, store } from '@stamped/store';
 
-import {
-    QueryClient,
-    READY_ID,
-    type QueryChannel,
-    type QueryReply,
-    type QueryRequest,
-} from '../../src/gui/query-client.ts';
+import { QueryClient, type QueryChannel } from '../../src/gui/query-client.ts';
 import { initI18n } from '../../src/lib/i18n.ts';
 import { PAGE_SIZE, runQuery, runQueryAsync, type QueryContext } from '../../src/lib/queries.ts';
 import { saveVault } from '../../src/lib/vault.ts';
@@ -48,42 +42,46 @@ const PATHS = casePaths('/nowhere');
 
 // ── The fake transport ──────────────────────────────────────────────────────────────────────
 
-/** One fake worker: what the client sent it, and the three levers a test pulls on it. */
+/** One call the client made, and the two levers that answer it. */
+interface FakeCall {
+    readonly op: string;
+    readonly params: unknown;
+    resolve(value: unknown): void;
+    reject(error: Error): void;
+}
+
+/** One fake worker: what the client called on it, and the levers a test pulls. */
 interface FakeChannel {
-    readonly sent: QueryRequest[];
+    readonly calls: FakeCall[];
     readonly channel: QueryChannel;
     closed: boolean;
-    /** Answer as the worker would. Works after `close()` too — see the file comment. */
-    deliver(reply: QueryReply): void;
-    /** Announce the worker as loaded, which is what lets the client post at all. */
-    announce(): void;
-    /** The death Node reports and GJS does not. */
+    /** The death Node reports and GJS may not. */
     die(reason: string): void;
 }
 
 /**
  * A spawner of fake workers.
  *
- * `announce` is the handshake: by default the fake declares itself loaded the moment the client
- * attaches its handler, which is the ordinary case — a worker is ready long before the person
- * asks a second question. The one test that cares about the gap passes `false` and announces by
- * hand.
+ * `autoOpen` answers the implicit `open` at once, which is the ordinary case. The one test that
+ * cares about the gap passes `false` and answers by hand. The fake is hostile where it matters:
+ * a call stays answerable after `close()`, because the client's own guard is what must drop a
+ * late answer, not the transport's good manners.
  */
-function fakeChannels(announce = true): { spawn: () => QueryChannel; made: FakeChannel[] } {
+function fakeChannels(autoOpen = true): { spawn: () => QueryChannel; made: FakeChannel[] } {
     const made: FakeChannel[] = [];
     const spawn = (): QueryChannel => {
-        const sent: QueryRequest[] = [];
-        let onMessage: (reply: QueryReply) => void = () => undefined;
+        const calls: FakeCall[] = [];
         let onClose: (reason: string) => void = () => undefined;
         const fake: FakeChannel = {
-            sent,
+            calls,
             closed: false,
             channel: {
-                post: (request) => sent.push(request),
-                onMessage: (handler) => {
-                    onMessage = handler;
-                    if (announce) fake.announce();
-                },
+                call: (op, params) =>
+                    new Promise((resolve, reject) => {
+                        const call: FakeCall = { op, params, resolve, reject };
+                        calls.push(call);
+                        if (op === 'open' && autoOpen) resolve(null);
+                    }),
                 onClose: (handler) => {
                     onClose = handler;
                 },
@@ -91,8 +89,6 @@ function fakeChannels(announce = true): { spawn: () => QueryChannel; made: FakeC
                     fake.closed = true;
                 },
             },
-            deliver: (reply) => onMessage(reply),
-            announce: () => onMessage({ id: READY_ID, ok: true, result: 'ready' }),
             die: (reason) => onClose(reason),
         };
         made.push(fake);
@@ -144,9 +140,9 @@ async function settled(state: Watched, limit = 10_000): Promise<Watched> {
     return state;
 }
 
-/** The requests a channel got that are not the implicit `open`. */
-function questions(fake: FakeChannel): QueryRequest[] {
-    return fake.sent.filter((request) => request.op !== 'open');
+/** The calls a channel got that are not the implicit `open`. */
+function questions(fake: FakeChannel): FakeCall[] {
+    return fake.calls.filter((call) => call.op !== 'open');
 }
 
 // ── A case to query ─────────────────────────────────────────────────────────────────────────
@@ -206,37 +202,33 @@ function timed<T>(body: () => T): { value: T; ms: number } {
 }
 
 export default async () => {
-    await describe('the query protocol', async () => {
+    await describe('the query client', async () => {
         await it('opens the case before anything is asked of the worker', async () => {
             const { spawn, made } = fakeChannels();
             const client = new QueryClient(PATHS, spawn);
             watch(client.ask('total', {}));
             await tick();
             expect(made.length).toBe(1);
-            const open = made[0]?.sent[0];
+            const open = made[0]?.calls[0];
             expect(open?.op).toBe('open');
-            expect(open?.id).toBe(0);
             expect((open?.params as { paths?: { root?: string } })?.paths?.root).toBe(PATHS.root);
             client.close();
         });
 
-        await it('holds what was asked until the worker says it is listening', async () => {
-            // On GJS a message posted before the worker's module finished evaluating is dropped
-            // without a reply, an `error` or an `exit` — so nothing may go out before the
-            // handshake, including the `open` the client sends itself.
+        await it('holds what was asked until the open has been answered', async () => {
             const { spawn, made } = fakeChannels(false);
             const client = new QueryClient(PATHS, spawn);
             const early = watch(client.ask('total', {}));
             await tick();
             const fake = made[0]!;
-            expect(fake.sent.length).toBe(0);
+            expect(fake.calls.length).toBe(1);
+            expect(questions(fake).length).toBe(0);
 
-            fake.announce();
+            fake.calls[0]!.resolve(null);
             await tick();
-            expect(fake.sent[0]?.op).toBe('open');
             expect(questions(fake)[0]?.op).toBe('total');
 
-            fake.deliver({ id: questions(fake)[0]!.id, ok: true, result: 11 });
+            questions(fake)[0]!.resolve(11);
             await tick();
             expect(early.value).toBe(11);
             client.close();
@@ -249,19 +241,18 @@ export default async () => {
             const second = watch(client.ask('count', { query: {} }));
             await tick();
 
-            const fake = made[0];
-            if (!fake) throw new Error('no channel was spawned');
+            const fake = made[0]!;
             expect(questions(fake).length).toBe(1);
             expect(questions(fake)[0]?.op).toBe('total');
 
-            fake.deliver({ id: questions(fake)[0]!.id, ok: true, result: 7 });
+            questions(fake)[0]!.resolve(7);
             await tick();
             expect(first.value).toBe(7);
             expect(second.done).toBe(false);
             expect(questions(fake).length).toBe(2);
             expect(questions(fake)[1]?.op).toBe('count');
 
-            fake.deliver({ id: questions(fake)[1]!.id, ok: true, result: 3 });
+            questions(fake)[1]!.resolve(3);
             await tick();
             expect(second.value).toBe(3);
             client.close();
@@ -273,15 +264,14 @@ export default async () => {
             const failed = watch(client.ask('report', {}));
             await tick();
             const fake = made[0]!;
-            fake.deliver({ id: questions(fake)[0]!.id, ok: false, error: 'no such table: messages' });
+            questions(fake)[0]!.reject(new Error('no such table: messages'));
             await tick();
             expect(failed.ok).toBe(false);
             expect(failed.error).toBe('no such table: messages');
 
-            // One failure must not poison the queue: the next question still reaches the worker.
             const next = watch(client.ask('total', {}));
             await tick();
-            fake.deliver({ id: questions(fake)[1]!.id, ok: true, result: 1 });
+            questions(fake)[1]!.resolve(1);
             await tick();
             expect(next.value).toBe(1);
             expect(client.restarts).toBe(0);
@@ -316,8 +306,8 @@ export default async () => {
             await tick();
             expect(made.length).toBe(2);
             const fresh = made[1]!;
-            expect(fresh.sent[0]?.op).toBe('open');
-            fresh.deliver({ id: questions(fresh)[0]!.id, ok: true, result: 2 });
+            expect(fresh.calls[0]?.op).toBe('open');
+            questions(fresh)[0]!.resolve(2);
             await tick();
             expect(again.value).toBe(2);
             client.close();
@@ -326,18 +316,17 @@ export default async () => {
         await it('ignores a late answer from the worker it gave up on', async () => {
             const { spawn, made } = fakeChannels();
             const client = new QueryClient(PATHS, spawn, 25);
-            await settled(watch(client.ask('total', {})));
+            const lost = watch(client.ask('total', {}));
+            await settled(lost);
 
             const pending = watch(client.ask('total', {}));
             await tick();
-            const stale = made[0]!;
-            const fresh = made[1]!;
-            // Same id on the dead worker: only the generation tells the two apart.
-            stale.deliver({ id: questions(fresh)[0]!.id, ok: true, result: 999 });
+            made[0]!.calls.find((call) => call.op === 'total')!.resolve(999);
             await tick();
             expect(pending.done).toBe(false);
+            expect(lost.ok).toBe(false);
 
-            fresh.deliver({ id: questions(fresh)[0]!.id, ok: true, result: 5 });
+            questions(made[1]!)[0]!.resolve(5);
             await tick();
             expect(pending.value).toBe(5);
             client.close();
@@ -357,7 +346,7 @@ export default async () => {
             const after = watch(client.ask('total', {}));
             await tick();
             expect(made.length).toBe(2);
-            made[1]!.deliver({ id: questions(made[1]!)[0]!.id, ok: true, result: 4 });
+            questions(made[1]!)[0]!.resolve(4);
             await tick();
             expect(after.value).toBe(4);
             client.close();
@@ -377,7 +366,6 @@ export default async () => {
             const later = watch(client.ask('total', {}));
             await tick();
             expect(later.ok).toBe(false);
-            // No second worker: a closed case never starts a thread again.
             expect(made.length).toBe(1);
         });
     });

@@ -1,14 +1,13 @@
 /**
  * The second thread: the only place in the window's process that holds an index connection.
  *
- * A separate bundle entry, built beside `stamped.<target>.mjs` by `scripts/build-bundle.mjs` —
- * the gjsify bundler does not follow a `new Worker(new URL(…))` path, so the worker needs its own
- * build output rather than being pulled into the main one.
+ * Built by the gjsify bundler as its own file beside the main bundle, because `query-channel.ts`
+ * names it in `new Worker(new URL(…, import.meta.url))`.
  *
  * Deliberately thin. Every question it can answer lives in `lib/queries.ts`, which knows nothing
- * about threads and is what the tests call; this file is the loop that turns a message into one
- * of those calls. Two ops are the protocol's own rather than a query: `open` (re-sent on every
- * spawn, so a restarted worker reopens the case by itself) and `ping` (is anybody there).
+ * about threads and is what the tests call; this file exposes it over Comlink. `open` (re-sent
+ * on every spawn, so a restarted worker reopens the case by itself) and `ping` (is anybody
+ * there) are the API's own rather than a query.
  */
 
 // First, and for its side effect: binds the catalogue before any other module is evaluated, so
@@ -16,7 +15,7 @@
 // it is safe here is that `i18n-init.ts` pulls in no GTK — a worker has no display.
 import './i18n-init.ts';
 
-import { parentPort } from 'node:worker_threads';
+import * as Comlink from 'comlink';
 
 import { _ } from '@stamped/core';
 import { openIndex, type CasePaths } from '@stamped/store';
@@ -29,7 +28,6 @@ import {
     type QueryRequests,
     type SyncQueryOp,
 } from '../lib/queries.ts';
-import { READY_ID, type QueryReply, type QueryRequest } from './query-client.ts';
 
 /**
  * How long a statement waits for a writer before it gives up.
@@ -54,44 +52,22 @@ function open(paths: CasePaths): void {
     context = { paths, db };
 }
 
-/**
- * Synchronous for every op but `verify`: a reply that waits on a promise job is a reply the GJS
- * worker thread was not seen to deliver, so the ops that can answer at once do.
- */
-function handle(request: QueryRequest): QueryReply['result'] | Promise<QueryReply['result']> {
-    if (request.op === 'open') {
-        open((request.params as { paths: CasePaths }).paths);
-        return null;
-    }
-    if (request.op === 'ping') return 'pong';
-    if (context === undefined) throw new Error(_('No case is open in the index reader.'));
-    if (!isQueryOp(request.op)) throw new Error(`unknown query op ${request.op}`);
-    if (request.op === 'verify')
-        return runQueryAsync(context, request.op, request.params as QueryRequests[typeof request.op]);
-    return runQuery(context, request.op, request.params as QueryRequests[SyncQueryOp]);
-}
+const api = {
+    open,
+    ping: (): string => 'pong',
+    /**
+     * An error crosses as a rejection carrying its message only — a stack from a bundled worker
+     * names a line nobody can look up, and this string reaches the person as a toast.
+     */
+    run(op: string, params: unknown): unknown {
+        if (context === undefined) throw new Error(_('No case is open in the index reader.'));
+        if (!isQueryOp(op)) throw new Error(`unknown query op ${op}`);
+        if (op === 'verify') return runQueryAsync(context, op, params as QueryRequests[typeof op]);
+        return runQuery(context, op as SyncQueryOp, params as QueryRequests[SyncQueryOp]);
+    },
+};
 
-const port = parentPort;
-if (port !== null) {
-    port.on('message', (request: QueryRequest) => {
-        // The message only — a stack from a bundled worker names a line nobody can look up,
-        // and this string reaches the person as a toast.
-        const reply = (message: QueryReply): void => port.postMessage(message);
-        const fail = (error: unknown): void =>
-            reply({ id: request.id, ok: false, error: String((error as Error)?.message ?? error) });
-        try {
-            const result = handle(request);
-            if (result instanceof Promise) {
-                result.then((value) => reply({ id: request.id, ok: true, result: value }), fail);
-            } else {
-                reply({ id: request.id, ok: true, result });
-            }
-        } catch (error) {
-            fail(error);
-        }
-    });
-    // LAST, and only after the handler is attached: on GJS anything the client posted before
-    // this module finished evaluating was dropped, so this reply is what tells it to send.
-    // See `READY_ID` in `query-client.ts` for the measurement.
-    port.postMessage({ id: READY_ID, ok: true, result: 'ready' } satisfies QueryReply);
-}
+/** What the window sees of this thread. Type only: importing it never loads this file. */
+export type QueryWorkerApi = typeof api;
+
+Comlink.expose(api, self as unknown as Comlink.Endpoint);

@@ -27,15 +27,7 @@ const result = spawnSync(
     ['build', 'src/gui/main.ts', '--app', target, '--outfile', `dist/stamped.${target}.mjs`],
     { stdio: 'inherit' },
 );
-if (result.status !== 0) process.exit(result.status ?? 1);
-
-// A SECOND entry, beside the first: the window runs every index query on a worker thread, and the
-// bundler does not follow a `new Worker(new URL('./query-worker.…', import.meta.url))` — nothing
-// static points at that file, so without this line the bundle ships a worker that is not there.
-// `gjsify ship` stages the whole `dist/` next to the bundle, which is where the URL resolves to.
-const worker = spawnSync(
-    'gjsify',
-    ['build', 'src/gui/query-worker.ts', '--app', target, '--outfile', `dist/query-worker.${target}.mjs`],
-    { stdio: 'inherit' },
-);
-process.exit(worker.status ?? 1);
+// No second entry: `query-channel.ts` names the worker as `new Worker(new URL('./query-worker.ts',
+// import.meta.url))`, which the gjsify bundler turns into `dist/query-worker.worker.mjs` beside
+// this bundle (and `gjsify ship` stages the whole `dist/`).
+process.exit(result.status ?? 1);
