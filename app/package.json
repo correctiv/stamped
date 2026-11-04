@@ -134,15 +134,15 @@
     "yargs": "^18.1.0"
   },
   "devDependencies": {
-    "@gjsify/cli": "0.64.16",
-    "@gjsify/napi": "0.64.16",
-    "@gjsify/node-globals": "0.64.16",
-    "@gjsify/rolldown-native": "0.64.16",
-    "@gjsify/runtime": "0.64.16",
-    "@gjsify/sqlite": "0.64.16",
-    "@gjsify/adwaita-app": "0.64.16",
-    "@gjsify/unit": "0.64.16",
-    "@gjsify/web-worker": "0.64.16",
+    "@gjsify/cli": "0.64.17",
+    "@gjsify/napi": "0.64.17",
+    "@gjsify/node-globals": "0.64.17",
+    "@gjsify/rolldown-native": "0.64.17",
+    "@gjsify/runtime": "0.64.17",
+    "@gjsify/sqlite": "0.64.17",
+    "@gjsify/adwaita-app": "0.64.17",
+    "@gjsify/unit": "0.64.17",
+    "@gjsify/web-worker": "0.64.17",
     "comlink": "^4.4.2",
     "@girs/adw-1": "5.4.0",
     "@girs/gdk-4.0": "5.4.0",
@@ -158,16 +158,16 @@
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "typescript": "^6.0.3",
-    "@gjsify/node-gi": "0.64.16"
+    "@gjsify/node-gi": "0.64.17"
   },
   "optionalDependencies": {
-    "@gjsify/gtk-runtime-darwin-arm64": "0.64.16",
-    "@gjsify/gtk-runtime-darwin-x64": "0.64.16",
-    "@gjsify/gtk-runtime-win32-arm64": "0.64.16",
-    "@gjsify/gtk-runtime-win32-x64": "0.64.16",
-    "@gjsify/node-runtime-darwin-arm64": "0.64.16",
-    "@gjsify/node-runtime-darwin-x64": "0.64.16",
-    "@gjsify/node-runtime-win32-arm64": "0.64.16",
-    "@gjsify/node-runtime-win32-x64": "0.64.16"
+    "@gjsify/gtk-runtime-darwin-arm64": "0.64.17",
+    "@gjsify/gtk-runtime-darwin-x64": "0.64.17",
+    "@gjsify/gtk-runtime-win32-arm64": "0.64.17",
+    "@gjsify/gtk-runtime-win32-x64": "0.64.17",
+    "@gjsify/node-runtime-darwin-arm64": "0.64.17",
+    "@gjsify/node-runtime-darwin-x64": "0.64.17",
+    "@gjsify/node-runtime-win32-arm64": "0.64.17",
+    "@gjsify/node-runtime-win32-x64": "0.64.17"
   }
 }
