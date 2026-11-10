@@ -39,6 +39,12 @@
         ]
       },
       "kind": "app",
+      "nodeModules": ["node-llama-cpp"],
+      "nodeModulesExclude": [
+        "@node-llama-cpp/win-x64-cuda",
+        "@node-llama-cpp/win-x64-cuda-ext",
+        "@node-llama-cpp/win-x64-vulkan"
+      ],
       "name": "Stamped",
       "localeDir": "dist/locale",
       "bundle": {
@@ -92,7 +98,9 @@
         }
       ]
     },
-    "aliases": {},
+    "aliases": {
+      "ipull": "ipull/node"
+    },
     "excludeGlobals": [
       "document",
       "HTMLElement",
@@ -119,6 +127,7 @@
     "@gjsify/embeddings": "0.64.27",
     "@gjsify/machine-fit": "0.64.27",
     "@gjsify/model-store": "0.64.27",
+    "node-llama-cpp": "3.22.2",
     "@stamped/core": "*",
     "@stamped/import": "*",
     "@stamped/semantic": "*",
