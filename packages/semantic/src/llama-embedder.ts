@@ -23,6 +23,7 @@ import { parseGpuSetting } from '@gjsify/machine-fit';
 import { ModelStore } from '@gjsify/model-store';
 
 import { checkVector } from './embedder.ts';
+import { defaultGuardDir } from './gpu-guard.ts';
 import type { Embedder as StampedEmbedder, EmbedDocument as StampedEmbedDocument } from './embedder.ts';
 import { queryPrompt } from './prompts.ts';
 
@@ -93,6 +94,8 @@ export async function createLlamaEmbedder(options: LlamaEmbedderOptions = {}): P
         gpu: options.gpu === false ? 'off' : parseGpuSetting(process.env.STAMPED_SEMANTIC_GPU),
         threads: options.threads ?? DEFAULT_THREADS,
         gpuContexts: options.gpuContexts ?? DEFAULT_GPU_CONTEXTS,
+        // The settings dialog reads and clears the pin in Stamped's own directory.
+        gpuGuardDir: defaultGuardDir(),
     });
 
     const embedder = await Embedder.create({ engine });
