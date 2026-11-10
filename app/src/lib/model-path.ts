@@ -2,14 +2,15 @@
  * Where the embedding model is — and why the answer is a lookup and not a constant.
  *
  * THE MODEL SHIPS WITH THE APP. The AppImage and the macOS `.app` carry
- * `share/models/embeddinggemma-2-Q8_0.gguf` beside the rest of the app's data, so semantic search
- * works offline from the first start (issue #45, step 4). The file is ~296 MiB, so it is NOT in
- * git: `app/scripts/fetch-model.mts` downloads it at a PINNED revision and checks its sha256.
+ * `share/models/embeddinggemma-2-q8_0/embeddinggemma-2-Q8_0.gguf` beside the rest of the app's
+ * data, so semantic search works offline from the first start (issue #45, step 4). The file is
+ * ~296 MiB, so it is NOT in git: `app/scripts/fetch-model.mts` downloads it at a PINNED revision
+ * and checks its sha256.
  *
  * ONE EXPRESSION FOR BOTH ARTIFACTS. The launcher `gjsify ship` writes exports `XDG_DATA_DIRS`,
  * with the app's OWN data directory FIRST, and `share/` lands in that directory in every layout:
  * `$APPDIR/usr/share` in the AppImage, `Stamped.app/Contents/Resources/share` in the `.app`. So
- * the bundled model is at `<first XDG_DATA_DIRS entry>/models/embeddinggemma-2-Q8_0.gguf` — one
+ * the bundled model is at `<first XDG_DATA_DIRS entry>/models/embeddinggemma-2-q8_0/...` — one
  * path, one expression, no operating-system branch in the app.
  *
  * THE ORDER IS A DECISION. An explicit environment variable comes first (the operator's own model
@@ -23,17 +24,22 @@
  * catches the one thing that can still go wrong — a half-written download — and costs a stat.
  */
 
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-/** The GGUF file name inside the `models/` directory. */
+import { modelsRoot } from '@gjsify/model-store';
+
+/** The model id used by `@gjsify/embeddings` and by the on-disk cache directory. */
+export const EMBEDDING_MODEL_ID = 'embeddinggemma-2-q8_0';
+
+/** The GGUF file name inside the model directory. */
 export const EMBEDDING_MODEL_FILE = 'embeddinggemma-2-Q8_0.gguf';
 
 /** The pinned file's size in bytes — the cheap proof that it is not half a download. */
 export const EMBEDDING_MODEL_BYTES = 309855456;
 
-/** The environment variable that overrides every other place. */
+/** The environment variable that overrides every other place; it now names a DIRECTORY. */
 export const EMBEDDING_MODEL_ENV = 'STAMPED_EMBED_MODEL';
 
 /** The upstream repository the file comes from. */
@@ -58,7 +64,7 @@ export const EMBEDDING_MODEL_NOTICE_FILE = 'embeddinggemma-2-NOTICE.txt';
 export type EmbeddingModelSource = 'env' | 'bundled' | 'cache';
 
 export interface EmbeddingModelLocation {
-    /** The absolute path of the GGUF file. */
+    /** The absolute path of the DIRECTORY containing the model file(s). */
     readonly path: string;
     /** Which of the three places it came from. */
     readonly source: EmbeddingModelSource;
@@ -81,7 +87,10 @@ export interface ModelPathOptions {
     dataDirs?: readonly string[];
     /** The mounted AppImage root (`APPDIR`), for a run that has no launcher exports. */
     appDir?: string;
-    /** The development cache directory — `$XDG_CACHE_HOME/stamped/models`. */
+    /**
+     * The development cache directory. Defaults to `<modelsRoot()>/embeddings`, which is where
+     * `@gjsify/embeddings` stores downloaded models.
+     */
     cacheDir?: string;
     /** Existence probe. Defaults to `existsSync`. */
     exists?: (path: string) => boolean;
@@ -109,15 +118,23 @@ export function bundledDataDirs(env: Record<string, string | undefined>): string
         .filter((dir) => dir !== '');
 }
 
-/** The development cache: `$XDG_CACHE_HOME/stamped/models`, else `~/.cache/stamped/models`. */
+/**
+ * The default cache root used by `@gjsify/embeddings`.
+ *
+ * The old Stamped layout was `$XDG_CACHE_HOME/stamped/models`; `@gjsify/model-store` now places
+ * models under `$XDG_CACHE_HOME/gjsify/models/<capability>/<id>`. This function returns the
+ * embedding-specific directory for Stamped's pinned model.
+ */
 export function developmentCacheDir(
     env: Record<string, string | undefined>,
     home: string = homedir(),
 ): string {
-    const base = env.XDG_CACHE_HOME !== undefined && env.XDG_CACHE_HOME !== ''
-        ? env.XDG_CACHE_HOME
-        : join(home, '.cache');
-    return join(base, 'stamped', 'models');
+    const xdg = env.XDG_CACHE_HOME;
+    const root =
+        xdg !== undefined && xdg !== ''
+            ? join(xdg, 'gjsify', 'models')
+            : join(home, '.cache', 'gjsify', 'models');
+    return join(root, 'embeddings', EMBEDDING_MODEL_ID);
 }
 
 /**
@@ -131,13 +148,20 @@ function bundledModelDirs(options: ModelPathOptions): string[] {
     const dirs: string[] = [];
     for (const dir of [options.dataDir, ...(options.dataDirs ?? [])]) {
         if (dir === undefined || dir === '') continue;
-        const models = join(dir, 'models');
+        const models = join(dir, 'models', EMBEDDING_MODEL_ID);
         if (!dirs.includes(models)) dirs.push(models);
     }
     if (options.appDir !== undefined && options.appDir !== '') {
-        dirs.push(join(options.appDir, 'usr', 'share', 'models'));
+        dirs.push(join(options.appDir, 'usr', 'share', 'models', EMBEDDING_MODEL_ID));
     }
     return dirs;
+}
+
+function hasModelFile(dir: string, exists: (path: string) => boolean, size: (path: string) => number): boolean {
+    const path = join(dir, EMBEDDING_MODEL_FILE);
+    if (!exists(path)) return false;
+    if (size(path) !== EMBEDDING_MODEL_BYTES) return false;
+    return true;
 }
 
 /**
@@ -146,10 +170,10 @@ function bundledModelDirs(options: ModelPathOptions): string[] {
  * Returns `undefined` rather than throwing: a missing model is a normal state (the feature is
  * optional, and a package build may ship without it), and the caller falls back to text search.
  *
- * EVERY CANDIDATE IS SIZE-CHECKED, the environment variable included: the override names a FILE,
- * and the size is what proves that file is the pinned one rather than a half-written copy. A
- * different quantisation is therefore not accepted — the vector index records the model id, so
- * another model would need a reindex anyway.
+ * EVERY CANDIDATE IS SIZE-CHECKED, the environment variable included: the override names a
+ * DIRECTORY, and the size of the pinned file inside it is what proves that directory holds the
+ * real model rather than a half-written copy. A different quantisation is therefore not accepted
+ * — the vector index records the model id, so another model would need a reindex anyway.
  */
 export function resolveEmbeddingModel(options: ModelPathOptions = {}): EmbeddingModelLocation | undefined {
     const env = options.env ?? {};
@@ -161,15 +185,16 @@ export function resolveEmbeddingModel(options: ModelPathOptions = {}): Embedding
         candidates.push({ path: override, source: 'env' });
     }
     for (const dir of bundledModelDirs(options)) {
-        candidates.push({ path: join(dir, EMBEDDING_MODEL_FILE), source: 'bundled' });
+        candidates.push({ path: dir, source: 'bundled' });
     }
-    if (options.cacheDir !== undefined && options.cacheDir !== '') {
-        candidates.push({ path: join(options.cacheDir, EMBEDDING_MODEL_FILE), source: 'cache' });
+    const cacheDir = options.cacheDir ?? developmentCacheDir(env);
+    if (cacheDir !== '') {
+        candidates.push({ path: cacheDir, source: 'cache' });
     }
     for (const candidate of candidates) {
-        if (!exists(candidate.path)) continue;
-        if (size(candidate.path) !== EMBEDDING_MODEL_BYTES) continue;
-        return candidate;
+        if (hasModelFile(candidate.path, exists, size)) {
+            return candidate;
+        }
     }
     return undefined;
 }
@@ -197,6 +222,18 @@ export function resolveEmbeddingModelFromEnv(
         dataDir: bundledDataDir(env),
         dataDirs: bundledDataDirs(env),
         appDir: env.APPDIR,
-        cacheDir: developmentCacheDir(env),
     });
+}
+
+/**
+ * Directories that may contain a previously cached model in the old Stamped layout.
+ *
+ * Before the move to `@gjsify/model-store`, the model lived at
+ * `$XDG_CACHE_HOME/stamped/models/<file>`. Pass this to `@gjsify/embeddings`' `legacyDirs` so an
+ * existing download is migrated into the new layout instead of re-fetched.
+ */
+export function legacyModelDirs(env: Record<string, string | undefined> = process.env): string[] {
+    const xdg = env.XDG_CACHE_HOME;
+    const base = xdg !== undefined && xdg !== '' ? xdg : join(homedir(), '.cache');
+    return [join(base, 'stamped', 'models')];
 }

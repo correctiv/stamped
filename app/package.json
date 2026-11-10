@@ -39,12 +39,6 @@
         ]
       },
       "kind": "app",
-      "nodeModules": ["node-llama-cpp"],
-      "nodeModulesExclude": [
-        "@node-llama-cpp/win-x64-cuda",
-        "@node-llama-cpp/win-x64-cuda-ext",
-        "@node-llama-cpp/win-x64-vulkan"
-      ],
       "name": "Stamped",
       "localeDir": "dist/locale",
       "bundle": {
@@ -98,11 +92,7 @@
         }
       ]
     },
-    "aliases": {
-      "child_process": "@stamped/semantic/child-process",
-      "node:child_process": "@stamped/semantic/child-process",
-      "ipull": "ipull/node"
-    },
+    "aliases": {},
     "excludeGlobals": [
       "document",
       "HTMLElement",
@@ -126,6 +116,9 @@
     }
   },
   "dependencies": {
+    "@gjsify/embeddings": "0.64.27",
+    "@gjsify/machine-fit": "0.64.27",
+    "@gjsify/model-store": "0.64.27",
     "@stamped/core": "*",
     "@stamped/import": "*",
     "@stamped/semantic": "*",
@@ -134,15 +127,15 @@
     "yargs": "^18.1.0"
   },
   "devDependencies": {
-    "@gjsify/cli": "0.64.17",
-    "@gjsify/napi": "0.64.17",
-    "@gjsify/node-globals": "0.64.17",
-    "@gjsify/rolldown-native": "0.64.17",
-    "@gjsify/runtime": "0.64.17",
-    "@gjsify/sqlite": "0.64.17",
-    "@gjsify/adwaita-app": "0.64.17",
-    "@gjsify/unit": "0.64.17",
-    "@gjsify/web-worker": "0.64.17",
+    "@gjsify/cli": "0.64.27",
+    "@gjsify/napi": "0.64.26",
+    "@gjsify/node-globals": "0.64.27",
+    "@gjsify/rolldown-native": "0.64.27",
+    "@gjsify/runtime": "0.64.27",
+    "@gjsify/sqlite": "0.64.27",
+    "@gjsify/adwaita-app": "0.64.27",
+    "@gjsify/unit": "0.64.27",
+    "@gjsify/web-worker": "0.64.27",
     "comlink": "^4.4.2",
     "@girs/adw-1": "5.4.0",
     "@girs/gdk-4.0": "5.4.0",
@@ -158,16 +151,16 @@
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "typescript": "^6.0.3",
-    "@gjsify/node-gi": "0.64.17"
+    "@gjsify/node-gi": "0.64.26"
   },
   "optionalDependencies": {
-    "@gjsify/gtk-runtime-darwin-arm64": "0.64.17",
-    "@gjsify/gtk-runtime-darwin-x64": "0.64.17",
-    "@gjsify/gtk-runtime-win32-arm64": "0.64.17",
-    "@gjsify/gtk-runtime-win32-x64": "0.64.17",
-    "@gjsify/node-runtime-darwin-arm64": "0.64.17",
-    "@gjsify/node-runtime-darwin-x64": "0.64.17",
-    "@gjsify/node-runtime-win32-arm64": "0.64.17",
-    "@gjsify/node-runtime-win32-x64": "0.64.17"
+    "@gjsify/gtk-runtime-darwin-arm64": "0.64.26",
+    "@gjsify/gtk-runtime-darwin-x64": "0.64.26",
+    "@gjsify/gtk-runtime-win32-arm64": "0.64.26",
+    "@gjsify/gtk-runtime-win32-x64": "0.64.26",
+    "@gjsify/node-runtime-darwin-arm64": "0.64.26",
+    "@gjsify/node-runtime-darwin-x64": "0.64.26",
+    "@gjsify/node-runtime-win32-arm64": "0.64.26",
+    "@gjsify/node-runtime-win32-x64": "0.64.26"
   }
 }

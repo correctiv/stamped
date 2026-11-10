@@ -38,6 +38,7 @@ import { fileURLToPath } from 'node:url';
 import {
     EMBEDDING_MODEL_BYTES,
     EMBEDDING_MODEL_FILE,
+    EMBEDDING_MODEL_ID,
     EMBEDDING_MODEL_LICENSE_FILE,
     EMBEDDING_MODEL_NOTICE_FILE,
     EMBEDDING_MODEL_REPO,
@@ -46,7 +47,7 @@ import {
 } from '../src/lib/model-path.ts';
 
 const projectDir = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const modelDir = join(projectDir, 'models');
+const modelDir = join(projectDir, 'models', EMBEDDING_MODEL_ID);
 const shipConfigPath = join(projectDir, '.gjsifyrc.json');
 
 /** The download URL of the pinned file. The revision is a commit sha, never a branch. */
@@ -117,15 +118,17 @@ function shipConfig(mode: 'on' | 'off'): void {
     }
     for (const file of [EMBEDDING_MODEL_FILE, EMBEDDING_MODEL_LICENSE_FILE, EMBEDDING_MODEL_NOTICE_FILE]) {
         if (!existsSync(join(modelDir, file))) {
-            throw new Error(`missing models/${file} — run "fetch" before turning the ship config on`);
+            throw new Error(
+                `missing models/${EMBEDDING_MODEL_ID}/${file} — run "fetch" before turning the ship config on`,
+            );
         }
     }
     const config = {
         ship: {
             extraFiles: {
-                [`share/models/${EMBEDDING_MODEL_FILE}`]: `models/${EMBEDDING_MODEL_FILE}`,
-                [`share/models/${EMBEDDING_MODEL_LICENSE_FILE}`]: `models/${EMBEDDING_MODEL_LICENSE_FILE}`,
-                [`share/models/${EMBEDDING_MODEL_NOTICE_FILE}`]: `models/${EMBEDDING_MODEL_NOTICE_FILE}`,
+                [`share/models/${EMBEDDING_MODEL_ID}/${EMBEDDING_MODEL_FILE}`]: `models/${EMBEDDING_MODEL_ID}/${EMBEDDING_MODEL_FILE}`,
+                [`share/models/${EMBEDDING_MODEL_ID}/${EMBEDDING_MODEL_LICENSE_FILE}`]: `models/${EMBEDDING_MODEL_ID}/${EMBEDDING_MODEL_LICENSE_FILE}`,
+                [`share/models/${EMBEDDING_MODEL_ID}/${EMBEDDING_MODEL_NOTICE_FILE}`]: `models/${EMBEDDING_MODEL_ID}/${EMBEDDING_MODEL_NOTICE_FILE}`,
             },
         },
     };
@@ -145,7 +148,9 @@ async function main(): Promise<void> {
     if (command === 'ship-config') {
         const mode = (rest[0] ?? '').replace(/^--/, '');
         if (mode !== 'on' && mode !== 'off') {
-            throw new Error('usage: fetch-model.mts ship-config --on|--off');
+            throw new Error(
+                'usage: fetch-model.mts fetch [--dest <dir>] | fetch-model.mts ship-config --on|--off',
+            );
         }
         shipConfig(mode);
         return;

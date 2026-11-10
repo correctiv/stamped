@@ -5,7 +5,7 @@
  * SYNTHETIC DATA ONLY: a fake embedder and made-up messages. No model, no download.
  */
 
-import { existsSync, mkdtempSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -19,7 +19,7 @@ import {
     writeSemanticSetting,
 } from '@stamped/store';
 
-import { EMBEDDING_MODEL_BYTES } from '../../src/lib/model-path.ts';
+import { EMBEDDING_MODEL_BYTES, EMBEDDING_MODEL_FILE, EMBEDDING_MODEL_ID } from '../../src/lib/model-path.ts';
 import { ActivityRegistry, syncSemanticActivity } from '../../src/lib/activity.ts';
 import { createSemanticController } from '../../src/lib/semantic.ts';
 import {
@@ -321,19 +321,21 @@ export default async () => {
         await it('creates the registered embedder for the model the environment names', async () => {
             const dir = mkdtempSync(join(tmpdir(), 'stamped-gui-embedder-'));
             try {
-                const model = join(dir, 'model.gguf');
+                const modelDir = join(dir, EMBEDDING_MODEL_ID);
+                mkdirSync(modelDir, { recursive: true });
+                const modelFile = join(modelDir, EMBEDDING_MODEL_FILE);
                 // A sparse file of the pinned size: the size is all the lookup checks.
-                writeFileSync(model, '');
-                truncateSync(model, EMBEDDING_MODEL_BYTES);
+                writeFileSync(modelFile, '');
+                truncateSync(modelFile, EMBEDDING_MODEL_BYTES);
                 const seen: string[] = [];
                 registerLlamaEmbedder(async (options) => {
                     seen.push(options.modelPath);
                     return fakeEmbedder({ t: 0 });
                 });
-                const embedder = await createGuiEmbedder({ STAMPED_EMBED_MODEL: model }, true);
+                const embedder = await createGuiEmbedder({ STAMPED_EMBED_MODEL: modelDir }, true);
                 expect(embedder?.modelId).toBe('fake/model');
                 expect(seen.length).toBe(1);
-                expect(seen[0]).toBe(model);
+                expect(seen[0]).toBe(modelDir);
             } finally {
                 rmSync(dir, { recursive: true, force: true });
             }

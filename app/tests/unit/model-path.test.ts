@@ -22,18 +22,20 @@ import {
     EMBEDDING_MODEL_BYTES,
     EMBEDDING_MODEL_ENV,
     EMBEDDING_MODEL_FILE,
+    EMBEDDING_MODEL_ID,
     resolveEmbeddingModel,
 } from '../../src/lib/model-path.ts';
 
-/** A sparse file of the pinned size — the resolver's proof that a file is the real one. */
-function modelFile(dir: string, name: string = EMBEDDING_MODEL_FILE): string {
+/** A sparse file of the pinned size inside the model id directory. */
+function modelDirWithFile(parent: string): string {
+    const dir = join(parent, EMBEDDING_MODEL_ID);
     mkdirSync(dir, { recursive: true });
-    const path = join(dir, name);
+    const path = join(dir, EMBEDDING_MODEL_FILE);
     // The file has to EXIST before it can be truncated: `truncate` grows a file, it does not
     // create one, and the two runtimes disagree about what they do with a missing path.
     writeFileSync(path, '');
     truncateSync(path, EMBEDDING_MODEL_BYTES);
-    return path;
+    return dir;
 }
 
 /** A scratch directory that is removed again. */
@@ -47,7 +49,7 @@ export default async () => {
             const root = scratch();
             try {
                 const dataDir = join(root, 'share');
-                const expected = modelFile(join(dataDir, 'models'));
+                const expected = modelDirWithFile(join(dataDir, 'models'));
                 const found = resolveEmbeddingModel({ env: {}, dataDir });
                 expect(found?.path).toBe(expected);
                 expect(found?.source).toBe('bundled');
@@ -64,7 +66,7 @@ export default async () => {
                 const gtk = join(root, 'gtk', 'share');
                 const app = join(root, 'Resources', 'share');
                 mkdirSync(gtk, { recursive: true });
-                const expected = modelFile(join(app, 'models'));
+                const expected = modelDirWithFile(join(app, 'models'));
                 const found = resolveEmbeddingModel({
                     env: {},
                     dataDir: gtk,
@@ -81,7 +83,7 @@ export default async () => {
             const root = scratch();
             try {
                 const appDir = join(root, 'squashfs-root');
-                const expected = modelFile(join(appDir, 'usr', 'share', 'models'));
+                const expected = modelDirWithFile(join(appDir, 'usr', 'share', 'models'));
                 const found = resolveEmbeddingModel({ env: {}, appDir });
                 expect(found?.path).toBe(expected);
                 expect(found?.source).toBe('bundled');
@@ -93,13 +95,13 @@ export default async () => {
         await it('prefers the environment variable over the artifact and the cache', async () => {
             const root = scratch();
             try {
-                const override = modelFile(join(root, 'elsewhere'), 'mine.gguf');
-                modelFile(join(root, 'share', 'models'));
-                modelFile(join(root, 'cache'));
+                const override = modelDirWithFile(join(root, 'elsewhere'));
+                modelDirWithFile(join(root, 'share', 'models'));
+                const cache = modelDirWithFile(join(root, 'cache'));
                 const found = resolveEmbeddingModel({
                     env: { [EMBEDDING_MODEL_ENV]: override },
                     dataDir: join(root, 'share'),
-                    cacheDir: join(root, 'cache'),
+                    cacheDir: cache,
                 });
                 expect(found?.path).toBe(override);
                 expect(found?.source).toBe('env');
@@ -111,12 +113,12 @@ export default async () => {
         await it('prefers the artifact over the development cache', async () => {
             const root = scratch();
             try {
-                const bundled = modelFile(join(root, 'share', 'models'));
-                modelFile(join(root, 'cache'));
+                const bundled = modelDirWithFile(join(root, 'share', 'models'));
+                const cache = modelDirWithFile(join(root, 'cache'));
                 const found = resolveEmbeddingModel({
                     env: {},
                     dataDir: join(root, 'share'),
-                    cacheDir: join(root, 'cache'),
+                    cacheDir: cache,
                 });
                 expect(found?.path).toBe(bundled);
                 expect(found?.source).toBe('bundled');
@@ -128,11 +130,11 @@ export default async () => {
         await it('falls back to the development cache', async () => {
             const root = scratch();
             try {
-                const cached = modelFile(join(root, 'cache'));
+                const cached = modelDirWithFile(join(root, 'cache'));
                 const found = resolveEmbeddingModel({
                     env: {},
                     dataDir: join(root, 'share'),
-                    cacheDir: join(root, 'cache'),
+                    cacheDir: cached,
                 });
                 expect(found?.path).toBe(cached);
                 expect(found?.source).toBe('cache');
@@ -147,7 +149,7 @@ export default async () => {
                 const found = resolveEmbeddingModel({
                     env: {},
                     dataDir: join(root, 'share'),
-                    cacheDir: join(root, 'cache'),
+                    cacheDir: join(root, 'cache', EMBEDDING_MODEL_ID),
                 });
                 expect(found).toBeUndefined();
             } finally {
@@ -158,8 +160,9 @@ export default async () => {
         await it('refuses a file that is not the whole model', async () => {
             const root = scratch();
             try {
-                const half = join(root, 'share', 'models', EMBEDDING_MODEL_FILE);
-                mkdirSync(join(root, 'share', 'models'), { recursive: true });
+                const dir = join(root, 'share', 'models', EMBEDDING_MODEL_ID);
+                mkdirSync(dir, { recursive: true });
+                const half = join(dir, EMBEDDING_MODEL_FILE);
                 writeFileSync(half, 'half a download');
                 const found = resolveEmbeddingModel({ env: {}, dataDir: join(root, 'share') });
                 expect(found).toBeUndefined();
@@ -172,7 +175,7 @@ export default async () => {
             const root = scratch();
             try {
                 const found = resolveEmbeddingModel({
-                    env: { [EMBEDDING_MODEL_ENV]: join(root, 'not-there.gguf') },
+                    env: { [EMBEDDING_MODEL_ENV]: join(root, 'not-there') },
                     dataDir: join(root, 'share'),
                 });
                 expect(found).toBeUndefined();
@@ -203,13 +206,13 @@ export default async () => {
     await describe('developmentCacheDir', async () => {
         await it('follows XDG_CACHE_HOME', async () => {
             expect(developmentCacheDir({ XDG_CACHE_HOME: '/var/cache' }, '/home/someone')).toBe(
-                join('/var/cache', 'stamped', 'models'),
+                join('/var/cache', 'gjsify', 'models', 'embeddings', EMBEDDING_MODEL_ID),
             );
         });
 
         await it('falls back to the home directory', async () => {
             expect(developmentCacheDir({}, '/home/someone')).toBe(
-                join('/home/someone', '.cache', 'stamped', 'models'),
+                join('/home/someone', '.cache', 'gjsify', 'models', 'embeddings', EMBEDDING_MODEL_ID),
             );
         });
     });

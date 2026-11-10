@@ -128,9 +128,9 @@ node --experimental-strip-types app/scripts/fetch-model.mts fetch
 ```
 
 Stamped finds the model at runtime through `app/src/lib/model-path.ts`: an explicit
-`STAMPED_EMBED_MODEL` wins, then the file the artifact carries, then the development cache. A
-missing model is a normal state and not an error — the resolver says so and the caller decides
-what to do without it.
+`STAMPED_EMBED_MODEL` (a directory containing the GGUF) wins, then the directory the artifact
+carries, then the development cache. A missing model is a normal state and not an error — the
+resolver says so and the caller decides what to do without it.
 
 ## Test fixtures are synthetic, always
 

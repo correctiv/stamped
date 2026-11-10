@@ -6,6 +6,6 @@
 
 import { createLlamaEmbedder } from '@stamped/semantic/llama-embedder';
 
-import { registerLlamaEmbedder } from './semantic-embedder.ts';
+import { registerLlamaEmbedder, type CreateLlamaOptions } from './semantic-embedder.ts';
 
-registerLlamaEmbedder(createLlamaEmbedder);
+registerLlamaEmbedder((options: CreateLlamaOptions) => createLlamaEmbedder(options));

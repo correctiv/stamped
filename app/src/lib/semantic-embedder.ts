@@ -22,9 +22,23 @@
 import type { Embedder } from '@stamped/semantic';
 import { hasPrebuiltBins } from '@stamped/semantic/prebuilt-bins';
 
-import { resolveEmbeddingModelFromEnv } from './model-path.ts';
+import {
+    bundledDataDirs,
+    legacyModelDirs,
+    resolveEmbeddingModelFromEnv,
+    type EmbeddingModelLocation,
+} from './model-path.ts';
 
-type CreateLlama = (options: { modelPath: string }) => Promise<Embedder>;
+export interface CreateLlamaOptions {
+    /** The absolute path of the directory containing the model file(s). */
+    modelPath: string;
+    /** Directories the app ships models in, searched before the cache. */
+    appDataDirs?: readonly string[];
+    /** Directories an older release cached models into. */
+    legacyDirs?: readonly string[] | (() => readonly string[]);
+}
+
+type CreateLlama = (options: CreateLlamaOptions) => Promise<Embedder>;
 
 let createLlama: CreateLlama | undefined;
 
@@ -37,6 +51,12 @@ export function registerLlamaEmbedder(create: CreateLlama): void {
 export type EmbedderAvailability = 'ready' | 'runtime' | 'model';
 
 type Env = Record<string, string | undefined>;
+
+function modelDirsFromEnv(env: Env): readonly string[] {
+    return bundledDataDirs(env)
+        .map((dir) => `${dir}/models`)
+        .filter((dir, index, self) => self.indexOf(dir) === index);
+}
 
 /** A cheap look (a stat or two), safe to call while a dialog is being built. */
 export function embedderAvailability(
@@ -61,7 +81,11 @@ export async function createGuiEmbedder(
         const model = resolveEmbeddingModelFromEnv(env);
         if (model === undefined) return undefined;
         if (createLlama === undefined) return undefined;
-        return await createLlama({ modelPath: model.path });
+        return await createLlama({
+            modelPath: model.path,
+            appDataDirs: modelDirsFromEnv(env),
+            legacyDirs: legacyModelDirs(env),
+        });
     } catch (error) {
         // Never thrown on, but not silent either: "not available" with no word on stderr is how a
         // model that would not load looked like a missing feature.
