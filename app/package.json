@@ -124,9 +124,9 @@
     }
   },
   "dependencies": {
-    "@gjsify/embeddings": "0.64.27",
-    "@gjsify/machine-fit": "0.64.27",
-    "@gjsify/model-store": "0.64.27",
+    "@gjsify/embeddings": "0.64.28",
+    "@gjsify/machine-fit": "0.64.28",
+    "@gjsify/model-store": "0.64.28",
     "node-llama-cpp": "3.22.2",
     "@stamped/core": "*",
     "@stamped/import": "*",
@@ -136,15 +136,15 @@
     "yargs": "^18.1.0"
   },
   "devDependencies": {
-    "@gjsify/cli": "0.64.27",
-    "@gjsify/napi": "0.64.27",
-    "@gjsify/node-globals": "0.64.27",
-    "@gjsify/rolldown-native": "0.64.27",
-    "@gjsify/runtime": "0.64.27",
-    "@gjsify/sqlite": "0.64.27",
-    "@gjsify/adwaita-app": "0.64.27",
-    "@gjsify/unit": "0.64.27",
-    "@gjsify/web-worker": "0.64.27",
+    "@gjsify/cli": "0.64.28",
+    "@gjsify/napi": "0.64.28",
+    "@gjsify/node-globals": "0.64.28",
+    "@gjsify/rolldown-native": "0.64.28",
+    "@gjsify/runtime": "0.64.28",
+    "@gjsify/sqlite": "0.64.28",
+    "@gjsify/adwaita-app": "0.64.28",
+    "@gjsify/unit": "0.64.28",
+    "@gjsify/web-worker": "0.64.28",
     "comlink": "^4.4.2",
     "@girs/adw-1": "5.4.0",
     "@girs/gdk-4.0": "5.4.0",
@@ -160,16 +160,16 @@
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "typescript": "^6.0.3",
-    "@gjsify/node-gi": "0.64.27"
+    "@gjsify/node-gi": "0.64.28"
   },
   "optionalDependencies": {
-    "@gjsify/gtk-runtime-darwin-arm64": "0.64.27",
-    "@gjsify/gtk-runtime-darwin-x64": "0.64.27",
-    "@gjsify/gtk-runtime-win32-arm64": "0.64.27",
-    "@gjsify/gtk-runtime-win32-x64": "0.64.27",
-    "@gjsify/node-runtime-darwin-arm64": "0.64.27",
-    "@gjsify/node-runtime-darwin-x64": "0.64.27",
-    "@gjsify/node-runtime-win32-arm64": "0.64.27",
-    "@gjsify/node-runtime-win32-x64": "0.64.27"
+    "@gjsify/gtk-runtime-darwin-arm64": "0.64.28",
+    "@gjsify/gtk-runtime-darwin-x64": "0.64.28",
+    "@gjsify/gtk-runtime-win32-arm64": "0.64.28",
+    "@gjsify/gtk-runtime-win32-x64": "0.64.28",
+    "@gjsify/node-runtime-darwin-arm64": "0.64.28",
+    "@gjsify/node-runtime-darwin-x64": "0.64.28",
+    "@gjsify/node-runtime-win32-arm64": "0.64.28",
+    "@gjsify/node-runtime-win32-x64": "0.64.28"
   }
 }
