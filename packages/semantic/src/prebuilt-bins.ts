@@ -1,14 +1,25 @@
 /**
- * Where the prebuilt llama.cpp binaries for this machine are — and whether there are any.
+ * Prebuilt llama.cpp binary helpers — kept as a stable public subpath.
  *
- * SEPARATE FROM THE EMBEDDER because the two are asked at different moments. The window has to
- * know whether it can offer the feature at all while it is building a dialog row, and that answer
- * must not cost a model load. Nothing here imports node-llama-cpp: a bins package holds one
- * function that returns a path.
+ * The implementation moved to `@gjsify/embeddings/llama` (ADR 0132). This file keeps
+ * the public subpath stable for consumers that imported `@stamped/semantic/prebuilt-bins`.
+ *
+ * WHY NOT A STRAIGHT RE-EXPORT: `@gjsify/embeddings/llama` static-imports
+ * `node-llama-cpp`. Importing it from modules that the window bundle reaches would pull
+ * the native addon into that bundle and deadlock the bundler (see `semantic-embedder.ts`).
+ * The helpers here are pure table lookups and dynamic imports of the prebuilt packages,
+ * so they stay safe.
  */
 
-import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+
+import {
+    hasVulkan,
+    parseGpuSetting,
+    systemProbe,
+    type GpuSetting,
+    type MachineProbe,
+} from '@gjsify/machine-fit';
 
 import { runningOnGjs } from './runtime.ts';
 
@@ -29,8 +40,8 @@ interface BinsPackage {
  * `declare module` would only cover whichever program's `include` happens to list it, and a
  * consumer workspace that type-checks these files by following the import graph (as `app` does
  * through `@stamped/semantic`) would not see it. A `@ts-ignore` on the import itself travels
- * with the file into every program that compiles it — the same thing node-llama-cpp does when it
- * imports these packages.
+ * with the file into every program that compiles it — the same thing node-llama-cpp does when
+ * it imports these packages.
  */
 async function loadLinuxX64(): Promise<BinsPackage> {
     // @ts-ignore TS7016: no type declarations for this prebuilt package
@@ -66,84 +77,54 @@ const PREBUILT_BINS: Record<string, (() => Promise<BinsPackage>) | undefined> = 
     'linux-arm64': loadLinuxArm64,
 };
 
-/** What {@link backendCandidates} needs to know about the machine; injected so it is testable. */
-export interface MachineProbe {
-    env: Readonly<Record<string, string | undefined>>;
-    exists(path: string): boolean;
-    /** File names in a directory, empty when it is missing. */
-    list(dir: string): string[];
+/** This machine, as node-llama-cpp names its binary directories. */
+export function currentTarget(processImpl: { platform: string; arch: string } = process): string {
+    return `${processImpl.platform}-${processImpl.arch}`;
 }
-
-export function systemProbe(): MachineProbe {
-    return {
-        env: process.env,
-        exists: (path) => existsSync(path),
-        list: (dir) => {
-            try {
-                return readdirSync(dir);
-            } catch {
-                return [];
-            }
-        },
-    };
-}
-
-const GPU_OFF_VALUES = new Set(['off', '0', 'false', 'no', 'cpu']);
-const GPU_ON_VALUES = new Set(['on', '1', 'true', 'yes', 'gpu']);
 
 /**
- * `STAMPED_SEMANTIC_GPU=off` is the escape hatch: a driver that misbehaves must not be a dead end.
- * `on` is its counterpart: it lifts the CPU pin a GPU hang leaves behind (`gpu-guard.ts`).
+ * Is there a prebuilt binary for this machine? A table lookup, so it is free to ask.
+ *
+ * `true` does not promise that the model will load — only that the program carries something to
+ * load it with. The one thing it rules out is the machine nobody built a binary for.
+ *
+ * TWO ANSWERS, BECAUSE THE RUNTIMES REACH THE BINARY DIFFERENTLY. Under GJS the embedder is handed
+ * a directory, so only the targets in {@link PREBUILT_BINS} can work. Under Node `getLlama()`
+ * looks for the binary itself, and answering from the GJS table there switched semantic search
+ * off on every Mac and every Windows PC: the app said "not available here" with the model beside it.
  */
+export function hasPrebuiltBins(target: string = currentTarget(), onGjs: boolean = runningOnGjs()): boolean {
+    return onGjs ? PREBUILT_BINS[target] !== undefined : NODE_PREBUILT_TARGETS.has(target);
+}
+
+/**
+ * The machines node-llama-cpp ships a prebuilt binary for, which `getLlama()` finds on its own.
+ * macOS (Metal on Apple silicon, CPU on Intel) and Windows are here and nowhere in
+ * {@link PREBUILT_BINS}: that table exists for the GJS route, which has to be handed a path.
+ */
+const NODE_PREBUILT_TARGETS: ReadonlySet<string> = new Set([
+    'darwin-arm64',
+    'darwin-x64',
+    'win32-arm64',
+    'win32-x64',
+    'linux-arm64',
+    'linux-x64',
+]);
+
+/** `STAMPED_SEMANTIC_GPU=off` is the escape hatch; `on` lifts the CPU pin a GPU hang leaves behind. */
 export const GPU_ENV = 'STAMPED_SEMANTIC_GPU';
 
-export type GpuSetting = 'off' | 'on' | 'auto';
-
-export function gpuSetting(env: Readonly<Record<string, string | undefined>> = process.env): GpuSetting {
-    const value = (env[GPU_ENV] ?? '').trim().toLowerCase();
-    if (GPU_OFF_VALUES.has(value)) return 'off';
-    return GPU_ON_VALUES.has(value) ? 'on' : 'auto';
-}
-
-const LIBRARY_DIRS = [
-    '/usr/lib',
-    '/usr/lib64',
-    '/lib',
-    '/lib64',
-    '/usr/lib/x86_64-linux-gnu',
-    '/lib/x86_64-linux-gnu',
-];
-
-function pathList(value: string | undefined): string[] {
-    return (value ?? '').split(':').filter((entry) => entry !== '');
-}
-
 /**
- * Is there a Vulkan loader AND a driver for it? The loader alone is on every desktop (it is a
- * dependency of Mesa and of the browsers); the ICD manifest is what says a driver is installed.
- * Both are only a hint — `llama.gpu` after loading is the truth, and the embedder reopens on the
- * CPU when it disagrees.
+ * Read the legacy Stamped GPU setting.
+ *
+ * Prefer {@link parseGpuSetting} for new code; this wrapper keeps callers that passed
+ * `process.env` working.
  */
-export function hasVulkan(probe: MachineProbe = systemProbe()): boolean {
-    const { env } = probe;
-    const libraryDirs = [...pathList(env.LD_LIBRARY_PATH), ...LIBRARY_DIRS];
-    if (!libraryDirs.some((dir) => probe.exists(`${dir}/libvulkan.so.1`))) return false;
-    // The loader's own overrides name the driver directly.
-    if (pathList(env.VK_DRIVER_FILES).length > 0 || pathList(env.VK_ICD_FILENAMES).length > 0) return true;
-    const dataDirs = [
-        env.XDG_DATA_HOME ?? (env.HOME ? `${env.HOME}/.local/share` : ''),
-        ...pathList(env.XDG_DATA_DIRS),
-        '/usr/local/share',
-        '/usr/share',
-    ].filter((dir) => dir !== '');
-    const icdDirs = [
-        '/etc/vulkan/icd.d',
-        ...dataDirs.map((dir) => `${dir}/vulkan/icd.d`),
-        // The freedesktop Flatpak runtime keeps its GL extension's drivers here.
-        '/usr/lib/x86_64-linux-gnu/GL/vulkan/icd.d',
-    ];
-    return icdDirs.some((dir) => probe.list(dir).some((name) => name.endsWith('.json')));
+export function gpuSetting(env: Readonly<Record<string, string | undefined>> = process.env): GpuSetting {
+    return parseGpuSetting(env[GPU_ENV]);
 }
+
+export { hasVulkan, systemProbe, type GpuSetting, type MachineProbe };
 
 /**
  * The builds to try on this machine, best first; the last entry is always the CPU build, which is
@@ -161,40 +142,6 @@ export function backendCandidates(
     if (PREBUILT_BINS[gpu] === undefined) return [target];
     if (gpuSetting(probe.env) === 'off') return [target];
     return hasVulkan(probe) ? [gpu, target] : [target];
-}
-
-/** This machine, as node-llama-cpp names its binary directories. */
-export function currentTarget(): string {
-    return `${process.platform}-${process.arch}`;
-}
-
-/**
- * The machines node-llama-cpp ships a prebuilt binary for, which `getLlama()` finds on its own.
- * macOS (Metal on Apple silicon, CPU on Intel) and Windows are here and nowhere in
- * {@link PREBUILT_BINS}: that table exists for the GJS route, which has to be handed a path.
- */
-const NODE_PREBUILT_TARGETS: ReadonlySet<string> = new Set([
-    'darwin-arm64',
-    'darwin-x64',
-    'win32-arm64',
-    'win32-x64',
-    'linux-arm64',
-    'linux-x64',
-]);
-
-/**
- * Is there a prebuilt binary for this machine? A table lookup, so it is free to ask.
- *
- * `true` does not promise that the model will load — only that the program carries something to
- * load it with. The one thing it rules out is the machine nobody built a binary for.
- *
- * TWO ANSWERS, BECAUSE THE RUNTIMES REACH THE BINARY DIFFERENTLY. Under GJS the embedder is handed
- * a directory, so only the targets in {@link PREBUILT_BINS} can work. Under Node `getLlama()`
- * looks for the binary itself, and answering from the GJS table there switched semantic search
- * off on every Mac and every Windows PC: the app said "not available here" with the model beside it.
- */
-export function hasPrebuiltBins(target: string = currentTarget(), onGjs: boolean = runningOnGjs()): boolean {
-    return onGjs ? PREBUILT_BINS[target] !== undefined : NODE_PREBUILT_TARGETS.has(target);
 }
 
 /** The directory holding the addon and its backends, or an error naming the machine. */

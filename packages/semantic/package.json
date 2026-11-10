@@ -7,7 +7,6 @@
   "description": "Semantic search primitives: embedder seam, text preparation, vector storage, and reciprocal rank fusion. No model runtime in this package — only interfaces and pure logic.",
   "exports": {
     ".": "./src/index.ts",
-    "./child-process": "./src/child-process.ts",
     "./context-pool": "./src/context-pool.ts",
     "./gpu-guard": "./src/gpu-guard.ts",
     "./llama-embedder": "./src/llama-embedder.ts",
@@ -22,8 +21,10 @@
     "src"
   ],
   "dependencies": {
-    "@gjsify/child_process": "0.64.17",
-    "@gjsify/napi": "0.64.17",
+    "@gjsify/embeddings": "0.64.27",
+    "@gjsify/machine-fit": "0.64.27",
+    "@gjsify/model-store": "0.64.27",
+    "@gjsify/napi": "0.64.26",
     "node-llama-cpp": "3.22.2"
   }
 }

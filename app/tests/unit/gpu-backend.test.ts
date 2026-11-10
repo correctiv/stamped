@@ -23,8 +23,14 @@ function machine(
 ): MachineProbe {
     return {
         env,
+        platform: 'linux',
+        arch: 'x64',
         exists: (path) => paths.includes(path),
         list: (dir) => dirs[dir] ?? [],
+        read: () => undefined,
+        run: () => undefined,
+        totalmem: () => 16_000_000_000,
+        freemem: () => 8_000_000_000,
     };
 }
 
