@@ -212,6 +212,15 @@ export {
     writeReceiverAnchors,
 } from './receiver-anchors.ts';
 export {
+    buildThread,
+    messageIds,
+    THREAD_LIMIT,
+    threadOf,
+    type Thread,
+    type ThreadEntry,
+    type ThreadMessage,
+} from './thread.ts';
+export {
     analyseUnsignedHeaders,
     backfillUnsignedHeaders,
     backfillUnsignedHeadersAll,

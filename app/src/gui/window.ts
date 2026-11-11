@@ -30,7 +30,7 @@ import {
     type MessageFinding,
     type Verdict,
 } from '@stamped/core';
-import type { CaseReport, IndexedMessage, ReverifyResult, SearchHit } from '@stamped/store';
+import type { CaseReport, IndexedMessage, ReverifyResult, SearchHit, Thread } from '@stamped/store';
 import { liveActivity, readActivityStatuses } from '@stamped/store';
 import type { ReadableBody } from '@stamped/import';
 import { onBattery, type Embedder } from '@stamped/semantic';
@@ -88,6 +88,7 @@ import {
     markImportCancelled,
     filteredCount,
     messageOf,
+    threadOfMessage,
     openSemanticSource,
     openSession,
     backfillStep,
@@ -161,6 +162,7 @@ import {
     type HeaderField,
     type MailHead,
 } from './view/message.ts';
+import { threadGroup, type ThreadGroup } from './view/thread.ts';
 import {
     filterBannerText,
     overviewHeadline,
@@ -1641,12 +1643,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
             }
 
             const raw = storedRaw(session, hash);
-            const finding = await verifyStored(session, hash);
+            // The conversation is a reading aid: a failure to find it must not cost the evidence.
+            const [finding, thread] = await Promise.all([
+                verifyStored(session, hash),
+                threadOfMessage(session, hash).catch(() => undefined),
+            ]);
             if (this.session !== session || this.reading !== hash) return;
             if (finding === undefined || raw === undefined) {
                 throw new Error(_('The stored copy of this message is missing from the case’s blob store.'));
             }
-            this.renderMessage(message, finding, raw, bodyOf(raw));
+            this.renderMessage(message, finding, raw, bodyOf(raw), thread);
         } catch (error) {
             // Back off the spinner, but only for the message still selected: a failure of one the
             // person has already clicked away from must not replace the page of the next one.
@@ -1663,6 +1669,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         finding: MessageFinding,
         raw: Uint8Array,
         body: ReadableBody | undefined,
+        thread?: Thread,
     ): void {
         clearBox(this._readerBody);
         this.shotEvidence = undefined;
@@ -1671,6 +1678,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.mailSheet(mailHead(message, { locale: this.readerLocale() }), body, message.hash),
         );
         this._readerBody.append(this.verdictCardWidget(card, citationOf(finding, raw)));
+        const conversation = threadGroup(thread);
+        if (conversation !== undefined) this._readerBody.append(this.conversationGroup(conversation));
         this._readerBody.append(this.headerGroup(headerFields(message)));
         for (const card of signatureCards(finding)) {
             this._readerBody.append(this.signatureGroup(card));
@@ -1966,6 +1975,39 @@ export class StampedWindow extends Adw.ApplicationWindow {
             group.add(row);
         }
         return group;
+    }
+
+    /**
+     * The conversation the open message is part of, one row per message.
+     *
+     * Below the verdict card and above the headers: it answers "what was this a reply to" without
+     * competing with the claim. A row opens that message; the open one and the entries that are
+     * only referenced do nothing, and say so by not looking clickable.
+     */
+    private conversationGroup(group: ThreadGroup): Adw.PreferencesGroup {
+        const widget = new Adw.PreferencesGroup({ title: group.title, description: group.description });
+        for (const entry of group.rows) {
+            const row = new Adw.ActionRow({ title: entry.title, subtitle: entry.subtitle });
+            row.set_title_lines(1);
+            row.set_subtitle_lines(1);
+            if (entry.indent > 0) row.add_prefix(new Gtk.Box({ widthRequest: entry.indent * 18 }));
+            if (entry.missing) {
+                row.add_css_class('dimmed');
+                row.add_prefix(new Gtk.Image({ iconName: 'dialog-question-symbolic' }));
+            } else {
+                row.add_suffix(badge(entry.badge, entry.cssClass));
+                if (entry.focus) {
+                    row.add_prefix(new Gtk.Image({ iconName: 'mail-read-symbolic' }));
+                } else if (entry.hash !== undefined) {
+                    const hash = entry.hash;
+                    row.set_activatable(true);
+                    row.add_suffix(new Gtk.Image({ iconName: 'go-next-symbolic' }));
+                    row.connect('activated', () => this.track(this.showMessage(hash)));
+                }
+            }
+            widget.add(row);
+        }
+        return widget;
     }
 
     /**

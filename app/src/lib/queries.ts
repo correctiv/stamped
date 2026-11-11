@@ -35,6 +35,7 @@ import {
     searchHits,
     signatureHashes,
     sourceHashes,
+    threadOf,
     timeline,
     verdictHashes,
     type BrowseOptions,
@@ -46,6 +47,7 @@ import {
     type Person,
     type SearchHit,
     type SearchOptions,
+    type Thread,
     type Timeline,
 } from '@stamped/store';
 
@@ -407,6 +409,7 @@ export interface QueryRequests {
     readonly report: Record<string, never>;
     readonly message: { readonly hash: string };
     readonly verify: { readonly hash: string };
+    readonly thread: { readonly hash: string };
     readonly dropScopes: Record<string, never>;
 }
 
@@ -424,6 +427,7 @@ export interface QueryResults {
     readonly report: CaseReport;
     readonly message: IndexedMessage | null;
     readonly verify: MessageFinding | null;
+    readonly thread: Thread | null;
     readonly dropScopes: null;
 }
 
@@ -468,6 +472,7 @@ const handlers: {
     sources: (ctx) => sourcesOf(ctx),
     report: (ctx) => reportOf(ctx),
     message: (ctx, params) => messageOf(ctx, params.hash),
+    thread: (ctx, params) => threadOf(ctx.db, params.hash) ?? null,
     dropScopes: (ctx) => {
         dropScopes(ctx);
         return null;

@@ -227,6 +227,8 @@ function createSchema(db: DatabaseSync): void {
 const INDEXES: readonly { readonly name: string; readonly sql: string }[] = [
     { name: 'signatures_hash', sql: 'CREATE INDEX signatures_hash ON signatures (hash)' },
     { name: 'signatures_key', sql: 'CREATE INDEX signatures_key ON signatures (domain, selector)' },
+    // The conversation view finds a message by the id a reply names (see `thread.ts`).
+    { name: 'messages_message_id', sql: 'CREATE INDEX messages_message_id ON messages (message_id)' },
     { name: 'messages_sent_at', sql: 'CREATE INDEX messages_sent_at ON messages (sent_at)' },
     { name: 'messages_from_domain', sql: 'CREATE INDEX messages_from_domain ON messages (from_domain)' },
     {
