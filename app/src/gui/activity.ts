@@ -119,21 +119,21 @@ export class ActivityController {
     private timer = 0;
     private lastRender = 0;
     private readonly unsubscribe: () => void;
-    private readonly onCancelImport: () => void;
+    private readonly onCancel: (kind: ActivityKind) => void;
     private readonly onHold: (control: 'pause' | 'resume') => void;
 
     /**
-     * @param onCancelImport Called by the import row's Cancel; the window decides what dies,
-     *   and shows the button only for a subprocess it started itself.
+     * @param onCancel Called by a row's Cancel with its kind (import or report); the window
+     *   decides what dies, and the button shows only for a subprocess it started itself.
      * @param onHold Called by the semantic row's Pause and Resume.
      */
     constructor(
         button: Gtk.MenuButton,
-        onCancelImport: () => void,
+        onCancel: (kind: ActivityKind) => void,
         onHold: (control: 'pause' | 'resume') => void,
     ) {
         this.button = button;
-        this.onCancelImport = onCancelImport;
+        this.onCancel = onCancel;
         this.onHold = onHold;
 
         this.stack.add_named(new Gtk.Image({ iconName: 'document-open-recent-symbolic' }), 'idle');
@@ -217,7 +217,7 @@ export class ActivityController {
             if (row === undefined) {
                 row = new TaskRow(
                     task.kind,
-                    () => this.onCancelImport(),
+                    () => this.onCancel(task.kind),
                     (kind) => this.registry.dismiss(kind),
                     (control) => this.onHold(control),
                 );

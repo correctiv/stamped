@@ -19,9 +19,11 @@ import type {
     ImportActivity,
     KeysActivity,
     PeopleActivity,
+    ReportActivity,
     ReverifyActivity,
     SemanticActivity,
 } from '../../lib/activity.ts';
+import { reportPhaseLabel } from '../../lib/report-progress.ts';
 import { remainingTime } from '../../lib/semantic-status.ts';
 import { percent } from '../../lib/status.ts';
 import { formatBytes, groupDigits } from './format.ts';
@@ -67,6 +69,8 @@ function taskTitle(kind: ActivityKind): string {
             return _('People and timeline');
         case 'semantic':
             return _('Semantic search');
+        case 'report':
+            return _('PDF report');
     }
 }
 
@@ -114,6 +118,12 @@ function runningLine(task: ActivityTask): string {
             return _('Building the people list…');
         case 'semantic':
             return semanticRunningLine(task.data);
+        case 'report': {
+            const pct = task.fraction === undefined ? undefined : Math.floor(task.fraction * 100);
+            return pct === undefined
+                ? _('Writing the PDF report…')
+                : fmt(_('Writing the PDF report, {percent}%'), { percent: String(pct) });
+        }
     }
 }
 
@@ -272,6 +282,33 @@ function peopleRow(task: ActivityTask, data: PeopleActivity): Omit<RowView, 'kin
     };
 }
 
+function reportRow(task: ActivityTask, data: ReportActivity): Omit<RowView, 'kind' | 'state' | 'title'> {
+    const running = task.state === 'running';
+    const line = data.line;
+    const counts =
+        line.total > 0
+            ? fmt(_('{done} of {total}'), { done: groupDigits(line.done), total: groupDigits(line.total) })
+            : '';
+    return {
+        subtitle: running
+            ? reportPhaseLabel(line.phase)
+            : task.state === 'failed'
+              ? (task.reason ?? _('The report failed'))
+              : task.state === 'cancelled'
+                ? _('Cancelled. No file was written.')
+                : _('Finished'),
+        fraction: running ? task.fraction : undefined,
+        stats: running
+            ? fmt(_('Step {step} of {steps}'), { step: String(line.step), steps: String(line.steps) }) +
+              (counts === '' ? '' : ` · ${counts}`)
+            : '',
+        details: [],
+        // The process is always this window's own: a report has no status file for another to start.
+        cancellable: running,
+        control: undefined,
+    };
+}
+
 function semanticRow(task: ActivityTask, data: SemanticActivity): Omit<RowView, 'kind' | 'state' | 'title'> {
     const state = data.state;
     const row = (subtitle: string, stats = '', control: RowView['control'] = undefined) => ({
@@ -343,5 +380,7 @@ export function rowView(task: ActivityTask): RowView {
             return { ...head, ...peopleRow(task, task.data) };
         case 'semantic':
             return { ...head, ...semanticRow(task, task.data) };
+        case 'report':
+            return { ...head, ...reportRow(task, task.data) };
     }
 }

@@ -173,8 +173,12 @@ export interface UnsignedBreakdown {
  * the `unsigned_headers` cache (see `unsigned-headers.ts`); this runs that fill to the end and
  * then answers with one aggregate query.
  */
-export function unsignedBreakdown(db: DatabaseSync, paths: CasePaths): UnsignedBreakdown {
-    backfillUnsignedHeadersAll(db, paths);
+export function unsignedBreakdown(
+    db: DatabaseSync,
+    paths: CasePaths,
+    onProgress?: (processed: number) => void,
+): UnsignedBreakdown {
+    backfillUnsignedHeadersAll(db, paths, onProgress);
     return unsignedTotals(db);
 }
 
@@ -182,8 +186,12 @@ export function unsignedBreakdown(db: DatabaseSync, paths: CasePaths): UnsignedB
  * Which body-altered messages an export artefact explains, and what the header says about the
  * rest. Runs the `body_explanations` fill to the end, then answers with one aggregate query.
  */
-export function bodyAlteredBreakdown(db: DatabaseSync, paths: CasePaths): BodyExplanationTotals {
-    backfillBodyExplanationsAll(db, paths);
+export function bodyAlteredBreakdown(
+    db: DatabaseSync,
+    paths: CasePaths,
+    onProgress?: (processed: number) => void,
+): BodyExplanationTotals {
+    backfillBodyExplanationsAll(db, paths, onProgress);
     return bodyExplanationTotals(db);
 }
 
@@ -199,8 +207,9 @@ export interface RawSetDigest {
  *
  * Every hash is already the SHA-256 of a message's bytes, so this one digest commits to the whole
  * set: change, add or drop a message and it changes. Read page by page by key, never all at once.
+ * `onProgress` hears the running count after each page.
  */
-export function rawSetDigest(db: DatabaseSync): RawSetDigest {
+export function rawSetDigest(db: DatabaseSync, onProgress?: (processed: number) => void): RawSetDigest {
     const hash = createHash('sha256');
     const select = db.prepare('SELECT hash FROM messages WHERE hash > ? ORDER BY hash LIMIT 20000');
     let after = '';
@@ -213,6 +222,7 @@ export function rawSetDigest(db: DatabaseSync): RawSetDigest {
             hash.update(`${after}\n`);
             messages++;
         }
+        onProgress?.(messages);
     }
     return { messages, sha256: hash.digest('hex') };
 }

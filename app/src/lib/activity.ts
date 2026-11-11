@@ -24,10 +24,11 @@ import {
     type ImportStatus,
 } from '@stamped/store';
 
+import { reportFraction, type ReportProgressLine } from './report-progress.ts';
 import type { SemanticState } from './semantic-state.ts';
 import { percent } from './status.ts';
 
-export type ActivityKind = 'import' | 'keys' | 'reverify' | 'people' | 'semantic';
+export type ActivityKind = 'import' | 'keys' | 'reverify' | 'people' | 'semantic' | 'report';
 
 /** `running` until the job ends; the three others stay listed until dismissed. */
 export type ActivityState = 'running' | 'done' | 'failed' | 'cancelled';
@@ -76,12 +77,22 @@ export interface SemanticActivity {
     readonly own: boolean;
 }
 
+/**
+ * The PDF report, as the `stamped report --progress=jsonl` subprocess this window started says.
+ * Always the window's own process, so it has no status file and `ACTIVITY_KINDS` does not list it.
+ */
+export interface ReportActivity {
+    readonly kind: 'report';
+    readonly line: ReportProgressLine;
+}
+
 export type ActivityData =
     | ImportActivity
     | KeysActivity
     | ReverifyActivity
     | PeopleActivity
-    | SemanticActivity;
+    | SemanticActivity
+    | ReportActivity;
 
 export interface ActivityTask {
     readonly kind: ActivityKind;
@@ -117,6 +128,8 @@ export function progressOf(data: ActivityData): number | undefined {
             return data.total > 0 ? Math.min(1, data.checked / data.total) : undefined;
         case 'people':
             return undefined;
+        case 'report':
+            return reportFraction(data.line);
         case 'semantic': {
             const state = data.state;
             if (state.kind !== 'indexing' && state.kind !== 'paused') return undefined;
