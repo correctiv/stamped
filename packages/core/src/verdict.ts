@@ -105,6 +105,13 @@ export const CAVEATS = [
      */
     'signer-not-author',
     /**
+     * The signature verifies and its `d=` lies inside the perimeter the operator named for the
+     * case. The key was operated by the examined party, so the signature shows the message is
+     * unchanged, not that the party would not have signed something else: a compromise of that
+     * infrastructure could have signed arbitrary mail. Never set without that explicit setting.
+     */
+    'self-signed-perimeter',
+    /**
      * Only on `headers-altered`: the key was first seen after the message's Date, so the selector
      * may have been rotated and the failure may be a wrong key rather than an edit.
      */
@@ -354,7 +361,9 @@ export function verdictLabel(verdict: Verdict): string {
 export function describeVerdict(verdict: Verdict): string {
     switch (verdict) {
         case 'confirmed':
-            return _('Confirmed: a valid signature covers this message as it stands.');
+            return _(
+                'Unchanged since signing: a valid signature of the signing domain covers this message as it stands.',
+            );
         case 'confirmed-with-caveats':
             return _('Confirmed with caveats: the signature is valid but covers less than it appears to.');
         case 'body-altered':
@@ -418,6 +427,10 @@ export function describeCaveat(caveat: Caveat, evidence?: SignatureEvidence): st
         case 'body-hash-unauthenticated':
             return _(
                 'No public key is available, so the body hash claimed in the signature could not be confirmed as the signer’s. Whoever changed the body could have rewritten the hash too.',
+            );
+        case 'self-signed-perimeter':
+            return _(
+                'The signing key was operated by the examined domain itself; a compromise of that infrastructure would have allowed signing arbitrary mail.',
             );
         case 'signer-not-author':
             return evidence

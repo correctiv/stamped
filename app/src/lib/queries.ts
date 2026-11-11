@@ -30,6 +30,7 @@ import {
     periodScope,
     personScope,
     readMessage,
+    readPerimeter,
     readRaw,
     searchHits,
     signatureHashes,
@@ -450,7 +451,7 @@ export async function verifyOf(ctx: QueryContext, hash: string): Promise<Message
     const raw = readRaw(ctx.paths, hash);
     if (!raw) return null;
     const keys = loadVault(ctx.paths.root).toKeyStore();
-    return classifyMessage(await verifyMessage(raw, { keys }));
+    return classifyMessage(await verifyMessage(raw, { keys }), { perimeter: readPerimeter(ctx.paths) });
 }
 
 const handlers: {

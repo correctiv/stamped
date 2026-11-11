@@ -1781,7 +1781,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 const dialog = new Adw.AlertDialog({
                     heading: _('Open in a mail program?'),
                     body: _(
-                        'A mail program may load remote content. Only the verdict proves a message genuine.',
+                        'A mail program may load remote content. Only the verdict shows whether a message is unchanged since it was signed.',
                     ),
                 });
                 // The paragraph the reader sheet's ⓘ used to carry, kept with the warning that

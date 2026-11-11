@@ -160,6 +160,14 @@ export {
     type PairEras,
 } from './key-eras.ts';
 export {
+    normalisePerimeterDomain,
+    PERIMETER_NAME,
+    perimeterFile,
+    readPerimeter,
+    writePerimeter,
+} from './perimeter.ts';
+export {
+    applyPerimeter,
     missingKeyPairs,
     reverifyPairs,
     type ReverifyResult,

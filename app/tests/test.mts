@@ -21,6 +21,7 @@ import importSuite from './unit/import.test.ts';
 import store from './unit/store.test.ts';
 import throughput from './unit/throughput.test.ts';
 import people from './unit/people.test.ts';
+import perimeter from './unit/perimeter.test.ts';
 import status from './unit/status.test.ts';
 import activityStatus from './unit/activity-status.test.ts';
 import reportProgress from './unit/report-progress.test.ts';
@@ -70,6 +71,7 @@ run({
     store,
     throughput,
     people,
+    perimeter,
     status,
     activityStatus,
     reportProgress,

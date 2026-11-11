@@ -77,8 +77,10 @@ export {
 export {
     caveatsFor,
     classifyMessage,
+    type ClassifyOptions,
     classifySignature,
     hashAlgorithmOf,
+    inPerimeter,
     isConfirmed,
     keyCannotHaveSigned,
     WEAK_RSA_BITS,

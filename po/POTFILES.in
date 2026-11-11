@@ -1,6 +1,7 @@
 app/src/commands/import.ts
 app/src/commands/keys.ts
 app/src/commands/people.ts
+app/src/commands/perimeter.ts
 app/src/commands/report.ts
 app/src/commands/reverify.ts
 app/src/commands/search.ts
@@ -133,6 +134,7 @@ packages/store/src/index-db.ts
 packages/store/src/index.ts
 packages/store/src/key-eras.ts
 packages/store/src/people.ts
+packages/store/src/perimeter.ts
 packages/store/src/raw.ts
 packages/store/src/report.ts
 packages/store/src/reverify.ts

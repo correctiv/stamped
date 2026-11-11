@@ -48,7 +48,10 @@ export const WEAK_RSA_BITS = 1024;
  *  3. The signature last. The body hash matched, so the body is intact and what changed is one
  *     of the header fields in `h=`.
  */
-export function classifySignature(evidence: SignatureEvidence): SignatureFinding {
+export function classifySignature(
+    evidence: SignatureEvidence,
+    options: ClassifyOptions = {},
+): SignatureFinding {
     if (evidence.unverifiableBecause) {
         return { verdict: 'unverifiable', caveats: [], evidence };
     }
@@ -70,7 +73,7 @@ export function classifySignature(evidence: SignatureEvidence): SignatureFinding
             evidence,
         };
     }
-    const caveats = caveatsFor(evidence);
+    const caveats = caveatsFor(evidence, options);
     return {
         verdict: caveats.length > 0 ? 'confirmed-with-caveats' : 'confirmed',
         caveats,
@@ -84,6 +87,27 @@ function keyMismatch(evidence: SignatureEvidence): SignatureFinding {
         caveats: [],
         evidence: { ...evidence, unverifiableBecause: 'key-mismatch' },
     };
+}
+
+/** What the classifier may be told about the case, beyond the evidence of one message. */
+export interface ClassifyOptions {
+    /**
+     * The domains the case examines, as the operator named them. A signature whose `d=` lies in
+     * one of them was made by infrastructure the examined party controls, which no message can
+     * tell us on its own: it is a fact about the case, never inferred from sender domains.
+     */
+    readonly perimeter?: readonly string[];
+}
+
+/**
+ * Is `domain` one of the perimeter's domains, or below one?
+ *
+ * Compared on whole labels: `mail.example.com` is inside `example.com`, `badexample.com` is not.
+ */
+export function inPerimeter(domain: string, perimeter: readonly string[] | undefined): boolean {
+    if (perimeter === undefined || perimeter.length === 0) return false;
+    const name = domain.trim().toLowerCase().replace(/\.$/, '');
+    return perimeter.some((entry) => name === entry || name.endsWith(`.${entry}`));
 }
 
 /**
@@ -123,7 +147,7 @@ function keyPostdatesMessage(evidence: SignatureEvidence): boolean {
  * Only ever called for a signature that verified. A caveat on a broken signature would be noise:
  * nobody needs to hear that the key was short as well.
  */
-export function caveatsFor(evidence: SignatureEvidence): Caveat[] {
+export function caveatsFor(evidence: SignatureEvidence, options: ClassifyOptions = {}): Caveat[] {
     const caveats: Caveat[] = [];
 
     // The `a=` tag, not a warning flag: this has to hold for a verifier that reports no
@@ -156,6 +180,7 @@ export function caveatsFor(evidence: SignatureEvidence): Caveat[] {
 
     // A valid signature from a domain other than the author's vouches for the signer only.
     if (!evidence.aligned) caveats.push('signer-not-author');
+    else if (inPerimeter(evidence.domain, options.perimeter)) caveats.push('self-signed-perimeter');
 
     return caveats;
 }
@@ -190,11 +215,14 @@ export function hashAlgorithmOf(algorithm: string): string {
  * No signature at all is `unsigned`, which is not a negative result. Most mail before ~2015 and
  * plenty since carries no DKIM; an archive full of unsigned mail is an ordinary archive.
  */
-export function classifyMessage(signatures: readonly SignatureEvidence[]): MessageFinding {
+export function classifyMessage(
+    signatures: readonly SignatureEvidence[],
+    options: ClassifyOptions = {},
+): MessageFinding {
     if (signatures.length === 0) {
         return { verdict: 'unsigned', caveats: [], signatures: [] };
     }
-    const findings = signatures.map(classifySignature);
+    const findings = signatures.map((evidence) => classifySignature(evidence, options));
     const alignedVerified = findings.filter((f) => f.evidence.aligned && isConfirmed(f.verdict));
     const pool = alignedVerified.length > 0 ? alignedVerified : findings;
     const basis = pool.reduce((best, finding) =>

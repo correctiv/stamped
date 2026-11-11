@@ -48,6 +48,7 @@ import {
     openIndex,
     rollbackBatch,
 } from './index-db.ts';
+import { readPerimeter } from './perimeter.ts';
 import { settleSiblings } from './siblings.ts';
 import { writeBodyExplanations } from './body-explanations.ts';
 import { writeUnsignedHeaders } from './unsigned-headers.ts';
@@ -348,6 +349,7 @@ export async function importSources(
 
                 total = fresh.length;
                 done = 0;
+                const classifyOptions = { perimeter: readPerimeter(paths) };
                 let inBatch = 0;
                 try {
                     for (const entry of fresh) {
@@ -359,6 +361,7 @@ export async function importSources(
                             try {
                                 const finding = classifyMessage(
                                     await verifyMessage(raw, { keys: options.keys }),
+                                    classifyOptions,
                                 );
                                 const sm = summarise(raw);
                                 // `fresh`: not in the index (checked via `known`), so no removal scan.

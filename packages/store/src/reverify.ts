@@ -13,6 +13,7 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import {
     classifyMessage,
+    inPerimeter,
     missingPairs,
     normaliseKeyName,
     pairName,
@@ -26,6 +27,7 @@ import { verifyMessage } from '@stamped/verify';
 import type { CasePaths } from './case.ts';
 import { beginBatch, commitBatch, openIndex, rollbackBatch, updateFinding } from './index-db.ts';
 import { writeBodyExplanations } from './body-explanations.ts';
+import { readPerimeter, writePerimeter } from './perimeter.ts';
 import { settleSiblings } from './siblings.ts';
 import { rawPath } from './raw.ts';
 
@@ -103,6 +105,35 @@ export function signedPairs(db: DatabaseSync): PairCount[] {
     return pairCounts(db, '');
 }
 
+/**
+ * Name the perimeter and re-classify the messages it bears on.
+ *
+ * Only signatures whose `d=` lies in the OLD or the NEW perimeter can change: the first lose the
+ * caveat, the second gain it. The verdict itself never moves, so the report says how many
+ * messages were looked at, not how many changed. Pairs the vault holds conflicting keys for are
+ * left alone, as in {@link reverifyPairs}, and come back in `skippedConflicts`.
+ */
+export async function applyPerimeter(
+    paths: CasePaths,
+    domains: readonly string[],
+    vault: KeyVault,
+    yieldTurn?: () => Promise<void>,
+    onProgress?: (checked: number, total: number) => void,
+): Promise<{ perimeter: string[]; result: ReverifyResult }> {
+    const before = readPerimeter(paths);
+    const perimeter = writePerimeter(paths, domains);
+    const bearing = [...before, ...perimeter];
+    const db = openIndex(paths);
+    let pairs: PairCount[];
+    try {
+        pairs = signedPairs(db).filter((pair) => inPerimeter(pair.domain, bearing));
+    } finally {
+        db.close();
+    }
+    const result = await reverifyPairs(paths, pairs, vault, yieldTurn, onProgress);
+    return { perimeter, result };
+}
+
 export interface VerdictChange {
     readonly hash: string;
     readonly from: Verdict;
@@ -138,6 +169,7 @@ export async function reverifyPairs(
     const skippedConflicts = pairs.filter((pair) => conflicted.has(pairName(pair)));
     const active = pairs.filter((pair) => !conflicted.has(pairName(pair)));
     const keys = vault.toKeyStore({ skipConflicts: true });
+    const classifyOptions = { perimeter: readPerimeter(paths) };
 
     const db = openIndex(paths);
     try {
@@ -181,7 +213,7 @@ export async function reverifyPairs(
                 let raw: Uint8Array | undefined;
                 try {
                     raw = new Uint8Array(readFileSync(rawPath(paths, hash)));
-                    finding = classifyMessage(await verifyMessage(raw, { keys }));
+                    finding = classifyMessage(await verifyMessage(raw, { keys }), classifyOptions);
                 } catch {
                     failed++;
                 }
