@@ -261,7 +261,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: packages
-          path: packages
+          path: release-assets
 
       # Only for a tag; a manual run exercises the chain without publishing. The body is the tag's
       # `<release>` entry in the hand-written metainfo the root `package.json` names
@@ -289,4 +289,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release create "$GITHUB_REF_NAME" packages/* --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+        run: gh release create "$GITHUB_REF_NAME" release-assets/* --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
