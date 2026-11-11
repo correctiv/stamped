@@ -115,7 +115,7 @@ and `compile`.
 The **AppImage** and the **macOS `.app`** carry the embedding model — EmbeddingGemma 2 as a Q8_0
 GGUF, ~296 MiB — so semantic search works offline from the first start, with nothing to download
 and nothing to configure. The model sits next to the app's own data
-(`share/models/embeddinggemma-2-Q8_0.gguf`), and its licence and notice travel with it.
+(`share/models/embeddinggemma-2-q8_0/embeddinggemma-2-Q8_0.gguf`), and its licence and notice travel with it.
 
 The `.deb`, the `.rpm` and the Windows artifacts do **not** carry it: 296 MiB inside a
 distribution package is a distribution decision, not ours.

@@ -76,7 +76,7 @@ jobs:
       - name: Cache the embedding model
         uses: actions/cache@v4
         with:
-          path: app/models/embeddinggemma-2-Q8_0.gguf
+          path: app/models/embeddinggemma-2-q8_0/embeddinggemma-2-Q8_0.gguf
           key: embeddinggemma-2-q8_0-2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135
 
       # Fetches the pinned revision and verifies the sha256; skips the download when the file is
@@ -165,13 +165,13 @@ jobs:
           offset=$("$appimage" --appimage-offset)
           listing=$(unsquashfs -o "$offset" -l "$appimage")
           case "$listing" in
-            *usr/share/models/embeddinggemma-2-Q8_0.gguf*) ;;
+            *usr/share/models/embeddinggemma-2-q8_0/embeddinggemma-2-Q8_0.gguf*) ;;
             *) echo "::error::the AppImage does not carry the model"; exit 1 ;;
           esac
           for macos in app/ship/out/*macos*.zip; do
             names=$(unzip -Z1 "$macos")
             case "$names" in
-              *share/models/embeddinggemma-2-Q8_0.gguf*) ;;
+              *share/models/embeddinggemma-2-q8_0/embeddinggemma-2-Q8_0.gguf*) ;;
               *) echo "::error::$macos does not carry the model"; exit 1 ;;
             esac
           done
