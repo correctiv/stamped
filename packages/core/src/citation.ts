@@ -13,8 +13,8 @@
 
 import { describeCaveat } from './verdict.ts';
 import { explainSignature } from './explain.ts';
-import { fmt, _ } from './i18n.ts';
-import type { Caveat, KeySource, MessageFinding } from './verdict.ts';
+import { fmt, formatNumber, _, _n } from './i18n.ts';
+import type { Caveat, KeySource, MessageFinding, Verdict } from './verdict.ts';
 
 export interface CitationOptions {
     /** When the message was checked, already formatted. Left out of the sentence when absent. */
@@ -166,5 +166,60 @@ export function citationFor(finding: MessageFinding, options: CitationOptions = 
     if (options.verifiedOn !== undefined) {
         sentences.push(fmt(_('Checked on {date}.'), { date: options.verifiedOn }));
     }
+    return sentences.join(' ');
+}
+
+export interface CaseCitationInput {
+    readonly version: string;
+    /** The day the check ran, already formatted. */
+    readonly checkedOn: string;
+    readonly messages: number;
+    readonly verdicts: ReadonlyArray<{ readonly verdict: Verdict; readonly messages: number }>;
+}
+
+/**
+ * The paragraph a newsroom can quote for a whole case: how many messages, how they split, and what
+ * a signature does and does not show.
+ *
+ * Counts follow a colon (“Of these: 3 unchanged since signing, …”) instead of a subject and verb:
+ * a verb would have to agree with a number, and in other languages with its gender too.
+ */
+export function caseCitationFor(input: CaseCitationInput): string {
+    const count = (verdict: Verdict) => input.verdicts.find((v) => v.verdict === verdict)?.messages ?? 0;
+    const sentences = [
+        fmt(
+            _n(
+                'Stamped {version} checked {count} message on {date}.',
+                'Stamped {version} checked {count} messages on {date}.',
+                input.messages,
+            ),
+            {
+                version: input.version,
+                count: formatNumber(input.messages),
+                date: input.checkedOn,
+            },
+        ),
+    ];
+    if (input.messages > 0) {
+        sentences.push(
+            fmt(
+                _(
+                    'Of these: {valid} unchanged since signing (of which {limited} with limits), {altered} differing from what was signed, {unverifiable} not checkable, {unsigned} unsigned.',
+                ),
+                {
+                    valid: formatNumber(count('confirmed') + count('confirmed-with-caveats')),
+                    limited: formatNumber(count('confirmed-with-caveats')),
+                    altered: formatNumber(count('body-altered') + count('headers-altered')),
+                    unverifiable: formatNumber(count('unverifiable')),
+                    unsigned: formatNumber(count('unsigned')),
+                },
+            ),
+        );
+    }
+    sentences.push(
+        _(
+            'A valid signature proves that the signed parts of the message are unchanged since the signing server added it. It does not prove who wrote the message, and it says nothing about the parts the signature does not cover.',
+        ),
+    );
     return sentences.join(' ');
 }

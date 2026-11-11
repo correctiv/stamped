@@ -7,7 +7,7 @@
  */
 
 import type { Verdict, VaultEntry } from '@stamped/core';
-import { describeVerdict, formatPercent, VERDICTS, verdictLabel } from '@stamped/core';
+import { caseCitationFor, describeVerdict, formatPercent, VERDICTS, verdictLabel } from '@stamped/core';
 import type {
     CaseReport,
     PeriodRow,
@@ -92,6 +92,8 @@ export interface PdfReportModel {
     readonly latest?: string;
     readonly verdicts: readonly VerdictShare[];
     readonly caseAlteredShare: number;
+    /** The paragraph to quote for the whole case. */
+    readonly citation: string;
     readonly unsigned?: UnsignedBreakdown;
     readonly bodyAltered?: BodyExplanationTotals;
     readonly receiverAnchors?: ReceiverAnchorTotals;
@@ -204,11 +206,12 @@ export function keyProvenance(keys: readonly VaultEntry[], report: CaseReport): 
 
 export function buildPdfModel(input: PdfReportInput): PdfReportModel {
     const { report } = input;
+    const checkedAt = input.checkedAt.toISOString().slice(0, 10);
     const caseShare = alteredShareOf(report);
     const byVerdict = new Map(report.verdicts.map((count) => [count.verdict, count.messages]));
     return {
         caseName: input.caseName,
-        checkedAt: input.checkedAt.toISOString().slice(0, 10),
+        checkedAt,
         version: input.version,
         digest: input.digest,
         messages: report.messages,
@@ -219,6 +222,12 @@ export function buildPdfModel(input: PdfReportInput): PdfReportModel {
             return { verdict, messages, share: report.messages === 0 ? 0 : messages / report.messages };
         }),
         caseAlteredShare: caseShare,
+        citation: caseCitationFor({
+            version: input.version,
+            checkedOn: checkedAt,
+            messages: report.messages,
+            verdicts: report.verdicts,
+        }),
         ...(input.unsigned === undefined ? {} : { unsigned: input.unsigned }),
         ...(input.bodyAltered === undefined ? {} : { bodyAltered: input.bodyAltered }),
         ...(input.receiverAnchors === undefined ? {} : { receiverAnchors: input.receiverAnchors }),
