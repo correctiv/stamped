@@ -51,6 +51,7 @@ case.json
 *.key
 *.pem
 !app/tests/fixtures/keys/*.pub.pem
+!app/tests/fixtures/rotation/*.pub.pem
 
 # Index / derived state
 *.db

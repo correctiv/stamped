@@ -321,6 +321,7 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     for (const pair of conflicts) {
                         console.log(`  ${pair.selector}._domainkey.${pair.domain}`);
                     }
+                    console.log(_('Hint: stamped keys eras tells a rotation from a conflict by the dates'));
                     console.log(_('Hint: stamped keys resolve <selector>._domainkey.<domain>'));
                 }
 

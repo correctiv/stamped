@@ -10,6 +10,7 @@ import cli from './unit/cli.test.ts';
 import classify from './unit/classify.test.ts';
 import folder from './unit/folder.test.ts';
 import explain from './unit/explain.test.ts';
+import keyEras from './unit/key-eras.test.ts';
 import keys from './unit/keys.test.ts';
 import keyvault from './unit/keyvault.test.ts';
 import verify from './unit/verify.test.ts';
@@ -58,6 +59,7 @@ run({
     folder,
     explain,
     keys,
+    keyEras,
     keyvault,
     verify,
     report,

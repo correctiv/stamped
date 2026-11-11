@@ -1,0 +1,12 @@
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=trot; h=from:to:subject:date; bh=t+b912+WO4NA24iipv2qNweb0DQ3yZrfpYSgNfX2gzE=; b=GDSuzlq9jBlm9QBk6x69sUeORJI+wFoCAsvyMlAJ+BWSM86cKEgwzZCxpR2MXytFyWKUym8djQEpu+FDk+4BbWUVjcCp9UVPO61iQ/Nh5ECIVpa5M6XtjSEUgbmMqpgi8wajEq4sUoeYr3wVickG/JHFVeBmjExS8nXJcvLgGRS+c/4CG6i713wXeuli/8HbxPthPhYEz9Xuy+s185UfVrNRXAWaEID+eSvlrljcFeuzzjlsZ4JRGPhRlgG/B1SbbSfEU7KINd3c3XwOwQ0WAFxOz5bDK6TvQlenGvqaQks974Kwr4IhMrXLcHogDGNn20Sirf0quj7Wv6K5/bnZaw==
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Status report 6
+Date: Mon, 10 May 2021 09:00:00 +0000
+Message-ID: <rotation-6@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Status report 6.
+
+Nothing to add. Send the money.

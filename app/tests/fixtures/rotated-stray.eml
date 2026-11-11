@@ -1,0 +1,12 @@
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=trot; h=from:to:subject:date; bh=MK8HlnY6emieHNpdrWv7EhRCpvP/vrs1W0pT5xGeAQA=; b=b9uvUL/IN4rY/AlqsqSfEuHZ6FWYfjE9iugXNWYmJeliZ47HDKQF8MrJTn3O8/C5T3rQBumI7SrcZbDM3awh38Hwx9NSzivuj+r4yAkkBaJpr0r/LOEEUmR6hlznOE99nNM0O7ZJ7N8+l+MVXrRGBmXotu3uRXa3+DwL58R0Ndg=
+From: Ada Lovelace <ada@example.com>
+To: Grace Hopper <grace@example.net>
+Subject: Status report 5
+Date: Fri, 01 Mar 2024 09:00:00 +0000
+Message-ID: <rotation-5@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Status report 5.
+
+Nothing to add.
