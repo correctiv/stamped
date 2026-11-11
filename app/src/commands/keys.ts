@@ -26,7 +26,7 @@ import {
     _,
     _n,
 } from '@stamped/core';
-import { missingKeyPairs, openIndex, reverifyPairs } from '@stamped/store';
+import { measureKeyEras, missingKeyPairs, openIndex, reverifyPairs, type PairEras } from '@stamped/store';
 import { createInterface } from 'node:readline';
 import type { CommandModule } from 'yargs';
 
@@ -111,6 +111,7 @@ export function keysCommand(): CommandModule<unknown, CaseArgs> {
                 .command(fetchCommand())
                 .command(templateCommand())
                 .command(resolveCommand())
+                .command(erasCommand())
                 .demandCommand(1, _('Pick a subcommand. Try `stamped keys --help`.'))
                 .epilog(explain()),
         handler: () => undefined,
@@ -550,6 +551,107 @@ function resolveCommand(): CommandModule<CaseArgs, ResolveArgs> {
                     }),
                 );
             }
+        },
+    };
+}
+
+function describeEra(index: number, era: PairEras['eras'][number]): string {
+    const key = `${era.key.algorithm} ${era.key.bits} bit, ${era.key.origin}`;
+    if (era.messages === 0) {
+        return fmt(_('  {index}. {key}: no message verifies under this key alone'), { index, key });
+    }
+    const range =
+        era.from !== undefined && era.to !== undefined
+            ? `, ${era.from.slice(0, 10)} – ${era.to.slice(0, 10)}`
+            : '';
+    const undated = era.undated > 0 ? fmt(_(', {count} without a date'), { count: era.undated }) : '';
+    return (
+        fmt(_n('  {index}. {key}: {count} message', '  {index}. {key}: {count} messages', era.messages), {
+            index,
+            key,
+            count: era.messages,
+        }) +
+        range +
+        undated
+    );
+}
+
+function printEras(report: PairEras, apply: boolean): void {
+    console.log(
+        fmt(_('{name} holds {count} candidate keys. Measured against the messages:'), {
+            name: pairName(report.pair),
+            count: report.eras.length,
+        }),
+    );
+    report.eras.forEach((era, i) => console.log(describeEra(i + 1, era)));
+    if (report.unexplained > 0) {
+        console.log(
+            fmt(
+                _n(
+                    '  {count} signed message verifies under none of them.',
+                    '  {count} signed messages verify under none of them.',
+                    report.unexplained,
+                ),
+                { count: report.unexplained },
+            ),
+        );
+    }
+    if (report.outcome === 'rotation') {
+        console.log(
+            apply
+                ? _('  A rotation: the windows do not overlap. They are stored.')
+                : _('  A rotation: the windows do not overlap. Run with --apply to store them.'),
+        );
+    } else if (report.outcome === 'interleaved') {
+        console.log(
+            _(
+                '  Interleaved: both keys signed in the same period. A rotation does not go back; this is a forgery, or two senders sharing one selector. Compare them: stamped keys resolve.',
+            ),
+        );
+    } else {
+        console.log(_('  Not measurable: a key verifies no message with a readable date.'));
+    }
+}
+
+interface ErasArgs extends CaseArgs {
+    apply: boolean;
+}
+
+function erasCommand(): CommandModule<CaseArgs, ErasArgs> {
+    return {
+        command: 'eras [folder]',
+        describe: _('Tell a key rotation from a conflict by which messages each key verifies'),
+        builder: (yargs) =>
+            yargs.positional('folder', { describe: _('The case folder'), type: 'string' }).option('apply', {
+                describe: _('Store the measured windows of every rotation and re-verify its messages'),
+                type: 'boolean',
+                default: false,
+            }),
+        handler: async (args) => {
+            const dir = caseDir('eras', args);
+            const paths = caseOrThrow(dir);
+            const vault = loadVault(dir);
+            if (vault.conflicts().length === 0) {
+                console.log(_('No pair holds conflicting keys; nothing to measure.'));
+                return;
+            }
+            const measured = await trackActivity(paths, 'keys', (activity) =>
+                measureKeyEras(paths, vault, undefined, (done, total) => activity.update(done, total)),
+            );
+            for (const report of measured.pairs) printEras(report, args.apply);
+            const rotations = measured.pairs.filter((report) => report.outcome === 'rotation');
+            if (!args.apply || rotations.length === 0) return;
+            saveVault(dir, measured.vault);
+            const result = await reverifyPairs(
+                paths,
+                rotations.map((report) => report.pair),
+                measured.vault,
+            );
+            console.log(
+                fmt(_n('{count} message re-verified.', '{count} messages re-verified.', result.checked), {
+                    count: result.checked,
+                }),
+            );
         },
     };
 }

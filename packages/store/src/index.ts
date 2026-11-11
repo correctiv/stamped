@@ -153,6 +153,13 @@ export {
     type StoreResult,
 } from './raw.ts';
 export {
+    type EraMeasurement,
+    type EraOutcome,
+    type KeyEra,
+    measureKeyEras,
+    type PairEras,
+} from './key-eras.ts';
+export {
     missingKeyPairs,
     reverifyPairs,
     type ReverifyResult,

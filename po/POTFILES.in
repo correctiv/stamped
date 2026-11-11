@@ -130,6 +130,7 @@ packages/store/src/importer.ts
 packages/store/src/import-status.ts
 packages/store/src/index-db.ts
 packages/store/src/index.ts
+packages/store/src/key-eras.ts
 packages/store/src/people.ts
 packages/store/src/raw.ts
 packages/store/src/report.ts

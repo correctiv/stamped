@@ -311,6 +311,20 @@ export class KeyVault {
     }
 
     /**
+     * Widen the era of one key to cover `from`–`to` (ISO), the way a measurement of the messages
+     * it alone verifies found it. `chosen` is an entry from {@link distinctKeys}; its window grows
+     * and is never narrowed, so a range an archive vouched for stays.
+     */
+    widen(chosen: VaultEntry, from: string, to: string): void {
+        const index = this.entries.indexOf(chosen);
+        if (index < 0) return;
+        this.entries[index] = {
+            ...chosen,
+            ...rangeOf(earlier(chosen.seenFrom, from), later(chosen.seenTo, to)),
+        };
+    }
+
+    /**
      * The human decision {@link conflicts} surfaces: keep every candidate that is the SAME key
      * as `chosen` (same decoded material) for this pair, and discard every other one. Never
      * automatic — a caller picks `chosen` from {@link distinctKeys}, which is what `stamped keys
