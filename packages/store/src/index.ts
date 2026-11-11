@@ -184,6 +184,7 @@ export {
     rawSetDigest,
     type RawSetDigest,
     bodyAlteredBreakdown,
+    receiverAnchorBreakdown,
     type UnsignedBreakdown,
     unsignedBreakdown,
     type VerdictDomains,
@@ -199,6 +200,18 @@ export {
     type BodyHeaderFlags,
     writeBodyExplanations,
 } from './body-explanations.ts';
+export {
+    backfillReceiverAnchors,
+    backfillReceiverAnchorsAll,
+    hasReceiverPass,
+    RECEIVER_ANCHOR_VERSION,
+    type ReceiverAnchorDomain,
+    type ReceiverAnchorGroup,
+    type ReceiverAnchorTotals,
+    receiverAnchorTotals,
+    receiverAnchorsComplete,
+    writeReceiverAnchors,
+} from './receiver-anchors.ts';
 export {
     analyseUnsignedHeaders,
     backfillUnsignedHeaders,

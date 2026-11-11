@@ -27,6 +27,7 @@ import { verifyMessage } from '@stamped/verify';
 import type { CasePaths } from './case.ts';
 import { beginBatch, commitBatch, openIndex, rollbackBatch, updateFinding } from './index-db.ts';
 import { writeBodyExplanations } from './body-explanations.ts';
+import { writeReceiverAnchors } from './receiver-anchors.ts';
 import { readPerimeter, writePerimeter } from './perimeter.ts';
 import { settleSiblings } from './siblings.ts';
 import { rawPath } from './raw.ts';
@@ -226,7 +227,10 @@ export async function reverifyPairs(
                     open++;
                     // Only the verdict side changes with a key; the text index is left alone.
                     updateFinding(db, hash, finding);
-                    if (raw !== undefined) writeBodyExplanations(db, hash, finding, raw);
+                    if (raw !== undefined) {
+                        writeBodyExplanations(db, hash, finding, raw);
+                        writeReceiverAnchors(db, hash, finding, raw);
+                    }
                     if (old !== undefined && old !== finding.verdict) {
                         changed.push({ hash, from: old, to: finding.verdict });
                     }

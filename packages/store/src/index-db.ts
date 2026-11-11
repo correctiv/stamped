@@ -24,6 +24,7 @@ import type { MessageSummary } from '@stamped/import';
 
 import { deleteAddresses, ensureAddresses, writeAddresses } from './addresses-db.ts';
 import { deleteBodyExplanations, ensureBodyExplanations } from './body-explanations.ts';
+import { deleteReceiverAnchors, ensureReceiverAnchors } from './receiver-anchors.ts';
 import { deleteUnsignedHeaders, ensureUnsignedHeaders } from './unsigned-headers.ts';
 import type { CasePaths } from './case.ts';
 import { statementFor } from './statements.ts';
@@ -105,6 +106,7 @@ export function openIndex(paths: CasePaths): DatabaseSync {
     ensureAddresses(db);
     ensureUnsignedHeaders(db);
     ensureBodyExplanations(db);
+    ensureReceiverAnchors(db);
     return db;
 }
 
@@ -398,6 +400,7 @@ export function removeMessage(db: DatabaseSync, hash: string): void {
     deleteAddresses(db, hash);
     deleteUnsignedHeaders(db, hash);
     deleteBodyExplanations(db, hash);
+    deleteReceiverAnchors(db, hash);
 }
 
 /** Every whitespace-separated word as a quoted FTS5 string: all must occur, none is syntax. */

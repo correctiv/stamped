@@ -47,6 +47,7 @@ import searchProgress from './unit/search-progress.test.ts';
 import refreshScheduler from './unit/refresh-scheduler.test.ts';
 import pdfReport from './unit/pdf-report.test.ts';
 import bodyExplanations from './unit/body-explanations.test.ts';
+import receiverAnchors from './unit/receiver-anchors.test.ts';
 import unsignedHeaders from './unit/unsigned-headers.test.ts';
 import retry from './unit/retry.test.ts';
 import gpuBackend from './unit/gpu-backend.test.ts';
@@ -98,6 +99,7 @@ run({
     pdfReport,
     unsignedHeaders,
     bodyExplanations,
+    receiverAnchors,
     retry,
     gpuBackend,
     gpuGuard,

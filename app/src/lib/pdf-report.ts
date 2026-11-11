@@ -13,6 +13,7 @@
 import { fmt, formatNumber as num, verdictLabel, _, _n } from '@stamped/core';
 
 import { bodyAlteredSection } from './body-altered.ts';
+import { anchorShare, receiverAnchorSection } from './receiver-anchors.ts';
 import {
     breakableMailbox,
     CLUSTER_FACTOR,
@@ -368,6 +369,32 @@ function compose(w: Writer, model: PdfReportModel): void {
                     ...bodySection.indicators.map(([l, n]) => [l, num(n)]),
                 ],
                 [0.75, 0.25],
+                { rightAligned: [1] },
+            );
+        }
+    }
+
+    // --- receiving server's record ---
+    const anchorSection =
+        model.receiverAnchors === undefined ? undefined : receiverAnchorSection(model.receiverAnchors);
+    if (anchorSection !== undefined) {
+        w.heading(anchorSection.heading);
+        w.text(anchorSection.note, { size: 9 });
+        w.table(
+            [
+                [_('Without proof of its own'), _('Recorded as passed')],
+                ...anchorSection.groups.map(([l, anchored, messages]) => [l, anchorShare(anchored, messages)]),
+            ],
+            [0.7, 0.3],
+            { rightAligned: [1] },
+        );
+        if (anchorSection.domains.length > 0) {
+            w.table(
+                [
+                    [_('Signing domain (unverifiable)'), _('Recorded as passed')],
+                    ...anchorSection.domains.map(([d, anchored, messages]) => [d, anchorShare(anchored, messages)]),
+                ],
+                [0.7, 0.3],
                 { rightAligned: [1] },
             );
         }

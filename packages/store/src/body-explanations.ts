@@ -20,6 +20,7 @@ import { type HeaderField, parseHeaderFields, splitMessage } from '@stamped/impo
 import { explainBodyByRetry } from '@stamped/verify';
 
 import type { CasePaths } from './case.ts';
+import { hasReceiverPass } from './receiver-anchors.ts';
 import { rawPath } from './raw.ts';
 import { statementFor } from './statements.ts';
 
@@ -44,20 +45,11 @@ const EXAMINED = 4;
 
 /** Read the flags off parsed header fields for one signing domain. Pure. */
 export function analyseBodyHeaders(fields: readonly HeaderField[], domain: string): BodyHeaderFlags {
-    const wanted = domain.toLowerCase();
     return {
         exchange: fields.some(
             (field) => field.lower.startsWith('x-ms-exchange-') || field.lower === 'x-ms-tnef-correlator',
         ),
-        receiverPass: fields.some(
-            (field) =>
-                field.lower === 'authentication-results' &&
-                field.value.split(';').some((part) => {
-                    if (!/\bdkim\s*=\s*pass\b/i.test(part)) return false;
-                    const identity = /header\.[di]\s*=\s*"?([^\s;"]+)/i.exec(part)?.[1]?.toLowerCase();
-                    return identity !== undefined && (identity === wanted || identity.endsWith(`@${wanted}`));
-                }),
-        ),
+        receiverPass: hasReceiverPass(fields, domain),
     };
 }
 
