@@ -382,6 +382,27 @@ template $StampedWindow: Adw.ApplicationWindow {
                         };
                       }
 
+                      // A message that could not be loaded: the worker did not answer twice, or the
+                      // stored copy is gone. Without this page the reader stayed on the spinner.
+                      Gtk.StackPage {
+                        name: "error";
+
+                        child: Adw.StatusPage {
+                          icon-name: "dialog-warning-symbolic";
+                          title: _("This message could not be loaded.");
+
+                          child: Gtk.Button readerRetry {
+                            label: _("Load again");
+                            halign: center;
+
+                            styles [
+                              "pill",
+                              "suggested-action",
+                            ]
+                          };
+                        };
+                      }
+
                       Gtk.StackPage {
                         name: "message";
 

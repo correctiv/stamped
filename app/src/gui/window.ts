@@ -550,6 +550,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
     constructor(application: Adw.Application, caseRoot?: string) {
         super({ application });
         registerToastOverlay(this._toasts);
+        this._readerRetry.connect('clicked', () => {
+            if (this.reading !== undefined) this.track(this.showMessage(this.reading));
+        });
 
         this.addAction('open-case', () => void this.chooseCase());
         this.addAction('import', () => void this.importFrom('files'));
@@ -1501,20 +1504,29 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.reading = hash;
         // Not the previous message's evidence under the new selection while this one verifies.
         this._readerStack.set_visible_child_name('loading');
-        const message = await messageOf(session, hash);
-        if (this.session !== session || this.reading !== hash) return;
-        if (!message) {
-            this._readerStack.set_visible_child_name('empty');
-            return;
-        }
+        try {
+            const message = await messageOf(session, hash);
+            if (this.session !== session || this.reading !== hash) return;
+            if (!message) {
+                this._readerStack.set_visible_child_name('empty');
+                return;
+            }
 
-        const raw = storedRaw(session, hash);
-        const finding = await verifyStored(session, hash);
-        if (this.session !== session || this.reading !== hash) return;
-        if (finding === undefined || raw === undefined) {
-            throw new Error(_('The stored copy of this message is missing from the case’s blob store.'));
+            const raw = storedRaw(session, hash);
+            const finding = await verifyStored(session, hash);
+            if (this.session !== session || this.reading !== hash) return;
+            if (finding === undefined || raw === undefined) {
+                throw new Error(_('The stored copy of this message is missing from the case’s blob store.'));
+            }
+            this.renderMessage(message, finding, raw, bodyOf(raw));
+        } catch (error) {
+            // Back off the spinner, but only for the message still selected: a failure of one the
+            // person has already clicked away from must not replace the page of the next one.
+            if (this.session === session && this.reading === hash) {
+                this._readerStack.set_visible_child_name('error');
+            }
+            throw error;
         }
-        this.renderMessage(message, finding, raw, bodyOf(raw));
     }
 
     /** The reader, top to bottom: what Stamped claims, the headers, the evidence, the bytes. */
