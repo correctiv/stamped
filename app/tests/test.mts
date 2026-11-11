@@ -51,6 +51,8 @@ import bodyExplanations from './unit/body-explanations.test.ts';
 import receiverAnchors from './unit/receiver-anchors.test.ts';
 import unsignedHeaders from './unit/unsigned-headers.test.ts';
 import thread from './unit/thread.test.ts';
+import searchQuery from './unit/search-query.test.ts';
+import searchOperators from './unit/search-operators.test.ts';
 import retry from './unit/retry.test.ts';
 import gpuBackend from './unit/gpu-backend.test.ts';
 import gpuGuard from './unit/gpu-guard.test.ts';
@@ -102,6 +104,8 @@ run({
     pdfReport,
     unsignedHeaders,
     thread,
+    searchQuery,
+    searchOperators,
     bodyExplanations,
     receiverAnchors,
     retry,

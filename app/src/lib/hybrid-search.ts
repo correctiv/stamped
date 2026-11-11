@@ -26,7 +26,7 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import { checkVector, countVectors, fuseRrf, searchVectors } from '@stamped/semantic';
 import type { Embedder } from '@stamped/semantic';
-import { hitsForHashes, searchHits } from '@stamped/store';
+import { hitsForHashes, narrowedBy, parseSearch, searchHits, SearchSyntaxError } from '@stamped/store';
 import type { SearchHit, SearchOptions } from '@stamped/store';
 
 /** How a hit was found: by a word, by the meaning, or by both. */
@@ -105,13 +105,14 @@ export async function hybridSearch(request: HybridSearchRequest): Promise<Hybrid
  */
 async function embedFor(request: HybridSearchRequest): Promise<{ vector?: Float32Array }> {
     const { embedder } = request;
-    if (!embedder || !request.vectors || !asksForMeaning(request.query)) return {};
+    const meaning = meaningOf(request.query);
+    if (!embedder || !request.vectors || meaning === undefined) return {};
     try {
         // THE QUERY GOES IN RAW. `Embedder.embedQuery` applies the model's own prompt format
         // — the llama backend wraps it in `task: search result | query: …` — so wrapping it
         // here as well would hand the model a prompt inside a prompt. The seam owns the
         // format; the search owns the words.
-        const vector = await embedder.embedQuery(request.query);
+        const vector = await embedder.embedQuery(meaning);
         checkVector(vector);
         return { vector };
     } catch {
@@ -140,8 +141,14 @@ export function fuseHybrid(request: HybridFuseRequest): HybridHit[] {
         textError = error;
     }
 
-    // The semantic half. It never fails the search — see the module note.
-    const semanticHits = semanticHitsFor(request, candidates);
+    // A query that is wrong in its own syntax gets no second opinion: the person has to fix it.
+    if (textError instanceof SearchSyntaxError) throw textError;
+
+    // The semantic half. It never fails the search — see the module note. A list the person
+    // sorted by date is a text list, and so is one whose query asks for something exact.
+    const sorted = parseSearch(request.query).filters.order;
+    const semanticHits =
+        sorted === 'newest' || sorted === 'oldest' ? [] : semanticHitsFor(request, candidates);
 
     if (textHits.length === 0 && semanticHits.length === 0) {
         // Nothing to show and something to complain about: the query is the problem.
@@ -194,10 +201,28 @@ function semanticHitsFor(request: HybridFuseRequest, candidates: number): Search
         if (hashes.length === 0) return [];
         // The same filters as the text half, so a semantic hit can never show a message the
         // person filtered away.
-        return hitsForHashes(request.index, hashes, { ...request.options, limit: candidates });
+        const narrowed = narrowedBy(parseSearch(request.query).filters, {
+            ...request.options,
+            limit: candidates,
+        });
+        return narrowed === undefined ? [] : hitsForHashes(request.index, hashes, narrowed);
     } catch {
         return [];
     }
+}
+
+/**
+ * The words to search the vectors with, or `undefined` when the query is not a question.
+ *
+ * What the vectors get is the query's plain words (see `ParsedSearch.freeText`): an operator is
+ * not something to embed, and a query that uses one beyond a filter stays a text search.
+ */
+export function meaningOf(query: string): string | undefined {
+    const parsed = parseSearch(query);
+    if (parsed.errors.length > 0) return undefined;
+    const filters = parsed.filters;
+    if (filters.order === 'newest' || filters.order === 'oldest') return undefined;
+    return asksForMeaning(parsed.freeText) ? parsed.freeText : undefined;
 }
 
 /**

@@ -23,7 +23,16 @@ import { existsSync } from 'node:fs';
 import { fmt, _, _n } from '@stamped/core';
 import type { Embedder } from '@stamped/semantic';
 import { openVectorDbForSearch } from '@stamped/semantic';
-import { messageCount, openIndex } from '@stamped/store';
+import {
+    derivedMailboxHashes,
+    hashScope,
+    messageCount,
+    openIndex,
+    parseSearch,
+    SearchSyntaxError,
+    type CasePaths,
+    type HashScope,
+} from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
@@ -70,6 +79,12 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                 .example(
                     'stamped search ./case "subject : invoice"',
                     _('Find messages with "invoice" in the subject'),
+                )
+                .example(
+                    'stamped search ./case "from:ada subject:invoice -draft after:2024-01-01"',
+                    _(
+                        'Fields, exclusions and dates: from: to: cc: subject: body: verdict: dkim: mailbox: before: after: sort:',
+                    ),
                 ),
         handler: async (args) => {
             const { root, rest } = caseRoot('search', args.case, [args.first, args.second]);
@@ -94,8 +109,9 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                           modelId: embedder.modelId,
                           dimensions: embedder.dimensions,
                       });
+            const mailbox = mailboxOf(paths, db, query);
             try {
-                const hits = await runSearch(db, vectors, embedder, query, args.limit ?? 20);
+                const hits = await runSearch(db, vectors, embedder, query, args.limit ?? 20, mailbox);
 
                 if (args.json) {
                     console.log(JSON.stringify({ query, hits }, undefined, 2));
@@ -130,6 +146,7 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                     }),
                 );
             } finally {
+                mailbox?.close();
                 vectors?.close();
                 db.close();
             }
@@ -155,6 +172,21 @@ export function matchMarker(match: MatchKind): string | undefined {
 }
 
 /**
+ * The scope of the mailbox the query names with `mailbox:`, if it names one.
+ *
+ * An unknown name is an error and never an empty list: an empty list reads as "nothing there".
+ */
+function mailboxOf(paths: CasePaths, db: ReturnType<typeof openIndex>, query: string): HashScope | undefined {
+    const name = parseSearch(query).filters.mailbox;
+    if (name === undefined) return undefined;
+    const hashes = derivedMailboxHashes(paths).get(name);
+    if (hashes === undefined) {
+        throw new Error(fmt(_('The case has no mailbox {name}. The sidebar lists the mailboxes.'), { name }));
+    }
+    return hashScope(db, hashes);
+}
+
+/**
  * Run the query, turning an FTS5 syntax error into a sentence about the query.
  *
  * SQLite says `fts5: syntax error near "…"`, which names the character but not what the syntax
@@ -170,10 +202,19 @@ async function runSearch(
     embedder: Embedder | undefined,
     query: string,
     limit: number,
+    mailbox?: HashScope,
 ): Promise<HybridHit[]> {
     try {
-        return await hybridSearch({ index: db, vectors, embedder, query, options: { limit } });
-    } catch {
+        return await hybridSearch({
+            index: db,
+            vectors,
+            embedder,
+            query,
+            options: { limit, ...(mailbox ? { mailbox } : {}) },
+        });
+    } catch (error) {
+        // A mistake in the search operators says what is wrong; only FTS5's own message is replaced.
+        if (error instanceof SearchSyntaxError) throw new Error(error.errors.join('\n'));
         throw new Error(
             fmt(
                 _(

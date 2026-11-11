@@ -239,6 +239,65 @@ export default async () => {
             });
         });
 
+        await it('hands the embedder the plain words and leaves the operators to the filters', async () => {
+            await withFixture(async ({ paths, index }) => {
+                await withVectors(paths, ['a', 'b', 'c', 'd', 'e', 'f'], async (vectors) => {
+                    const asked: string[] = [];
+                    const embedder = fakeEmbedder();
+                    const spy: Embedder = {
+                        ...embedder,
+                        async embedQuery(text: string) {
+                            asked.push(text);
+                            return embedder.embedQuery(text);
+                        },
+                    };
+                    await hybridSearch({ index, vectors, embedder: spy, query: 'harbour verdict:confirmed' });
+                    await hybridSearch({ index, vectors, embedder: spy, query: 'from:ada harbour' });
+                    await hybridSearch({ index, vectors, embedder: spy, query: 'harbour -draft' });
+                    await hybridSearch({ index, vectors, embedder: spy, query: 'harbour sort:newest' });
+                    await hybridSearch({ index, vectors, embedder: spy, query: 'from:' }).catch(() => []);
+                    expect(asked).toStrictEqual(['harbour']);
+                });
+            });
+        });
+
+        await it('keeps a hit found by meaning inside the filters of the query', async () => {
+            await withFixture(async ({ paths, index, hashes }) => {
+                await withVectors(paths, ['a', 'b', 'c', 'd', 'e', 'f'], async (vectors) => {
+                    const plain = await hybridSearch({
+                        index,
+                        vectors,
+                        embedder: fakeEmbedder(),
+                        query: 'harbour',
+                    });
+                    // D (body-altered) is only found by meaning.
+                    expect(plain.some((hit) => hit.hash === hashes.d)).toBe(true);
+                    const filtered = await hybridSearch({
+                        index,
+                        vectors,
+                        embedder: fakeEmbedder(),
+                        query: 'harbour verdict:confirmed',
+                    });
+                    expect(filtered.map((hit) => hit.hash)).toStrictEqual([hashes.a]);
+                });
+            });
+        });
+
+        await it('does not ask the meaning when the query sorts by date', async () => {
+            await withFixture(async ({ paths, index }) => {
+                await withVectors(paths, ['a', 'b', 'c', 'd', 'e', 'f'], async (vectors) => {
+                    const hits = await hybridSearch({
+                        index,
+                        vectors,
+                        embedder: fakeEmbedder(),
+                        query: 'harbour sort:newest',
+                    });
+                    expect(hits.length).toBe(2);
+                    expect(hits.every((hit) => hit.match === 'text')).toBe(true);
+                });
+            });
+        });
+
         await it('marks how every hit was found', async () => {
             await withFixture(async ({ paths, index, hashes }) => {
                 await withVectors(paths, ['a', 'b', 'c', 'd', 'e', 'f'], async (vectors) => {
@@ -481,6 +540,39 @@ export default async () => {
                 expect(lines.some((line) => line.includes('semantic'))).toBe(false);
                 expect(lines.some((line) => line.includes('Harbour contract'))).toBe(true);
                 expect(lines[lines.length - 1]).toBe('2 matches.');
+            });
+        });
+
+        await it('says what is wrong with the operators instead of searching for them', async () => {
+            await withFixture(async ({ paths }) => {
+                let message = '';
+                try {
+                    await runSearch({ case: paths.root, first: 'harbour verdict:nonsense' });
+                } catch (error) {
+                    message = error instanceof Error ? error.message : String(error);
+                }
+                expect(message.includes('nonsense')).toBe(true);
+            });
+        });
+
+        await it('refuses a mailbox the case does not have', async () => {
+            await withFixture(async ({ paths }) => {
+                let message = '';
+                try {
+                    await runSearch({ case: paths.root, first: 'harbour mailbox:nobody' });
+                } catch (error) {
+                    message = error instanceof Error ? error.message : String(error);
+                }
+                expect(message.includes('nobody')).toBe(true);
+            });
+        });
+
+        await it('finds by field and still reads a query written the old way', async () => {
+            await withFixture(async ({ paths }) => {
+                const field = await runSearch({ case: paths.root, first: 'from:ada subject:harbour' });
+                expect(field.some((line) => line.includes('Harbour contract'))).toBe(true);
+                const old = await runSearch({ case: paths.root, first: 'subject : harbour' });
+                expect(old.some((line) => line.includes('Harbour contract'))).toBe(true);
             });
         });
 

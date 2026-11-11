@@ -27,6 +27,13 @@ import { deleteBodyExplanations, ensureBodyExplanations } from './body-explanati
 import { deleteReceiverAnchors, ensureReceiverAnchors } from './receiver-anchors.ts';
 import { deleteUnsignedHeaders, ensureUnsignedHeaders } from './unsigned-headers.ts';
 import type { CasePaths } from './case.ts';
+import {
+    parseSearch,
+    SearchSyntaxError,
+    type ParsedSearch,
+    type SearchFilters,
+    type SearchOrder,
+} from './search-query.ts';
 import { statementFor } from './statements.ts';
 
 /**
@@ -448,8 +455,74 @@ export interface SearchOptions {
     readonly verdict?: Verdict;
     /** Only the hashes this scope admits — see {@link hashScope}. */
     readonly scope?: HashScope;
+    /**
+     * Only the hashes of this mailbox. A second scope beside `scope`, because the sidebar's
+     * choice and the query's `mailbox:` are two filters that both have to hold. The caller
+     * resolves the name the query carries; the store does not know the import log.
+     */
+    readonly mailbox?: HashScope;
+    /** Sent on or after this instant (UTC, milliseconds). */
+    readonly after?: number;
+    /** Sent before this instant (UTC, milliseconds). */
+    readonly before?: number;
+    /** `relevance` (the default) or by date; mail without a date comes last either way. */
+    readonly order?: SearchOrder;
     /** How many hits to return. */
     readonly limit?: number;
+}
+
+/**
+ * The options with what the query itself narrows added, or `undefined` when the two cannot both
+ * be true (the list is filtered to one verdict and the query asks for another): nothing then
+ * matches, and saying so is better than widening either side.
+ *
+ * Throws a {@link SearchSyntaxError} when the query names a mailbox and the caller gave none.
+ */
+export function narrowedBy(filters: SearchFilters, options: SearchOptions): SearchOptions | undefined {
+    if (
+        filters.verdict !== undefined &&
+        options.verdict !== undefined &&
+        filters.verdict !== options.verdict
+    ) {
+        return undefined;
+    }
+    if (filters.mailbox !== undefined && options.mailbox === undefined) {
+        throw new SearchSyntaxError([
+            fmt(_('This search cannot look in the mailbox {name}.'), { name: filters.mailbox }),
+        ]);
+    }
+    return {
+        ...options,
+        ...(filters.verdict === undefined ? {} : { verdict: filters.verdict }),
+        ...(filters.after === undefined
+            ? {}
+            : { after: Math.max(filters.after, options.after ?? filters.after) }),
+        ...(filters.before === undefined
+            ? {}
+            : { before: Math.min(filters.before, options.before ?? filters.before) }),
+        ...(filters.order === undefined ? {} : { order: filters.order }),
+    };
+}
+
+/** Does this row pass the date window? A row without a date never does, once there is one. */
+function inWindow(sentAt: number | undefined, options: SearchOptions): boolean {
+    if (options.after === undefined && options.before === undefined) return true;
+    if (sentAt === undefined) return false;
+    if (options.after !== undefined && sentAt < options.after) return false;
+    if (options.before !== undefined && sentAt >= options.before) return false;
+    return true;
+}
+
+/** Newest or oldest first, undated last; ties by hash so the order is the same every time. */
+function byDate(order: 'newest' | 'oldest'): (a: SearchHit, b: SearchHit) => number {
+    return (a, b) => {
+        if (a.sentAt === undefined || b.sentAt === undefined) {
+            if (a.sentAt === b.sentAt) return a.hash < b.hash ? -1 : 1;
+            return a.sentAt === undefined ? 1 : -1;
+        }
+        if (a.sentAt !== b.sentAt) return order === 'newest' ? b.sentAt - a.sentAt : a.sentAt - b.sentAt;
+        return a.hash < b.hash ? -1 : 1;
+    };
 }
 
 /**
@@ -472,45 +545,108 @@ const SEARCH_SCAN_CAP = 20_000;
  * list the operator is going to read with their eyes, and it keeps both statements to the plain
  * SQL that gjsify's parser handles.
  *
- * `query` is tried as FTS5 syntax first (phrases, `AND`/`OR`, `subject : …`); what FTS5 rejects —
- * an address like `chef@firma.de`, a domain, `Re: Angebot` — is searched as literal terms instead
- * (see {@link toLiteralTerms}), so a plain search never ends in a syntax error.
+ * `query` is read by {@link parseSearch}. One that uses the search operators (`from:`, `-word`,
+ * `after:` …) is compiled and a mistake in it THROWS a {@link SearchSyntaxError}. Any other is
+ * tried as FTS5 syntax first (phrases, `AND`/`OR`, `subject : …`); what FTS5 rejects — an address
+ * like `chef@firma.de`, a domain, `Re: Angebot` — is searched as literal terms instead (see
+ * {@link toLiteralTerms}), so a plain search never ends in a syntax error.
  *
  * The hits are a bounded list by construction — nobody reads the thirty-thousandth match — so
  * this returns them whole and has no `offset`: the list model pages through what it is given,
  * and page two of a ranked search must not re-rank.
  */
-export function searchHits(db: DatabaseSync, query: string, options: SearchOptions = {}): SearchHit[] {
+export function searchHits(db: DatabaseSync, query: string, input: SearchOptions = {}): SearchHit[] {
     const match = query.trim();
     if (match === '') return [];
+    const parsed = parseSearch(query);
+    if (parsed.errors.length > 0) throw new SearchSyntaxError(parsed.errors);
+    const options = narrowedBy(parsed.filters, input);
+    if (options === undefined) return [];
+
     // Interpolated, not bound: `LIMIT ?` is not accepted everywhere, and the value is an integer
     // this function clamps itself, so there is no string to inject.
     const limit = clampSearchLimit(options.limit ?? 20);
-    const filtered = options.verdict !== undefined || options.scope !== undefined;
-    const scan = filtered ? Math.min(SEARCH_SCAN_CAP, limit * 50) : limit;
+    const sorted = options.order === 'newest' || options.order === 'oldest';
+    const filtered =
+        options.verdict !== undefined ||
+        options.scope !== undefined ||
+        options.mailbox !== undefined ||
+        options.after !== undefined ||
+        options.before !== undefined;
+    // A sorted list has to see every match before it knows which are the first: the window is
+    // the scan cap, not the page.
+    const scan = sorted ? SEARCH_SCAN_CAP : filtered ? Math.min(SEARCH_SCAN_CAP, limit * 50) : limit;
+    const ranked = rankedHashes(db, match, parsed, options, scan);
+
+    const row = db.prepare(`SELECT ${HIT_COLUMNS} FROM messages WHERE messages.hash = ?`);
+    const found: SearchHit[] = [];
+    for (const hash of ranked) {
+        // The scopes first: one indexed lookup in a temp table is cheaper than reading the row.
+        if (options.scope && !options.scope.has(hash)) continue;
+        if (options.mailbox && !options.mailbox.has(hash)) continue;
+        const message = row.get(hash) as Record<string, unknown> | undefined;
+        if (!message) continue;
+        const hit = toHit(message);
+        if (options.verdict !== undefined && hit.verdict !== options.verdict) continue;
+        if (!inWindow(hit.sentAt, options)) continue;
+        found.push(hit);
+        if (!sorted && found.length >= limit) break;
+    }
+    if (!sorted) return found;
+    return found.sort(byDate(options.order === 'oldest' ? 'oldest' : 'newest')).slice(0, limit);
+}
+
+/**
+ * The hashes a query matches, best first.
+ *
+ * A query of words goes to FTS5. A query of filters alone has nothing to rank, so it reads the
+ * newest messages the filters admit. A query written the old way is tried as FTS5 syntax first;
+ * what FTS5 rejects is searched as literal terms (see {@link toLiteralTerms}).
+ */
+function rankedHashes(
+    db: DatabaseSync,
+    match: string,
+    parsed: ParsedSearch,
+    options: SearchOptions,
+    scan: number,
+): string[] {
+    if (!parsed.raw && parsed.fts === '') {
+        const where: string[] = [];
+        const params: (string | number)[] = [];
+        if (options.after !== undefined) {
+            where.push('sent_at >= ?');
+            params.push(options.after);
+        }
+        if (options.before !== undefined) {
+            where.push('sent_at < ?');
+            params.push(options.before);
+        }
+        if (options.verdict !== undefined) {
+            where.push('verdict = ?');
+            params.push(options.verdict);
+        }
+        const clause = where.length === 0 ? '' : ` WHERE ${where.join(' AND ')}`;
+        const rows = db
+            .prepare(
+                `SELECT hash FROM messages${clause} ORDER BY sent_at IS NULL, sent_at DESC, hash LIMIT ${scan}`,
+            )
+            .all(...params) as { hash?: string }[];
+        return rows.flatMap((hit) => (typeof hit.hash === 'string' ? [hit.hash] : []));
+    }
     const statement = db.prepare(
         `SELECT hash FROM messages_fts WHERE messages_fts MATCH ? ORDER BY rank LIMIT ${scan}`,
     );
     let ranked: { hash?: string }[];
-    try {
-        ranked = statement.all(match) as { hash?: string }[];
-    } catch {
-        ranked = statement.all(toLiteralTerms(match)) as { hash?: string }[];
+    if (parsed.raw) {
+        try {
+            ranked = statement.all(match) as { hash?: string }[];
+        } catch {
+            ranked = statement.all(toLiteralTerms(match)) as { hash?: string }[];
+        }
+    } else {
+        ranked = statement.all(parsed.fts) as { hash?: string }[];
     }
-
-    const row = db.prepare(`SELECT ${HIT_COLUMNS} FROM messages WHERE messages.hash = ?`);
-    const found: SearchHit[] = [];
-    for (const hit of ranked) {
-        if (typeof hit.hash !== 'string') continue;
-        // The scope first: one indexed lookup in a temp table is cheaper than reading the row.
-        if (options.scope && !options.scope.has(hit.hash)) continue;
-        const message = row.get(hit.hash) as Record<string, unknown> | undefined;
-        if (!message) continue;
-        if (options.verdict !== undefined && String(message.verdict) !== options.verdict) continue;
-        found.push(toHit(message));
-        if (found.length >= limit) break;
-    }
-    return found;
+    return ranked.flatMap((hit) => (typeof hit.hash === 'string' ? [hit.hash] : []));
 }
 
 export function searchMessages(db: DatabaseSync, query: string, limit = 20): SearchHit[] {
@@ -593,7 +729,9 @@ export function hitsForHashes(
         const hit = rows.get(hash);
         if (!hit) continue;
         if (options.scope && !options.scope.has(hash)) continue;
+        if (options.mailbox && !options.mailbox.has(hash)) continue;
         if (options.verdict !== undefined && hit.verdict !== options.verdict) continue;
+        if (!inWindow(hit.sentAt, options)) continue;
         hits.push(hit);
     }
     return hits;
