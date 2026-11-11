@@ -179,7 +179,7 @@ import {
     timelineRows,
     type BarSegment,
 } from './view/people.ts';
-import { allSources, baseName, shortPath, sourceRows } from './view/sources.ts';
+import { allSources, baseName, mailboxRows, shortPath, sourceRows } from './view/sources.ts';
 import { explainVerdict, filterSummary, partialSummary, verdictFilters } from './view/verdict.ts';
 
 import Template, { GTypeName, InternalChildren, type Children } from './window.blp';
@@ -502,7 +502,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private progressPhase: SearchPhase = 'idle';
     private progressTimer = 0;
     /** The archive behind each `sourceList` row; `undefined` at index 0 — the "all" row. */
-    private sources: (string | undefined)[] = [];
+    /** What each row of the archive list stands for, in row order; the first row is "all". */
+    private sidebar: { source?: string; mailbox?: string }[] = [];
+    /** The part rows of each mailbox row, so its expander can show and hide them. */
+    private mailboxParts = new Map<string, Gtk.ListBoxRow[]>();
+    private mailboxToggles = new Map<string, Gtk.Button>();
+    private expanded = new Set<string>();
     /** The verdict behind each `verdictList` row, with the same rule at index 0. */
     private filters: (Verdict | undefined)[] = [];
     /** How many messages the case holds, whatever is filtered — every count's denominator. */
@@ -646,10 +651,13 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
         this._sourceList.connect('row-selected', (_list, row) => {
             if (this.rebuilding || row === null) return;
-            this.source = this.sources[row.get_index()];
+            const target = this.sidebar[row.get_index()];
+            this.source = target?.source;
             // An archive and a scope are the same question — "where did these messages come
-            // from" — and a list narrowed by both would be a set nobody picked a number for.
-            this.scope = undefined;
+            // from" — and a list narrowed by both would be a set nobody picked a number for. A
+            // mailbox row IS a scope, the one the overview's mailbox rows set as well.
+            this.scope =
+                target?.mailbox === undefined ? undefined : { kind: 'mailbox', mailbox: target.mailbox };
             this.track(this.fillList());
         });
 
@@ -1217,13 +1225,50 @@ export class StampedWindow extends Adw.ApplicationWindow {
         clearList(this._sourceList);
         const all = allSources(sources);
         this._sourceList.append(navRow(all.title, all.subtitle, all.icon));
-        this.sources = [undefined];
-        for (const row of sourceRows(sources)) {
+        this.sidebar = [{}];
+        this.mailboxParts.clear();
+        this.mailboxToggles.clear();
+        const grouped = mailboxRows(sources);
+        const archiveRow = (row: ReturnType<typeof sourceRows>[number]): Adw.ActionRow => {
             const item = navRow(row.title, row.subtitle, row.icon);
             item.set_tooltip_markup(row.tooltip);
             item.add_suffix(countLabel(row.messages));
-            this._sourceList.append(item);
-            this.sources.push(row.source);
+            return item;
+        };
+        if (grouped === undefined) {
+            for (const row of sourceRows(sources)) {
+                this._sourceList.append(archiveRow(row));
+                this.sidebar.push({ source: row.source });
+            }
+        } else {
+            for (const mailbox of grouped) {
+                const header = navRow(mailbox.title, mailbox.subtitle, mailbox.icon);
+                header.add_suffix(countLabel(mailbox.messages));
+                const toggle = new Gtk.Button({
+                    iconName: 'pan-end-symbolic',
+                    valign: Gtk.Align.CENTER,
+                    tooltipText: _('Show the files of this mailbox'),
+                });
+                toggle.add_css_class('flat');
+                header.add_suffix(toggle);
+                this._sourceList.append(header);
+                this.sidebar.push({ mailbox: mailbox.mailbox });
+                const parts: Gtk.ListBoxRow[] = [];
+                for (const part of mailbox.parts) {
+                    const item = archiveRow(part);
+                    item.set_margin_start(24);
+                    this._sourceList.append(item);
+                    this.sidebar.push({ source: part.source });
+                    parts.push(item);
+                }
+                this.mailboxParts.set(mailbox.mailbox, parts);
+                this.mailboxToggles.set(mailbox.mailbox, toggle);
+                toggle.connect('clicked', () =>
+                    this.setExpanded(mailbox.mailbox, !this.expanded.has(mailbox.mailbox)),
+                );
+                const open = this.expanded.has(mailbox.mailbox);
+                this.setExpanded(mailbox.mailbox, open);
+            }
         }
 
         clearList(this._verdictList);
@@ -1254,9 +1299,31 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** Put the sidebar's selection back where the filters say, without re-running its handlers. */
     private syncSidebarSelection(): void {
         this.rebuilding = true;
-        this.selectRow(this._sourceList, this.sources.indexOf(this.source));
+        const scope = this.scope;
+        const wanted =
+            this.source !== undefined
+                ? this.sidebar.findIndex((target) => target.source === this.source)
+                : scope?.kind === 'mailbox'
+                  ? this.sidebar.findIndex((target) => target.mailbox === scope.mailbox)
+                  : -1;
+        // A selected archive in a collapsed mailbox would be a selection nobody can see.
+        const target = this.sidebar[wanted];
+        if (target?.source !== undefined) {
+            for (const [mailbox, parts] of this.mailboxParts) {
+                if (parts.some((row) => row.get_index() === wanted)) this.setExpanded(mailbox, true);
+            }
+        }
+        this.selectRow(this._sourceList, wanted);
         this.selectRow(this._verdictList, this.filters.indexOf(this.verdict));
         this.rebuilding = false;
+    }
+
+    /** Show or hide the file rows under a mailbox row. */
+    private setExpanded(mailbox: string, open: boolean): void {
+        if (open) this.expanded.add(mailbox);
+        else this.expanded.delete(mailbox);
+        for (const row of this.mailboxParts.get(mailbox) ?? []) row.set_visible(open);
+        this.mailboxToggles.get(mailbox)?.set_icon_name(open ? 'pan-down-symbolic' : 'pan-end-symbolic');
     }
 
     private selectRow(list: Gtk.ListBox, index: number): void {

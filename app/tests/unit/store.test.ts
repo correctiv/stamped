@@ -25,6 +25,7 @@ import {
     appendLog,
     browseMessages,
     caseReport,
+    derivedMailboxHashes,
     caveatCounts,
     CASE_VERSION,
     casePaths,
@@ -41,7 +42,6 @@ import {
     keyDemand,
     listMessages,
     logSources,
-    mailboxHashes,
     messageCount,
     openCase,
     openIndex,
@@ -843,17 +843,125 @@ export default async () => {
             });
         });
 
-        await it('has no mailbox breakdown for a plain import, however the folder is named', async () => {
-            // The provenance of a plain import is its SOURCE FILE, which has a section of its
-            // own. An absent breakdown and an empty one are different facts, and only the first
-            // one is true here.
+        // Index a message and log it under `source` (and `mailbox`, when a folder import wrote one).
+        const logged = (
+            paths: CasePaths,
+            db: DatabaseSync,
+            subject: string,
+            source: string,
+            extra: { mailbox?: string; undated?: boolean } = {},
+        ): string => {
+            const raw =
+                extra.undated === true
+                    ? encodeLatin1(`From: Ada <ada@example.com>\nSubject: ${subject}\n\nbody ${subject}\n`)
+                    : message(subject, `body ${subject}`);
+            const hash = put(db, raw, 'unsigned');
+            appendLog(paths, [
+                {
+                    hash,
+                    source,
+                    offset: 0,
+                    kind: 'mbox',
+                    bytes: raw.length,
+                    at: '2024-01-01T00:00:00Z',
+                    duplicate: false,
+                    ...(extra.mailbox === undefined ? {} : { mailbox: extra.mailbox }),
+                },
+            ]);
+            return hash;
+        };
+
+        await it('has no mailbox breakdown for a lone file, however its folder is named', async () => {
+            // A single saved file is not a mailbox: calling `Downloads` one would put a made-up
+            // row in front of a journalist. An absent breakdown and an empty one are different
+            // facts, and only the first one is true here.
             await withCase(async (paths) => {
                 await importSources(paths, [archive('inbox.mbox')], { keys: fixtureKeys() });
                 const db = openIndex(paths);
                 try {
                     expect(caseReport(db, { paths }).mailboxes).toBe(undefined);
                     // The hashes ARE all in the log — under the empty name, which is no name.
-                    expect([...mailboxHashes(paths).keys()]).toStrictEqual(['']);
+                    expect([...derivedMailboxHashes(paths).keys()]).toStrictEqual(['']);
+                } finally {
+                    db.close();
+                }
+            });
+        });
+
+        await it('names a mailbox from the folder the parts of a file-by-file import sit in', async () => {
+            await withCase(async (paths) => {
+                const db = openIndex(paths);
+                try {
+                    logged(paths, db, 'a', '/leak/ada@example.com/part-01.mbox');
+                    logged(paths, db, 'b', '/leak/ada@example.com/part-02.mbox');
+                    // An address names a mailbox even when only one part was imported …
+                    logged(paths, db, 'c', '/leak/grace@example.net/part-01.mbox');
+                    // … and so does a folder holding two or more distinct files, whatever its name.
+                    logged(paths, db, 'd', '/leak/Archive/one.mbox');
+                    logged(paths, db, 'e', '/leak/Archive/two.mbox');
+                    // A Maildir message is named by the folder above `cur`.
+                    logged(paths, db, 'f', '/leak/Sent/cur/1700000000.eml');
+                    logged(paths, db, 'g', '/leak/Sent/new/1700000001.eml');
+                    // A lone file in a plain folder, and a bare name, belong to no mailbox.
+                    logged(paths, db, 'h', '/leak/Downloads/inbox.mbox');
+                    logged(paths, db, 'i', 'loose.mbox');
+                    // A recorded mailbox wins over the folder.
+                    logged(paths, db, 'j', '/anywhere/x.mbox', { mailbox: 'recorded' });
+
+                    const sizes = new Map(
+                        [...derivedMailboxHashes(paths)].map(([name, hashes]) => [name, hashes.size]),
+                    );
+                    expect(Object.fromEntries(sizes)).toStrictEqual({
+                        'ada@example.com': 2,
+                        'grace@example.net': 1,
+                        Archive: 2,
+                        Sent: 2,
+                        '': 2,
+                        recorded: 1,
+                    });
+                } finally {
+                    db.close();
+                }
+            });
+        });
+
+        await it('reports each mailbox with its dates, the unnamed mail last', async () => {
+            await withCase(async (paths) => {
+                const db = openIndex(paths);
+                try {
+                    logged(paths, db, 'a', '/leak/ada@example.com/part-01.mbox');
+                    logged(paths, db, 'b', '/leak/ada@example.com/part-02.mbox', { undated: true });
+                    logged(paths, db, 'c', '/leak/ada@example.com/part-02.mbox');
+                    logged(paths, db, 'd', '/leak/grace@example.net/part-01.mbox');
+                    logged(paths, db, 'e', 'loose.mbox');
+                    logged(paths, db, 'f', 'loose2.mbox');
+                    logged(paths, db, 'g', 'loose3.mbox');
+                    const boxes = caseReport(db, { paths }).mailboxes ?? [];
+                    expect(boxes.map((box) => [box.mailbox, box.messages])).toStrictEqual([
+                        ['ada@example.com', 3],
+                        ['grace@example.net', 1],
+                        ['', 3],
+                    ]);
+                    const ada = boxes[0];
+                    expect(ada?.undated).toBe(1);
+                    expect(ada?.earliest).toBe('2024-03-05T09:40:00.000Z');
+                    expect(ada?.latest).toBe('2024-03-05T09:40:00.000Z');
+                    expect(boxes[2]?.undated).toBe(0);
+                } finally {
+                    db.close();
+                }
+            });
+        });
+
+        await it('leaves a mailbox without any date with no range', async () => {
+            await withCase(async (paths) => {
+                const db = openIndex(paths);
+                try {
+                    logged(paths, db, 'a', '/leak/ada@example.com/part-01.mbox', { undated: true });
+                    const [box] = caseReport(db, { paths }).mailboxes ?? [];
+                    expect(box?.earliest).toBe(undefined);
+                    expect(box?.latest).toBe(undefined);
+                    expect(box?.undated).toBe(1);
                 } finally {
                     db.close();
                 }
