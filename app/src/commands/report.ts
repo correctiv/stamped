@@ -21,12 +21,14 @@ import {
     rawSetDigest,
     unsignedBreakdown,
 } from '@stamped/store';
+import { renameSync, rmSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
 import { bodyAlteredSection } from '../lib/body-altered.ts';
 import { buildPdfModel } from '../lib/pdf-report-model.ts';
+import { reportPhases, reportProgressLine, type ReportPhase } from '../lib/report-progress.ts';
 import { loadVault } from '../lib/vault.ts';
 import { VERSION } from '../lib/version.ts';
 
@@ -38,6 +40,7 @@ interface ReportArgs {
     pdf?: string;
     unsignedBreakdown?: boolean;
     anonymizeMailboxes?: boolean;
+    progress?: string;
 }
 
 /** Built on call, not as a literal — see `verifyCommand` on when the catalogue is installed. */
@@ -75,6 +78,13 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     type: 'boolean',
                     default: false,
                 })
+                .option('progress', {
+                    describe: _(
+                        'With --pdf: machine-readable progress: jsonl prints one JSON object per step on stdout, then a final one',
+                    ),
+                    type: 'string',
+                    choices: ['jsonl'],
+                })
                 .example(
                     'stamped report ./case',
                     _('See how much of the case is still unverifiable, and which key would change that'),
@@ -88,26 +98,70 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                 if (args.pdf !== undefined) {
                     // Imported here: the GI modules are GJS-only and the other paths need none.
                     const { renderPdfReport } = await import('../lib/pdf-report.ts');
+                    const jsonl = args.progress === 'jsonl';
+                    const phases = reportPhases(args.unsignedBreakdown === true);
+                    const emit = (phase: ReportPhase, done: number, total: number): void => {
+                        if (jsonl) {
+                            process.stdout.write(
+                                `${JSON.stringify(reportProgressLine(phases, phase, done, total))}\n`,
+                            );
+                        }
+                    };
+                    const countOf = (verdict: string): number =>
+                        report.verdicts.find((count) => count.verdict === verdict)?.messages ?? 0;
+
+                    emit('summary', 0, 0);
+                    const periods = periodBreakdown(db, paths);
+                    const domains = domainsByVerdict(db, 15);
+                    const keys = loadVault(paths.root).all();
+                    emit('digest', 0, report.messages);
+                    const digest = rawSetDigest(db, (done) => emit('digest', done, report.messages));
+                    emit('body', 0, countOf('body-altered'));
+                    const bodyAltered = bodyAlteredBreakdown(db, paths, (done) =>
+                        emit('body', done, countOf('body-altered')),
+                    );
+                    let unsigned: ReturnType<typeof unsignedBreakdown> | undefined;
+                    if (args.unsignedBreakdown) {
+                        emit('unsigned', 0, countOf('unsigned'));
+                        unsigned = unsignedBreakdown(db, paths, (done) =>
+                            emit('unsigned', done, countOf('unsigned')),
+                        );
+                    }
                     const model = buildPdfModel({
                         caseName: basename(resolve(paths.root)),
                         checkedAt: new Date(),
                         version: VERSION,
                         report,
-                        periods: periodBreakdown(db, paths),
-                        domains: domainsByVerdict(db, 15),
-                        digest: rawSetDigest(db),
-                        keys: loadVault(paths.root).all(),
-                        bodyAltered: bodyAlteredBreakdown(db, paths),
-                        ...(args.unsignedBreakdown ? { unsigned: unsignedBreakdown(db, paths) } : {}),
+                        periods,
+                        domains,
+                        digest,
+                        keys,
+                        bodyAltered,
+                        ...(unsigned === undefined ? {} : { unsigned }),
                         anonymizeMailboxes: args.anonymizeMailboxes === true,
                     });
-                    const { pages } = await renderPdfReport(model, args.pdf);
-                    console.log(
-                        fmt(_n('Wrote {file} ({pages} page).', 'Wrote {file} ({pages} pages).', pages), {
-                            file: args.pdf,
-                            pages: String(pages),
-                        }),
-                    );
+                    emit('render', 0, 0);
+                    // Written beside the target and renamed when complete: a cancelled or failed
+                    // run must never leave a file that looks like a finished report.
+                    const partial = `${args.pdf}.part`;
+                    let pages: number;
+                    try {
+                        ({ pages } = await renderPdfReport(model, partial));
+                        renameSync(partial, args.pdf);
+                    } catch (error) {
+                        rmSync(partial, { force: true });
+                        throw error;
+                    }
+                    if (jsonl) {
+                        process.stdout.write(`${JSON.stringify({ phase: 'done', pages, file: args.pdf })}\n`);
+                    } else {
+                        console.log(
+                            fmt(_n('Wrote {file} ({pages} page).', 'Wrote {file} ({pages} pages).', pages), {
+                                file: args.pdf,
+                                pages: String(pages),
+                            }),
+                        );
+                    }
                     return;
                 }
 

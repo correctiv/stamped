@@ -268,6 +268,23 @@ export default async () => {
             expect(rowView(registry.get('keys')!).stats.endsWith('1 error')).toBe(true);
         });
 
+        await it('shows a PDF report by step, and cancels only while it runs', () => {
+            const registry = new ActivityRegistry();
+            const line = { phase: 'digest', step: 2, steps: 4, done: 50, total: 100 } as const;
+            registry.start({ kind: 'report', line });
+            const row = rowView(registry.get('report')!);
+            expect(row.title).toBe('PDF report');
+            expect(row.subtitle).toBe('Fingerprinting the message set');
+            expect(row.stats).toBe('Step 2 of 4 · 50 of 100');
+            expect(row.fraction).toBe(0.375);
+            expect(row.cancellable).toBe(true);
+            registry.finish({ kind: 'report', line }, 'cancelled');
+            const ended = rowView(registry.get('report')!);
+            expect(ended.subtitle).toBe('Cancelled. No file was written.');
+            expect(ended.cancellable).toBe(false);
+            expect(ended.fraction).toBe(undefined);
+        });
+
         await it('keeps the error count and the reason on a failed key lookup', () => {
             const registry = new ActivityRegistry();
             registry.start(keys({ done: 2, found: 1, notFound: 0, errors: 3 }));

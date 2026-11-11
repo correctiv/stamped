@@ -24,6 +24,7 @@ import {
     fmt,
     requestTemplate,
     _,
+    _n,
     type KeyPair,
     type LookupChannel,
     type MessageFinding,
@@ -60,6 +61,13 @@ import {
     type SubprocessSemantic,
 } from '../lib/semantic-run.ts';
 import { openCopy } from '../lib/open-copy.ts';
+import {
+    parseReportLine,
+    reportPhases,
+    reportProgressLine,
+    type ReportDoneLine,
+    type ReportProgressLine,
+} from '../lib/report-progress.ts';
 import { selfArgv } from '../lib/self-argv.ts';
 import { ActivityController } from './activity.ts';
 import { spawnEmbedHelper } from './embed-spawn.ts';
@@ -185,6 +193,7 @@ import Template, { GTypeName, InternalChildren, type Children } from './window.b
 Gio._promisify(Adw.AlertDialog.prototype, 'choose', 'choose_finish');
 Gio._promisify(Gtk.FileDialog.prototype, 'select_folder', 'select_folder_finish');
 Gio._promisify(Gtk.FileDialog.prototype, 'open_multiple', 'open_multiple_finish');
+Gio._promisify(Gtk.FileDialog.prototype, 'save', 'save_finish');
 Gio._promisify(Gtk.FileLauncher.prototype, 'launch', 'launch_finish');
 Gio._promisify(Gio.DataInputStream.prototype, 'read_line_async', 'read_line_finish');
 Gio._promisify(Gio.Subprocess.prototype, 'wait_check_async', 'wait_check_finish');
@@ -471,6 +480,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private importCancellable?: Gio.Cancellable;
     /** The import subprocess this window started, if any; only its Cancel button may kill it. */
     private importProc?: Gio.Subprocess;
+    /** The PDF report subprocess this window started, if any, and whether Cancel ended it. */
+    private reportProc?: Gio.Subprocess;
+    private reportFile?: string;
+    private reportCancelled = false;
     /** The poll source reading the status file, and whether the last tick saw a live run. */
     private importPoll = 0;
     private importWasRunning = false;
@@ -573,6 +586,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.addAction('open-case', () => void this.chooseCase());
         this.addAction('import', () => void this.importFrom('files'));
         this.addAction('import-folder', () => void this.importFrom('folder'));
+        this.addAction('export-report', () => void this.exportReport());
         this.addAction('semantic-settings', () => {
             if (this.semantic) {
                 const marked = markingDecisions(this.semantic, () => {
@@ -650,7 +664,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this._filterBanner.connect('button-clicked', () => this.clearScope());
         this.activity = new ActivityController(
             this._activityButton,
-            () => this.cancelImport(),
+            (kind) => (kind === 'report' ? this.cancelReport() : this.cancelImport()),
             (control) => (control === 'pause' ? this.semantic?.pause() : this.semantic?.resume()),
         );
         this.importWatcher = new ImportWatcher(this.activity.registry);
@@ -668,6 +682,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.progressTimer = 0;
             this.stopImportPoll();
             this.stopActivityPoll();
+            this.cancelReport();
             this.activity.dispose();
             this.endSemantic();
             this.embedHelper?.dispose();
@@ -893,6 +908,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private adopt(session: CaseSession): void {
         this.endSemantic();
         this.cancelQueries();
+        // The report reads the case being left: it ends with it.
+        this.cancelReport();
         if (this.session) closeSession(this.session);
         this.stopImportPoll();
         this.session = session;
@@ -2558,6 +2575,190 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.pollImport();
     }
 
+    /** How `stamped report --pdf` is launched, or null when no binary can be found. */
+    private reportArgv(root: string, file: string, unsigned: boolean, anonymize: boolean): string[] | null {
+        const stamped = GLib.find_program_in_path('stamped');
+        const base = selfArgv(process) ?? (stamped === null ? null : [stamped]);
+        if (base === null) return null;
+        return [
+            ...base,
+            'report',
+            '--case',
+            root,
+            `--pdf=${file}`,
+            '--progress=jsonl',
+            ...(unsigned ? ['--unsigned-breakdown'] : []),
+            ...(anonymize ? ['--anonymize-mailboxes'] : []),
+        ];
+    }
+
+    /** What goes into the report, asked before the file name: a cancelled dialog costs nothing. */
+    private async askReportOptions(): Promise<{ unsigned: boolean; anonymize: boolean } | undefined> {
+        const dialog = new Adw.AlertDialog({
+            heading: _('Export PDF Report'),
+            body: _(
+                'A report on the case as it stands. Breaking down the unsigned messages reads every unsigned message once and can take a while.',
+            ),
+        });
+        const unsigned = new Gtk.CheckButton({ label: _('Break down the unsigned messages') });
+        const anonymize = new Gtk.CheckButton({ label: _('Replace mailbox names by M1, M2, …') });
+        const box = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 });
+        box.append(unsigned);
+        box.append(anonymize);
+        dialog.set_extra_child(box);
+        dialog.add_response('cancel', _('Cancel'));
+        dialog.add_response('export', _('Export…'));
+        dialog.set_response_appearance('export', Adw.ResponseAppearance.SUGGESTED);
+        dialog.set_default_response('export');
+        dialog.set_close_response('cancel');
+        if ((await dialog.choose(this, null)) !== 'export') return undefined;
+        return { unsigned: unsigned.get_active(), anonymize: anonymize.get_active() };
+    }
+
+    /**
+     * Write the case's PDF report in a subprocess, with progress in the status button.
+     *
+     * A subprocess for the same reason as the import: the fills behind the report read one raw
+     * file per message and would freeze the window for minutes on a large case. No modal
+     * dialog; the end is a toast with an Open button.
+     */
+    private async exportReport(): Promise<void> {
+        const session = this.session;
+        if (!session) {
+            showToast(_('Open a case first.'), 5);
+            return;
+        }
+        if (this.reportProc !== undefined) {
+            showToast(_('A report is already being written.'), 5);
+            return;
+        }
+        if (importRunning(importStatusOf(session))) {
+            showToast(_('Wait until the import has finished.'), 5);
+            return;
+        }
+
+        try {
+            const options = await this.askReportOptions();
+            if (options === undefined) return;
+            const dialog = new Gtk.FileDialog({
+                title: _('Export PDF Report'),
+                initialName: `${GLib.path_get_basename(session.root)}.pdf`,
+            });
+            const file = (await dialog.save(this, null))?.get_path();
+            if (!file || this.session !== session || this.reportProc !== undefined) return;
+
+            const argv = this.reportArgv(session.root, file, options.unsigned, options.anonymize);
+            if (argv === null) {
+                throw new Error(_('The report needs the stamped program, which could not be found.'));
+            }
+            await this.runReport(argv, file, options.unsigned);
+        } catch (error) {
+            if (!dismissed(error)) await this.fail(error);
+        }
+    }
+
+    private async runReport(argv: string[], file: string, withUnsigned: boolean): Promise<void> {
+        const registry = this.activity.registry;
+        const phases = reportPhases(withUnsigned);
+        const state: { line: ReportProgressLine; done?: ReportDoneLine; note?: string } = {
+            line: reportProgressLine(phases, 'summary', 0, 0),
+        };
+        registry.start({ kind: 'report', line: state.line });
+
+        // stderr is merged into stdout: a line that is not ours is the reason a failed run gives.
+        const proc = Gio.Subprocess.new(
+            argv,
+            Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_MERGE,
+        );
+        this.reportProc = proc;
+        this.reportFile = file;
+        this.reportCancelled = false;
+
+        const stdout = proc.get_stdout_pipe();
+        const decoder = new TextDecoder();
+        const reading = (async () => {
+            if (stdout === null) return;
+            const reader = new Gio.DataInputStream({ base_stream: stdout });
+            try {
+                for (;;) {
+                    const [bytes] = (await reader.read_line_async(
+                        GLib.PRIORITY_DEFAULT,
+                        null,
+                    )) as unknown as [Uint8Array | null, number];
+                    if (bytes === null) break;
+                    const text = decoder.decode(bytes);
+                    const event = parseReportLine(text);
+                    if (event === undefined) {
+                        if (text.trim() !== '') state.note = text.trim();
+                    } else if (event.phase === 'done') {
+                        state.done = event;
+                    } else {
+                        state.line = event;
+                        registry.update({ kind: 'report', line: event });
+                    }
+                }
+            } catch {
+                // the pipe went with the process
+            }
+        })();
+
+        let failure: unknown;
+        try {
+            await Promise.all([reading, proc.wait_check_async(null)]);
+        } catch (error) {
+            failure = error;
+        }
+        const cancelled = this.reportCancelled;
+        this.reportProc = undefined;
+        this.reportFile = undefined;
+        this.reportCancelled = false;
+
+        if (cancelled) {
+            removePartial(file);
+            registry.finish({ kind: 'report', line: state.line }, 'cancelled');
+            return;
+        }
+        const done = state.done;
+        if (failure === undefined && done !== undefined) {
+            registry.finish({ kind: 'report', line: reportProgressLine(phases, 'render', 1, 1) });
+            const toast = new Adw.Toast({
+                title: fmt(
+                    _n('Report written ({pages} page).', 'Report written ({pages} pages).', done.pages),
+                    {
+                        pages: String(done.pages),
+                    },
+                ),
+                buttonLabel: _('Open'),
+                timeout: 10,
+            });
+            toast.connect('button-clicked', () => {
+                const launcher = new Gtk.FileLauncher({ file: Gio.File.new_for_path(file) });
+                launcher.launch(this, null).catch((error: unknown) => {
+                    if (!dismissed(error)) void this.fail(error);
+                });
+            });
+            this._toasts.add_toast(toast);
+            return;
+        }
+        removePartial(file);
+        const reason = state.note?.slice(0, 300) ?? _('The report could not be written.');
+        registry.fail({ kind: 'report', line: state.line }, reason);
+        await this.fail(new Error(reason));
+    }
+
+    /** End the report this window started, and take its half-written file with it. */
+    private cancelReport(): void {
+        const proc = this.reportProc;
+        if (proc === undefined) return;
+        this.reportCancelled = true;
+        try {
+            proc.force_exit();
+        } catch {
+            // already gone
+        }
+        if (this.reportFile !== undefined) removePartial(this.reportFile);
+    }
+
     /** One tick: read the status file into the registry, reload when a run ends. */
     private pollImport(): boolean {
         const session = this.session;
@@ -2660,6 +2861,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
         const message = error instanceof Error ? error.message : String(error);
         await errorDialog(this, _('That did not work'), message, _('Close'));
+    }
+}
+
+/** Delete the `<file>.part` a report run writes beside its target; there may be none. */
+function removePartial(file: string): void {
+    try {
+        Gio.File.new_for_path(`${file}.part`).delete(null);
+    } catch {
+        // not there: the run never got to writing, or finished cleaning up itself
     }
 }
 
