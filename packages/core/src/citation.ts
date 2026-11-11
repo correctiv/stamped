@@ -65,6 +65,10 @@ function validSignature(domain: string, source: KeySource | undefined): string {
     }
 }
 
+function signaturePresent(domain: string): string {
+    return fmt(_('A DKIM signature of {domain} is present.'), { domain });
+}
+
 /** The caveat as a sentence of the citation. `recovered-key` is worded for a quote, not a manual. */
 function caveatSentence(caveat: Caveat, finding: MessageFinding): string {
     if (caveat === 'recovered-key') {
@@ -104,25 +108,33 @@ export function citationFor(finding: MessageFinding, options: CitationOptions = 
                 _('What the signature covers is unchanged since signing, with the following limits.'),
             );
             break;
-        case 'body-altered':
+        case 'body-altered': {
+            // An export artefact is explained AWAY from the claim, so the lead has to make it; any
+            // other explanation makes the claim itself and a lead would only say it twice.
+            const artefact = basis?.evidence.exportArtefact !== undefined;
             sentences.push(
-                fmt(
-                    _(
-                        'A DKIM signature of {domain} is present, but the body of this message is not the body that was signed.',
-                    ),
-                    { domain },
-                ),
+                !artefact && why !== undefined
+                    ? signaturePresent(domain)
+                    : fmt(
+                          _(
+                              'A DKIM signature of {domain} is present, but the body of this message is not the body that was signed.',
+                          ),
+                          { domain },
+                      ),
             );
-            notAlone = basis?.evidence.exportArtefact === undefined;
+            notAlone = !artefact;
             break;
+        }
         case 'headers-altered':
             sentences.push(
-                fmt(
-                    _(
-                        'A DKIM signature of {domain} is present, but a header field it covers is not what was signed.',
-                    ),
-                    { domain },
-                ),
+                why !== undefined
+                    ? signaturePresent(domain)
+                    : fmt(
+                          _(
+                              'A DKIM signature of {domain} is present, but a header field it covers is not what was signed.',
+                          ),
+                          { domain },
+                      ),
             );
             notAlone = !finding.caveats.includes('key-newer-than-message');
             break;
