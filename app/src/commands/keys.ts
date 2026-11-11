@@ -1,20 +1,22 @@
 /**
- * `stamped keys list|add|fetch|template` — which public keys the case needs, and getting them.
+ * `stamped keys list|add|fetch|template|resolve|eras|export|import` — which public keys the case needs, and getting them.
  *
  * Thin by design: the model, the validation, the lookups and the consent text are in
  * `@stamped/core`. This file maps arguments onto them and prints.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 import {
     describeConsent,
+    exportKeyBundle,
     fmt,
     keyNameFor,
     lookupArchive,
     lookupDns,
     missingPairs,
     pairName,
+    parseKeyBundle,
     parseKeyMaterial,
     requestTemplate,
     type KeyPair,
@@ -27,6 +29,7 @@ import {
     _n,
 } from '@stamped/core';
 import { measureKeyEras, missingKeyPairs, openIndex, reverifyPairs, type PairEras } from '@stamped/store';
+import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import type { CommandModule } from 'yargs';
 
@@ -112,6 +115,8 @@ export function keysCommand(): CommandModule<unknown, CaseArgs> {
                 .command(templateCommand())
                 .command(resolveCommand())
                 .command(erasCommand())
+                .command(exportCommand())
+                .command(importCommand())
                 .demandCommand(1, _('Pick a subcommand. Try `stamped keys --help`.'))
                 .epilog(explain()),
         handler: () => undefined,
@@ -652,6 +657,77 @@ function erasCommand(): CommandModule<CaseArgs, ErasArgs> {
                     count: result.checked,
                 }),
             );
+        },
+    };
+}
+
+const BUNDLE_PRIVACY = () =>
+    _(
+        'A bundle holds no messages, but it names the sender domains of the case. Passing it on is an editorial decision, not a default.',
+    );
+
+interface ExportArgs extends CaseArgs {
+    out: string;
+}
+
+function exportCommand(): CommandModule<CaseArgs, ExportArgs> {
+    return {
+        command: 'export [folder]',
+        describe: _('Write the keys of the case, with their origin and time window, to a bundle file'),
+        builder: (yargs) =>
+            yargs
+                .positional('folder', { describe: _('The case folder'), type: 'string' })
+                .option('out', {
+                    describe: _('The bundle file to write'),
+                    type: 'string',
+                    demandOption: true,
+                })
+                .epilog(BUNDLE_PRIVACY()),
+        handler: (args) => {
+            const vault = loadVault(caseDir('export', args));
+            writeFileSync(args.out, exportKeyBundle(vault));
+            console.log(fmt(_('Wrote {count} keys to {file}.'), { count: vault.size, file: args.out }));
+        },
+    };
+}
+
+interface ImportArgs extends CaseArgs {
+    file: string;
+}
+
+function importCommand(): CommandModule<CaseArgs, ImportArgs> {
+    return {
+        command: 'import <file> [folder]',
+        describe: _('Add the keys of a bundle file to the case, keeping their origin'),
+        builder: (yargs) =>
+            yargs
+                .positional('file', {
+                    describe: _('The bundle file to read'),
+                    type: 'string',
+                    demandOption: true,
+                })
+                .positional('folder', { describe: _('The case folder'), type: 'string' })
+                .epilog(
+                    _(
+                        'Imported keys keep the origin the bundle names and are never trusted more than that. A key that differs from one the case already holds is kept next to it: see `stamped keys resolve`.',
+                    ),
+                ),
+        handler: async (args) => {
+            const keys = parseKeyBundle(readFileSync(args.file, 'utf8'), args.file);
+            const dir = caseDir('import', args);
+            const vault = loadVault(dir);
+            const before = vault.size;
+            for (const key of keys) vault.add(key);
+            saveVault(dir, vault);
+            const conflicts = vault.conflicts().length;
+            console.log(
+                fmt(_('{count} keys imported, {conflicts} conflicts to resolve.'), {
+                    count: vault.size - before,
+                    conflicts,
+                }),
+            );
+            if (conflicts > 0) console.log(_('Hint: stamped keys resolve <selector>._domainkey.<domain>'));
+            if (existsSync(join(dir, 'index.db'))) await reverifyApplicable(caseOrThrow(dir));
         },
     };
 }

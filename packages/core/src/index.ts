@@ -95,6 +95,8 @@ export {
     rsaModulusBits,
 } from './keymaterial.ts';
 
+export { exportKeyBundle, KEY_BUNDLE_FORMAT, KEY_BUNDLE_VERSION, parseKeyBundle } from './keybundle.ts';
+
 export {
     type AddOutcome,
     KEY_ORIGINS,

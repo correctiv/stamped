@@ -84,6 +84,7 @@ packages/core/src/classify.ts
 packages/core/src/explain.ts
 packages/core/src/i18n.ts
 packages/core/src/index.ts
+packages/core/src/keybundle.ts
 packages/core/src/keyconsent.ts
 packages/core/src/keylookup.ts
 packages/core/src/keymaterial.ts
