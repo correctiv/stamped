@@ -121,6 +121,7 @@ import {
 import { escapeLine, noHyphens, plainText } from './view/markup.ts';
 import { BENCH_FILE, cpuMs, report as benchReport, rssMb, settle, sinceStart, startLap } from './bench.ts';
 import { MessageItem, MessageRowView } from './message-row.ts';
+import { isRecoverable } from './query-client.ts';
 import { nearEnd, PagedList } from '../lib/paged-list.ts';
 import {
     addsMeaning,
@@ -2592,9 +2593,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
      *
      * One dialog, never a toast: these are "the case could not be opened" and "that record has an
      * empty p=", which are answers to something the person just asked for and must not slide off
-     * the screen in three seconds.
+     * the screen in three seconds. The one exception is below.
      */
     private async fail(error: unknown): Promise<void> {
+        // The index was busy, was asked twice and nothing is lost: a toast, because a dialog the
+        // person has to dismiss (possibly again and again while a reverify writes) is out of
+        // proportion to something they can only retry.
+        if (isRecoverable(error)) {
+            showToast(escapeLine(_('The index is busy right now. Try again in a moment.')), 5);
+            return;
+        }
         const message = error instanceof Error ? error.message : String(error);
         await errorDialog(this, _('That did not work'), message, _('Close'));
     }

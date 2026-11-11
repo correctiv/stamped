@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-29 11:07+0100\n"
+"POT-Creation-Date: 2026-11-11 13:00+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -789,21 +789,21 @@ msgid ""
 "you fill, so examining a message sends no lookup to the signing domain."
 msgstr ""
 
-#: app/src/gui/query-client.ts:167 app/src/gui/query-client.ts:173
+#: app/src/gui/query-client.ts:135 app/src/gui/query-client.ts:155
 msgid "The case was closed while the index was being read."
 msgstr ""
 
-#: app/src/gui/query-client.ts:187
+#: app/src/gui/query-client.ts:178
 msgid ""
 "The index did not answer within {seconds} seconds. Reading it was started "
 "over."
 msgstr ""
 
-#: app/src/gui/query-client.ts:254
+#: app/src/gui/query-client.ts:199
 msgid "The index could not answer that."
 msgstr ""
 
-#: app/src/gui/query-worker.ts:67
+#: app/src/gui/query-worker.ts:63
 msgid "No case is open in the index reader."
 msgstr ""
 
@@ -1734,15 +1734,15 @@ msgstr ""
 msgid "{shown} shown"
 msgstr ""
 
-#: app/src/gui/window.ts:369
+#: app/src/gui/window.ts:370
 msgid "All files"
 msgstr ""
 
-#: app/src/gui/window.ts:371
+#: app/src/gui/window.ts:372
 msgid "Mail archives"
 msgstr ""
 
-#: app/src/gui/window.ts:715
+#: app/src/gui/window.ts:710
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
@@ -1955,11 +1955,15 @@ msgstr ""
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:2600
+#: app/src/gui/window.ts:2603
+msgid "The index is busy right now. Try again in a moment."
+msgstr ""
+
+#: app/src/gui/window.ts:2607
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:2600
+#: app/src/gui/window.ts:2607
 msgid "Close"
 msgstr ""
 

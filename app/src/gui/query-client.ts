@@ -51,6 +51,19 @@ export type QueryChannelFactory = () => QueryChannel;
  */
 const REQUEST_TIMEOUT_MS = 60_000;
 
+/**
+ * Mark an error as one the person cannot act on and that fixes itself on the next question.
+ * A field rather than a class, so the check holds wherever the error was constructed.
+ */
+function recoverable(error: Error): Error {
+    return Object.assign(error, { recoverable: true });
+}
+
+/** Did this fail in a way that deserves a toast instead of a dialog? */
+export function isRecoverable(error: unknown): boolean {
+    return error instanceof Error && (error as Error & { recoverable?: unknown }).recoverable === true;
+}
+
 interface Pending {
     readonly generation: number;
     reject(error: Error): void;
@@ -123,7 +136,21 @@ export class QueryClient {
         channel?.close();
     }
 
-    private send(op: string, params: unknown): Promise<unknown> {
+    /**
+     * One request, and one more after a timeout: the restart already happened, nothing was lost,
+     * and a second silence is the answer worth showing. Only a timeout is retried — an error the
+     * worker itself reported would come back the same.
+     */
+    private async send(op: string, params: unknown): Promise<unknown> {
+        try {
+            return await this.attempt(op, params);
+        } catch (error) {
+            if (!isRecoverable(error)) throw error;
+            return this.attempt(op, params);
+        }
+    }
+
+    private attempt(op: string, params: unknown): Promise<unknown> {
         if (this.closed) {
             return Promise.reject(new Error(_('The case was closed while the index was being read.')));
         }
@@ -144,12 +171,14 @@ export class QueryClient {
                 finish(() => {
                     this.restart(generation);
                     reject(
-                        new Error(
-                            fmt(
-                                _(
-                                    'The index did not answer within {seconds} seconds. Reading it was started over.',
+                        recoverable(
+                            new Error(
+                                fmt(
+                                    _(
+                                        'The index did not answer within {seconds} seconds. Reading it was started over.',
+                                    ),
+                                    { seconds: Math.round(this.timeoutMs / 1000) },
                                 ),
-                                { seconds: Math.round(this.timeoutMs / 1000) },
                             ),
                         ),
                     );
