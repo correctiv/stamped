@@ -92,6 +92,13 @@ export const CAVEATS = [
      */
     'recovered-key',
     /**
+     * The message's date fell in a window two keys of this selector shared, and the signature
+     * decided which one. The cryptography is intact, so it is no finding against the message,
+     * but the key was chosen by the signature rather than by the date, and a reader quoting
+     * this should know there was more than one candidate.
+     */
+    'ambiguous-key-era',
+    /**
      * The signature verifies, but its `d=` is not the From domain. It proves that `d=` handled
      * the message, not that the author's domain sent it: anyone can sign a forged `From:` with a
      * domain they own, and the cryptography will be flawless.
@@ -252,6 +259,11 @@ export interface SignatureEvidence {
      * stand now? True means the signed header block, `bh=` included, is authentic and unchanged.
      */
     readonly signedHeadersIntact?: boolean;
+    /**
+     * How many of the pair's keys covered the message's date when the signature verified: more
+     * than one means the signature, not the date, picked the key. Set only on that path.
+     */
+    readonly keyCandidates?: number;
     /** The key record as it was read, for the record. */
     readonly keyRecord?: string;
     /** The body hash Stamped computed (base64). */
@@ -394,6 +406,10 @@ export function describeCaveat(caveat: Caveat, evidence?: SignatureEvidence): st
         case 'recovered-key':
             return _(
                 'The public key was recovered from other signatures, so it proves the same key signed these messages, not that the key ever belonged to the domain. A dkim=pass in a received Authentication-Results header of the same message would be the anchor that strengthens it.',
+            );
+        case 'ambiguous-key-era':
+            return _(
+                'The message was sent while two keys of this selector were both in use. The signature verifies under one of them, so the key was picked by the signature, not by the date.',
             );
         case 'key-newer-than-message':
             return _(

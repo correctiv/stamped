@@ -220,7 +220,7 @@ export default async () => {
             expect(store.lookup(name, '2024-06-01T00:00:00Z')).toBe(undefined);
         });
 
-        await it('stays a conflict when two DIFFERENT keys have OVERLAPPING eras', async () => {
+        await it('is not a conflict when two keys of ONE origin overlap, but offers both there', async () => {
             const vault = new KeyVault();
             vault.add({
                 ...pair,
@@ -234,6 +234,44 @@ export default async () => {
                 ...pair,
                 key: b,
                 origin: 'archive.prove.email',
+                fetchedAt: '2026-10-20T10:00:00Z',
+                seenFrom: '2022-01-01T00:00:00Z',
+                seenTo: '2023-12-31T23:59:59Z',
+            });
+            expect(vault.conflicts().length).toBe(0);
+
+            const store = vault.toKeyStore({ skipConflicts: true });
+            const name = pairName(pair);
+            // Outside the overlap the date picks, as before.
+            expect(store.lookup(name, '2020-06-01T00:00:00Z')?.record).toBe(a.record);
+            expect(store.covering(name, '2020-06-01T00:00:00Z').length).toBe(0);
+            expect(store.lookup(name, '2023-06-01T00:00:00Z')?.record).toBe(b.record);
+            // Inside it the date cannot pick: `lookup` still never guesses, `covering` lists both.
+            expect(store.lookup(name, '2022-03-01T00:00:00Z')).toBe(undefined);
+            expect(
+                store
+                    .covering(name, '2022-03-01T00:00:00Z')
+                    .map((e) => e.record)
+                    .sort(),
+            ).toStrictEqual([a.record, b.record].sort());
+            // Without a date there is nothing to bound the overlap with: no candidates.
+            expect(store.covering(name).length).toBe(0);
+        });
+
+        await it('stays a conflict when keys of DIFFERENT origins have overlapping eras', async () => {
+            const vault = new KeyVault();
+            vault.add({
+                ...pair,
+                key: a,
+                origin: 'archive.prove.email',
+                fetchedAt: '2026-10-20T10:00:00Z',
+                seenFrom: '2020-01-01T00:00:00Z',
+                seenTo: '2022-06-30T23:59:59Z',
+            });
+            vault.add({
+                ...pair,
+                key: b,
+                origin: 'dns',
                 fetchedAt: '2026-10-20T10:00:00Z',
                 seenFrom: '2022-01-01T00:00:00Z',
                 seenTo: '2023-12-31T23:59:59Z',

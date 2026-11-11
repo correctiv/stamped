@@ -105,6 +105,20 @@ export class KeyStore {
         return covering.length === 1 ? covering[0] : undefined;
     }
 
+    /**
+     * Every candidate of a name whose window covers `messageTime`: the keys a message in an
+     * OVERLAP of two rotation windows could have been signed with. Fewer than two covering
+     * candidates, or no message time, answer `[]`, because then {@link lookup} already says all
+     * there is to say. Asking the signature to decide is only sound inside a window the data
+     * bounds; for a message without a date it would be a guess dressed up as a rotation.
+     */
+    covering(name: string, messageTime?: string): readonly KeyEntry[] {
+        const candidates = this.entries.get(normaliseKeyName(name));
+        if (!candidates || candidates.length < 2 || messageTime === undefined) return [];
+        const covered = candidates.filter((c) => covers(c, messageTime));
+        return covered.length > 1 ? covered : [];
+    }
+
     /** How many names are in the store, for the diagnostics line. */
     get size(): number {
         return this.entries.size;

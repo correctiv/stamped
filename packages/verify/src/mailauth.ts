@@ -18,8 +18,7 @@
  * (`@stamped/core`'s `caveatsFor`).
  */
 
-import type { KeyStore } from '@stamped/core';
-import { keyNameFor, _ } from '@stamped/core';
+import { KeyStore, keyNameFor, _ } from '@stamped/core';
 import type { DKIMResult, DNSResolver } from 'mailauth/lib/types';
 
 import { evidenceFrom, keyAlgorithmOf, type RawSignatureResult } from './evidence.ts';
@@ -120,6 +119,40 @@ export interface VerifiedSignature {
  * An empty array means the message carries no DKIM signature.
  */
 export async function verifyMessage(
+    raw: string | Uint8Array,
+    options: VerifyOptions,
+): Promise<ReturnType<typeof evidenceFrom>[]> {
+    const evidence = await verifyOnce(raw, options);
+    // Most of an archive verifies on the first run or carries no signature: reading the date
+    // for those would be a per-message cost with no use.
+    if (evidence.every((signature) => signature.signatureOk)) return evidence;
+    const date = messageDateOf(raw);
+    if (date === undefined) return evidence;
+
+    // A message in the overlap of two rotation windows has no single key the date can pick
+    // (`KeyStore.lookup` answers `undefined`). The signature decides instead: each covering
+    // candidate gets its own run, alone in a store, so a key can only ever confirm what it
+    // verifies by itself. Nothing is tried outside an overlap the data bounds, and the result says
+    // that more than one key was possible (`keyCandidates`, caveat `ambiguous-key-era`).
+    for (let i = 0; i < evidence.length; i++) {
+        const signature = evidence[i] as ReturnType<typeof evidenceFrom>;
+        if (signature.signatureOk) continue;
+        const name = keyNameFor(signature.domain, signature.selector);
+        const candidates = options.keys.covering(name, date);
+        for (const candidate of candidates) {
+            const store = new KeyStore();
+            store.add(name, candidate.record, candidate.source, candidate.since);
+            const hit = (await verifyOnce(raw, { keys: store }))[i];
+            if (hit?.signatureOk && keyNameFor(hit.domain, hit.selector) === name) {
+                evidence[i] = { ...hit, keyCandidates: candidates.length };
+                break;
+            }
+        }
+    }
+    return evidence;
+}
+
+async function verifyOnce(
     raw: string | Uint8Array,
     options: VerifyOptions,
 ): Promise<ReturnType<typeof evidenceFrom>[]> {

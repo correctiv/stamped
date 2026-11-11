@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { describe, expect, it } from '@gjsify/unit';
-import { KeyStore, KeyVault, parseKeyMaterial } from '@stamped/core';
+import { classifyMessage, KeyStore, KeyVault, parseKeyMaterial } from '@stamped/core';
 import {
     digest,
     importSources,
@@ -18,6 +18,7 @@ import {
     reverifyPairs,
     type CasePaths,
 } from '@stamped/store';
+import { verifyMessage } from '@stamped/verify';
 
 import { fixture, fixtureKeys, fixturePath } from './fixtures.ts';
 
@@ -161,6 +162,92 @@ export default async () => {
                 const { pairs } = await measureKeyEras(paths, vault);
                 expect(pairs.length).toBe(0);
             });
+        });
+    });
+
+    await describe('overlapping rotation windows verify against any covering key', async () => {
+        /** The old key until March 2024, the new one from January: February is shared. */
+        function overlapVault(second: 'new' | 'decoy' = 'new'): KeyVault {
+            const vault = new KeyVault();
+            const now = '2026-11-01T10:00:00.000Z';
+            const other =
+                second === 'new'
+                    ? keyFile('new.pub.pem')
+                    : (() => {
+                          const parsed = parseKeyMaterial(
+                              fixtureKeys().lookup('t2048._domainkey.example.com')?.record ?? '',
+                          );
+                          if (parsed.kind !== 'key') throw new Error('fixture key');
+                          return parsed;
+                      })();
+            vault.add({
+                ...PAIR,
+                key: keyFile('old.pub.pem'),
+                origin: 'archive.prove.email',
+                fetchedAt: now,
+                seenFrom: '2019-01-01T00:00:00.000Z',
+                seenTo: '2024-03-31T23:59:59.000Z',
+            });
+            vault.add({
+                ...PAIR,
+                key: other,
+                origin: 'archive.prove.email',
+                fetchedAt: now,
+                seenFrom: '2024-01-01T00:00:00.000Z',
+                seenTo: '2024-12-31T23:59:59.000Z',
+            });
+            return vault;
+        }
+
+        async function findingOf(vault: KeyVault, name: string) {
+            const evidence = await verifyMessage(fixture(name), {
+                keys: vault.toKeyStore({ skipConflicts: true }),
+            });
+            return classifyMessage(evidence);
+        }
+
+        await it('is no conflict, because the signature can tell the two keys apart', async () => {
+            expect(overlapVault().conflicts().length).toBe(0);
+        });
+
+        await it('verifies a message in the overlap, whichever key signed it, with the caveat', async () => {
+            const vault = overlapVault();
+            const oldKey = await findingOf(vault, 'rotated-stray.eml');
+            expect(oldKey.verdict).toBe('confirmed-with-caveats');
+            expect(oldKey.caveats.includes('ambiguous-key-era')).toBe(true);
+            expect(oldKey.basis?.evidence.keyBits).toBe(1024);
+            expect(oldKey.basis?.evidence.keyCandidates).toBe(2);
+
+            const newKey = await findingOf(vault, 'rotated-new-1.eml');
+            expect(newKey.verdict).toBe('confirmed-with-caveats');
+            expect(newKey.caveats.includes('ambiguous-key-era')).toBe(true);
+            expect(newKey.basis?.evidence.keyBits).toBe(2048);
+            // The key's own provenance travels with the confirmation.
+            expect(newKey.caveats.includes('archive-key')).toBe(true);
+        });
+
+        await it('lets the date pick outside the overlap, with no extra caveat', async () => {
+            const vault = overlapVault();
+            for (const name of ['rotated-old-1.eml', 'rotated-old-2.eml', 'rotated-new-2.eml']) {
+                const finding = await findingOf(vault, name);
+                expect(finding.verdict).toBe('confirmed-with-caveats');
+                expect(finding.caveats.includes('ambiguous-key-era')).toBe(false);
+                expect(finding.basis?.evidence.keyCandidates).toBe(undefined);
+            }
+        });
+
+        await it('stays unverifiable when no covering key made the signature', async () => {
+            const finding = await findingOf(overlapVault('decoy'), 'rotated-new-1.eml');
+            expect(finding.verdict).toBe('unverifiable');
+            expect(finding.caveats.includes('ambiguous-key-era')).toBe(false);
+        });
+
+        await it('never confirms a message outside the overlap through the other key', async () => {
+            // Signed by the new key but dated 2021, when only the old key's window covers it: the
+            // old key is the single candidate, the date is not ambiguous, and nothing else is tried.
+            const finding = await findingOf(overlapVault(), 'rotated-altered.eml');
+            expect(finding.verdict).toBe('unverifiable');
+            expect(finding.caveats.includes('ambiguous-key-era')).toBe(false);
         });
     });
 };

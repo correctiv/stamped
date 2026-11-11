@@ -161,11 +161,14 @@ function windowsOverlap(a: { from?: string; to?: string }, b: { from?: string; t
 }
 
 /**
- * Can every group of a multi-key pair be told apart by era alone? Only when EVERY group's own
- * window is fully bounded (a record with no seen range at all is "always", which nothing can be
- * told apart from) and no two groups' windows overlap — a message falling in an overlap, or
- * carrying no time, could be either group's, and that is exactly the human question {@link
- * conflicts} must keep surfacing.
+ * Can every group of a multi-key pair be assigned by era, with the signature as the last word?
+ * Only when EVERY group's own window is fully bounded (a record with no seen range at all is
+ * "always", which nothing can be told apart from), and any two groups whose windows overlap
+ * share their best origin. A rotation overlaps by days: inside the overlap a message could be
+ * either key's, and the signature decides which (see `KeyStore.covering`). Two keys of DIFFERENT
+ * origins that overlap (a published record against one found in the archive) is the case that
+ * stays a human question, because there the archive's own key would be allowed to confirm what
+ * the archive says.
  */
 function eraResolvable(groups: readonly (readonly VaultEntry[])[]): boolean {
     const windows = groups.map(groupWindow);
@@ -176,7 +179,9 @@ function eraResolvable(groups: readonly (readonly VaultEntry[])[]): boolean {
                 windowsOverlap(
                     windows[i] as { from?: string; to?: string },
                     windows[j] as { from?: string; to?: string },
-                )
+                ) &&
+                bestOf(groups[i] as readonly VaultEntry[]).origin !==
+                    bestOf(groups[j] as readonly VaultEntry[]).origin
             ) {
                 return false;
             }
@@ -239,11 +244,12 @@ export class KeyVault {
      * cannot tell them apart: rotation or forgery, both worth a human look. Two records that
      * decode to the same key are never a conflict, whatever their formatting. Two records that
      * decode to DIFFERENT keys are not a conflict either, exactly when every one of them carries
-     * a fully bounded `seenFrom`/`seenTo` window and no two windows overlap — a message's own
-     * time then picks the one record that could have signed it, with no human guess involved.
-     * An unbounded window, or two windows that overlap, is the genuine case: a message falling in
-     * the overlap (or with no time at all) could be either record's, and `toKeyStore` must not
-     * pick for it. See the file header: this is the invariant the whole module exists to keep.
+     * a fully bounded `seenFrom`/`seenTo` window and windows that overlap belong to keys of the
+     * same origin: a message's own time then picks the record that could have signed it, and in
+     * an overlap the signature itself decides (`KeyStore.covering`, caveat `ambiguous-key-era`).
+     * An unbounded window, or an overlap between keys of different origins, is the genuine case
+     * and `toKeyStore` must not pick for it. See the file header: this is the invariant the whole
+     * module exists to keep.
      */
     conflicts(): KeyPair[] {
         const byPair = new Map<string, VaultEntry[]>();
