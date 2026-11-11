@@ -95,6 +95,7 @@ export {
     listMessages,
     mailboxScope,
     messageCount,
+    narrowedBy,
     openIndex,
     queryScope,
     readMessage,
@@ -110,6 +111,15 @@ export {
     updateFinding,
     verdictHashes,
 } from './index-db.ts';
+export {
+    parseSearch,
+    parseSearchDate,
+    SEARCH_OPERATORS,
+    SearchSyntaxError,
+    type ParsedSearch,
+    type SearchFilters,
+    type SearchOrder,
+} from './search-query.ts';
 export { statementFor } from './statements.ts';
 export {
     indexDocumentSource,

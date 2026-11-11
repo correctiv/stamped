@@ -62,7 +62,7 @@ import { checkVector, type Embedder } from '@stamped/semantic';
 
 import { caseOrThrow } from '../lib/case.ts';
 import type { HelperEmbedder } from '../lib/embed-client.ts';
-import { asksForMeaning, candidateCount, type HybridHit } from '../lib/hybrid-search.ts';
+import { candidateCount, meaningOf, type HybridHit } from '../lib/hybrid-search.ts';
 import { resolveTxt } from '../lib/dns.ts';
 import { PAGE_SIZE, type Query } from '../lib/queries.ts';
 import { loadVault, saveVault } from '../lib/vault.ts';
@@ -165,8 +165,8 @@ export async function hybridPageOf(
     query: Query,
     embedder: Embedder,
 ): Promise<HybridHit[] | undefined> {
-    const text = query.text?.trim() ?? '';
-    if (text === '' || !asksForMeaning(text)) return undefined;
+    const text = meaningOf(query.text ?? '');
+    if (text === undefined) return undefined;
     // The ONE step that stays here: the model runtime was loaded in this process and a worker
     // cannot borrow it. Everything the vector is then used for — the vector table, the FTS5
     // half, the rows behind both — happens over there.
@@ -202,6 +202,11 @@ export interface SemanticSource {
 export function openSemanticSource(session: CaseSession): SemanticSource {
     const db = openIndex(session.paths);
     return { source: indexDocumentSource(db, session.paths), close: () => db.close() };
+}
+
+/** What is wrong with the text in the search box, as sentences; none when it can be run. */
+export async function searchProblems(session: CaseSession, text: string): Promise<string[]> {
+    return session.query.ask('check', { text });
 }
 
 /** How many messages a filter admits — the length of the list behind {@link pageOf}. */

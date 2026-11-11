@@ -14,7 +14,7 @@
  * booleans, arrays and objects — see `docs/spikes/query-worker.md` for the measurements.
  */
 
-import { classifyMessage, type MessageFinding, type UnverifiableReason, type Verdict } from '@stamped/core';
+import { _, classifyMessage, fmt, type MessageFinding, type UnverifiableReason, type Verdict } from '@stamped/core';
 import { openVectorDbForSearch } from '@stamped/semantic';
 import {
     addressesComplete,
@@ -26,6 +26,7 @@ import {
     hashScope,
     logSources,
     openIndex,
+    parseSearch,
     peopleList,
     periodScope,
     personScope,
@@ -33,6 +34,7 @@ import {
     readPerimeter,
     readRaw,
     searchHits,
+    SearchSyntaxError,
     signatureHashes,
     sourceHashes,
     threadOf,
@@ -71,6 +73,9 @@ export interface QueryContext {
     sourceScope?: { source: string; scope: HashScope };
     /** Cached scope filter, rebuilt when the tapped overview number changes. Its key, not its ref. */
     scopeFilter?: { key: string; scope: HashScope };
+    /** The mailbox a query's `mailbox:` named last, and the hashes of every mailbox it came from. */
+    mailboxFilter?: { name: string; scope: HashScope };
+    mailboxes?: Map<string, Set<string>>;
 }
 
 /** How many rows one page of the message list holds. */
@@ -219,6 +224,58 @@ function sourceScopeFor(ctx: QueryContext, source: string): HashScope {
 }
 
 /**
+ * The scope of the mailbox a query names with `mailbox:`, if it names one.
+ *
+ * Resolved HERE and not in the store: which mailbox holds which message is the import log's
+ * (see `derivedMailboxHashes`), and the store's search only takes a scope. A name the case does
+ * not have is an error and not an empty list — an empty list reads as "nothing there".
+ */
+function mailboxOf(ctx: QueryContext, text: string): HashScope | undefined {
+    const name = parseSearch(text).filters.mailbox;
+    if (name === undefined) return undefined;
+    if (ctx.mailboxFilter?.name === name) return ctx.mailboxFilter.scope;
+    ctx.mailboxes ??= derivedMailboxHashes(ctx.paths);
+    const hashes = ctx.mailboxes.get(name);
+    if (hashes === undefined) {
+        throw new SearchSyntaxError([
+            fmt(_('The case has no mailbox {name}. The sidebar lists the mailboxes.'), { name }),
+        ]);
+    }
+    ctx.mailboxFilter?.scope.close();
+    const scope = hashScope(ctx.db, hashes);
+    ctx.mailboxFilter = { name, scope };
+    return scope;
+}
+
+/** Everything a search term is narrowed by besides the words: the list's filters and the query's mailbox. */
+function searchOptionsOf(ctx: QueryContext, query: Query, text: string, limit: number): SearchOptions {
+    const scope = scopeOf(ctx, query);
+    const mailbox = mailboxOf(ctx, text);
+    return {
+        ...(query.verdict ? { verdict: query.verdict } : {}),
+        ...(scope ? { scope } : {}),
+        ...(mailbox ? { mailbox } : {}),
+        limit,
+    };
+}
+
+/**
+ * What is wrong with the search text, as sentences, or an empty list. Cheap, and asked BEFORE the
+ * list so that a half-typed `from:` shows what is missing and not an error dialog.
+ */
+export function searchProblems(ctx: QueryContext, text: string): string[] {
+    const parsed = parseSearch(text);
+    if (parsed.errors.length > 0) return [...parsed.errors];
+    try {
+        mailboxOf(ctx, text);
+    } catch (error) {
+        if (error instanceof SearchSyntaxError) return [...error.errors];
+        throw error;
+    }
+    return [];
+}
+
+/**
  * One page of the message list.
  *
  * Search and browse are two different queries and stay two different functions in
@@ -241,12 +298,10 @@ export function pageOf(ctx: QueryContext, query: Query, offset = 0): SearchHit[]
             offset,
         });
     }
-    const searchOptions: SearchOptions = {
-        ...(query.verdict ? { verdict: query.verdict } : {}),
-        ...(scope ? { scope } : {}),
-        limit: PAGE_SIZE,
-    };
-    return searchHits(ctx.db, text, searchOptions).slice(offset, offset + PAGE_SIZE);
+    return searchHits(ctx.db, text, searchOptionsOf(ctx, query, text, PAGE_SIZE)).slice(
+        offset,
+        offset + PAGE_SIZE,
+    );
 }
 
 /** The model a query vector came from — the vector table only answers for its own. */
@@ -273,12 +328,7 @@ export function hybridPageOf(
 ): HybridHit[] | null {
     const text = query.text?.trim() ?? '';
     if (text === '') return null;
-    const scope = scopeOf(ctx, query);
-    const options = {
-        ...(query.verdict ? { verdict: query.verdict } : {}),
-        ...(scope ? { scope } : {}),
-        limit: PAGE_SIZE,
-    };
+    const options = searchOptionsOf(ctx, query, text, PAGE_SIZE);
     // The helper searched its resident vectors: no vector database is opened here at all.
     if (input.semantic !== undefined) {
         return fuseHybrid({ index: ctx.db, semantic: input.semantic, query: text, options });
@@ -320,12 +370,7 @@ export function filteredCount(ctx: QueryContext, query: Query): number {
             ...(scope ? { scope } : {}),
         });
     }
-    const searchOptions: SearchOptions = {
-        ...(query.verdict ? { verdict: query.verdict } : {}),
-        ...(scope ? { scope } : {}),
-        limit: 5000,
-    };
-    return searchHits(ctx.db, text, searchOptions).length;
+    return searchHits(ctx.db, text, searchOptionsOf(ctx, query, text, 5000)).length;
 }
 
 /** The people of the case, most mail first, narrowed by a name/address search. */
@@ -386,6 +431,9 @@ export function dropScopes(ctx: QueryContext): void {
     ctx.sourceScope = undefined;
     ctx.scopeFilter?.scope.close();
     ctx.scopeFilter = undefined;
+    ctx.mailboxFilter?.scope.close();
+    ctx.mailboxFilter = undefined;
+    ctx.mailboxes = undefined;
 }
 
 /** The parameters each operation takes. One object per op, so the wire format is `{op, params}`. */
@@ -400,6 +448,7 @@ export interface QueryRequests {
         readonly semantic?: HybridInput['semantic'];
     };
     readonly count: { readonly query: Query };
+    readonly check: { readonly text: string };
     readonly people: { readonly search: string; readonly limit?: number };
     readonly timeline: Record<string, never>;
     readonly peopleComplete: Record<string, never>;
@@ -418,6 +467,7 @@ export interface QueryResults {
     readonly page: SearchHit[];
     readonly hybrid: HybridHit[] | null;
     readonly count: number;
+    readonly check: string[];
     readonly people: Person[];
     readonly timeline: Timeline;
     readonly peopleComplete: boolean;
@@ -464,6 +514,7 @@ const handlers: {
     page: (ctx, params) => pageOf(ctx, params.query, params.offset ?? 0),
     hybrid: (ctx, params) => hybridPageOf(ctx, params.query, params),
     count: (ctx, params) => filteredCount(ctx, params.query),
+    check: (ctx, params) => searchProblems(ctx, params.text),
     people: (ctx, params) => peopleOf(ctx, params.search, params.limit ?? 100),
     timeline: (ctx) => timelineOf(ctx),
     peopleComplete: (ctx) => peopleComplete(ctx),

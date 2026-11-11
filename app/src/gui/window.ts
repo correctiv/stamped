@@ -87,6 +87,7 @@ import {
     knownKeyNames,
     markImportCancelled,
     filteredCount,
+    searchProblems,
     messageOf,
     threadOfMessage,
     openSemanticSource,
@@ -1359,6 +1360,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.paged.reset();
         if (query.text !== undefined) this.setSearchPhase('text');
 
+        // A half-typed `from:` is not a failure: say what is missing instead of asking the page.
+        if (query.text !== undefined) {
+            const problems = await searchProblems(session, query.text);
+            if (!current()) return;
+            if (problems.length > 0) {
+                this.showSearchProblems(problems);
+                return;
+            }
+        }
+
         await this.loadMore(query);
         if (!current()) return;
         this.showListOrEmpty(query);
@@ -1375,6 +1386,22 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.benchStarted = true;
             this.track(this.runBench());
         }
+    }
+
+    /** A search that cannot be run: the empty page says why, and no query goes out. */
+    private showSearchProblems(problems: readonly string[]): void {
+        this.setSearchPhase('idle');
+        this.appendPage([], true);
+        this.filteredCounted = true;
+        this.filteredTotal = 0;
+        this.paged.finish(0);
+        this.showCount(0);
+        this._emptyState.set_title(_('This search cannot be run'));
+        this._emptyState.set_description(problems.map(escapeLine).join('\n'));
+        this._emptyState.set_icon_name('dialog-warning-symbolic');
+        this._listStack.set_visible_child_name('empty');
+        this._readerStack.set_visible_child_name('empty');
+        this.reading = undefined;
     }
 
     /**

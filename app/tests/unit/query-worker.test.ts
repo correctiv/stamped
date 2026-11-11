@@ -466,6 +466,33 @@ export default async () => {
             });
         });
 
+        await it('says what is wrong with a search before it runs, and what the operators select', async () => {
+            await withCase((ctx) => {
+                put(ctx, { id: 'a', from: 'Ada <ada@example.com>', subject: 'harbour ledger' });
+                put(ctx, {
+                    id: 'b',
+                    from: 'bob@example.org',
+                    subject: 'harbour tide',
+                    verdict: 'body-altered',
+                });
+
+                expect(runQuery(ctx, 'check', { text: 'harbour from:ada' })).toStrictEqual([]);
+                expect(runQuery(ctx, 'check', { text: 'subject : harbour' })).toStrictEqual([]);
+                expect(runQuery(ctx, 'check', { text: 'from:' }).length).toBe(1);
+                expect(runQuery(ctx, 'check', { text: 'harbour verdict:nonsense' }).length).toBe(1);
+                // A mailbox the case does not have is an error and never an empty list.
+                expect(runQuery(ctx, 'check', { text: 'harbour mailbox:nobody' }).length).toBe(1);
+
+                expect(runQuery(ctx, 'page', { query: { text: 'harbour from:ada' } }).length).toBe(1);
+                expect(runQuery(ctx, 'count', { query: { text: 'harbour -tide' } })).toBe(1);
+                expect(runQuery(ctx, 'count', { query: { text: 'verdict:body-altered' } })).toBe(1);
+                // The list's own verdict filter and the one in the text must both hold.
+                expect(
+                    runQuery(ctx, 'count', { query: { text: 'verdict:body-altered', verdict: 'confirmed' } }),
+                ).toBe(0);
+            });
+        });
+
         await it('answers null for a hash it does not know, never undefined', async () => {
             await withCase((ctx) => {
                 // JSON has no `undefined`: a key that vanished from the reply would read as a

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 17:04+0100\n"
+"POT-Creation-Date: 2026-11-11 17:29+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -238,7 +238,7 @@ msgstr ""
 msgid "Mark this key as recovered from DKIM signatures rather than published"
 msgstr ""
 
-#: app/src/commands/keys.ts:246 app/src/gui/session.ts:375
+#: app/src/commands/keys.ts:246 app/src/gui/session.ts:380
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
@@ -592,7 +592,7 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:202 app/src/gui/window.ts:2533
+#: app/src/commands/report.ts:202 app/src/gui/window.ts:2560
 #: app/src/gui/window.blp:166
 msgid "Verdicts"
 msgstr ""
@@ -716,56 +716,62 @@ msgstr ""
 msgid "No stored key applies to an unverified message."
 msgstr ""
 
-#: app/src/commands/search.ts:46
+#: app/src/commands/search.ts:55
 msgid "Search the messages in a case folder"
 msgstr ""
 
-#: app/src/commands/search.ts:50
+#: app/src/commands/search.ts:59
 msgid "The case folder, or the query when --case is given"
 msgstr ""
 
-#: app/src/commands/search.ts:55
+#: app/src/commands/search.ts:64
 msgid ""
 "What to look for. Full-text syntax: a word, \"a phrase\", a AND b, or "
 "subject : word"
 msgstr ""
 
-#: app/src/commands/search.ts:59
+#: app/src/commands/search.ts:68
 msgid "The case folder to search"
 msgstr ""
 
-#: app/src/commands/search.ts:61
+#: app/src/commands/search.ts:70
 msgid "How many matches to print"
 msgstr ""
 
-#: app/src/commands/search.ts:66
+#: app/src/commands/search.ts:75
 msgid "Print the matches as JSON"
 msgstr ""
 
-#: app/src/commands/search.ts:72
+#: app/src/commands/search.ts:81
 msgid "Find messages with \"invoice\" in the subject"
 msgstr ""
 
-#: app/src/commands/search.ts:78
+#: app/src/commands/search.ts:86
+msgid ""
+"Fields, exclusions and dates: from: to: cc: subject: body: verdict: dkim: "
+"mailbox: before: after: sort:"
+msgstr ""
+
+#: app/src/commands/search.ts:93
 msgid "No search query given. Use `stamped search <case> <query>`."
 msgstr ""
 
-#: app/src/commands/search.ts:106
+#: app/src/commands/search.ts:122
 msgid "No match."
 msgstr ""
 
-#: app/src/commands/search.ts:110 app/src/gui/view/message.ts:231
+#: app/src/commands/search.ts:126 app/src/gui/view/message.ts:231
 msgid "The case holds {total} message."
 msgid_plural "The case holds {total} messages."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/search.ts:118
+#: app/src/commands/search.ts:134
 msgid "  from    {from}"
 msgstr ""
 
-#: app/src/commands/search.ts:118 app/src/commands/search.ts:119
-#: app/src/commands/search.ts:120 app/src/gui/view/message.ts:88
+#: app/src/commands/search.ts:134 app/src/commands/search.ts:135
+#: app/src/commands/search.ts:136 app/src/gui/view/message.ts:88
 #: app/src/gui/view/message.ts:89 app/src/gui/view/message.ts:95
 #: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:101
 #: app/src/lib/evidence.ts:108 app/src/lib/evidence.ts:109
@@ -774,29 +780,33 @@ msgstr ""
 msgid "(none)"
 msgstr ""
 
-#: app/src/commands/search.ts:119
+#: app/src/commands/search.ts:135
 msgid "  date    {date}"
 msgstr ""
 
-#: app/src/commands/search.ts:120
+#: app/src/commands/search.ts:136
 msgid "  subject {subject}"
 msgstr ""
 
-#: app/src/commands/search.ts:128
+#: app/src/commands/search.ts:144
 msgid "{count} match."
 msgid_plural "{count} matches."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/search.ts:152
+#: app/src/commands/search.ts:169
 msgid "  semantic match"
 msgstr ""
 
-#: app/src/commands/search.ts:153
+#: app/src/commands/search.ts:170
 msgid "  text and semantic match"
 msgstr ""
 
-#: app/src/commands/search.ts:180
+#: app/src/commands/search.ts:184 app/src/lib/queries.ts:241
+msgid "The case has no mailbox {name}. The sidebar lists the mailboxes."
+msgstr ""
+
+#: app/src/commands/search.ts:221
 msgid ""
 "Cannot read the search {query}. Put a phrase in double quotes, and use "
 "`column : word` to search one field."
@@ -919,9 +929,9 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1877
-#: app/src/gui/window.ts:2343 app/src/gui/window.ts:2627
-#: app/src/gui/window.ts:2721
+#: app/src/gui/activity.ts:35 app/src/gui/window.ts:1904
+#: app/src/gui/window.ts:2370 app/src/gui/window.ts:2654
+#: app/src/gui/window.ts:2748
 msgid "Cancel"
 msgstr ""
 
@@ -989,18 +999,18 @@ msgstr ""
 msgid "Use the graphics card again"
 msgstr ""
 
-#: app/src/gui/session.ts:404
+#: app/src/gui/session.ts:409
 msgid "That key was already stored."
 msgstr ""
 
-#: app/src/gui/session.ts:407
+#: app/src/gui/session.ts:412
 msgid ""
 "Stored, but this case already held a DIFFERENT key for that selector. Either "
 "the domain rotated it, or one of the two is not theirs. Check both before "
 "you rely on the new verdicts."
 msgstr ""
 
-#: app/src/gui/session.ts:410
+#: app/src/gui/session.ts:415
 msgid "Key stored."
 msgstr ""
 
@@ -1566,11 +1576,11 @@ msgstr ""
 msgid "From"
 msgstr ""
 
-#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:1780
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:1807
 msgid "To"
 msgstr ""
 
-#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:1781
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:1808
 msgid "Cc"
 msgstr ""
 
@@ -1971,69 +1981,73 @@ msgstr ""
 msgid "{shown} shown"
 msgstr ""
 
-#: app/src/gui/window.ts:392
+#: app/src/gui/window.ts:393
 msgid "All files"
 msgstr ""
 
-#: app/src/gui/window.ts:394
+#: app/src/gui/window.ts:395
 msgid "Mail archives"
 msgstr ""
 
-#: app/src/gui/window.ts:761
+#: app/src/gui/window.ts:762
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
-#: app/src/gui/window.ts:1252
+#: app/src/gui/window.ts:1253
 msgid "Show the files of this mailbox"
 msgstr ""
 
-#: app/src/gui/window.ts:1653
+#: app/src/gui/window.ts:1399
+msgid "This search cannot be run"
+msgstr ""
+
+#: app/src/gui/window.ts:1680
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 
-#: app/src/gui/window.ts:1756
+#: app/src/gui/window.ts:1783
 msgid "Open With…"
 msgstr ""
 
-#: app/src/gui/window.ts:1757
+#: app/src/gui/window.ts:1784
 msgid "Open a read-only copy in the program you choose"
 msgstr ""
 
-#: app/src/gui/window.ts:1787
+#: app/src/gui/window.ts:1814
 msgid "The stored copy could not be read."
 msgstr ""
 
-#: app/src/gui/window.ts:1804
+#: app/src/gui/window.ts:1831
 msgid "(no text)"
 msgstr ""
 
-#: app/src/gui/window.ts:1816
+#: app/src/gui/window.ts:1843
 msgid "Shown as text; the HTML was not rendered."
 msgstr ""
 
-#: app/src/gui/window.ts:1817
+#: app/src/gui/window.ts:1844
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 
-#: app/src/gui/window.ts:1829 app/src/lib/pdf-report.ts:430
+#: app/src/gui/window.ts:1856 app/src/lib/pdf-report.ts:430
 msgid "(unnamed)"
 msgstr ""
 
-#: app/src/gui/window.ts:1859
+#: app/src/gui/window.ts:1886
 msgid "Open in a mail program?"
 msgstr ""
 
-#: app/src/gui/window.ts:1861
+#: app/src/gui/window.ts:1888
 msgid ""
 "A mail program may load remote content. Only the verdict shows whether a "
 "message is unchanged since it was signed."
 msgstr ""
 
-#: app/src/gui/window.ts:1866
+#: app/src/gui/window.ts:1893
 msgid "What does that mean?"
 msgstr ""
 
-#: app/src/gui/window.ts:1871
+#: app/src/gui/window.ts:1898
 msgid ""
 "A mail program that loads remote content tells the sender’s server that "
 "someone is reading this message right now. How a program displays a message "
@@ -2041,222 +2055,222 @@ msgid ""
 "copy outside the case."
 msgstr ""
 
-#: app/src/gui/window.ts:1878 app/src/gui/window.ts:2843
+#: app/src/gui/window.ts:1905 app/src/gui/window.ts:2870
 msgid "Open"
 msgstr ""
 
-#: app/src/gui/window.ts:1887
+#: app/src/gui/window.ts:1914
 msgid "The stored copy of this message is missing."
 msgstr ""
 
-#: app/src/gui/window.ts:1895
+#: app/src/gui/window.ts:1922
 msgid "Could not open the message: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:1932
+#: app/src/gui/window.ts:1959
 msgid "Copy a sentence to quote"
 msgstr ""
 
-#: app/src/gui/window.ts:1950
+#: app/src/gui/window.ts:1977
 msgid "Look Up Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:1968 app/src/gui/window.blp:360
+#: app/src/gui/window.ts:1995 app/src/gui/window.blp:360
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:2020
+#: app/src/gui/window.ts:2047
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:2029
+#: app/src/gui/window.ts:2056
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:2045
+#: app/src/gui/window.ts:2072
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:2120
+#: app/src/gui/window.ts:2147
 msgid "How does DKIM work?"
 msgstr ""
 
-#: app/src/gui/window.ts:2140
+#: app/src/gui/window.ts:2167
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:2145
+#: app/src/gui/window.ts:2172
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:2148
+#: app/src/gui/window.ts:2175
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:2180
+#: app/src/gui/window.ts:2207
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:2192
+#: app/src/gui/window.ts:2219
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:2230
+#: app/src/gui/window.ts:2257
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:2239
+#: app/src/gui/window.ts:2266
 msgid "Copy Request…"
 msgstr ""
 
-#: app/src/gui/window.ts:2240
+#: app/src/gui/window.ts:2267
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 
-#: app/src/gui/window.ts:2244
+#: app/src/gui/window.ts:2271
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr ""
 
-#: app/src/gui/window.ts:2272
+#: app/src/gui/window.ts:2299
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:2322
+#: app/src/gui/window.ts:2349
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:2324
+#: app/src/gui/window.ts:2351
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:2344
+#: app/src/gui/window.ts:2371
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:2459
+#: app/src/gui/window.ts:2486
 msgid "Looking up keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:2492
+#: app/src/gui/window.ts:2519
 msgid "Key lookup failed: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:2526
+#: app/src/gui/window.ts:2553
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:2535
+#: app/src/gui/window.ts:2562
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:2591
+#: app/src/gui/window.ts:2618
 msgid "Folder for the Case"
 msgstr ""
 
-#: app/src/gui/window.ts:2591
+#: app/src/gui/window.ts:2618
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:2612
+#: app/src/gui/window.ts:2639
 msgid "Create the case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:2612
+#: app/src/gui/window.ts:2639
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:2616
+#: app/src/gui/window.ts:2643
 msgid ""
 "Stamped creates the case in {path}. It holds the working copy of the "
 "messages and the search index. The archive stays where it is."
 msgstr ""
 
-#: app/src/gui/window.ts:2622
+#: app/src/gui/window.ts:2649
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:2626
+#: app/src/gui/window.ts:2653
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:2649
+#: app/src/gui/window.ts:2676
 msgid "Imported."
 msgstr ""
 
-#: app/src/gui/window.ts:2710 app/src/gui/window.ts:2756
+#: app/src/gui/window.ts:2737 app/src/gui/window.ts:2783
 msgid "Export PDF Report"
 msgstr ""
 
-#: app/src/gui/window.ts:2712
+#: app/src/gui/window.ts:2739
 msgid ""
 "A report on the case as it stands. Breaking down the unsigned messages reads "
 "every unsigned message once and can take a while."
 msgstr ""
 
-#: app/src/gui/window.ts:2715
+#: app/src/gui/window.ts:2742
 msgid "Break down the unsigned messages"
 msgstr ""
 
-#: app/src/gui/window.ts:2716
+#: app/src/gui/window.ts:2743
 msgid "Replace mailbox names by M1, M2, …"
 msgstr ""
 
-#: app/src/gui/window.ts:2722
+#: app/src/gui/window.ts:2749
 msgid "Export…"
 msgstr ""
 
-#: app/src/gui/window.ts:2740
+#: app/src/gui/window.ts:2767
 msgid "Open a case first."
 msgstr ""
 
-#: app/src/gui/window.ts:2744
+#: app/src/gui/window.ts:2771
 msgid "A report is already being written."
 msgstr ""
 
-#: app/src/gui/window.ts:2748
+#: app/src/gui/window.ts:2775
 msgid "Wait until the import has finished."
 msgstr ""
 
-#: app/src/gui/window.ts:2764
+#: app/src/gui/window.ts:2791
 msgid "The report needs the stamped program, which could not be found."
 msgstr ""
 
-#: app/src/gui/window.ts:2838
+#: app/src/gui/window.ts:2865
 msgid "Report written ({pages} page)."
 msgid_plural "Report written ({pages} pages)."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/window.ts:2856
+#: app/src/gui/window.ts:2883
 msgid "The report could not be written."
 msgstr ""
 
-#: app/src/gui/window.ts:2926
+#: app/src/gui/window.ts:2953
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:2926
+#: app/src/gui/window.ts:2953
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:2971
+#: app/src/gui/window.ts:2998
 msgid "The index is busy right now. Try again in a moment."
 msgstr ""
 
-#: app/src/gui/window.ts:2975
+#: app/src/gui/window.ts:3002
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:2975
+#: app/src/gui/window.ts:3002
 msgid "Close"
 msgstr ""
 
@@ -3927,8 +3941,12 @@ msgstr ""
 msgid "{path} holds no mail files."
 msgstr ""
 
-#: packages/store/src/index-db.ts:83
+#: packages/store/src/index-db.ts:90
 msgid "Cannot open the index of the case folder {path}."
+msgstr ""
+
+#: packages/store/src/index-db.ts:491
+msgid "This search cannot look in the mailbox {name}."
 msgstr ""
 
 #: packages/store/src/perimeter.ts:48
@@ -3941,6 +3959,72 @@ msgstr ""
 
 #: packages/store/src/raw.ts:95
 msgid "unknown error"
+msgstr ""
+
+#: packages/store/src/search-query.ts:142
+msgid "There is a closing parenthesis without an opening one."
+msgstr ""
+
+#: packages/store/src/search-query.ts:171
+#: packages/store/src/search-query.ts:174
+msgid "OR needs a search on both sides."
+msgstr ""
+
+#: packages/store/src/search-query.ts:221
+msgid "There is an opening parenthesis without a closing one."
+msgstr ""
+
+#: packages/store/src/search-query.ts:223
+msgid "There is nothing between the parentheses."
+msgstr ""
+
+#: packages/store/src/search-query.ts:232
+msgid "NOT and - need something to exclude."
+msgstr ""
+
+#: packages/store/src/search-query.ts:257
+msgid "The search operator {name}: is not supported yet."
+msgstr ""
+
+#: packages/store/src/search-query.ts:264
+msgid "The search operator {name}: needs a value, as in {example}."
+msgstr ""
+
+#: packages/store/src/search-query.ts:294
+#: packages/store/src/search-query.ts:304
+msgid "A search operator needs a value after the colon."
+msgstr ""
+
+#: packages/store/src/search-query.ts:346
+msgid ""
+"The search operator {name}: cannot be used inside OR, NOT or parentheses."
+msgstr ""
+
+#: packages/store/src/search-query.ts:353
+#: packages/store/src/search-query.ts:384
+msgid "A search for exclusions alone cannot be run. Add a word to look for."
+msgstr ""
+
+#: packages/store/src/search-query.ts:360
+msgid ""
+"NOT and - cannot stand directly inside OR. Put the word to look for beside "
+"it."
+msgstr ""
+
+#: packages/store/src/search-query.ts:416
+msgid "The search operator {name}: is given twice."
+msgstr ""
+
+#: packages/store/src/search-query.ts:427
+msgid "{value} is not a verdict. The verdicts are: {list}."
+msgstr ""
+
+#: packages/store/src/search-query.ts:439
+msgid "{value} is not a date. Write it as 2024, 2024-03 or 2024-03-05."
+msgstr ""
+
+#: packages/store/src/search-query.ts:458
+msgid "{value} is not a sort order. The orders are: {list}."
 msgstr ""
 
 #: packages/verify/src/mailauth.ts:203
