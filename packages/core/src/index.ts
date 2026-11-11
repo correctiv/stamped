@@ -65,6 +65,8 @@ export {
     type TimeValueKind,
 } from './timecheck.ts';
 
+export { type CitationOptions, citationFor } from './citation.ts';
+
 export {
     type Explanation,
     explainMessage,

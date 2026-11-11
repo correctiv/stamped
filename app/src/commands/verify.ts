@@ -13,12 +13,14 @@ import { verifyMessage } from '@stamped/verify';
 import type { CommandModule } from 'yargs';
 
 import { keyStoreFrom } from '../lib/keys.ts';
+import { citationOf } from '../lib/citation.ts';
 import { reportJson, reportLines } from '../lib/report.ts';
 
 interface VerifyArgs {
     file: string;
     key?: (string | number)[];
     json?: boolean;
+    cite?: boolean;
 }
 
 /**
@@ -52,6 +54,11 @@ export function verifyCommand(): CommandModule<unknown, VerifyArgs> {
                     type: 'boolean',
                     default: false,
                 })
+                .option('cite', {
+                    describe: _('Print only the sentence to quote for this message'),
+                    type: 'boolean',
+                    default: false,
+                })
                 .example(
                     'stamped verify mail.eml --key sel._domainkey.example.com=sel.pub.pem',
                     _('Check one message against a key you have on disk'),
@@ -66,7 +73,11 @@ export function verifyCommand(): CommandModule<unknown, VerifyArgs> {
             const finding = classifyMessage(await verifyMessage(raw, { keys }));
 
             if (args.json) {
-                console.log(reportJson(finding, args.file));
+                console.log(reportJson(finding, args.file, citationOf(finding, raw)));
+                return;
+            }
+            if (args.cite) {
+                console.log(citationOf(finding, raw));
                 return;
             }
             console.log(args.file);

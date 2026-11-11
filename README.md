@@ -92,8 +92,11 @@ ended in. A long import can be watched and a stalled one can be located.
 searches it (SQLite FTS5).
 
 ```
-stamped verify <file.eml> [--key <selector>._domainkey.<domain>=<record or .pem>] [--json]
+stamped verify <file.eml> [--key <selector>._domainkey.<domain>=<record or .pem>] [--json | --cite]
 ```
+
+`--cite` prints one paragraph a newsroom can quote: what the signature establishes, against which
+key, and with which limit.
 
 Exit code 0 means a report was produced, whatever it says; 2 means Stamped could not produce one.
 A broken signature is a result, not a program failure.
