@@ -34,6 +34,7 @@ import type {
     MailboxReport,
     SearchHit,
     IndexedMessage,
+    ThreadEntry,
 } from '@stamped/store';
 
 import { channelLabel, consentDialog, LOOKUP_CHANNELS } from '../../src/gui/view/consent.ts';
@@ -66,6 +67,7 @@ import {
     verdictShares,
 } from '../../src/gui/view/overview.ts';
 import { allSources, baseName, mailboxRows, shortPath, sourceRows } from '../../src/gui/view/sources.ts';
+import { MAX_INDENT, threadGroup, threadRow } from '../../src/gui/view/thread.ts';
 import {
     explainVerdict,
     verdictFilters,
@@ -1296,6 +1298,67 @@ export default async () => {
             const text = filterBannerText({ kind: 'reason', reason: 'no-key' });
             expect(text).toBe('Only mail with no verdict: No public key for this selector and domain.');
             expect(text.includes('<')).toBe(false);
+        });
+    });
+
+    await describe('the conversation group', async () => {
+        const entry = (over: Partial<ThreadEntry>): ThreadEntry => ({
+            hash: 'h1',
+            messageId: '<a@example.com>',
+            depth: 0,
+            missing: false,
+            focus: false,
+            subject: 'Re: Plans',
+            sender: 'Ada <ada@example.com>',
+            date: 'Tue, 05 Mar 2024 09:40:00 +0000',
+            verdict: 'unsigned',
+            ...over,
+        });
+
+        await it('shows a message with its subject, sender, day and own verdict', async () => {
+            const row = threadRow(entry({ depth: 2 }));
+            expect(row.title).toBe('Re: Plans');
+            expect(row.subtitle.includes('2024-03-05')).toBe(true);
+            expect(row.badge).toBe(verdictLook('unsigned').label);
+            expect(row.indent).toBe(2);
+            expect(row.missing).toBe(false);
+        });
+
+        await it('escapes what the sender wrote', async () => {
+            const row = threadRow(entry({ subject: '<b>x</b> & y' }));
+            expect(row.title.includes('<b>')).toBe(false);
+        });
+
+        await it('says a referenced message is not in the archive, and gives it no verdict', async () => {
+            const row = threadRow(entry({ hash: undefined, missing: true, verdict: undefined, subject: '' }));
+            expect(row.missing).toBe(true);
+            expect(row.badge).toBe('');
+            expect(row.hash).toBe(undefined);
+            expect(row.title).toBe('Replied to, but not in the archive');
+        });
+
+        await it('stops indenting at a depth', async () => {
+            expect(threadRow(entry({ depth: 40 })).indent).toBe(MAX_INDENT);
+        });
+
+        await it('has no group for a message that is alone', async () => {
+            expect(threadGroup(undefined)).toBe(undefined);
+            expect(threadGroup(null)).toBe(undefined);
+            expect(threadGroup({ entries: [entry({})], truncated: false })).toBe(undefined);
+        });
+
+        await it('counts the messages in the archive, mentions the missing ones, and calls itself an aid', async () => {
+            const group = threadGroup({
+                entries: [entry({ hash: undefined, missing: true, verdict: undefined }), entry({ depth: 1 })],
+                truncated: true,
+            });
+            expect(group?.title).toBe('Conversation, 1 message');
+            expect(group?.description.includes('only orders the messages')).toBe(true);
+            expect(group?.description.includes('1 message is referred to but not in the archive.')).toBe(
+                true,
+            );
+            expect(group?.description.includes('longer than what is shown')).toBe(true);
+            expect(group?.rows.length).toBe(2);
         });
     });
 };

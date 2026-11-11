@@ -50,6 +50,7 @@ import pdfReport from './unit/pdf-report.test.ts';
 import bodyExplanations from './unit/body-explanations.test.ts';
 import receiverAnchors from './unit/receiver-anchors.test.ts';
 import unsignedHeaders from './unit/unsigned-headers.test.ts';
+import thread from './unit/thread.test.ts';
 import retry from './unit/retry.test.ts';
 import gpuBackend from './unit/gpu-backend.test.ts';
 import gpuGuard from './unit/gpu-guard.test.ts';
@@ -100,6 +101,7 @@ run({
     refreshScheduler,
     pdfReport,
     unsignedHeaders,
+    thread,
     bodyExplanations,
     receiverAnchors,
     retry,

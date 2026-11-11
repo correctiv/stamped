@@ -53,6 +53,7 @@ import {
     type LogSource,
     type Person,
     type SearchHit,
+    type Thread,
     type Timeline,
     type ReverifyResult,
 } from '@stamped/store';
@@ -257,6 +258,11 @@ export async function reportOf(session: CaseSession): Promise<CaseReport> {
  */
 export async function messageOf(session: CaseSession, hash: string): Promise<IndexedMessage | undefined> {
     return (await session.query.ask('message', { hash })) ?? undefined;
+}
+
+/** The conversation the message is part of, or nothing when the index has no such message. */
+export async function threadOfMessage(session: CaseSession, hash: string): Promise<Thread | undefined> {
+    return (await session.query.ask('thread', { hash })) ?? undefined;
 }
 
 /**
