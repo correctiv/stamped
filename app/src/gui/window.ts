@@ -119,7 +119,17 @@ import {
     type KeyRow,
 } from './view/keys.ts';
 import { escapeLine, noHyphens, plainText } from './view/markup.ts';
-import { BENCH_FILE, cpuMs, report as benchReport, rssMb, settle, sinceStart, startLap } from './bench.ts';
+import {
+    BENCH_FILE,
+    cpuMs,
+    mark,
+    report as benchReport,
+    rssMb,
+    settle,
+    sinceStart,
+    startLap,
+    stallReport,
+} from './bench.ts';
 import { MessageItem, MessageRowView } from './message-row.ts';
 import { isRecoverable } from './query-client.ts';
 import { nearEnd, PagedList } from '../lib/paged-list.ts';
@@ -509,6 +519,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
     /** The pending people-search debounce. */
     private peopleTimer = 0;
     /**
+     * Views whose data is out of date but which nobody is looking at. `people` and `timeline` are
+     * the two heaviest queries of a large case (seconds, measured at 400,000 messages) and the
+     * worker answers one question at a time, so filling them on open put every click behind them.
+     */
+    private readonly staleViews = new Set<'people' | 'timeline'>();
+    /**
      * Which run of each async chain counts as the current one.
      *
      * Every step of {@link refresh}, {@link fillList}, {@link fillPeople} and the address
@@ -567,6 +583,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
         });
 
         this._searchEntry.connect('search-changed', () => this.onSearchChanged());
+        this._contentStack.connect('notify::visible-child-name', () => {
+            const view = this._contentStack.get_visible_child_name();
+            if ((view === 'people' || view === 'timeline') && this.staleViews.has(view)) {
+                this.track(this.fillView(view));
+            }
+        });
         this._peopleSearch.connect('search-changed', () => {
             if (this.peopleTimer !== 0) GLib.source_remove(this.peopleTimer);
             this.peopleTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SEARCH_DELAY_MS, () => {
@@ -997,15 +1019,17 @@ export class StampedWindow extends Adw.ApplicationWindow {
             ['list', () => this.fillList()],
             ['keys', () => this.fillKeys(session, report)],
             ['overview', () => this.fillOverview(report)],
-            ['people', () => this.fillPeople()],
-            ['timeline', () => this.fillTimeline()],
+            ['people', () => this.fillView('people')],
+            ['timeline', () => this.fillView('timeline')],
             ['backfill', () => this.startBackfill(session)],
         ];
         for (const [pane, step] of steps) {
             if (!panes.has(pane)) continue;
             await nextTurn();
             if (!current()) return [];
+            mark(`${pane}:start`);
             await step();
+            mark(`${pane}:done`);
             if (!current()) return [];
         }
         return [];
@@ -1066,11 +1090,26 @@ export class StampedWindow extends Adw.ApplicationWindow {
             }
             if (done) {
                 registry.finish({ kind: 'people', processed });
-                await this.fillPeople();
+                await this.fillView('people');
                 return;
             }
             registry.update({ kind: 'people', processed });
         }
+    }
+
+    /**
+     * Fill a heavy view now if it is the one on screen, otherwise only remember that it is stale.
+     * The hidden pane is emptied rather than left holding the previous case, so it never shows
+     * for the moment before its own answer arrives.
+     */
+    private async fillView(view: 'people' | 'timeline'): Promise<void> {
+        if (this._contentStack.get_visible_child_name() !== view) {
+            this.staleViews.add(view);
+            clearBox(view === 'people' ? this._peopleBody : this._timelineBody);
+            return;
+        }
+        this.staleViews.delete(view);
+        await (view === 'people' ? this.fillPeople() : this.fillTimeline());
     }
 
     /**
@@ -1306,6 +1345,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private async runBench(): Promise<void> {
         await settle(1000);
         const first = { firstListMs: Math.round(sinceStart()), ...cpuMs(), rssMb: rssMb() };
+        // What the loop did on its own while the case opened, before the bench starts poking it.
+        const opening = stallReport();
         // A burst of three runs ending together: before, each reloaded every pane in turn.
         const burstBefore = startLap();
         const withoutBackfill = new Set(PANES.filter((pane) => pane !== 'backfill'));
@@ -1338,6 +1379,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         await settle(1500);
         benchReport({
             first,
+            opening,
             burstOfThreeFullRefreshes: burstAll,
             burstOfThreeMergedVerdictRefreshes: burstMerged,
             rowsLoaded: loaded,
@@ -1346,6 +1388,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             selectAfterScroll: { mainCpuMs: avg('mainCpuMs'), otherCpuMs: avg('otherCpuMs') },
             idle1500: idle(),
             rssEndMb: rssMb(),
+            stalls: stallReport(),
         });
         this.close();
     }
