@@ -258,11 +258,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: packages
-          path: release-assets
-
       # Only for a tag; a manual run exercises the chain without publishing. The body is the tag's
       # `<release>` entry in the hand-written metainfo the root `package.json` names
       # (`gjsify.site.metainfo`), so it runs from the root, not `app/`. `release-notes` exits 1
@@ -274,6 +269,18 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           node-version: "24"
+
+      # After the checkout: `actions/checkout` cleans untracked files, so an artifact downloaded
+      # before it is gone (the v0.3.5 publish found only the repo's own `packages/`).
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: release-assets
+
+      - name: Check the assets are there
+        run: |
+          ls -l release-assets
+          test "$(find release-assets -maxdepth 1 -type f | wc -l)" -ge 2
 
       - name: Generate the release notes
         if: startsWith(github.ref, 'refs/tags/v')
