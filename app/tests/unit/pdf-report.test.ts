@@ -40,6 +40,7 @@ import {
 } from '@stamped/store';
 
 import { bodyAlteredSection } from '../../src/lib/body-altered.ts';
+import { receiverAnchorSection } from '../../src/lib/receiver-anchors.ts';
 import {
     breakableMailbox,
     buildPdfModel,
@@ -260,6 +261,42 @@ export default async () => {
                     unexplained: 0,
                     exchange: 0,
                     noReceiverPass: 0,
+                }),
+            ).toBe(undefined);
+        });
+    });
+
+    await describe('receiver anchor section', async () => {
+        await it('lists both groups and the domains, and says the line is unsigned', async () => {
+            const section = receiverAnchorSection({
+                unverifiable: { messages: 10, anchored: 4 },
+                recoveredKey: { messages: 3, anchored: 3 },
+                domains: [{ domain: 'example.com', messages: 6, anchored: 4 }],
+            });
+            expect(section?.groups.map(([, anchored, messages]) => [anchored, messages])).toStrictEqual([
+                [4, 10],
+                [3, 3],
+            ]);
+            expect(section?.domains).toStrictEqual([['example.com', 4, 6]]);
+            expect(section?.note.includes('not signed')).toBe(true);
+            expect(section?.note.includes('never changes a verdict')).toBe(true);
+        });
+        await it('shows a group with no anchor as zero, not as absent', async () => {
+            const section = receiverAnchorSection({
+                unverifiable: { messages: 5, anchored: 0 },
+                recoveredKey: { messages: 0, anchored: 0 },
+                domains: [],
+            });
+            expect(section?.groups.map(([, anchored, messages]) => [anchored, messages])).toStrictEqual([
+                [0, 5],
+            ]);
+        });
+        await it('is absent when no message lacks a proof of its own', async () => {
+            expect(
+                receiverAnchorSection({
+                    unverifiable: { messages: 0, anchored: 0 },
+                    recoveredKey: { messages: 0, anchored: 0 },
+                    domains: [],
                 }),
             ).toBe(undefined);
         });

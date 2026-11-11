@@ -1,8 +1,8 @@
 /**
  * The progress `stamped report --pdf --progress=jsonl` prints, and how the window reads it.
  *
- * The report is five steps of very different weight (the summary query, the digest over every
- * hash, the body-altered fill, the unsigned fill that reads one raw file per message, the
+ * The report is six steps of very different weight (the summary query, the digest over every
+ * hash, the body-altered fill, the receiver-anchor fill, the unsigned fill that reads one raw file per message, the
  * rendering), so a bar over the steps alone would sit still for minutes and then jump. Every line
  * therefore carries the step AND how far that step is, and {@link reportFraction} puts the two
  * together. A step that cannot say how far it is reports `total` 0.
@@ -13,7 +13,7 @@
 
 import { _ } from '@stamped/core';
 
-export type ReportPhase = 'summary' | 'digest' | 'body' | 'unsigned' | 'render';
+export type ReportPhase = 'summary' | 'digest' | 'body' | 'anchors' | 'unsigned' | 'render';
 
 /** One step of the run. `step` counts from 1 of `steps`. */
 export interface ReportProgressLine {
@@ -34,11 +34,13 @@ export interface ReportDoneLine {
 
 export type ReportEvent = ReportProgressLine | ReportDoneLine;
 
-const PHASES: readonly string[] = ['summary', 'digest', 'body', 'unsigned', 'render'];
+const PHASES: readonly string[] = ['summary', 'digest', 'body', 'anchors', 'unsigned', 'render'];
 
 /** The phases of a run, in order; the unsigned fill only runs when it was asked for. */
 export function reportPhases(withUnsigned: boolean): ReportPhase[] {
-    return withUnsigned ? ['summary', 'digest', 'body', 'unsigned', 'render'] : ['summary', 'digest', 'body', 'render'];
+    return withUnsigned
+        ? ['summary', 'digest', 'body', 'anchors', 'unsigned', 'render']
+        : ['summary', 'digest', 'body', 'anchors', 'render'];
 }
 
 /** The line for one point of one phase. */
@@ -96,6 +98,8 @@ export function reportPhaseLabel(phase: ReportPhase): string {
             return _('Fingerprinting the message set');
         case 'body':
             return _('Checking altered bodies');
+        case 'anchors':
+            return _('Reading receiving-server records');
         case 'unsigned':
             return _('Reading unsigned headers');
         case 'render':

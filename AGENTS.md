@@ -134,6 +134,14 @@ the bytes it already holds. The rules in `analyseUnsignedHeaders` are versioned:
 `UNSIGNED_ANALYSER_VERSION` — change a rule, bump it, and the cache refills. `unsignedBreakdown`
 runs the backfill to the end, then one aggregate query.
 
+**The receiving server's witness is a third table of the same kind**: `receiver_anchors(hash,
+position, flags)` (`packages/store/src/receiver-anchors.ts`) records, for each signature WITHOUT
+proof of its own (`unverifiable`, or `confirmed-with-caveats` through a `recovered-key`), whether an
+`Authentication-Results` line names `dkim=pass` for that signing domain (`hasReceiverPass`, shared
+with `body_explanations`). It is its own number in the report and never a caveat or a verdict: the
+line is unsigned, a claim of the archive, and can be attacker-controlled when the receiving system
+sits inside the same leak. Same mechanics (`RECEIVER_ANCHOR_VERSION`; change the rule, bump it).
+
 - **One address is one person.** Addresses are lower-cased, display names are listed beside them,
   and nothing is merged by guesswork: whether two mailboxes are one human is the journalist's call.
 - **Timeline buckets are the UTC calendar of `sent_at`** (day when the case spans 62 days or

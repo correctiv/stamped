@@ -20,6 +20,11 @@ import {
     backfillBodyExplanationsAll,
     bodyExplanationTotals,
 } from './body-explanations.ts';
+import {
+    backfillReceiverAnchorsAll,
+    type ReceiverAnchorTotals,
+    receiverAnchorTotals,
+} from './receiver-anchors.ts';
 import { mailboxScope } from './index-db.ts';
 import { eachLogEntry, type ImportLogEntry } from './raw.ts';
 import type { SigningDomain } from './report.ts';
@@ -193,6 +198,19 @@ export function bodyAlteredBreakdown(
 ): BodyExplanationTotals {
     backfillBodyExplanationsAll(db, paths, onProgress);
     return bodyExplanationTotals(db);
+}
+
+/**
+ * What the receiving servers recorded about the signatures that carry no proof of their own.
+ * Runs the `receiver_anchors` fill to the end, then answers with a few aggregate queries.
+ */
+export function receiverAnchorBreakdown(
+    db: DatabaseSync,
+    paths: CasePaths,
+    onProgress?: (processed: number) => void,
+): ReceiverAnchorTotals {
+    backfillReceiverAnchorsAll(db, paths, onProgress);
+    return receiverAnchorTotals(db);
 }
 
 /** A fingerprint of the set of messages the index holds, and how many that is. */

@@ -15,16 +15,23 @@ import {
 export default async () => {
     await describe('report progress lines', async () => {
         await it('lists the unsigned step only when it was asked for', () => {
-            expect(reportPhases(false)).toStrictEqual(['summary', 'digest', 'body', 'render']);
-            expect(reportPhases(true)).toStrictEqual(['summary', 'digest', 'body', 'unsigned', 'render']);
+            expect(reportPhases(false)).toStrictEqual(['summary', 'digest', 'body', 'anchors', 'render']);
+            expect(reportPhases(true)).toStrictEqual([
+                'summary',
+                'digest',
+                'body',
+                'anchors',
+                'unsigned',
+                'render',
+            ]);
         });
 
         await it('numbers the step within the phases of this run', () => {
             const phases = reportPhases(false);
             expect(reportProgressLine(phases, 'render', 0, 0)).toStrictEqual({
                 phase: 'render',
-                step: 4,
-                steps: 4,
+                step: 5,
+                steps: 5,
                 done: 0,
                 total: 0,
             });
@@ -57,15 +64,15 @@ export default async () => {
         await it('puts the finished steps and the share of the current one together', () => {
             const phases = reportPhases(false);
             expect(reportFraction(reportProgressLine(phases, 'summary', 0, 0))).toBe(0);
-            // step 2 of 4, half way: (1 + 0.5) / 4
-            expect(reportFraction(reportProgressLine(phases, 'digest', 50, 100))).toBe(0.375);
-            expect(reportFraction(reportProgressLine(phases, 'render', 0, 0))).toBe(0.75);
+            // step 2 of 5, half way: (1 + 0.5) / 5
+            expect(reportFraction(reportProgressLine(phases, 'digest', 50, 100))).toBe(0.3);
+            expect(reportFraction(reportProgressLine(phases, 'render', 0, 0))).toBe(0.8);
         });
 
         await it('counts an unknown total as no progress inside the step, and clamps', () => {
             const phases = reportPhases(false);
-            expect(reportFraction(reportProgressLine(phases, 'body', 500, 0))).toBe(0.5);
-            expect(reportFraction(reportProgressLine(phases, 'body', 900, 100))).toBe(0.75);
+            expect(reportFraction(reportProgressLine(phases, 'body', 500, 0))).toBe(0.4);
+            expect(reportFraction(reportProgressLine(phases, 'body', 900, 100))).toBe(0.6);
         });
 
         await it('is complete on the closing line', () => {

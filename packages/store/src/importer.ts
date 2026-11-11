@@ -51,6 +51,7 @@ import {
 import { readPerimeter } from './perimeter.ts';
 import { settleSiblings } from './siblings.ts';
 import { writeBodyExplanations } from './body-explanations.ts';
+import { writeReceiverAnchors } from './receiver-anchors.ts';
 import { writeUnsignedHeaders } from './unsigned-headers.ts';
 import {
     alreadyImported,
@@ -375,6 +376,7 @@ export async function importSources(
                                     writeUnsignedHeaders(db, entry.hash, splitMessage(raw).header);
                                 }
                                 writeBodyExplanations(db, entry.hash, finding, raw);
+                                writeReceiverAnchors(db, entry.hash, finding, raw);
                                 indexed++;
                             } catch (error) {
                                 // Stored and logged already, so the evidence is safe; only the verdict

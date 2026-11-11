@@ -14,6 +14,7 @@
 import { describeUnverifiableReason, describeVerdict, fmt, _, _n } from '@stamped/core';
 import {
     bodyAlteredBreakdown,
+    receiverAnchorBreakdown,
     caseReport,
     domainsByVerdict,
     openIndex,
@@ -27,6 +28,7 @@ import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
 import { bodyAlteredSection } from '../lib/body-altered.ts';
+import { anchorShare, receiverAnchorSection } from '../lib/receiver-anchors.ts';
 import { buildPdfModel } from '../lib/pdf-report-model.ts';
 import { reportPhases, reportProgressLine, type ReportPhase } from '../lib/report-progress.ts';
 import { loadVault } from '../lib/vault.ts';
@@ -120,6 +122,10 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     const bodyAltered = bodyAlteredBreakdown(db, paths, (done) =>
                         emit('body', done, countOf('body-altered')),
                     );
+                    emit('anchors', 0, countOf('unverifiable'));
+                    const receiverAnchors = receiverAnchorBreakdown(db, paths, (done) =>
+                        emit('anchors', done, countOf('unverifiable')),
+                    );
                     let unsigned: ReturnType<typeof unsignedBreakdown> | undefined;
                     if (args.unsignedBreakdown) {
                         emit('unsigned', 0, countOf('unsigned'));
@@ -137,6 +143,7 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                         digest,
                         keys,
                         bodyAltered,
+                        receiverAnchors,
                         ...(unsigned === undefined ? {} : { unsigned }),
                         anonymizeMailboxes: args.anonymizeMailboxes === true,
                     });
@@ -259,6 +266,19 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                                 `            ${String(messages).padStart(6)}  ${label} (${_('Indication, not proof')})`,
                             );
                         }
+                    }
+                }
+
+                const anchorSection = receiverAnchorSection(receiverAnchorBreakdown(db, paths));
+                if (anchorSection !== undefined) {
+                    console.log('');
+                    console.log(anchorSection.heading);
+                    console.log(`  ${anchorSection.note}`);
+                    for (const [label, anchored, messages] of anchorSection.groups) {
+                        console.log(`  ${anchorShare(anchored, messages).padStart(16)}  ${label}`);
+                    }
+                    for (const [domain, anchored, messages] of anchorSection.domains) {
+                        console.log(`            ${anchorShare(anchored, messages).padStart(16)}  ${domain}`);
                     }
                 }
 

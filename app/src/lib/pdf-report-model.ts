@@ -12,6 +12,7 @@ import type {
     CaseReport,
     PeriodRow,
     RawSetDigest,
+    ReceiverAnchorTotals,
     BodyExplanationTotals,
     UnsignedBreakdown,
     VerdictDomains,
@@ -37,6 +38,7 @@ export interface PdfReportInput {
     /** Only when the person asked for it: reading it costs one raw file per unsigned message. */
     readonly unsigned?: UnsignedBreakdown;
     readonly bodyAltered?: BodyExplanationTotals;
+    readonly receiverAnchors?: ReceiverAnchorTotals;
     readonly anonymizeMailboxes?: boolean;
 }
 
@@ -92,6 +94,7 @@ export interface PdfReportModel {
     readonly caseAlteredShare: number;
     readonly unsigned?: UnsignedBreakdown;
     readonly bodyAltered?: BodyExplanationTotals;
+    readonly receiverAnchors?: ReceiverAnchorTotals;
     readonly clusters: readonly ClusterRow[];
     readonly anonymized: boolean;
     readonly domains: readonly VerdictDomains[];
@@ -218,6 +221,7 @@ export function buildPdfModel(input: PdfReportInput): PdfReportModel {
         caseAlteredShare: caseShare,
         ...(input.unsigned === undefined ? {} : { unsigned: input.unsigned }),
         ...(input.bodyAltered === undefined ? {} : { bodyAltered: input.bodyAltered }),
+        ...(input.receiverAnchors === undefined ? {} : { receiverAnchors: input.receiverAnchors }),
         clusters: clusterRows(input.periods, caseShare, input.anonymizeMailboxes === true),
         anonymized: input.anonymizeMailboxes === true,
         domains: input.domains.map((entry) => ({
