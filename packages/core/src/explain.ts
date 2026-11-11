@@ -225,7 +225,7 @@ function explainUnverifiable(finding: SignatureFinding, reason: UnverifiableReas
                 code: 'unverifiable-no-key',
                 sentence: fmt(
                     _(
-                        'The message is signed, but the public key {name} that checks the signature is not in this case. {nothing}',
+                        'The message is signed, but the public key {name} that checks the signature is not among the keys of this case. {nothing}',
                     ),
                     { name, nothing },
                 ),

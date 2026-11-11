@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 16:12+0100\n"
+"POT-Creation-Date: 2026-11-11 16:23+0100\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -3496,7 +3496,11 @@ msgstr ""
 msgid "The message carries a valid DKIM signature of {domain}."
 msgstr "Die Nachricht trägt eine gültige DKIM-Signatur von {domain}."
 
-#: packages/core/src/citation.ts:72
+#: packages/core/src/citation.ts:69
+msgid "A DKIM signature of {domain} is present."
+msgstr "Eine DKIM-Signatur von {domain} ist vorhanden."
+
+#: packages/core/src/citation.ts:76
 msgid ""
 "The key was recovered from other signatures: it shows that the same key "
 "signed these messages, not that it ever belonged to the domain."
@@ -3505,24 +3509,24 @@ msgstr ""
 "dass derselbe Schlüssel diese Nachrichten signiert hat, nicht dass er je zur "
 "Domain gehörte."
 
-#: packages/core/src/citation.ts:85
+#: packages/core/src/citation.ts:89
 msgid ""
 "The message carries no DKIM signature. That says nothing about it either way."
 msgstr ""
 "Die Nachricht trägt keine DKIM-Signatur. Das sagt in keine Richtung etwas "
 "über sie aus."
 
-#: packages/core/src/citation.ts:89 packages/core/src/verdict.ts:441
+#: packages/core/src/citation.ts:93 packages/core/src/verdict.ts:441
 msgid "(unknown domain)"
 msgstr "(unbekannte Domain)"
 
-#: packages/core/src/citation.ts:98
+#: packages/core/src/citation.ts:102
 msgid "The signed headers and body are unchanged since signing."
 msgstr ""
 "Die signierten Kopfzeilen und der Nachrichtentext sind seit der Signatur "
 "unverändert."
 
-#: packages/core/src/citation.ts:104
+#: packages/core/src/citation.ts:108
 msgid ""
 "What the signature covers is unchanged since signing, with the following "
 "limits."
@@ -3530,7 +3534,7 @@ msgstr ""
 "Was die Signatur abdeckt, ist seit der Signatur unverändert, mit den "
 "folgenden Einschränkungen."
 
-#: packages/core/src/citation.ts:111
+#: packages/core/src/citation.ts:120
 msgid ""
 "A DKIM signature of {domain} is present, but the body of this message is not "
 "the body that was signed."
@@ -3538,7 +3542,7 @@ msgstr ""
 "Eine DKIM-Signatur von {domain} ist vorhanden, aber der Nachrichtentext "
 "entspricht nicht dem signierten Text."
 
-#: packages/core/src/citation.ts:122
+#: packages/core/src/citation.ts:134
 msgid ""
 "A DKIM signature of {domain} is present, but a header field it covers is not "
 "what was signed."
@@ -3546,24 +3550,24 @@ msgstr ""
 "Eine DKIM-Signatur von {domain} ist vorhanden, aber eine von ihr abgedeckte "
 "Kopfzeile ist nicht die signierte."
 
-#: packages/core/src/citation.ts:131
+#: packages/core/src/citation.ts:143
 msgid "A DKIM signature of {domain} is present, but it could not be checked."
 msgstr ""
 "Eine DKIM-Signatur von {domain} ist vorhanden, konnte aber nicht geprüft "
 "werden."
 
-#: packages/core/src/citation.ts:134 packages/core/src/explain.ts:221
+#: packages/core/src/citation.ts:146 packages/core/src/explain.ts:221
 msgid ""
 "This is not evidence of tampering; it only means no verdict is possible."
 msgstr ""
 "Das ist kein Beleg für eine Manipulation; es heißt nur, dass kein Urteil "
 "möglich ist."
 
-#: packages/core/src/citation.ts:140
+#: packages/core/src/citation.ts:152
 msgid "That alone does not show manipulation."
 msgstr "Das allein belegt keine Manipulation."
 
-#: packages/core/src/citation.ts:150
+#: packages/core/src/citation.ts:162
 msgid ""
 "The receiving server recorded dkim=pass for this signature at delivery. That "
 "line is not signed: it is a claim of the archive and an indication, not "
@@ -3573,7 +3577,7 @@ msgstr ""
 "vermerkt. Diese Zeile ist nicht signiert: Sie ist eine Angabe des Archivs "
 "und ein Hinweis, kein Beweis."
 
-#: packages/core/src/citation.ts:155
+#: packages/core/src/citation.ts:167
 msgid "Checked on {date}."
 msgstr "Geprüft am {date}."
 
@@ -3780,10 +3784,10 @@ msgstr "Schlüsselname"
 #: packages/core/src/explain.ts:228
 msgid ""
 "The message is signed, but the public key {name} that checks the signature "
-"is not in this case. {nothing}"
+"is not among the keys of this case. {nothing}"
 msgstr ""
 "Die Nachricht ist signiert, aber der öffentliche Schlüssel {name}, der die "
-"Signatur prüft, ist nicht in diesem Fall. {nothing}"
+"Signatur prüft, gehört nicht zu den Schlüsseln dieses Falls. {nothing}"
 
 #: packages/core/src/explain.ts:239
 msgid ""

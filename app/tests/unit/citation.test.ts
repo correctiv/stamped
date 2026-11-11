@@ -139,7 +139,7 @@ const ROWS: Row[] = [
     {
         name: 'body altered, nothing explains it',
         shape: { verdict: 'body-altered' },
-        sentence: `A DKIM signature of example.com is present, but the body of this message is not the body that was signed. The text of the body is not the text that was signed: something was added, removed or changed after signing. ${NOT_ALONE}`,
+        sentence: `A DKIM signature of example.com is present. The text of the body is not the text that was signed: something was added, removed or changed after signing. ${NOT_ALONE}`,
     },
     {
         name: 'body altered, an export artefact explains it',
@@ -150,29 +150,29 @@ const ROWS: Row[] = [
     {
         name: 'body altered, no key to authenticate the claimed hash',
         shape: { verdict: 'body-altered', caveats: ['body-hash-unauthenticated'] },
-        sentence: `A DKIM signature of example.com is present, but the body of this message is not the body that was signed. The text of the body is not the text that was signed: something was added, removed or changed after signing. ${NOT_ALONE} No public key is available, so the body hash claimed in the signature could not be confirmed as the signer’s. Whoever changed the body could have rewritten the hash too.`,
+        sentence: `A DKIM signature of example.com is present. The text of the body is not the text that was signed: something was added, removed or changed after signing. ${NOT_ALONE} No public key is available, so the body hash claimed in the signature could not be confirmed as the signer’s. Whoever changed the body could have rewritten the hash too.`,
     },
     {
         name: 'headers altered',
         shape: { verdict: 'headers-altered' },
-        sentence: `A DKIM signature of example.com is present, but a header field it covers is not what was signed. The body is intact, but at least one header field covered by the signature (such as From, Subject or Date) is not what was signed. The signature cannot say which one. ${NOT_ALONE}`,
+        sentence: `A DKIM signature of example.com is present. The body is intact, but at least one header field covered by the signature (such as From, Subject or Date) is not what was signed. The signature cannot say which one. ${NOT_ALONE}`,
     },
     {
         name: 'headers altered, key newer than the message',
         shape: { verdict: 'headers-altered', caveats: ['key-newer-than-message'] },
         sentence:
-            'A DKIM signature of example.com is present, but a header field it covers is not what was signed. The body is intact, but the header signature does not verify. The key we hold was first seen after this message was sent, so the sender may have replaced it since: this may be a wrong key rather than an edit.',
+            'A DKIM signature of example.com is present. The body is intact, but the header signature does not verify. The key we hold was first seen after this message was sent, so the sender may have replaced it since: this may be a wrong key rather than an edit.',
     },
     {
         name: 'unverifiable, no key',
         shape: { verdict: 'unverifiable', reason: 'no-key' },
-        sentence: `A DKIM signature of example.com is present, but it could not be checked. The message is signed, but the public key s1._domainkey.example.com that checks the signature is not in this case. ${NOTHING}`,
+        sentence: `A DKIM signature of example.com is present, but it could not be checked. The message is signed, but the public key s1._domainkey.example.com that checks the signature is not among the keys of this case. ${NOTHING}`,
     },
     {
         name: 'unverifiable, no key, with a receiver anchor',
         shape: { verdict: 'unverifiable', reason: 'no-key' },
         options: { receiverPass: true, verifiedOn: '2026-11-11' },
-        sentence: `A DKIM signature of example.com is present, but it could not be checked. The message is signed, but the public key s1._domainkey.example.com that checks the signature is not in this case. ${NOTHING} ${ANCHOR} Checked on 2026-11-11.`,
+        sentence: `A DKIM signature of example.com is present, but it could not be checked. The message is signed, but the public key s1._domainkey.example.com that checks the signature is not among the keys of this case. ${NOTHING} ${ANCHOR} Checked on 2026-11-11.`,
     },
     {
         name: 'unverifiable, reason unknown',
