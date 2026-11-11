@@ -9,6 +9,7 @@
 import { describe, expect, it } from '@gjsify/unit';
 import {
     type Caveat,
+    caseCitationFor,
     citationFor,
     type CitationOptions,
     type KeySource,
@@ -49,6 +50,8 @@ const UNCHANGED = 'The signed headers and body are unchanged since signing.';
 const LIMITS = 'What the signature covers is unchanged since signing, with the following limits.';
 const NOT_ALONE = 'That alone does not show manipulation.';
 const NOTHING = 'This is not evidence of tampering; it only means no verdict is possible.';
+const SHOWS =
+    'A valid signature proves that the signed parts of the message are unchanged since the signing server added it. It does not prove who wrote the message, and it says nothing about the parts the signature does not cover.';
 const ANCHOR =
     'The receiving server recorded dkim=pass for this signature at delivery. That line is not signed: it is a claim of the archive and an indication, not proof.';
 
@@ -188,6 +191,43 @@ export default async () => {
                 expect(citationFor(finding(row.shape), row.options)).toStrictEqual(row.sentence);
             });
         }
+
+        await it('a case: counts after a colon, then what a signature shows', async () => {
+            const sentence = caseCitationFor({
+                version: '1.2.3',
+                checkedOn: '2026-11-11',
+                messages: 1234,
+                verdicts: [
+                    { verdict: 'confirmed', messages: 700 },
+                    { verdict: 'confirmed-with-caveats', messages: 34 },
+                    { verdict: 'body-altered', messages: 20 },
+                    { verdict: 'headers-altered', messages: 5 },
+                    { verdict: 'unverifiable', messages: 75 },
+                    { verdict: 'unsigned', messages: 400 },
+                ],
+            });
+            expect(sentence).toStrictEqual(
+                `Stamped 1.2.3 checked 1,234 messages on 2026-11-11. Of these: 734 unchanged since signing (of which 34 with limits), 25 differing from what was signed, 75 not checkable, 400 unsigned. ${SHOWS}`,
+            );
+        });
+
+        await it('a case of one message says message', async () => {
+            const sentence = caseCitationFor({
+                version: '1.2.3',
+                checkedOn: '2026-11-11',
+                messages: 1,
+                verdicts: [{ verdict: 'unsigned', messages: 1 }],
+            });
+            expect(
+                sentence.startsWith('Stamped 1.2.3 checked 1 message on 2026-11-11. Of these: 0 unchanged'),
+            ).toBe(true);
+        });
+
+        await it('an empty case claims no split', async () => {
+            expect(
+                caseCitationFor({ version: '1.2.3', checkedOn: '2026-11-11', messages: 0, verdicts: [] }),
+            ).toStrictEqual(`Stamped 1.2.3 checked 0 messages on 2026-11-11. ${SHOWS}`);
+        });
 
         await it('is one paragraph of whole sentences', async () => {
             for (const row of ROWS) {

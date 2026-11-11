@@ -302,8 +302,10 @@ function compose(w: Writer, model: PdfReportModel): void {
         if (v.messages > 0) w.text(verdictLegend(v.verdict), { size: 9, color: MUTED, gapAfter: 3 });
     }
 
-    // --- what the verdicts mean ---
     w.y += 6;
+    w.box(_('A statement to quote'), [model.citation]);
+
+    // --- what the verdicts mean ---
     w.box(_('What the verdicts mean — and what they do not mean'), [
         _(
             '“Body altered” and “Headers altered” do not mean that someone manipulated the message. Archive and export software, mail gateways, character-set or line-ending conversions and mailing lists change messages in transit or at rest, and any such change breaks a signature. The verdict says that the message no longer matches its signature, not why.',

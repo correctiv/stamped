@@ -406,6 +406,7 @@ export default async () => {
                     const model = buildPdfModel(input);
                     expect(model.checkedAt).toBe('2026-01-02');
                     expect(model.verdicts.length).toBe(6);
+                    expect(model.citation.startsWith('Stamped 0.0.0 checked ')).toBe(true);
                     expect(model.clusters.every((c) => /^M\d+$/.test(c.mailbox ?? ''))).toBe(true);
                     expect(JSON.stringify(model).includes('example.net')).toBe(false);
 
