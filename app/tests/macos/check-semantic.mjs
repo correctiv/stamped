@@ -81,7 +81,7 @@ function finish() {
 }
 
 // The window loads a case through a worker file that sits beside the bundle.
-for (const file of ['stamped.node.mjs', 'query-worker.worker.mjs']) {
+for (const file of ['stamped.node.mjs', 'query-worker.worker.node.mjs']) {
     if (existsSync(join(appPath, 'Contents', 'Resources', 'lib', file))) pass(`${file} is in the bundle`);
     else fail(`${file} is missing from Contents/Resources/lib`);
 }
