@@ -11,7 +11,7 @@
  * can never be two different things.
  */
 
-import { describeUnverifiableReason, describeVerdict, fmt, _, _n } from '@stamped/core';
+import { describeUnverifiableReason, describeVerdict, fmt, formatPercent, _, _n } from '@stamped/core';
 import {
     bodyAlteredBreakdown,
     receiverAnchorBreakdown,
@@ -28,6 +28,7 @@ import type { CommandModule } from 'yargs';
 
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
 import { bodyAlteredSection } from '../lib/body-altered.ts';
+import { mailboxLabel, mailboxSpan, verifiableShare } from '../lib/mailbox.ts';
 import { anchorShare, receiverAnchorSection } from '../lib/receiver-anchors.ts';
 import { buildPdfModel } from '../lib/pdf-report-model.ts';
 import { reportPhases, reportProgressLine, type ReportPhase } from '../lib/report-progress.ts';
@@ -210,7 +211,28 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     console.log('');
                     console.log(_('Mailboxes'));
                     for (const mailbox of report.mailboxes) {
-                        console.log(`  ${String(mailbox.messages).padStart(8)}  ${mailbox.mailbox}`);
+                        console.log(
+                            `  ${String(mailbox.messages).padStart(8)}  ${mailboxLabel(mailbox.mailbox)}`,
+                        );
+                        const span = mailboxSpan(mailbox);
+                        const verifiable = verifiableShare(mailbox);
+                        console.log(
+                            `            ${[
+                                span === undefined
+                                    ? _('no readable dates')
+                                    : fmt(_('{from} to {to}'), { from: span.from, to: span.to }),
+                                mailbox.undated > 0
+                                    ? fmt(_('{n} without a date'), { n: String(mailbox.undated) })
+                                    : undefined,
+                                fmt(_('signature checks out: {count} of {total} ({share})'), {
+                                    count: String(verifiable.count),
+                                    total: String(mailbox.messages),
+                                    share: formatPercent(verifiable.share, 0),
+                                }),
+                            ]
+                                .filter((part) => part !== undefined)
+                                .join('; ')}`,
+                        );
                         // The verdict spread as one line: the breakdown of a case is the same six
                         // verdicts everywhere, and a table per mailbox would push the work list
                         // off the screen.

@@ -10,9 +10,10 @@
  * rows would turn that finding into silence.
  */
 
-import { VERDICTS, describeUnverifiableReason, fmt, _, _n, type Verdict } from '@stamped/core';
+import { VERDICTS, describeUnverifiableReason, fmt, formatPercent, _, _n, type Verdict } from '@stamped/core';
 import type { AlterationCount, CaseReport, MailboxReport, VerdictCount } from '@stamped/store';
 
+import { mailboxLabel, mailboxSpan, verifiableShare } from '../../lib/mailbox.ts';
 import type { ScopeRef } from '../session.ts';
 import { formatBytes, groupDigits } from './format.ts';
 import { escapeLine } from './markup.ts';
@@ -346,10 +347,12 @@ export function overviewInsights(report: CaseReport): OverviewInsight[] {
 }
 
 /**
- * The mailboxes a folder import read from, each expandable to the verdicts behind it.
+ * The mailboxes of the case, each expandable to its period, its verifiable share and the verdicts
+ * behind it.
  *
- * Absent for a plain import — the index does not know a mailbox, so a case imported as files has
- * no breakdown to show and the group simply is not there (see {@link MailboxReport}).
+ * Absent when the import records no mailboxes — the index does not know one, so a case with no
+ * folder to name them from has no breakdown and the group simply is not there (see
+ * {@link MailboxReport}).
  */
 export function mailboxInsights(report: CaseReport): OverviewInsight | undefined {
     const mailboxes = report.mailboxes;
@@ -358,7 +361,7 @@ export function mailboxInsights(report: CaseReport): OverviewInsight | undefined
         title: escapeLine(_('Mailboxes')),
         description: escapeLine(
             _(
-                'Which mailbox a message came out of is provenance from the import, not something the message says.',
+                'Which mailbox a message came out of is provenance from the import, not something the message says. The share describes the mailbox, not each message in it: mail that is not verifiable is not forged, most of it was never signed.',
             ),
         ),
         rows: mailboxes.map(mailboxStat),
@@ -368,8 +371,11 @@ export function mailboxInsights(report: CaseReport): OverviewInsight | undefined
 /** One mailbox as an expander: everything in it, then one line per verdict, zeroes included. */
 function mailboxStat(mailbox: MailboxReport): OverviewStat {
     const scope: ScopeRef = { kind: 'mailbox', mailbox: mailbox.mailbox };
+    const name = mailboxLabel(mailbox.mailbox);
+    const verifiable = verifiableShare(mailbox);
+    const span = mailboxSpan(mailbox);
     return {
-        label: escapeLine(mailbox.mailbox),
+        label: escapeLine(name),
         value: messageCountLine(mailbox.messages),
         filter: { scope },
         rows: [
@@ -377,7 +383,7 @@ function mailboxStat(mailbox: MailboxReport): OverviewStat {
                 label: escapeLine(
                     fmt(_('All {n} messages of {mailbox}'), {
                         n: groupDigits(mailbox.messages),
-                        mailbox: mailbox.mailbox,
+                        mailbox: name,
                     }),
                 ),
                 value: '',
@@ -388,6 +394,31 @@ function mailboxStat(mailbox: MailboxReport): OverviewStat {
                 value: messageCountLine(count.messages),
                 filter: { scope, verdict: count.verdict },
             })),
+            {
+                label: escapeLine(_('Signature checks out')),
+                value: escapeLine(
+                    fmt(_('{count} of {total} ({share})'), {
+                        count: groupDigits(verifiable.count),
+                        total: groupDigits(mailbox.messages),
+                        share: formatPercent(verifiable.share, 0),
+                    }),
+                ),
+            },
+            {
+                label: escapeLine(_('Period')),
+                value: escapeLine(
+                    [
+                        span === undefined
+                            ? _('no readable dates')
+                            : fmt(_('{from} to {to}'), { from: span.from, to: span.to }),
+                        mailbox.undated > 0
+                            ? fmt(_('{n} without a date'), { n: groupDigits(mailbox.undated) })
+                            : undefined,
+                    ]
+                        .filter((part) => part !== undefined)
+                        .join(', '),
+                ),
+            },
         ],
     };
 }
@@ -486,7 +517,7 @@ function messageCountLine(messages: number): string {
 export function filterBannerText(scope: ScopeRef): string {
     switch (scope.kind) {
         case 'mailbox':
-            return escapeLine(fmt(_('Only the mailbox {mailbox}'), { mailbox: scope.mailbox }));
+            return escapeLine(fmt(_('Only the mailbox {mailbox}'), { mailbox: mailboxLabel(scope.mailbox) }));
         case 'verdicts':
             return escapeLine(
                 fmt(_('Only these verdicts: {verdicts}'), {

@@ -26,7 +26,7 @@ import {
     receiverAnchorTotals,
 } from './receiver-anchors.ts';
 import { mailboxScope } from './index-db.ts';
-import { eachLogEntry, type ImportLogEntry } from './raw.ts';
+import { eachLogEntry } from './raw.ts';
 import type { SigningDomain } from './report.ts';
 import { backfillUnsignedHeadersAll, unsignedTotals } from './unsigned-headers.ts';
 
@@ -34,32 +34,84 @@ import { backfillUnsignedHeadersAll, unsignedTotals } from './unsigned-headers.t
 const MAILDIR_PARTS = new Set(['cur', 'new', 'tmp']);
 
 /**
- * The mailbox a log entry belongs to.
- *
- * The entry's own `mailbox` field when a folder import wrote one; otherwise the parent folder of
- * the source file (issue #98). A Maildir message is a file in `cur/`, so its mailbox is the folder
- * above that. `''` means no folder could be named — the caller labels it, this does not invent one.
+ * The folder a source file sits in. A Maildir message is a file in `cur/`, so its folder is the one
+ * above that. `''` when the path has no folder to name.
  */
-export function mailboxOf(entry: Pick<ImportLogEntry, 'mailbox' | 'source'>): string {
-    if (entry.mailbox !== undefined && entry.mailbox !== '') return entry.mailbox;
-    const parts = entry.source.split(/[\\/]/).filter((part) => part !== '' && part !== '.');
+function parentFolder(source: string): string {
+    const parts = source.split(/[\\/]/).filter((part) => part !== '' && part !== '.');
     parts.pop();
     while (parts.length > 0 && MAILDIR_PARTS.has(parts[parts.length - 1] ?? '')) parts.pop();
     return parts[parts.length - 1] ?? '';
 }
 
-/** The raw hashes under each mailbox, derived with {@link mailboxOf}, in one walk of the log. */
+/**
+ * Which mailbox each source file belongs to: the single rule behind the report, the scope, the PDF
+ * and the sidebar (issue #98).
+ *
+ * A recorded `mailbox` always wins. Otherwise the parent folder of the source file names it, but
+ * only where that folder plausibly IS a mailbox: its name is an address, or it holds two or more
+ * distinct source files (`ada@example.com/part-01.mbox`, `part-02.mbox`). A lone
+ * `Downloads/inbox.mbox` is a file somebody saved, not a mailbox, and calling `Downloads` one
+ * would put a made-up row in front of a journalist. Those files map to `''`, which the caller
+ * labels "Unknown mailbox".
+ */
+export function sourceMailboxes(
+    sources: Iterable<{ readonly source: string; readonly mailbox?: string }>,
+): Map<string, string> {
+    const named = new Map<string, string>();
+    const byFolder = new Map<string, Set<string>>();
+    for (const { source, mailbox } of sources) {
+        if (mailbox !== undefined && mailbox !== '') {
+            named.set(source, mailbox);
+            continue;
+        }
+        const folder = parentFolder(source);
+        if (folder === '') {
+            named.set(source, '');
+            continue;
+        }
+        let files = byFolder.get(folder);
+        if (files === undefined) {
+            files = new Set<string>();
+            byFolder.set(folder, files);
+        }
+        files.add(source);
+    }
+    for (const [folder, files] of byFolder) {
+        const name = folder.includes('@') || files.size >= 2 ? folder : '';
+        for (const file of files) named.set(file, name);
+    }
+    return named;
+}
+
+/** The raw hashes under each mailbox, in one walk of the log; see {@link sourceMailboxes}. */
 export function derivedMailboxHashes(paths: CasePaths): Map<string, Set<string>> {
-    const byMailbox = new Map<string, Set<string>>();
+    // A source file has one mailbox, so its entries are grouped by file and the first recorded
+    // name stands for all of them.
+    const groups = new Map<string, { source: string; mailbox?: string; hashes: Set<string> }>();
     eachLogEntry(paths, (entry) => {
-        const key = mailboxOf(entry);
-        let hashes = byMailbox.get(key);
+        let group = groups.get(entry.source);
+        if (group === undefined) {
+            group = {
+                source: entry.source,
+                ...(entry.mailbox === undefined ? {} : { mailbox: entry.mailbox }),
+                hashes: new Set<string>(),
+            };
+            groups.set(entry.source, group);
+        }
+        group.hashes.add(entry.hash);
+    });
+    const names = sourceMailboxes(groups.values());
+    const byMailbox = new Map<string, Set<string>>();
+    for (const group of groups.values()) {
+        const name = names.get(group.source) ?? '';
+        let hashes = byMailbox.get(name);
         if (hashes === undefined) {
             hashes = new Set<string>();
-            byMailbox.set(key, hashes);
+            byMailbox.set(name, hashes);
         }
-        hashes.add(entry.hash);
-    });
+        for (const hash of group.hashes) hashes.add(hash);
+    }
     return byMailbox;
 }
 

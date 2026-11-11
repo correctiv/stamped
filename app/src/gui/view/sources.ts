@@ -8,8 +8,9 @@
  */
 
 import { fmt, _, _n } from '@stamped/core';
-import type { LogSource } from '@stamped/store';
+import { sourceMailboxes, type LogSource } from '@stamped/store';
 
+import { mailboxLabel } from '../../lib/mailbox.ts';
 import { groupDigits } from './format.ts';
 import { escapeLine } from './markup.ts';
 
@@ -94,11 +95,11 @@ function sourceIcon(kind: string): string {
     return kind === 'mbox' ? 'package-x-generic-symbolic' : 'mail-unread-symbolic';
 }
 
-export function sourceRows(sources: readonly LogSource[]): SourceRow[] {
+export function sourceRows(sources: readonly LogSource[], grouped = false): SourceRow[] {
     return sources.map((source) => ({
         source: source.source,
         title: escapeLine(baseName(source.source)),
-        subtitle: escapeLine(sourceLine(source)),
+        subtitle: escapeLine(sourceLine(source, grouped)),
         tooltip: escapeLine(source.source),
         messages: source.messages,
         icon: sourceIcon(source.kind),
@@ -112,7 +113,7 @@ export function sourceRows(sources: readonly LogSource[]): SourceRow[] {
  * archives is a fact about the archives: it says the two overlap, which is often how a leak's
  * provenance is reconstructed. A row that silently showed the net figure would hide it.
  */
-function sourceLine(source: LogSource): string {
+function sourceLine(source: LogSource, grouped: boolean): string {
     const read = fmt(_n('{count} message', '{count} messages', source.messages), {
         count: groupDigits(source.messages),
     });
@@ -131,7 +132,69 @@ function sourceLine(source: LogSource): string {
     // (`part-01.mbox`), so the row's title alone cannot tell two mailboxes apart. The mailbox
     // name is provenance from the import log (see `AGENTS.md`); prefixing it here is the only
     // place the sidebar can still say which mailbox a `part-01.mbox` row came out of.
-    return source.mailbox === undefined
+    // Under its mailbox's own row the prefix would say the same thing twice.
+    return source.mailbox === undefined || grouped
         ? line
         : fmt(_('{mailbox} — {line}'), { mailbox: source.mailbox, line });
+}
+
+/** A mailbox as the sidebar's row for it: selecting it shows everything out of its files. */
+export interface MailboxRow {
+    /** The name as the report spells it — `''` for the mail no mailbox could be named for. */
+    readonly mailbox: string;
+    readonly title: string;
+    readonly subtitle: string;
+    readonly messages: number;
+    readonly icon: string;
+    /** The files of it, which the row expands to. */
+    readonly parts: readonly SourceRow[];
+}
+
+/**
+ * The archives grouped under their mailboxes, or `undefined` when the import names none.
+ *
+ * A journalist thinks in mailboxes, not in `part-01.mbox`. The files stay reachable underneath
+ * because "which file did this come from" is still provenance. The grouping is
+ * {@link sourceMailboxes}, the rule the report and the mailbox scope use, so a row here selects
+ * exactly the messages the overview counts for it. With no mailbox to name, the flat list of
+ * archives is the honest view, and a lone "Unknown mailbox" row above it would add nothing.
+ */
+export function mailboxRows(sources: readonly LogSource[]): MailboxRow[] | undefined {
+    const names = sourceMailboxes(sources);
+    if (![...names.values()].some((name) => name !== '')) return undefined;
+    const rows = sourceRows(sources, true);
+    const grouped = new Map<string, SourceRow[]>();
+    for (const row of rows) {
+        const name = names.get(row.source) ?? '';
+        const parts = grouped.get(name) ?? [];
+        parts.push(row);
+        grouped.set(name, parts);
+    }
+    return [...grouped]
+        .map(([mailbox, parts]) => {
+            const messages = parts.reduce((sum, part) => sum + part.messages, 0);
+            return {
+                mailbox,
+                title: escapeLine(mailboxLabel(mailbox)),
+                subtitle: escapeLine(
+                    fmt(_('{messages} in {files}'), {
+                        messages: fmt(_n('{count} message', '{count} messages', messages), {
+                            count: groupDigits(messages),
+                        }),
+                        files: fmt(_n('{count} file', '{count} files', parts.length), {
+                            count: groupDigits(parts.length),
+                        }),
+                    }),
+                ),
+                messages,
+                icon: 'avatar-default-symbolic',
+                parts,
+            };
+        })
+        .sort(
+            (a, b) =>
+                Number(a.mailbox === '') - Number(b.mailbox === '') ||
+                b.messages - a.messages ||
+                a.mailbox.localeCompare(b.mailbox),
+        );
 }

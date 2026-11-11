@@ -30,7 +30,6 @@ import {
     domainsByVerdict,
     hashScope,
     indexMessage,
-    mailboxOf,
     mailboxScope,
     openCase,
     openIndex,
@@ -97,23 +96,6 @@ function fields(lines: string[]) {
 }
 
 export default async () => {
-    await describe('mailboxOf', async () => {
-        await it('prefers the log field', async () => {
-            expect(mailboxOf({ mailbox: 'ada@example.com', source: '/x/y/part-01.mbox' })).toBe(
-                'ada@example.com',
-            );
-        });
-        await it('falls back to the parent folder', async () => {
-            expect(mailboxOf({ source: '/leak/ada@example.com/part-01.mbox' })).toBe('ada@example.com');
-        });
-        await it('skips the Maildir sub-folder', async () => {
-            expect(mailboxOf({ source: '/leak/Inbox/cur/1700000000.eml' })).toBe('Inbox');
-        });
-        await it('names nothing it cannot see', async () => {
-            expect(mailboxOf({ source: 'one.eml' })).toBe('');
-        });
-    });
-
     await describe('cluster rows', async () => {
         const period = (mailbox: string, year: number, messages: number, altered: number) => ({
             mailbox,

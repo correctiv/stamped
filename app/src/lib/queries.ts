@@ -22,9 +22,9 @@ import {
     browseMessages,
     caseReport,
     countMessages,
+    derivedMailboxHashes,
     hashScope,
     logSources,
-    mailboxHashes,
     openIndex,
     peopleList,
     periodScope,
@@ -123,7 +123,7 @@ export type ScopeRef =
 /**
  * The hashes one scope names, from wherever they live.
  *
- * Mailbox provenance is the import log's (see `mailboxHashes`); every other scope is a question
+ * Mailbox provenance is the import log's (see `derivedMailboxHashes`); every other scope is a question
  * about signature rows. Both answers are RAW hash sets — the same thing the index is keyed by, so
  * a scope table can join it directly.
  */
@@ -134,7 +134,7 @@ function hashesFor(ctx: QueryContext, ref: ScopeRef): Set<string> {
             // built inside SQLite by scopeFor; never reaches here
             return new Set();
         case 'mailbox':
-            return mailboxHashes(ctx.paths).get(ref.mailbox) ?? new Set();
+            return derivedMailboxHashes(ctx.paths).get(ref.mailbox) ?? new Set();
         case 'verdicts':
             return verdictHashes(ctx.db, ref.verdicts);
         case 'signer':

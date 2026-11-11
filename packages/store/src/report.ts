@@ -27,7 +27,7 @@ import {
 
 import type { CasePaths } from './case.ts';
 import { hashScope } from './index-db.ts';
-import { mailboxHashes } from './raw.ts';
+import { derivedMailboxHashes } from './breakdown.ts';
 
 /** How many messages reached each verdict. Every verdict appears, including the zeroes. */
 export interface VerdictCount {
@@ -87,17 +87,25 @@ export interface UnverifiableReasonCount {
 }
 
 /**
- * One mailbox of a folder import, and what its mail added to the case.
+ * One mailbox of the case, and what its mail added to it.
  *
  * PROVENANCE, so it needs the import log: the index never records a mailbox (see `index-db.ts`),
  * and a report asked for without the case folder therefore has no per-mailbox breakdown at all
  * rather than an empty one — an empty list would read as "these mailboxes held nothing".
  */
 export interface MailboxReport {
-    /** The folder's name, exactly as the import log recorded it. */
+    /**
+     * The mailbox's name: the folder import's own, or the folder the source files sit in (see
+     * `derivedMailboxHashes`). `''` is the mail no mailbox could be named for; the caller labels it.
+     */
     readonly mailbox: string;
     /** Indexed messages out of it. A message found in two mailboxes counts under both. */
     readonly messages: number;
+    /** The oldest and the newest `Date`, ISO 8601; absent when no message of it has a readable date. */
+    readonly earliest?: string;
+    readonly latest?: string;
+    /** Messages of it whose date could not be read. */
+    readonly undated: number;
     /** How that mail landed: all six verdicts, zeroes included — the same rule as the case. */
     readonly verdicts: readonly VerdictCount[];
 }
@@ -358,8 +366,11 @@ export function signingDomains(db: DatabaseSync, limit = 10): SigningDomain[] {
  * plain import.
  */
 export function mailboxReports(db: DatabaseSync, paths: CasePaths): MailboxReport[] | undefined {
-    const grouped = [...mailboxHashes(paths)].filter(([mailbox]) => mailbox !== '');
-    if (grouped.length === 0) return undefined;
+    const all = [...derivedMailboxHashes(paths)];
+    // Mail with no mailbox is only a group beside named ones: alone it would be a "breakdown" of
+    // one row that says nothing, and the case would claim to record mailboxes that it does not.
+    if (!all.some(([mailbox]) => mailbox !== '')) return undefined;
+    const grouped = all;
 
     const reports: MailboxReport[] = [];
     for (const [mailbox, hashes] of grouped) {
@@ -382,9 +393,23 @@ export function mailboxReports(db: DatabaseSync, paths: CasePaths): MailboxRepor
             // Nothing indexed: the mailbox is in the log but not in the report's subject, and a
             // zero row next to rows of thousands reads as an empty mailbox rather than as this.
             if (messages === 0) continue;
+            const span = db
+                .prepare(
+                    `SELECT min(m.sent_at) AS first, max(m.sent_at) AS last,
+                            coalesce(sum(m.sent_at IS NULL), 0) AS undated
+                     FROM messages m JOIN ${scope.table} ON ${scope.table}.hash = m.hash`,
+                )
+                .get() as { first?: number | null; last?: number | null; undated?: number };
             reports.push({
                 mailbox,
                 messages,
+                ...(span.first === null || span.first === undefined
+                    ? {}
+                    : { earliest: new Date(Number(span.first)).toISOString() }),
+                ...(span.last === null || span.last === undefined
+                    ? {}
+                    : { latest: new Date(Number(span.last)).toISOString() }),
+                undated: Number(span.undated ?? 0),
                 verdicts: VERDICTS.map((verdict) => ({
                     verdict,
                     messages: counted.get(verdict) ?? 0,
@@ -394,7 +419,13 @@ export function mailboxReports(db: DatabaseSync, paths: CasePaths): MailboxRepor
             scope.close();
         }
     }
-    return reports.sort((a, b) => b.messages - a.messages || a.mailbox.localeCompare(b.mailbox));
+    // The unnamed group goes last whatever its size: it is the remainder, not a mailbox.
+    return reports.sort(
+        (a, b) =>
+            Number(a.mailbox === '') - Number(b.mailbox === '') ||
+            b.messages - a.messages ||
+            a.mailbox.localeCompare(b.mailbox),
+    );
 }
 
 /** The two alterations, in the order {@link VERDICTS} declares them, zeroes included. */

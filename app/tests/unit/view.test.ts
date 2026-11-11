@@ -65,7 +65,7 @@ import {
     tappedFilter,
     verdictShares,
 } from '../../src/gui/view/overview.ts';
-import { allSources, baseName, shortPath, sourceRows } from '../../src/gui/view/sources.ts';
+import { allSources, baseName, mailboxRows, shortPath, sourceRows } from '../../src/gui/view/sources.ts';
 import {
     explainVerdict,
     verdictFilters,
@@ -183,6 +183,7 @@ function mailbox(
     return {
         mailbox: name,
         messages,
+        undated: 0,
         verdicts: VERDICTS.map((verdict) => ({ verdict, messages: counts[verdict] ?? 0 })),
     };
 }
@@ -823,6 +824,40 @@ export default async () => {
             expect(rows[0]?.subtitle).not.toBe(rows[1]?.subtitle);
         });
 
+        await it('groups the archives under their mailbox, the unnamed mail last', async () => {
+            const part = (source: string, messages: number, mailbox?: string): LogSource => ({
+                source,
+                kind: 'mbox',
+                messages,
+                duplicates: 0,
+                ...(mailbox === undefined ? {} : { mailbox }),
+            });
+            const rows = mailboxRows([
+                part('/leak/grace@example.net/part-01.mbox', 1),
+                part('/leak/ada@example.com/part-01.mbox', 3),
+                part('/leak/ada@example.com/part-02.mbox', 2),
+                part('/leak/Downloads/inbox.mbox', 9),
+            ]);
+            expect(rows?.map((row) => [row.title, row.messages, row.parts.length])).toStrictEqual([
+                ['ada@example.com', 5, 2],
+                ['grace@example.net', 1, 1],
+                ['Unknown mailbox', 9, 1],
+            ]);
+            expect(rows?.[0]?.subtitle).toBe('5 messages in 2 files');
+            expect(rows?.[1]?.subtitle).toBe('1 message in 1 file');
+            // A part keeps its own path as the key, and drops the mailbox prefix its row would repeat.
+            expect(rows?.[0]?.parts[0]?.source).toBe('/leak/ada@example.com/part-01.mbox');
+            expect(rows?.[0]?.parts[0]?.subtitle).toBe('3 messages');
+        });
+
+        await it('shows the flat list when no mailbox can be named', async () => {
+            expect(
+                mailboxRows([
+                    { source: '/leak/Downloads/inbox.mbox', kind: 'mbox', messages: 4, duplicates: 0 },
+                ]),
+            ).toBe(undefined);
+        });
+
         await it('finds the last segment of a path without node:path', async () => {
             expect(baseName('/leak/inbox.mbox')).toBe('inbox.mbox');
             expect(baseName('/leak/maildir/')).toBe('maildir');
@@ -1015,7 +1050,7 @@ export default async () => {
             const ada = group?.rows[0];
             expect(ada?.filter).toStrictEqual({ scope: { kind: 'mailbox', mailbox: 'ada@example.com' } });
             // An expander: "everything" first, then the same six verdicts the case reports.
-            expect(ada?.rows?.length).toBe(VERDICTS.length + 1);
+            expect(ada?.rows?.length).toBe(VERDICTS.length + 3);
             expect(ada?.rows?.[0]?.label).toBe('All 3 messages of ada@example.com');
             expect(ada?.rows?.[1]?.filter).toStrictEqual({
                 scope: { kind: 'mailbox', mailbox: 'ada@example.com' },
@@ -1023,7 +1058,7 @@ export default async () => {
             });
             // Zeroes included: the mailbox's five zero verdicts are as measured as the one with
             // mail in it.
-            expect(ada?.rows?.slice(1).map((row) => row.value)).toStrictEqual([
+            expect(ada?.rows?.slice(1, 1 + VERDICTS.length).map((row) => row.value)).toStrictEqual([
                 '0 messages',
                 '0 messages',
                 '0 messages',
@@ -1032,6 +1067,44 @@ export default async () => {
                 '3 messages',
             ]);
             expect(group?.rows[1]?.value).toBe('1 message');
+        });
+
+        await it('sums up a mailbox: the share that checks out, and the dates behind it', async () => {
+            const dated = {
+                ...mailbox('ada@example.com', 8, { confirmed: 3, 'confirmed-with-caveats': 1, unsigned: 4 }),
+                earliest: '2019-01-02T10:00:00.000Z',
+                latest: '2024-05-06T10:00:00.000Z',
+                undated: 2,
+            };
+            const insights = overviewInsights({ ...counted({ unsigned: 8 }), mailboxes: [dated] });
+            const rows = insights[0]?.rows[0]?.rows ?? [];
+            // Both confirmed verdicts count, and the share is of the mailbox, not of the case.
+            expect(rows.at(-2)).toStrictEqual({
+                label: 'Signature checks out',
+                value: '4 of 8 (50%)',
+            });
+            expect(rows.at(-1)).toStrictEqual({
+                label: 'Period',
+                value: '2019-01-02 to 2024-05-06, 2 without a date',
+            });
+            // The description says what the share is not.
+            expect((insights[0]?.description ?? '').includes('not forged')).toBe(true);
+        });
+
+        await it('says so when a mailbox has no readable date, and names the unnamed mail', async () => {
+            const insights = overviewInsights({
+                ...counted({ unsigned: 3 }),
+                mailboxes: [mailbox('ada@example.com', 2, { unsigned: 2 }), mailbox('', 1, { unsigned: 1 })],
+            });
+            const [named, unnamed] = insights[0]?.rows ?? [];
+            expect(named?.rows?.at(-1)?.value).toBe('no readable dates');
+            expect(unnamed?.label).toBe('Unknown mailbox');
+            expect(unnamed?.rows?.[0]?.label).toBe('All 1 messages of Unknown mailbox');
+            // The scope still names the mailbox as the log does: '' is the unnamed group.
+            expect(unnamed?.filter).toStrictEqual({ scope: { kind: 'mailbox', mailbox: '' } });
+            expect(filterBannerText({ kind: 'mailbox', mailbox: '' })).toBe(
+                'Only the mailbox Unknown mailbox',
+            );
         });
 
         await it('has no mailbox group for a case imported as files', async () => {

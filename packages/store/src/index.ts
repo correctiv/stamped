@@ -145,7 +145,6 @@ export {
     type ImportLogEntry,
     type LogSource,
     logSources,
-    mailboxHashes,
     rawPath,
     readRaw,
     sourceHashes,
@@ -178,7 +177,7 @@ export {
 export {
     derivedMailboxHashes,
     domainsByVerdict,
-    mailboxOf,
+    sourceMailboxes,
     type PeriodRow,
     periodBreakdown,
     rawSetDigest,
