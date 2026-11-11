@@ -46,6 +46,7 @@ const COMMANDS = [
     'search',
     'report',
     'reverify',
+    'perimeter',
     'people',
     'timeline',
     'status',

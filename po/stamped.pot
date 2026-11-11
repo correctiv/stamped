@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 15:19+0100\n"
+"POT-Creation-Date: 2026-11-11 15:54+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -181,11 +181,11 @@ msgstr ""
 #: app/src/commands/keys.ts:292 app/src/commands/keys.ts:492
 #: app/src/commands/keys.ts:630 app/src/commands/keys.ts:679
 #: app/src/commands/keys.ts:709 app/src/commands/people.ts:37
-#: app/src/commands/people.ts:38 app/src/commands/reverify.ts:27
-#: app/src/commands/semantic.ts:76 app/src/commands/semantic.ts:77
-#: app/src/commands/semantic.ts:117 app/src/commands/semantic.ts:118
-#: app/src/commands/semantic.ts:164 app/src/commands/timeline.ts:28
-#: app/src/commands/timeline.ts:29
+#: app/src/commands/people.ts:38 app/src/commands/perimeter.ts:31
+#: app/src/commands/reverify.ts:27 app/src/commands/semantic.ts:76
+#: app/src/commands/semantic.ts:77 app/src/commands/semantic.ts:117
+#: app/src/commands/semantic.ts:118 app/src/commands/semantic.ts:164
+#: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
 msgid "The case folder"
 msgstr ""
 
@@ -493,6 +493,45 @@ msgid_plural "{n} addresses listed."
 msgstr[0] ""
 msgstr[1] ""
 
+#: app/src/commands/perimeter.ts:28
+msgid "Show or set the domains this case examines"
+msgstr ""
+
+#: app/src/commands/perimeter.ts:33 app/src/commands/reverify.ts:29
+msgid "The case folder (default: .stamped)"
+msgstr ""
+
+#: app/src/commands/perimeter.ts:38
+msgid ""
+"A domain the case examines. Repeatable. Replaces the perimeter that was "
+"there."
+msgstr ""
+
+#: app/src/commands/perimeter.ts:43
+msgid "Remove the perimeter"
+msgstr ""
+
+#: app/src/commands/perimeter.ts:49
+msgid ""
+"A valid signature from a perimeter domain proves the message is unchanged, "
+"not that the party would not have signed something else: the key was theirs. "
+"Stamped says so as a caveat, and only for domains you name here."
+msgstr ""
+
+#: app/src/commands/perimeter.ts:59
+msgid "No perimeter is set."
+msgstr ""
+
+#: app/src/commands/perimeter.ts:67
+msgid "The perimeter is removed."
+msgstr ""
+
+#: app/src/commands/perimeter.ts:69
+msgid "{count} message re-checked."
+msgid_plural "{count} messages re-checked."
+msgstr[0] ""
+msgstr[1] ""
+
 #: app/src/commands/report.ts:50
 msgid ""
 "Summarise a case folder: verdicts, and which keys would answer the most mail"
@@ -650,10 +689,6 @@ msgstr ""
 
 #: app/src/commands/reverify.ts:24
 msgid "Re-verify messages with the keys the case now holds (offline)"
-msgstr ""
-
-#: app/src/commands/reverify.ts:29
-msgid "The case folder (default: .stamped)"
 msgstr ""
 
 #: app/src/commands/reverify.ts:33
@@ -855,7 +890,7 @@ msgid "Check one message against a key you have on disk"
 msgstr ""
 
 #: app/src/commands/verify.ts:83 packages/import/src/folder.ts:128
-#: packages/import/src/source.ts:219 packages/store/src/importer.ts:474
+#: packages/import/src/source.ts:219 packages/store/src/importer.ts:477
 msgid "Cannot read {path}."
 msgstr ""
 
@@ -885,12 +920,12 @@ msgstr ""
 msgid "Nothing is running in the background."
 msgstr ""
 
-#: app/src/gui/main.ts:100
+#: app/src/gui/main.ts:101
 msgctxt "application name"
 msgid "Stamped"
 msgstr ""
 
-#: app/src/gui/main.ts:109
+#: app/src/gui/main.ts:110
 msgid ""
 "Verifies the DKIM signatures of an email archive and says what each "
 "signature actually covers. It works offline: public keys come from a store "
@@ -1920,8 +1955,8 @@ msgstr ""
 
 #: app/src/gui/window.ts:1784
 msgid ""
-"A mail program may load remote content. Only the verdict proves a message "
-"genuine."
+"A mail program may load remote content. Only the verdict shows whether a "
+"message is unchanged since it was signed."
 msgstr ""
 
 #: app/src/gui/window.ts:1789
@@ -2151,11 +2186,11 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: app/src/index.ts:45
+#: app/src/index.ts:46
 msgid "stamped <command> [options]"
 msgstr ""
 
-#: app/src/index.ts:56
+#: app/src/index.ts:58
 msgid "Pick a command. Try `stamped verify --help`."
 msgstr ""
 
@@ -3111,8 +3146,8 @@ msgstr ""
 
 #: packages/core/src/explain.ts:186
 msgid ""
-" The signed header, including the body hash, is authentic and unchanged, so "
-"the deviation is in the text only."
+" The signed header, including the body hash, is intact and unchanged, so the "
+"deviation is in the text only."
 msgstr ""
 
 #: packages/core/src/explain.ts:195
@@ -3468,107 +3503,109 @@ msgid ""
 "have been written by anyone."
 msgstr ""
 
-#: packages/core/src/verdict.ts:334
+#: packages/core/src/verdict.ts:341
 msgid "Confirmed"
 msgstr ""
 
-#: packages/core/src/verdict.ts:336
+#: packages/core/src/verdict.ts:343
 msgid "With caveats"
 msgstr ""
 
-#: packages/core/src/verdict.ts:338
+#: packages/core/src/verdict.ts:345
 msgid "Body altered"
 msgstr ""
 
-#: packages/core/src/verdict.ts:340
+#: packages/core/src/verdict.ts:347
 msgid "Headers altered"
 msgstr ""
 
-#: packages/core/src/verdict.ts:342
+#: packages/core/src/verdict.ts:349
 msgid "Unverifiable"
 msgstr ""
 
-#: packages/core/src/verdict.ts:344
+#: packages/core/src/verdict.ts:351
 msgid "Unsigned"
 msgstr ""
 
-#: packages/core/src/verdict.ts:357
-msgid "Confirmed: a valid signature covers this message as it stands."
+#: packages/core/src/verdict.ts:365
+msgid ""
+"Unchanged since signing: a valid signature of the signing domain covers this "
+"message as it stands."
 msgstr ""
 
-#: packages/core/src/verdict.ts:359
+#: packages/core/src/verdict.ts:368
 msgid ""
 "Confirmed with caveats: the signature is valid but covers less than it "
 "appears to."
 msgstr ""
 
-#: packages/core/src/verdict.ts:361
+#: packages/core/src/verdict.ts:370
 msgid "Body altered: the body is not the body that was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:363
+#: packages/core/src/verdict.ts:372
 msgid "Headers altered: a signed header field is not what was signed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:365
+#: packages/core/src/verdict.ts:374
 msgid "Unverifiable: a signature is present, but nothing here can check it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:367
+#: packages/core/src/verdict.ts:376
 msgid ""
 "Unsigned: no DKIM signature. This says nothing about the message either way."
 msgstr ""
 
-#: packages/core/src/verdict.ts:380
+#: packages/core/src/verdict.ts:389
 msgid ""
 "Signed with rsa-sha1. SHA-1 collisions are practical, so a crafted body can "
 "carry a valid signature (RFC 8301)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:383
+#: packages/core/src/verdict.ts:392
 msgid ""
 "The RSA key is shorter than 1024 bits and can be factored with ordinary "
 "resources."
 msgstr ""
 
-#: packages/core/src/verdict.ts:386
+#: packages/core/src/verdict.ts:395
 msgid ""
 "An l= tag limits the signature to the start of the body. Anything appended "
 "after that is unsigned."
 msgstr ""
 
-#: packages/core/src/verdict.ts:389
+#: packages/core/src/verdict.ts:398
 msgid ""
 "Subject is not signed: the subject line could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:391
+#: packages/core/src/verdict.ts:400
 msgid "To is not signed: the recipient could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:393
+#: packages/core/src/verdict.ts:402
 msgid "Date is not signed: the date could have been changed or added."
 msgstr ""
 
-#: packages/core/src/verdict.ts:396
+#: packages/core/src/verdict.ts:405
 msgid ""
 "The public key came from the archive itself, so it proves consistency rather "
 "than authenticity."
 msgstr ""
 
-#: packages/core/src/verdict.ts:400
+#: packages/core/src/verdict.ts:409
 msgid ""
 "The signature was valid when it was made; its expiry date (x=) has since "
 "passed. That matters for live delivery, not for an archive."
 msgstr ""
 
-#: packages/core/src/verdict.ts:404
+#: packages/core/src/verdict.ts:413
 msgid ""
 "The signature header contradicts itself: its expiry date (x=) lies before "
 "the time it was made (t=). The signature itself verifies."
 msgstr ""
 
-#: packages/core/src/verdict.ts:408
+#: packages/core/src/verdict.ts:417
 msgid ""
 "The public key was recovered from other signatures, so it proves the same "
 "key signed these messages, not that the key ever belonged to the domain. A "
@@ -3576,79 +3613,85 @@ msgid ""
 "would be the anchor that strengthens it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:412
+#: packages/core/src/verdict.ts:421
 msgid ""
 "The message was sent while two keys of this selector were both in use. The "
 "signature verifies under one of them, so the key was picked by the "
 "signature, not by the date."
 msgstr ""
 
-#: packages/core/src/verdict.ts:416
+#: packages/core/src/verdict.ts:425
 msgid ""
 "The key was first seen after this message was sent. The selector may have "
 "been rotated, so this failure may come from a wrong key rather than an edit."
 msgstr ""
 
-#: packages/core/src/verdict.ts:420
+#: packages/core/src/verdict.ts:429
 msgid ""
 "No public key is available, so the body hash claimed in the signature could "
 "not be confirmed as the signer’s. Whoever changed the body could have "
 "rewritten the hash too."
 msgstr ""
 
-#: packages/core/src/verdict.ts:426
+#: packages/core/src/verdict.ts:433
+msgid ""
+"The signing key was operated by the examined domain itself; a compromise of "
+"that infrastructure would have allowed signing arbitrary mail."
+msgstr ""
+
+#: packages/core/src/verdict.ts:439
 msgid ""
 "The signature is from {signer}, but the message claims to be from {author}. "
 "It proves only that {signer} handled the message, not that {author} sent it."
 msgstr ""
 
-#: packages/core/src/verdict.ts:428
+#: packages/core/src/verdict.ts:441
 msgid "(unknown domain)"
 msgstr ""
 
-#: packages/core/src/verdict.ts:431
+#: packages/core/src/verdict.ts:444
 msgid ""
 "The signing domain is not the From domain, so the signature does not vouch "
 "for the author."
 msgstr ""
 
-#: packages/core/src/verdict.ts:440
+#: packages/core/src/verdict.ts:453
 msgid "No public key for this selector and domain."
 msgstr ""
 
-#: packages/core/src/verdict.ts:442
+#: packages/core/src/verdict.ts:455
 msgid "The public key record is unusable."
 msgstr ""
 
-#: packages/core/src/verdict.ts:444
+#: packages/core/src/verdict.ts:457
 msgid "The DKIM-Signature header does not parse."
 msgstr ""
 
-#: packages/core/src/verdict.ts:446
+#: packages/core/src/verdict.ts:459
 msgid ""
 "The key record does not allow this signature (hash algorithm or service "
 "type)."
 msgstr ""
 
-#: packages/core/src/verdict.ts:448
+#: packages/core/src/verdict.ts:461
 msgid "The signature’s expiry date (x=) has passed."
 msgstr ""
 
-#: packages/core/src/verdict.ts:450
+#: packages/core/src/verdict.ts:463
 msgid "The key lookup failed and may succeed later."
 msgstr ""
 
-#: packages/core/src/verdict.ts:453
+#: packages/core/src/verdict.ts:466
 msgid ""
 "The key does not match the signature (different size or type), so it cannot "
 "have produced it. The selector was probably rotated."
 msgstr ""
 
-#: packages/core/src/verdict.ts:456
+#: packages/core/src/verdict.ts:469
 msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 
-#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:452
+#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:455
 msgid "{path} is not a folder."
 msgstr ""
 
@@ -3656,16 +3699,20 @@ msgstr ""
 msgid "The case folder {path} was written by a newer version of Stamped."
 msgstr ""
 
-#: packages/store/src/importer.ts:341
+#: packages/store/src/importer.ts:342
 msgid "{path} holds no messages."
 msgstr ""
 
-#: packages/store/src/importer.ts:462
+#: packages/store/src/importer.ts:465
 msgid "{path} holds no mail files."
 msgstr ""
 
 #: packages/store/src/index-db.ts:82
 msgid "Cannot open the index of the case folder {path}."
+msgstr ""
+
+#: packages/store/src/perimeter.ts:48
+msgid "{name} is not a domain name."
 msgstr ""
 
 #: packages/store/src/raw.ts:93

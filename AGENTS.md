@@ -38,7 +38,9 @@ The caveats (`packages/core/src/verdict.ts`) are: `rsa-sha1`, a key under 1024 b
 length limit, `To`/`Date`/`Subject` not in `h=`, a key that came only from the archive rather
 than from a published record, a signature whose `x=` has passed (or lies before its `t=`),
 a key recovered mathematically from signatures rather than published, and a message dated inside
-the overlap of two rotation windows (`ambiguous-key-era`: the signature picked the key, not the date). **Each signature of a
+the overlap of two rotation windows (`ambiguous-key-era`: the signature picked the key, not the date),
+and a signature made by a domain the operator named as the case's perimeter (`self-signed-perimeter`, set with
+`stamped perimeter --set <domain>`, stored in `<case>/perimeter.json`, never inferred). **Each signature of a
 multi-signature message is classified on its
 own** — a forwarder's passing signature says nothing about the originator's.
 

@@ -183,7 +183,7 @@ function explainBody(finding: SignatureFinding): Explanation {
     const headersIntact = evidence.keySigned === true && evidence.signedHeadersIntact === true;
     const intactNote = headersIntact
         ? _(
-              ' The signed header, including the body hash, is authentic and unchanged, so the deviation is in the text only.',
+              ' The signed header, including the body hash, is intact and unchanged, so the deviation is in the text only.',
           )
         : '';
     if (evidence.lengthLimit !== undefined) {

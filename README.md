@@ -29,7 +29,7 @@ spiked. Stamped says one of:
 
 | Verdict | Means |
 |---|---|
-| **confirmed** | A signature verified. The message is what was signed. |
+| **confirmed** | A signature verified. The message is unchanged since it was signed. |
 | **confirmed with caveats** | It verified, but covers less than it appears to. See below. |
 | **body altered** | The body hash does not match: the body was changed after signing. |
 | **headers altered** | The body is intact but a signed header field is not what was signed. |
@@ -44,6 +44,11 @@ A confirmation gets caveats when it is real but narrower than the word suggests:
 start of the body, `Subject`/`To`/`Date` missing from the signed headers, or a public key that
 came from the archive under examination rather than from the DNS or from you. That proves
 internal consistency, not authenticity.
+
+A valid signature shows a message is unchanged since it was signed. When the signing domain is
+the one under examination, the key was theirs, so it does not rule out a compromise on their
+side. Name the domains a case examines with `stamped perimeter --set <domain>` and Stamped adds
+that caveat to their own signatures; it never guesses the perimeter from the mail.
 
 Every signature is evaluated **on its own**. A message whose author domain's signature broke
 while a mailing list's still verifies is a finding, not an average.

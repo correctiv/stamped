@@ -135,7 +135,7 @@ export default async () => {
     await describe('a whole message', async () => {
         await it('leads with the verdict sentence', async () => {
             const lines = reportLines(classifyMessage([good()]));
-            expect(lines[0]?.startsWith('Confirmed:')).toBe(true);
+            expect(lines[0]?.startsWith('Unchanged since signing:')).toBe(true);
         });
 
         await it('numbers the signatures so two verdicts cannot read as one', async () => {

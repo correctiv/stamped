@@ -15,6 +15,7 @@ import { classifyMessage, keyNameFor, type KeyStore } from '@stamped/core';
 import { verifyMessage } from '@stamped/verify';
 
 import type { CasePaths } from './case.ts';
+import { readPerimeter } from './perimeter.ts';
 import { beginBatch, commitBatch, rollbackBatch, updateFinding } from './index-db.ts';
 import { rawPath } from './raw.ts';
 
@@ -43,6 +44,7 @@ export async function settleSiblings(
 ): Promise<number> {
     const confirmed = confirmedPairNames(db);
     if (confirmed.size === 0) return 0;
+    const classifyOptions = { perimeter: readPerimeter(paths) };
     const candidates = db
         .prepare(
             `SELECT m.hash AS hash FROM messages m, json_each(m.caveats) AS c
@@ -65,7 +67,10 @@ export async function settleSiblings(
             let finding;
             try {
                 const raw = new Uint8Array(readFileSync(rawPath(paths, hash)));
-                finding = classifyMessage(await verifyMessage(raw, { keys, confirmedPairs: confirmed }));
+                finding = classifyMessage(
+                    await verifyMessage(raw, { keys, confirmedPairs: confirmed }),
+                    classifyOptions,
+                );
             } catch {
                 continue; // keeps its old row
             }

@@ -20,6 +20,7 @@ import { hideBin } from 'yargs/helpers';
 import { importCommand } from './commands/import.ts';
 import { keysCommand } from './commands/keys.ts';
 import { peopleCommand } from './commands/people.ts';
+import { perimeterCommand } from './commands/perimeter.ts';
 import { reportCommand } from './commands/report.ts';
 import { reverifyCommand } from './commands/reverify.ts';
 import { searchCommand } from './commands/search.ts';
@@ -51,6 +52,7 @@ function parse(): Promise<unknown> {
             .command(peopleCommand())
             .command(timelineCommand())
             .command(reverifyCommand())
+            .command(perimeterCommand())
             .command(statusCommand())
             .command(semanticCommand())
             .demandCommand(1, _('Pick a command. Try `stamped verify --help`.'))
