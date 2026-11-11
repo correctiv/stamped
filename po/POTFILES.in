@@ -102,7 +102,6 @@ packages/import/src/message.ts
 packages/import/src/mime.ts
 packages/import/src/reading.ts
 packages/import/src/source.ts
-packages/semantic/src/child-process.ts
 packages/semantic/src/context-pool.ts
 packages/semantic/src/embedder.ts
 packages/semantic/src/gpu-guard.ts

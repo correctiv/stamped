@@ -29,7 +29,7 @@ import { KeyVault, parseKeyMaterial, type MessageFinding, type Verdict } from '@
 import { encodeLatin1, summarise } from '@stamped/import';
 import { casePaths, digest, indexMessage, openIndex, store } from '@stamped/store';
 
-import { QueryClient, type QueryChannel } from '../../src/gui/query-client.ts';
+import { isRecoverable, QueryClient, type QueryChannel } from '../../src/gui/query-client.ts';
 import { initI18n } from '../../src/lib/i18n.ts';
 import { PAGE_SIZE, runQuery, runQueryAsync, type QueryContext } from '../../src/lib/queries.ts';
 import { saveVault } from '../../src/lib/vault.ts';
@@ -108,6 +108,7 @@ interface Watched {
     ok: boolean;
     value?: unknown;
     error?: string;
+    recoverable?: boolean;
 }
 
 function watch(promise: Promise<unknown>): Watched {
@@ -122,6 +123,7 @@ function watch(promise: Promise<unknown>): Watched {
             state.done = true;
             state.ok = false;
             state.error = error.message;
+            state.recoverable = isRecoverable(error);
         },
     );
     return state;
@@ -292,6 +294,50 @@ export default async () => {
             }
         });
 
+        await it('asks once more on a fresh worker after a silence, and the person never hears of it', async () => {
+            const { spawn, made } = fakeChannels();
+            const client = new QueryClient(PATHS, spawn, 200);
+            const asked = watch(client.ask('total', {}));
+            while (made.length < 2) await tick(5);
+            expect(client.restarts).toBe(1);
+            expect(made[0]?.closed).toBe(true);
+            while (questions(made[1]!).length < 1) await tick(5);
+            questions(made[1]!)[0]!.resolve(7);
+            await settled(asked);
+            expect(asked.ok).toBe(true);
+            expect(asked.value).toBe(7);
+            expect(made.length).toBe(2);
+            client.close();
+        });
+
+        await it('rejects after exactly one retry, and marks the error as recoverable', async () => {
+            const { spawn, made } = fakeChannels();
+            const client = new QueryClient(PATHS, spawn, 25);
+            const lost = watch(client.ask('total', {}));
+            await settled(lost);
+            expect(lost.ok).toBe(false);
+            expect(lost.recoverable).toBe(true);
+            expect(made.length).toBe(2);
+            expect(questions(made[0]!).length).toBe(1);
+            expect(questions(made[1]!).length).toBe(1);
+            expect(client.restarts).toBe(2);
+            client.close();
+        });
+
+        await it('does not retry, nor mark, an error the worker reported itself', async () => {
+            const { spawn, made } = fakeChannels();
+            const client = new QueryClient(PATHS, spawn, 25);
+            const failed = watch(client.ask('total', {}));
+            while (made.length < 1 || questions(made[0]!).length < 1) await tick(5);
+            questions(made[0]!)[0]!.reject(new Error('no such table'));
+            await settled(failed);
+            expect(failed.error).toBe('no such table');
+            expect(failed.recoverable).toBe(false);
+            expect(made.length).toBe(1);
+            expect(client.restarts).toBe(0);
+            client.close();
+        });
+
         await it('gives up on a silent worker and answers the next question on a fresh one', async () => {
             const { spawn, made } = fakeChannels();
             const client = new QueryClient(PATHS, spawn, 25);
@@ -299,13 +345,13 @@ export default async () => {
             await settled(lost);
             expect(lost.ok).toBe(false);
             expect(lost.error?.includes('did not answer')).toBe(true);
-            expect(client.restarts).toBe(1);
-            expect(made[0]?.closed).toBe(true);
+            expect(client.restarts).toBe(2);
+            expect(made[1]?.closed).toBe(true);
 
             const again = watch(client.ask('total', {}));
             await tick();
-            expect(made.length).toBe(2);
-            const fresh = made[1]!;
+            expect(made.length).toBe(3);
+            const fresh = made[2]!;
             expect(fresh.calls[0]?.op).toBe('open');
             questions(fresh)[0]!.resolve(2);
             await tick();
@@ -322,11 +368,12 @@ export default async () => {
             const pending = watch(client.ask('total', {}));
             await tick();
             made[0]!.calls.find((call) => call.op === 'total')!.resolve(999);
+            made[1]!.calls.find((call) => call.op === 'total')!.resolve(998);
             await tick();
             expect(pending.done).toBe(false);
             expect(lost.ok).toBe(false);
 
-            questions(made[1]!)[0]!.resolve(5);
+            questions(made[2]!)[0]!.resolve(5);
             await tick();
             expect(pending.value).toBe(5);
             client.close();
