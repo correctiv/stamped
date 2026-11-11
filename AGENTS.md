@@ -37,7 +37,8 @@ the journalist needs:
 The caveats (`packages/core/src/verdict.ts`) are: `rsa-sha1`, a key under 1024 bit, an `l=` body
 length limit, `To`/`Date`/`Subject` not in `h=`, a key that came only from the archive rather
 than from a published record, a signature whose `x=` has passed (or lies before its `t=`),
-and a key recovered mathematically from signatures rather than published. **Each signature of a
+a key recovered mathematically from signatures rather than published, and a message dated inside
+the overlap of two rotation windows (`ambiguous-key-era`: the signature picked the key, not the date). **Each signature of a
 multi-signature message is classified on its
 own** — a forwarder's passing signature says nothing about the originator's.
 
