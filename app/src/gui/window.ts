@@ -60,6 +60,7 @@ import {
     type SemanticProcess,
     type SubprocessSemantic,
 } from '../lib/semantic-run.ts';
+import { citationOf } from '../lib/citation.ts';
 import { openCopy } from '../lib/open-copy.ts';
 import {
     parseReportLine,
@@ -1602,7 +1603,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this._readerBody.append(
             this.mailSheet(mailHead(message, { locale: this.readerLocale() }), body, message.hash),
         );
-        this._readerBody.append(this.verdictCardWidget(card));
+        this._readerBody.append(this.verdictCardWidget(card, citationOf(finding, raw)));
         this._readerBody.append(this.headerGroup(headerFields(message)));
         for (const card of signatureCards(finding)) {
             this._readerBody.append(this.signatureGroup(card));
@@ -1832,7 +1833,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * click away in the sidebar filter row and in the overview, where it is read before a message
      * is opened rather than on top of the claim about this one.
      */
-    private verdictCardWidget(card: VerdictCard): Gtk.Widget {
+    private verdictCardWidget(card: VerdictCard, citation: string): Gtk.Widget {
         const frame = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
         frame.add_css_class('card');
         const body = new Gtk.Box({
@@ -1851,6 +1852,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
         head.append(icon);
         head.append(badge(card.badge, card.cssClass));
         head.append(new Gtk.Box({ hexpand: true }));
+        // The sentence is built from the finding on open, so what is copied is what the pane says.
+        head.append(this.copyButton(citation, _('Copy a sentence to quote')));
         body.append(head);
 
         // A MISSING KEY GETS THE SHORT FORM. The reader of this card has one thing to do, so the

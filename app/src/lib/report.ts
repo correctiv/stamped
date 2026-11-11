@@ -68,12 +68,13 @@ export function signatureLines(finding: SignatureFinding, position: number, tota
 }
 
 /** The same finding as data, for `--json`. Keys are stable; new ones may be added. */
-export function reportJson(finding: MessageFinding, source: string): string {
+export function reportJson(finding: MessageFinding, source: string, citation?: string): string {
     return JSON.stringify(
         {
             source,
             verdict: finding.verdict,
             caveats: finding.caveats,
+            ...(citation !== undefined ? { citation } : {}),
             signatures: finding.signatures.map((signature) => ({
                 verdict: signature.verdict,
                 reason: explainSignature(signature)?.code,

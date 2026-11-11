@@ -45,6 +45,7 @@ app/src/lib/activity.ts
 app/src/lib/autofetch.ts
 app/src/lib/body-altered.ts
 app/src/lib/case.ts
+app/src/lib/citation.ts
 app/src/lib/consent.ts
 app/src/lib/dns.ts
 app/src/lib/duration.ts
@@ -82,6 +83,7 @@ app/src/lib/status.ts
 app/src/lib/vault.ts
 app/src/lib/version.ts
 packages/core/src/autokeys.ts
+packages/core/src/citation.ts
 packages/core/src/classify.ts
 packages/core/src/explain.ts
 packages/core/src/i18n.ts

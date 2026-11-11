@@ -9,6 +9,7 @@ import autokeys from './unit/autokeys.test.ts';
 import cli from './unit/cli.test.ts';
 import classify from './unit/classify.test.ts';
 import folder from './unit/folder.test.ts';
+import citation from './unit/citation.test.ts';
 import explain from './unit/explain.test.ts';
 import keyBundle from './unit/key-bundle.test.ts';
 import keyEras from './unit/key-eras.test.ts';
@@ -60,6 +61,7 @@ run({
     cli,
     classify,
     folder,
+    citation,
     explain,
     keys,
     keyBundle,
