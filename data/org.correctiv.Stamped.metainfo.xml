@@ -56,6 +56,12 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.3.5" date="2026-11-11">
+      <description>
+        <p>Semantic search now runs on the shared embedding layer of gjsify, and the message list stays responsive while a large case is searched. Stamped is still not signed or notarised for macOS; the website explains how to open it.</p>
+        <p xml:lang="de">Die semantische Suche läuft jetzt auf der gemeinsamen Embedding-Schicht von gjsify, und die Nachrichtenliste bleibt bedienbar, während ein großer Fall durchsucht wird. Stamped ist für macOS weiterhin nicht signiert und nicht notarisiert; die Webseite erklärt, wie man es trotzdem öffnet.</p>
+      </description>
+    </release>
     <release version="0.3.4" date="2026-10-29">
       <description>
         <p>Search shows its first results while it is still counting, and says that it is searching. The archive index now runs on its own SQLite binding instead of libgda.</p>
