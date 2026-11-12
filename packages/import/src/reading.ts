@@ -32,6 +32,11 @@ export interface Attachment {
     readonly bytes: number;
 }
 
+/** An attachment together with its decoded content, for the analysis that reads inside it. */
+export interface AttachmentContent extends Attachment {
+    readonly content: Uint8Array;
+}
+
 /** What {@link readableBody} found. */
 export interface ReadableBody {
     /** The body as text, LF line endings. */
@@ -45,7 +50,7 @@ export interface ReadableBody {
 
 interface Walked {
     readonly pieces: string[];
-    readonly attachments: Attachment[];
+    readonly attachments: (Attachment | AttachmentContent)[];
     /** Some piece is `text/plain` (or an unstructured body). */
     plain: boolean;
     /** Some piece was reduced from HTML. */
@@ -66,7 +71,7 @@ function merge(into: Walked, from: Walked): void {
 /** The readable text and the attachments of one raw message. */
 export function readableBody(raw: Uint8Array): ReadableBody {
     const { header, body } = splitMessage(raw);
-    const walked = walk(body, parseHeaderFields(header), 0);
+    const walked = walk(body, parseHeaderFields(header), 0, false);
     const text = walked.pieces
         .map((piece) => piece.replace(/\r\n?/g, '\n').replace(/\s+$/, ''))
         .filter((piece) => piece.trim() !== '')
@@ -81,7 +86,17 @@ export function readableBody(raw: Uint8Array): ReadableBody {
     };
 }
 
-function walk(body: Uint8Array, fields: HeaderField[], depth: number): Walked {
+/**
+ * The attachments of one raw message WITH their decoded bytes. Kept apart from
+ * {@link readableBody}: the reader pane caches that result and must not hold every attachment in
+ * memory for as long as the message stays open.
+ */
+export function readAttachments(raw: Uint8Array): AttachmentContent[] {
+    const { header, body } = splitMessage(raw);
+    return walk(body, parseHeaderFields(header), 0, true).attachments as AttachmentContent[];
+}
+
+function walk(body: Uint8Array, fields: HeaderField[], depth: number, keep: boolean): Walked {
     const out = empty();
     if (depth > MAX_DEPTH) return out;
 
@@ -97,7 +112,7 @@ function walk(body: Uint8Array, fields: HeaderField[], depth: number): Walked {
         }
         const branches = splitParts(body, type.boundary).map((part) => {
             const split = splitMessage(part);
-            return walk(split.body, parseHeaderFields(split.header), depth + 1);
+            return walk(split.body, parseHeaderFields(split.header), depth + 1, keep);
         });
         if (type.type === 'multipart/alternative') {
             // The branch with real text wins over one reduced from HTML; among equals the last,
@@ -116,13 +131,11 @@ function walk(body: Uint8Array, fields: HeaderField[], depth: number): Walked {
 
     if (disposition === 'attachment' || !isBody(type.type)) {
         if (type.type === 'message/rfc822' && disposition !== 'attachment') {
-            return embedded(body, encoding, depth);
+            return embedded(body, encoding, depth, keep);
         }
-        out.attachments.push({
-            name: attachmentName(fields),
-            type: type.type,
-            bytes: decodeBody(body, encoding).length,
-        });
+        const content = decodeBody(body, encoding);
+        const attachment = { name: attachmentName(fields), type: type.type, bytes: content.length };
+        out.attachments.push(keep ? { ...attachment, content } : attachment);
         return out;
     }
 
@@ -138,7 +151,7 @@ function walk(body: Uint8Array, fields: HeaderField[], depth: number): Walked {
 }
 
 /** An embedded message: its headline lines as written, then whatever its own body reads as. */
-function embedded(body: Uint8Array, encoding: string, depth: number): Walked {
+function embedded(body: Uint8Array, encoding: string, depth: number, keep: boolean): Walked {
     const { header, body: inner } = splitMessage(decodeBody(body, encoding));
     const fields = parseHeaderFields(header);
     const lines: string[] = [];
@@ -146,7 +159,7 @@ function embedded(body: Uint8Array, encoding: string, depth: number): Walked {
         const value = headerValue(fields, name);
         if (value !== undefined) lines.push(`${name}: ${value}`);
     }
-    const out = walk(inner, fields, depth + 1);
+    const out = walk(inner, fields, depth + 1, keep);
     out.pieces.unshift(lines.join('\n'));
     return out;
 }

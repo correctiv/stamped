@@ -13,6 +13,7 @@
 import { fmt, formatNumber as num, verdictLabel, _, _n } from '@stamped/core';
 
 import { bodyAlteredSection } from './body-altered.ts';
+import { attachmentSection } from './attachment-metadata.ts';
 import { anchorShare, receiverAnchorSection } from './receiver-anchors.ts';
 import {
     breakableMailbox,
@@ -400,6 +401,18 @@ function compose(w: Writer, model: PdfReportModel): void {
                 { rightAligned: [1] },
             );
         }
+    }
+
+    // --- attachment metadata ---
+    const attachmentRows = model.attachments === undefined ? undefined : attachmentSection(model.attachments);
+    if (attachmentRows !== undefined) {
+        w.heading(attachmentRows.heading);
+        w.text(attachmentRows.note, { size: 9 });
+        w.table(
+            [[_('Indication, not proof'), _('Messages')], ...attachmentRows.rows.map(([l, n]) => [l, num(n)])],
+            [0.75, 0.25],
+            { rightAligned: [1] },
+        );
     }
 
     // --- clusters ---

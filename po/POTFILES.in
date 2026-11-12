@@ -43,6 +43,7 @@ app/src/gui/window.d.blp.ts
 app/src/gui/window.ts
 app/src/index.ts
 app/src/lib/activity.ts
+app/src/lib/attachment-metadata.ts
 app/src/lib/autofetch.ts
 app/src/lib/body-altered.ts
 app/src/lib/case.ts
@@ -100,6 +101,7 @@ packages/core/src/keyvault.ts
 packages/core/src/timecheck.ts
 packages/core/src/verdict.ts
 packages/import/src/addresses.ts
+packages/import/src/attachment-metadata.ts
 packages/import/src/bytes.ts
 packages/import/src/codec.ts
 packages/import/src/folder.ts
@@ -110,6 +112,7 @@ packages/import/src/message.ts
 packages/import/src/mime.ts
 packages/import/src/reading.ts
 packages/import/src/source.ts
+packages/import/src/zip.ts
 packages/semantic/src/context-pool.ts
 packages/semantic/src/embedder.ts
 packages/semantic/src/gpu-guard.ts
@@ -128,6 +131,7 @@ packages/semantic/src/vector-db.ts
 packages/semantic/src/vector-index.ts
 packages/store/src/activity-status.ts
 packages/store/src/addresses-db.ts
+packages/store/src/attachment-metadata.ts
 packages/store/src/body-explanations.ts
 packages/store/src/breakdown.ts
 packages/store/src/case.ts

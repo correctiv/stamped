@@ -222,6 +222,15 @@ export {
     writeReceiverAnchors,
 } from './receiver-anchors.ts';
 export {
+    attachmentBreakdown,
+    attachmentFlags,
+    attachmentMetadataComplete,
+    backfillAttachmentMetadata,
+    backfillAttachmentMetadataAll,
+    type AttachmentTotals,
+    attachmentTotals,
+} from './attachment-metadata.ts';
+export {
     buildThread,
     messageIds,
     THREAD_LIMIT,
