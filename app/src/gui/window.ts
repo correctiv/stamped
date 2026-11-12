@@ -60,6 +60,7 @@ import {
     type SemanticProcess,
     type SubprocessSemantic,
 } from '../lib/semantic-run.ts';
+import { attachmentLines } from '../lib/attachment-metadata.ts';
 import { citationOf } from '../lib/citation.ts';
 import { openCopy } from '../lib/open-copy.ts';
 import {
@@ -1702,7 +1703,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.shotEvidence = undefined;
         const card = verdictCard(finding);
         this._readerBody.append(
-            this.mailSheet(mailHead(message, { locale: this.readerLocale() }), body, message.hash),
+            this.mailSheet(
+                mailHead(message, { locale: this.readerLocale() }),
+                body,
+                message.hash,
+                attachmentLines(raw),
+            ),
         );
         this._readerBody.append(this.verdictCardWidget(card, citationOf(finding, raw)));
         const conversation = threadGroup(thread);
@@ -1758,7 +1764,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * card, the header group and the raw block below still quote the message as it stands.
      * HTML is never rendered, so opening a message here fetches nothing.
      */
-    private mailSheet(head: MailHead, body: ReadableBody | undefined, hash: string): Gtk.Widget {
+    private mailSheet(
+        head: MailHead,
+        body: ReadableBody | undefined,
+        hash: string,
+        indications: ReadonlyMap<number, string[]>,
+    ): Gtk.Widget {
         const sheet = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 12 });
         sheet.add_css_class('card');
         const inner = new Gtk.Box({
@@ -1850,7 +1861,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             if (body.attachments.length > 0) {
                 inner.append(new Gtk.Separator());
                 const list = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 });
-                for (const attachment of body.attachments) {
+                for (const [position, attachment] of body.attachments.entries()) {
                     const row = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 8 });
                     row.append(new Gtk.Image({ iconName: 'mail-attachment-symbolic' }));
                     const name = wrapLabel(escapeLine(attachment.name || _('(unnamed)')));
@@ -1859,6 +1870,12 @@ export class StampedWindow extends Adw.ApplicationWindow {
                     row.append(name);
                     row.append(wrapLabel(escapeLine(formatBytes(attachment.bytes)), 'caption', 'dimmed'));
                     list.append(row);
+                    for (const line of indications.get(position) ?? []) {
+                        const note = wrapLabel(escapeLine(line), 'caption', 'dimmed');
+                        note.set_selectable(true);
+                        note.set_margin_start(26);
+                        list.append(note);
+                    }
                 }
                 inner.append(list);
             }
@@ -2715,7 +2732,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /** How `stamped report --pdf` is launched, or null when no binary can be found. */
-    private reportArgv(root: string, file: string, unsigned: boolean, anonymize: boolean): string[] | null {
+    private reportArgv(
+        root: string,
+        file: string,
+        options: { unsigned: boolean; attachments: boolean; anonymize: boolean },
+    ): string[] | null {
         const stamped = GLib.find_program_in_path('stamped');
         const base = selfArgv(process) ?? (stamped === null ? null : [stamped]);
         if (base === null) return null;
@@ -2726,23 +2747,30 @@ export class StampedWindow extends Adw.ApplicationWindow {
             root,
             `--pdf=${file}`,
             '--progress=jsonl',
-            ...(unsigned ? ['--unsigned-breakdown'] : []),
-            ...(anonymize ? ['--anonymize-mailboxes'] : []),
+            ...(options.unsigned ? ['--unsigned-breakdown'] : []),
+            ...(options.attachments ? ['--attachment-metadata'] : []),
+            ...(options.anonymize ? ['--anonymize-mailboxes'] : []),
         ];
     }
 
     /** What goes into the report, asked before the file name: a cancelled dialog costs nothing. */
-    private async askReportOptions(): Promise<{ unsigned: boolean; anonymize: boolean } | undefined> {
+    private async askReportOptions(): Promise<
+        { unsigned: boolean; attachments: boolean; anonymize: boolean } | undefined
+    > {
         const dialog = new Adw.AlertDialog({
             heading: _('Export PDF Report'),
             body: _(
-                'A report on the case as it stands. Breaking down the unsigned messages reads every unsigned message once and can take a while.',
+                'A report on the case as it stands. Breaking down the unsigned messages and reading the attachment properties read the case’s messages once and can take a while.',
             ),
         });
         const unsigned = new Gtk.CheckButton({ label: _('Break down the unsigned messages') });
+        const attachments = new Gtk.CheckButton({
+            label: _('Read the properties of PDF and Office attachments'),
+        });
         const anonymize = new Gtk.CheckButton({ label: _('Replace mailbox names by M1, M2, …') });
         const box = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 });
         box.append(unsigned);
+        box.append(attachments);
         box.append(anonymize);
         dialog.set_extra_child(box);
         dialog.add_response('cancel', _('Cancel'));
@@ -2751,7 +2779,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
         dialog.set_default_response('export');
         dialog.set_close_response('cancel');
         if ((await dialog.choose(this, null)) !== 'export') return undefined;
-        return { unsigned: unsigned.get_active(), anonymize: anonymize.get_active() };
+        return {
+            unsigned: unsigned.get_active(),
+            attachments: attachments.get_active(),
+            anonymize: anonymize.get_active(),
+        };
     }
 
     /**
@@ -2786,19 +2818,24 @@ export class StampedWindow extends Adw.ApplicationWindow {
             const file = (await dialog.save(this, null))?.get_path();
             if (!file || this.session !== session || this.reportProc !== undefined) return;
 
-            const argv = this.reportArgv(session.root, file, options.unsigned, options.anonymize);
+            const argv = this.reportArgv(session.root, file, options);
             if (argv === null) {
                 throw new Error(_('The report needs the stamped program, which could not be found.'));
             }
-            await this.runReport(argv, file, options.unsigned);
+            await this.runReport(argv, file, options.unsigned, options.attachments);
         } catch (error) {
             if (!dismissed(error)) await this.fail(error);
         }
     }
 
-    private async runReport(argv: string[], file: string, withUnsigned: boolean): Promise<void> {
+    private async runReport(
+        argv: string[],
+        file: string,
+        withUnsigned: boolean,
+        withAttachments: boolean,
+    ): Promise<void> {
         const registry = this.activity.registry;
-        const phases = reportPhases(withUnsigned);
+        const phases = reportPhases(withUnsigned, withAttachments);
         const state: { line: ReportProgressLine; done?: ReportDoneLine; note?: string } = {
             line: reportProgressLine(phases, 'summary', 0, 0),
         };

@@ -12,6 +12,7 @@ import type {
     CaseReport,
     PeriodRow,
     RawSetDigest,
+    AttachmentTotals,
     ReceiverAnchorTotals,
     BodyExplanationTotals,
     UnsignedBreakdown,
@@ -37,6 +38,8 @@ export interface PdfReportInput {
     readonly keys: readonly VaultEntry[];
     /** Only when the person asked for it: reading it costs one raw file per unsigned message. */
     readonly unsigned?: UnsignedBreakdown;
+    /** Only when asked for: it reads every message's attachments once. */
+    readonly attachments?: AttachmentTotals;
     readonly bodyAltered?: BodyExplanationTotals;
     readonly receiverAnchors?: ReceiverAnchorTotals;
     readonly anonymizeMailboxes?: boolean;
@@ -95,6 +98,7 @@ export interface PdfReportModel {
     /** The paragraph to quote for the whole case. */
     readonly citation: string;
     readonly unsigned?: UnsignedBreakdown;
+    readonly attachments?: AttachmentTotals;
     readonly bodyAltered?: BodyExplanationTotals;
     readonly receiverAnchors?: ReceiverAnchorTotals;
     readonly clusters: readonly ClusterRow[];
@@ -229,6 +233,7 @@ export function buildPdfModel(input: PdfReportInput): PdfReportModel {
             verdicts: report.verdicts,
         }),
         ...(input.unsigned === undefined ? {} : { unsigned: input.unsigned }),
+        ...(input.attachments === undefined ? {} : { attachments: input.attachments }),
         ...(input.bodyAltered === undefined ? {} : { bodyAltered: input.bodyAltered }),
         ...(input.receiverAnchors === undefined ? {} : { receiverAnchors: input.receiverAnchors }),
         clusters: clusterRows(input.periods, caseShare, input.anonymizeMailboxes === true),

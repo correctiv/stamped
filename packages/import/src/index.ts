@@ -43,5 +43,21 @@ export {
 } from './mbox.ts';
 export { type MessageSummary, parseDate, summarise } from './message.ts';
 export { messageText, stripHtml } from './mime.ts';
-export { type Attachment, type ReadableBody, readableBody } from './reading.ts';
+export {
+    analyseAttachment,
+    ATTACHMENT_ANALYSER_VERSION,
+    type AttachmentFinding,
+    type AttachmentFormat,
+    type AttachmentIndication,
+    attachmentFindings,
+    isFlagged,
+    LONG_AFTER_MS,
+} from './attachment-metadata.ts';
+export {
+    type Attachment,
+    type AttachmentContent,
+    type ReadableBody,
+    readableBody,
+    readAttachments,
+} from './reading.ts';
 export { readMboxFile, readSource, type ReadOptions, type SourceKind, type SourceMessage } from './source.ts';

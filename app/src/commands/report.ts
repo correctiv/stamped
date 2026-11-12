@@ -14,6 +14,7 @@
 import { describeUnverifiableReason, describeVerdict, fmt, formatPercent, _, _n } from '@stamped/core';
 import {
     bodyAlteredBreakdown,
+    attachmentBreakdown,
     receiverAnchorBreakdown,
     caseReport,
     domainsByVerdict,
@@ -42,6 +43,7 @@ interface ReportArgs {
     json?: boolean;
     pdf?: string;
     unsignedBreakdown?: boolean;
+    attachmentMetadata?: boolean;
     anonymizeMailboxes?: boolean;
     progress?: string;
 }
@@ -76,6 +78,13 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     type: 'boolean',
                     default: false,
                 })
+                .option('attachment-metadata', {
+                    describe: _(
+                        'With --pdf: add what PDF and Office attachments say about their own history (reads every message once; an indication, not proof)',
+                    ),
+                    type: 'boolean',
+                    default: false,
+                })
                 .option('anonymize-mailboxes', {
                     describe: _('With --pdf: replace mailbox names by M1, M2, …'),
                     type: 'boolean',
@@ -102,7 +111,10 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                     // Imported here: the GI modules are GJS-only and the other paths need none.
                     const { renderPdfReport } = await import('../lib/pdf-report.ts');
                     const jsonl = args.progress === 'jsonl';
-                    const phases = reportPhases(args.unsignedBreakdown === true);
+                    const phases = reportPhases(
+                        args.unsignedBreakdown === true,
+                        args.attachmentMetadata === true,
+                    );
                     const emit = (phase: ReportPhase, done: number, total: number): void => {
                         if (jsonl) {
                             process.stdout.write(
@@ -134,6 +146,13 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                             emit('unsigned', done, countOf('unsigned')),
                         );
                     }
+                    let attachments: ReturnType<typeof attachmentBreakdown> | undefined;
+                    if (args.attachmentMetadata) {
+                        emit('attachments', 0, report.messages);
+                        attachments = attachmentBreakdown(db, paths, (done) =>
+                            emit('attachments', done, report.messages),
+                        );
+                    }
                     const model = buildPdfModel({
                         caseName: basename(resolve(paths.root)),
                         checkedAt: new Date(),
@@ -146,6 +165,7 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                         bodyAltered,
                         receiverAnchors,
                         ...(unsigned === undefined ? {} : { unsigned }),
+                        ...(attachments === undefined ? {} : { attachments }),
                         anonymizeMailboxes: args.anonymizeMailboxes === true,
                     });
                     emit('render', 0, 0);

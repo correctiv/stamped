@@ -23,6 +23,7 @@ import { type Caveat, type MessageFinding, type Verdict, VERDICTS, fmt, _ } from
 import type { MessageSummary } from '@stamped/import';
 
 import { deleteAddresses, ensureAddresses, writeAddresses } from './addresses-db.ts';
+import { deleteAttachmentMetadata, ensureAttachmentMetadata } from './attachment-metadata.ts';
 import { deleteBodyExplanations, ensureBodyExplanations } from './body-explanations.ts';
 import { deleteReceiverAnchors, ensureReceiverAnchors } from './receiver-anchors.ts';
 import { deleteUnsignedHeaders, ensureUnsignedHeaders } from './unsigned-headers.ts';
@@ -114,6 +115,7 @@ export function openIndex(paths: CasePaths): DatabaseSync {
     ensureUnsignedHeaders(db);
     ensureBodyExplanations(db);
     ensureReceiverAnchors(db);
+    ensureAttachmentMetadata(db);
     return db;
 }
 
@@ -410,6 +412,7 @@ export function removeMessage(db: DatabaseSync, hash: string): void {
     deleteUnsignedHeaders(db, hash);
     deleteBodyExplanations(db, hash);
     deleteReceiverAnchors(db, hash);
+    deleteAttachmentMetadata(db, hash);
 }
 
 /** Every whitespace-separated word as a quoted FTS5 string: all must occur, none is syntax. */
