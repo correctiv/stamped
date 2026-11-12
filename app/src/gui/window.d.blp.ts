@@ -26,6 +26,8 @@ export declare const InternalChildren: [
     'rootStack',
     'outerSplit',
     'verdictList',
+    'marksHeading',
+    'marksList',
     'sourceList',
     'caseTitle',
     'innerSplit',
@@ -58,6 +60,8 @@ export interface Children {
     _rootStack: Gtk.Stack;
     _outerSplit: Adw.OverlaySplitView;
     _verdictList: Gtk.ListBox;
+    _marksHeading: Gtk.Label;
+    _marksList: Gtk.ListBox;
     _sourceList: Gtk.ListBox;
     _caseTitle: Adw.WindowTitle;
     _innerSplit: Adw.NavigationSplitView;

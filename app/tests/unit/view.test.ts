@@ -49,6 +49,7 @@ import {
     lookupSummary,
     reverifySummary,
 } from '../../src/gui/view/keys.ts';
+import { markRowIndex, markRows } from '../../src/gui/view/marks.ts';
 import { escapeLine, escapeMarkup, noHyphens, plainText } from '../../src/gui/view/markup.ts';
 import {
     emptyList,
@@ -1267,6 +1268,27 @@ export default async () => {
         });
     });
 
+    await describe('the marks list', async () => {
+        await it('lists the bookmarks first, only when there are any, then the tags as given', async () => {
+            expect(markRows({ tags: [], bookmarks: 0 })).toStrictEqual([]);
+            const rows = markRows({ tags: [{ tag: 'Legal', count: 3 }], bookmarks: 2 });
+            expect(rows.map((row) => [row.title, row.count])).toStrictEqual([
+                ['Bookmarks', 2],
+                ['Legal', 3],
+            ]);
+            expect(rows[0]?.scope).toStrictEqual({ kind: 'bookmarks' });
+            expect(rows[1]?.scope).toStrictEqual({ kind: 'tag', tag: 'Legal' });
+        });
+
+        await it('finds the row of a scope, a tag without regard to case', async () => {
+            const rows = markRows({ tags: [{ tag: 'Legal', count: 1 }], bookmarks: 1 });
+            expect(markRowIndex(rows, { kind: 'bookmarks' })).toBe(0);
+            expect(markRowIndex(rows, { kind: 'tag', tag: 'LEGAL' })).toBe(1);
+            expect(markRowIndex(rows, { kind: 'tag', tag: 'other' })).toBe(-1);
+            expect(markRowIndex(rows, { kind: 'person', address: 'ada@example.com' })).toBe(-1);
+        });
+    });
+
     await describe('the filter banner', async () => {
         await it('names the mailbox, the verdicts or the signer in one line', async () => {
             expect(filterBannerText({ kind: 'mailbox', mailbox: 'ada@example.com' })).toBe(
@@ -1280,6 +1302,11 @@ export default async () => {
             expect(filterBannerText({ kind: 'signer', domain: 'example.com' })).toBe(
                 'Only mail signed by example.com',
             );
+        });
+
+        await it('names a tag and the bookmarks', async () => {
+            expect(filterBannerText({ kind: 'tag', tag: 'Follow up' })).toBe('Only mail tagged Follow up');
+            expect(filterBannerText({ kind: 'bookmarks' })).toBe('Only bookmarked mail');
         });
 
         await it('separates a key the case waits for from one it already used', async () => {
