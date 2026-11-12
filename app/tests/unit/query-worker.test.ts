@@ -27,7 +27,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from '@gjsify/unit';
 import { KeyVault, parseKeyMaterial, type MessageFinding, type Verdict } from '@stamped/core';
 import { encodeLatin1, summarise } from '@stamped/import';
-import { casePaths, digest, indexMessage, openIndex, store } from '@stamped/store';
+import { addTag, casePaths, digest, indexMessage, openIndex, setBookmark, store } from '@stamped/store';
 
 import { isRecoverable, QueryClient, type QueryChannel } from '../../src/gui/query-client.ts';
 import { initI18n } from '../../src/lib/i18n.ts';
@@ -498,6 +498,25 @@ export default async () => {
                 // JSON has no `undefined`: a key that vanished from the reply would read as a
                 // protocol error at the other end rather than as "no such message".
                 expect(runQuery(ctx, 'message', { hash: 'deadbeef' })).toBe(null);
+            });
+        });
+
+        await it('filters by a tag or the bookmarks, and follows an edit without being told to', async () => {
+            await withCase((ctx) => {
+                const a = put(ctx, { id: 'a', from: 'ada@example.com' });
+                const b = put(ctx, { id: 'b', from: 'ada@example.com' });
+                put(ctx, { id: 'c', from: 'ada@example.com' });
+                const tag = { kind: 'tag', tag: 'Follow up' } as const;
+                const bookmarks = { kind: 'bookmarks' } as const;
+                expect(runQuery(ctx, 'count', { query: { scope: tag } })).toBe(0);
+                addTag(ctx.paths, a, 'follow up');
+                // The tag file changed, the index did not: the cached table must not be reused.
+                expect(runQuery(ctx, 'count', { query: { scope: tag } })).toBe(1);
+                addTag(ctx.paths, b, 'Follow up');
+                expect(runQuery(ctx, 'count', { query: { scope: tag } })).toBe(2);
+                setBookmark(ctx.paths, b, true);
+                expect(runQuery(ctx, 'count', { query: { scope: bookmarks } })).toBe(1);
+                expect(runQuery(ctx, 'page', { query: { scope: bookmarks } })[0]?.hash).toBe(b);
             });
         });
 

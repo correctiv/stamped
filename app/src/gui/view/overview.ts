@@ -542,6 +542,10 @@ export function filterBannerText(scope: ScopeRef): string {
                     ? _('Only mail without a date')
                     : fmt(_('Only mail from {period}'), { period: scope.period }),
             );
+        case 'tag':
+            return escapeLine(fmt(_('Only mail tagged {tag}'), { tag: scope.tag }));
+        case 'bookmarks':
+            return escapeLine(_('Only bookmarked mail'));
         case 'reason':
             return escapeLine(
                 fmt(_('Only mail with no verdict: {reason}'), {

@@ -169,6 +169,25 @@ export {
     type PairEras,
 } from './key-eras.ts';
 export {
+    addTag,
+    bookmarkedHashes,
+    hashesWithTag,
+    MARKS_NAME,
+    MARKS_VERSION,
+    type Mark,
+    type Marks,
+    marksFile,
+    marksOf,
+    MAX_TAG_LENGTH,
+    type MarksSummary,
+    normaliseTag,
+    readMarks,
+    removeTag,
+    setBookmark,
+    setTags,
+    summariseMarks,
+} from './marks.ts';
+export {
     normalisePerimeterDomain,
     PERIMETER_NAME,
     perimeterFile,

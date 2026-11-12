@@ -30,6 +30,7 @@ app/src/gui/view/evidence.ts
 app/src/gui/view/format.ts
 app/src/gui/view/import.ts
 app/src/gui/view/keys.ts
+app/src/gui/view/marks.ts
 app/src/gui/view/markup.ts
 app/src/gui/view/message.ts
 app/src/gui/view/overview.ts
@@ -142,6 +143,7 @@ packages/store/src/import-status.ts
 packages/store/src/index-db.ts
 packages/store/src/index.ts
 packages/store/src/key-eras.ts
+packages/store/src/marks.ts
 packages/store/src/people.ts
 packages/store/src/perimeter.ts
 packages/store/src/raw.ts

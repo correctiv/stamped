@@ -30,8 +30,8 @@ import {
     type MessageFinding,
     type Verdict,
 } from '@stamped/core';
-import type { CaseReport, IndexedMessage, ReverifyResult, SearchHit, Thread } from '@stamped/store';
-import { liveActivity, readActivityStatuses } from '@stamped/store';
+import type { CaseReport, IndexedMessage, Mark, ReverifyResult, SearchHit, Thread } from '@stamped/store';
+import { liveActivity, MAX_TAG_LENGTH, readActivityStatuses } from '@stamped/store';
 import type { ReadableBody } from '@stamped/import';
 import { onBattery, type Embedder } from '@stamped/semantic';
 
@@ -78,6 +78,7 @@ import { StampedHelpButton } from './help-button.ts';
 import {
     addKey,
     applyKeys,
+    bookmarkMessage,
     closeSession,
     hybridPageOf,
     createSession,
@@ -86,6 +87,8 @@ import {
     importStatusOf,
     isCaseFolder,
     knownKeyNames,
+    marksOfMessage,
+    marksSummary,
     markImportCancelled,
     filteredCount,
     searchProblems,
@@ -104,6 +107,8 @@ import {
     runLookup,
     sourcesOf,
     storedRaw,
+    tagMessage,
+    untagMessage,
     verifyStored,
     type CaseSession,
     type Query,
@@ -183,6 +188,7 @@ import {
     timelineRows,
     type BarSegment,
 } from './view/people.ts';
+import { markRowIndex, markRows, type MarkRow } from './view/marks.ts';
 import { allSources, baseName, mailboxRows, shortPath, sourceRows } from './view/sources.ts';
 import { explainVerdict, filterSummary, partialSummary, verdictFilters } from './view/verdict.ts';
 
@@ -514,6 +520,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private expanded = new Set<string>();
     /** The verdict behind each `verdictList` row, with the same rule at index 0. */
     private filters: (Verdict | undefined)[] = [];
+    /** What each row of the marks list stands for, in row order. */
+    private marksRows: MarkRow[] = [];
     /** How many messages the case holds, whatever is filtered — every count's denominator. */
     private total = 0;
 
@@ -662,6 +670,18 @@ export class StampedWindow extends Adw.ApplicationWindow {
             // mailbox row IS a scope, the one the overview's mailbox rows set as well.
             this.scope =
                 target?.mailbox === undefined ? undefined : { kind: 'mailbox', mailbox: target.mailbox };
+            this.syncSidebarSelection();
+            this.track(this.fillList());
+        });
+
+        // A tag or the bookmarks are a scope like a mailbox is, so they replace the archive.
+        this._marksList.connect('row-selected', (_list, row) => {
+            if (this.rebuilding || row === null) return;
+            const target = this.marksRows[row.get_index()];
+            if (target === undefined) return;
+            this.source = undefined;
+            this.scope = target.scope;
+            this.syncSidebarSelection();
             this.track(this.fillList());
         });
 
@@ -800,6 +820,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private clearScope(): void {
         if (this.scope === undefined) return;
         this.scope = undefined;
+        this.syncSidebarSelection();
         this.track(this.fillList());
     }
 
@@ -1293,9 +1314,48 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.filters.push(filter.verdict);
         }
 
+        this.fillMarks(session);
+
         // A rebuild must not silently widen the view: whatever was filtered stays filtered, and
         // a source that an import removed from the log falls back to "all" rather than to a row
         // that now means something else.
+        this.rebuilding = false;
+        this.syncSidebarSelection();
+    }
+
+    /**
+     * Rebuild the marks list from the file, and hide it while nothing is marked.
+     *
+     * A file that cannot be read leaves the list empty rather than failing the sidebar: the
+     * reader says why the moment the person tries to mark something. The caller owns the
+     * `rebuilding` flag, because the selection it replaces must not run the row handlers.
+     */
+    private fillMarks(session: CaseSession): void {
+        clearList(this._marksList);
+        this.marksRows = [];
+        try {
+            this.marksRows = markRows(marksSummary(session));
+        } catch {
+            this.marksRows = [];
+        }
+        for (const row of this.marksRows) {
+            const item = navRow(row.title, undefined, row.icon);
+            item.set_title_lines(1);
+            item.set_tooltip_text(row.title);
+            item.add_suffix(countLabel(row.count));
+            this._marksList.append(item);
+        }
+        const any = this.marksRows.length > 0;
+        this._marksHeading.set_visible(any);
+        this._marksList.set_visible(any);
+    }
+
+    /** The sidebar after the person marked something: new counts, the filter and the list as they were. */
+    private refreshMarks(): void {
+        const session = this.session;
+        if (!session) return;
+        this.rebuilding = true;
+        this.fillMarks(session);
         this.rebuilding = false;
         this.syncSidebarSelection();
     }
@@ -1317,7 +1377,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 if (parts.some((row) => row.get_index() === wanted)) this.setExpanded(mailbox, true);
             }
         }
-        this.selectRow(this._sourceList, wanted);
+        // A tag or the bookmarks hold the selection of their own list, and then no archive row may
+        // look chosen beside them: two highlighted rows would be two filters.
+        const marked = scope === undefined ? -1 : markRowIndex(this.marksRows, scope);
+        if (marked >= 0) {
+            this._sourceList.unselect_all();
+            this._marksList.select_row(this._marksList.get_row_at_index(marked));
+        } else {
+            this._marksList.unselect_all();
+            this.selectRow(this._sourceList, wanted);
+        }
         this.selectRow(this._verdictList, this.filters.indexOf(this.verdict));
         this.rebuilding = false;
     }
@@ -1745,6 +1814,114 @@ export class StampedWindow extends Adw.ApplicationWindow {
         });
     }
 
+    /**
+     * The reader's controls for what the person marks on a message: a bookmark toggle for the
+     * header, and the tags with a field to add one.
+     *
+     * A mark is a working note kept in the case's own `marks.json`, not a finding — so these
+     * controls sit with the mail, apart from the verdict card, and nothing here touches the
+     * message or the index. A file that cannot be read leaves the controls off with the reason in
+     * their tooltip, because writing over it would lose what the person already marked.
+     */
+    private marksControls(hash: string): { bookmark: Gtk.ToggleButton; tags: Gtk.Widget } {
+        const session = this.session;
+        const bookmark = new Gtk.ToggleButton({
+            iconName: 'non-starred-symbolic',
+            tooltipText: _('Bookmark this message'),
+        });
+        bookmark.add_css_class('flat');
+        bookmark.set_valign(Gtk.Align.START);
+
+        const tags = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12 });
+        const chips = new Gtk.FlowBox({
+            selectionMode: Gtk.SelectionMode.NONE,
+            columnSpacing: 6,
+            rowSpacing: 6,
+            hexpand: true,
+            homogeneous: false,
+            maxChildrenPerLine: 32,
+            halign: Gtk.Align.START,
+            valign: Gtk.Align.CENTER,
+        });
+        const entry = new Gtk.Entry({
+            placeholderText: _('Add a tag'),
+            maxLength: MAX_TAG_LENGTH,
+            widthChars: 14,
+            valign: Gtk.Align.CENTER,
+        });
+        tags.append(entry);
+        tags.append(chips);
+
+        if (session === undefined) {
+            tags.set_sensitive(false);
+            bookmark.set_sensitive(false);
+            return { bookmark, tags };
+        }
+
+        // True while the controls are being set from the file, which is not an edit.
+        let syncing = false;
+        let current: Mark = { tags: [], bookmark: false };
+        const show = (mark: Mark): void => {
+            current = mark;
+            syncing = true;
+            bookmark.set_active(mark.bookmark);
+            syncing = false;
+            bookmark.set_icon_name(mark.bookmark ? 'starred-symbolic' : 'non-starred-symbolic');
+            let child = chips.get_first_child();
+            while (child !== null) {
+                chips.remove(child);
+                child = chips.get_first_child();
+            }
+            for (const tag of mark.tags) {
+                const chip = new Gtk.Button({
+                    child: new Adw.ButtonContent({ label: tag, iconName: 'window-close-symbolic' }),
+                    tooltipText: fmt(_('Remove the tag {tag}'), { tag }),
+                });
+                chip.add_css_class('caption');
+                chip.set_halign(Gtk.Align.START);
+                chip.set_valign(Gtk.Align.CENTER);
+                chip.connect('clicked', () => change(() => untagMessage(session, hash, tag)));
+                chips.append(chip);
+            }
+        };
+        const change = (edit: () => Mark): void => {
+            try {
+                show(edit());
+            } catch (error) {
+                const reason = error instanceof Error ? error.message : String(error);
+                showToast(escapeLine(fmt(_('Could not save the marks: {reason}'), { reason })));
+                // The toggle has moved but nothing was written: put it back where the file is.
+                show(current);
+            }
+            this.refreshMarks();
+        };
+
+        let initial: Mark;
+        try {
+            initial = marksOfMessage(session, hash);
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            tags.set_sensitive(false);
+            tags.set_tooltip_text(reason);
+            bookmark.set_sensitive(false);
+            bookmark.set_tooltip_text(reason);
+            return { bookmark, tags };
+        }
+        show(initial);
+        bookmark.connect('toggled', () => {
+            if (syncing) return;
+            const wanted = bookmark.get_active();
+            change(() => bookmarkMessage(session, hash, wanted));
+        });
+        entry.connect('activate', () => {
+            const text = entry.get_text();
+            if (text.trim() === '') return;
+            change(() => tagMessage(session, hash, text));
+            entry.set_text('');
+        });
+        return { bookmark, tags };
+    }
+
     /** The reader's locale as a BCP 47 tag, or nothing for `Intl`'s own default. */
     private readerLocale(): string | undefined {
         const name = GLib.get_language_names()[0] ?? '';
@@ -1797,6 +1974,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
         openWith.add_css_class('flat');
         openWith.set_valign(Gtk.Align.START);
         openWith.connect('clicked', () => void this.openInMailProgram(hash));
+        const marks = this.marksControls(hash);
+        top.append(marks.bookmark);
         top.append(openWith);
         inner.append(top);
 
@@ -1819,6 +1998,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         field(_('Cc'), head.cc);
         lines.append(wrapLabel(head.date, 'caption', 'dimmed'));
         inner.append(lines);
+        inner.append(marks.tags);
         inner.append(new Gtk.Separator());
 
         if (body === undefined) {

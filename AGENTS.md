@@ -47,6 +47,12 @@ own** — a forwarder's passing signature says nothing about the originator's.
 Never make a caveat into a failure, and never drop one because it is "probably fine". Adding a
 verdict or a caveat means a fixture and a test for it.
 
+**Tags and bookmarks live in `<case>/marks.json`, never in `index.db`** (`packages/store/src/marks.ts`,
+keyed by raw hash). They are the one thing a person typed, and the index is a cache that a schema bump or
+rebuild throws away. They are a working note, not provenance: not in the import log, not in a report. An
+unreadable file (corrupt, or a newer version) throws and is never overwritten. Anything that packs or
+copies a case must include this file.
+
 ## Package layout — and the one rule that holds it together
 
 | Package | Contains | May import |

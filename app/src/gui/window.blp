@@ -183,6 +183,31 @@ template $StampedWindow: Adw.ApplicationWindow {
                   ]
                 }
 
+                // Hidden until the person has tagged or bookmarked something: a heading over an
+                // empty list would be the first thing a new case teaches them to ignore.
+                Gtk.Label marksHeading {
+                  label: _("Marks");
+                  xalign: 0;
+                  margin-start: 18;
+                  margin-top: 12;
+                  margin-bottom: 2;
+                  visible: false;
+
+                  styles [
+                    "heading",
+                    "dimmed",
+                  ]
+                }
+
+                Gtk.ListBox marksList {
+                  selection-mode: single;
+                  visible: false;
+
+                  styles [
+                    "navigation-sidebar",
+                  ]
+                }
+
                 Gtk.Label {
                   label: _("Archives");
                   xalign: 0;

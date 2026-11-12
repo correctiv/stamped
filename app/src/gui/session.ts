@@ -35,14 +35,19 @@ import { readableBody, type ReadableBody } from '@stamped/import';
 import {
     beginImportStatus,
     cancelImportStatus,
+    addTag,
     importSources,
     indexDocumentSource,
     isCase,
+    marksOf,
     openCase,
     openIndex,
     readImportStatus,
     readRaw,
+    removeTag,
     reverifyPairs,
+    setBookmark,
+    summariseMarks,
     type CasePaths,
     type CaseReport,
     type ImportProgress,
@@ -51,6 +56,8 @@ import {
     type IndexDocumentSource,
     type IndexedMessage,
     type LogSource,
+    type Mark,
+    type MarksSummary,
     type Person,
     type SearchHit,
     type Thread,
@@ -248,6 +255,33 @@ export async function totalMessages(session: CaseSession): Promise<number> {
 /** The archives this case was imported from, read out of the import log. */
 export async function sourcesOf(session: CaseSession): Promise<LogSource[]> {
     return session.query.ask('sources', {});
+}
+
+/**
+ * What the person has marked on one message, from the case's `marks.json`.
+ *
+ * Read on the calling thread: the file holds a line per marked message, which is nothing next to
+ * the index the worker is there for. Throws when the file cannot be trusted — see `readMarks`.
+ */
+export function marksOfMessage(session: CaseSession, hash: string): Mark {
+    return marksOf(session.paths, hash);
+}
+
+/** The tags and the bookmark count the sidebar lists. */
+export function marksSummary(session: CaseSession): MarksSummary {
+    return summariseMarks(session.paths);
+}
+
+export function tagMessage(session: CaseSession, hash: string, tag: string): Mark {
+    return addTag(session.paths, hash, tag);
+}
+
+export function untagMessage(session: CaseSession, hash: string, tag: string): Mark {
+    return removeTag(session.paths, hash, tag);
+}
+
+export function bookmarkMessage(session: CaseSession, hash: string, bookmark: boolean): Mark {
+    return setBookmark(session.paths, hash, bookmark);
 }
 
 /** What the whole case adds up to. The same query `stamped report` prints. */

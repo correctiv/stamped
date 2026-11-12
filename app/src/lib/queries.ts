@@ -14,17 +14,22 @@
  * booleans, arrays and objects — see `docs/spikes/query-worker.md` for the measurements.
  */
 
+import { statSync } from 'node:fs';
+
 import { _, classifyMessage, fmt, type MessageFinding, type UnverifiableReason, type Verdict } from '@stamped/core';
 import { openVectorDbForSearch } from '@stamped/semantic';
 import {
     addressesComplete,
     backfillAddresses,
+    bookmarkedHashes,
     browseMessages,
     caseReport,
     countMessages,
     derivedMailboxHashes,
+    hashesWithTag,
     hashScope,
     logSources,
+    marksFile,
     openIndex,
     parseSearch,
     peopleList,
@@ -125,7 +130,11 @@ export type ScopeRef =
     /** Every message one address appears in, in any role. */
     | { readonly kind: 'person'; readonly address: string }
     /** The messages of one timeline bucket: `2024-03`, `2024-03-05` or `undated`. */
-    | { readonly kind: 'period'; readonly period: string };
+    | { readonly kind: 'period'; readonly period: string }
+    /** The messages carrying one tag (case-insensitive), from the case's `marks.json`. */
+    | { readonly kind: 'tag'; readonly tag: string }
+    /** The bookmarked messages, from the case's `marks.json`. */
+    | { readonly kind: 'bookmarks' };
 
 /**
  * The hashes one scope names, from wherever they live.
@@ -142,6 +151,10 @@ function hashesFor(ctx: QueryContext, ref: ScopeRef): Set<string> {
             return new Set();
         case 'mailbox':
             return derivedMailboxHashes(ctx.paths).get(ref.mailbox) ?? new Set();
+        case 'tag':
+            return new Set(hashesWithTag(ctx.paths, ref.tag));
+        case 'bookmarks':
+            return new Set(bookmarkedHashes(ctx.paths));
         case 'verdicts':
             return verdictHashes(ctx.db, ref.verdicts);
         case 'signer':
@@ -160,9 +173,28 @@ function hashesFor(ctx: QueryContext, ref: ScopeRef): Set<string> {
     }
 }
 
+/**
+ * Which version of `marks.json` a cached scope was built from.
+ *
+ * The marks change under a scope that is otherwise unchanged (the person tags a message while its
+ * tag is the open filter), so the name alone cannot tell a stale table from a current one.
+ */
+function marksStamp(ctx: QueryContext): string {
+    try {
+        const stat = statSync(marksFile(ctx.paths));
+        return `${stat.mtimeMs}:${stat.size}`;
+    } catch {
+        return 'none';
+    }
+}
+
 /** One string per scope, so "is this still the filter from last page?" is a string comparison. */
-function scopeKey(ref: ScopeRef): string {
+function scopeKey(ctx: QueryContext, ref: ScopeRef): string {
     switch (ref.kind) {
+        case 'tag':
+            return `tag:${ref.tag.toLowerCase()}:${marksStamp(ctx)}`;
+        case 'bookmarks':
+            return `bookmarks:${marksStamp(ctx)}`;
         case 'mailbox':
             return `mailbox:${ref.mailbox}`;
         case 'verdicts':
@@ -188,7 +220,7 @@ function scopeKey(ref: ScopeRef): string {
  * re-inserting them on every scrolled page would turn a scroll into an import.
  */
 function scopeFor(ctx: QueryContext, ref: ScopeRef): HashScope {
-    const key = scopeKey(ref);
+    const key = scopeKey(ctx, ref);
     if (ctx.scopeFilter?.key === key) return ctx.scopeFilter.scope;
     ctx.scopeFilter?.scope.close();
     const scope =
