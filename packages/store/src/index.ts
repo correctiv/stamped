@@ -12,7 +12,49 @@
  * verification concluded, at the time it ran, against the keys that were then available.
  */
 
-export { casePaths, type CasePaths, CASE_VERSION, isCase, openCase } from './case.ts';
+export {
+    CASE_MARKER_NAME,
+    CASE_VERSION,
+    casePaths,
+    type CasePaths,
+    IMPORT_LOG_NAME,
+    INDEX_NAME,
+    isCase,
+    openCase,
+    VAULT_NAME,
+} from './case.ts';
+export {
+    CASE_FILE_EXTENSION,
+    CASE_FILE_FORMAT,
+    CASE_FILE_MIME,
+    CASE_FILE_VERSION,
+    type CheckOptions,
+    type CheckResult,
+    checkCaseFile,
+    describeCounts,
+    FIXED_MEMBERS,
+    isMemberName,
+    type PackOptions,
+    type PackProgress,
+    type PackResult,
+    packCase,
+    type UnpackOptions,
+    type UnpackResult,
+    unpackCaseFile,
+    verifyCaseFile,
+} from './case-file.ts';
+export {
+    CLASSIC_LIMITS,
+    checkName,
+    crc32,
+    crc32Fallback,
+    MANIFEST_MEMBER,
+    type WrittenMember,
+    type ZipEntry,
+    type ZipLimits,
+    ZipReader,
+    ZipWriter,
+} from './zip-store.ts';
 export {
     ACTIVITY_KINDS,
     ACTIVITY_STATUS_VERSION,

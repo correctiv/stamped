@@ -1,3 +1,4 @@
+app/src/commands/case.ts
 app/src/commands/import.ts
 app/src/commands/keys.ts
 app/src/commands/people.ts
@@ -47,6 +48,7 @@ app/src/lib/activity.ts
 app/src/lib/attachment-metadata.ts
 app/src/lib/autofetch.ts
 app/src/lib/body-altered.ts
+app/src/lib/case-busy.ts
 app/src/lib/case.ts
 app/src/lib/citation.ts
 app/src/lib/consent.ts
@@ -135,6 +137,7 @@ packages/store/src/addresses-db.ts
 packages/store/src/attachment-metadata.ts
 packages/store/src/body-explanations.ts
 packages/store/src/breakdown.ts
+packages/store/src/case-file.ts
 packages/store/src/case.ts
 packages/store/src/document-source.ts
 packages/store/src/imported-files.ts
@@ -157,6 +160,7 @@ packages/store/src/siblings.ts
 packages/store/src/statements.ts
 packages/store/src/thread.ts
 packages/store/src/unsigned-headers.ts
+packages/store/src/zip-store.ts
 packages/verify/src/evidence.ts
 packages/verify/src/index.ts
 packages/verify/src/mailauth.ts

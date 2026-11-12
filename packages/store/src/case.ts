@@ -5,15 +5,16 @@
  * <case>/case.json          what this folder is, and which layout version
  * <case>/raw/ab/abcd….eml   the messages, byte for byte as they arrived
  * <case>/import-log.jsonl   one line per message read: where it came from
- * <case>/index.db           SQLite + FTS5, derived from the two above
+ * <case>/index.db           SQLite + FTS5, what the evidence said when it was imported
  * <case>/vectors.db         the semantic layer's vectors, derived and expensive
  * ```
  *
  * THE ORDER OF THAT LIST IS THE TRUST ORDER. `raw/` is the evidence: content-addressed, never
  * rewritten, and the only thing a verdict is ever computed from. `import-log.jsonl` is the chain
- * of custody — which file, which byte offset, when. `index.db` is a CACHE and nothing else; it
- * can be deleted and rebuilt from the other two, which is exactly what makes it safe to change
- * the schema later without asking a journalist to re-import an archive they may no longer have.
+ * of custody — which file, which byte offset, when. `index.db` is DERIVED from the other two, but
+ * nothing rebuilds it from them today: only the importer fills it, from the source archives, and it
+ * keeps history (`first_verdict`) that `raw/` cannot reproduce. Treat it as data, not as a cache:
+ * a copy of a case that leaves it out cannot be searched until the archives are imported again.
  *
  * A case folder is NOT in the repo and must never be: `.gitignore` refuses `cases/` and `*.eml`
  * as a second line of defence, but the real guarantee is that nothing writes here except on an
@@ -24,6 +25,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { fmt, _ } from '@stamped/core';
+
+/** The file names inside a case folder that more than one module has to agree on. */
+export const CASE_MARKER_NAME = 'case.json';
+export const IMPORT_LOG_NAME = 'import-log.jsonl';
+export const INDEX_NAME = 'index.db';
+/** The key vault: written by the app, but part of the case, so a case file has to name it. */
+export const VAULT_NAME = 'keys.json';
 
 /** Bumped when the on-disk layout changes in a way an older build would misread. */
 export const CASE_VERSION = 1;
@@ -51,9 +59,9 @@ export function casePaths(root: string): CasePaths {
     return {
         root,
         raw: join(root, 'raw'),
-        log: join(root, 'import-log.jsonl'),
-        database: join(root, 'index.db'),
-        marker: join(root, 'case.json'),
+        log: join(root, IMPORT_LOG_NAME),
+        database: join(root, INDEX_NAME),
+        marker: join(root, CASE_MARKER_NAME),
         // The embeddings live in their OWN file, not in `index.db`: they cost hours to compute
         // and the index is a cache that can be rebuilt in minutes, so the two must be able to
         // come and go independently.

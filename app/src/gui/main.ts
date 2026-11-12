@@ -51,6 +51,7 @@ const COMMANDS = [
     'timeline',
     'status',
     'semantic',
+    'case',
 ];
 
 /** `stamped --help` and `stamped --version` are the CLI's; `stamped --foo` is not a window either. */

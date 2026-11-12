@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 14:17+0100\n"
+"POT-Creation-Date: 2026-11-12 17:06+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,113 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: app/src/commands/case.ts:30
+msgid "{label}: {percent} % ({done} of {total} MiB)"
+msgstr ""
+
+#: app/src/commands/case.ts:55
+msgid "Seal a case folder into one file (the folder stays as it is)"
+msgstr ""
+
+#: app/src/commands/case.ts:58 app/src/commands/keys.ts:137
+#: app/src/commands/keys.ts:234 app/src/commands/keys.ts:292
+#: app/src/commands/keys.ts:492 app/src/commands/keys.ts:630
+#: app/src/commands/keys.ts:679 app/src/commands/keys.ts:709
+#: app/src/commands/people.ts:37 app/src/commands/people.ts:38
+#: app/src/commands/perimeter.ts:31 app/src/commands/reverify.ts:27
+#: app/src/commands/semantic.ts:76 app/src/commands/semantic.ts:77
+#: app/src/commands/semantic.ts:117 app/src/commands/semantic.ts:118
+#: app/src/commands/semantic.ts:164 app/src/commands/timeline.ts:28
+#: app/src/commands/timeline.ts:29
+msgid "The case folder"
+msgstr ""
+
+#: app/src/commands/case.ts:60
+msgid "The case file to write (default: <folder name>.stamped here)"
+msgstr ""
+
+#: app/src/commands/case.ts:63
+msgid "Replace the file when it exists"
+msgstr ""
+
+#: app/src/commands/case.ts:66
+msgid ""
+"The file carries what the case is made of: the messages, the import log "
+"(with the paths of the source files on this machine), the index, the key "
+"vault and the settings. Treat it like the case."
+msgstr ""
+
+#: app/src/commands/case.ts:76
+msgid "Packing"
+msgstr ""
+
+#: app/src/commands/case.ts:80 app/src/commands/case.ts:174
+msgid "Manifest SHA-256: {hash}"
+msgstr ""
+
+#: app/src/commands/case.ts:85
+msgid "{count} file was left out, as it is not part of a case file:"
+msgid_plural ""
+"{count} files were left out, as they are not part of a case file:"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/commands/case.ts:116
+msgid "Unpack a case file into a case folder, after checking it"
+msgstr ""
+
+#: app/src/commands/case.ts:119 app/src/commands/case.ts:150
+msgid "The case file"
+msgstr ""
+
+#: app/src/commands/case.ts:121
+msgid "The folder to create (default: the file name without .stamped, here)"
+msgstr ""
+
+#: app/src/commands/case.ts:126
+msgid ""
+"A file that does not match its manifest is not unpacked, and nothing is left "
+"behind. Run `stamped case verify` to see every problem."
+msgstr ""
+
+#: app/src/commands/case.ts:132
+msgid "Unpacking"
+msgstr ""
+
+#: app/src/commands/case.ts:148
+msgid "Check a case file against its manifest"
+msgstr ""
+
+#: app/src/commands/case.ts:153
+msgid "Checking"
+msgstr ""
+
+#: app/src/commands/case.ts:160
+msgid "… and {count} more problem."
+msgid_plural "… and {count} more problems."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/commands/case.ts:170
+msgid "{file} failed its integrity check."
+msgstr ""
+
+#: app/src/commands/case.ts:172
+msgid "{file} matches its manifest."
+msgstr ""
+
+#: app/src/commands/case.ts:175
+msgid "This shows the file is the one that was sealed, not who sealed it."
+msgstr ""
+
+#: app/src/commands/case.ts:185
+msgid "Pack a case into one file, unpack it, or check it"
+msgstr ""
+
+#: app/src/commands/case.ts:191
+msgid "Pick a subcommand. Try `stamped case --help`."
+msgstr ""
 
 #: app/src/commands/import.ts:58
 msgid "Read mail archives into a case folder and index them"
@@ -175,18 +282,6 @@ msgstr ""
 
 #: app/src/commands/keys.ts:134
 msgid "List stored keys, and with --pairs the ones still missing"
-msgstr ""
-
-#: app/src/commands/keys.ts:137 app/src/commands/keys.ts:234
-#: app/src/commands/keys.ts:292 app/src/commands/keys.ts:492
-#: app/src/commands/keys.ts:630 app/src/commands/keys.ts:679
-#: app/src/commands/keys.ts:709 app/src/commands/people.ts:37
-#: app/src/commands/people.ts:38 app/src/commands/perimeter.ts:31
-#: app/src/commands/reverify.ts:27 app/src/commands/semantic.ts:76
-#: app/src/commands/semantic.ts:77 app/src/commands/semantic.ts:117
-#: app/src/commands/semantic.ts:118 app/src/commands/semantic.ts:164
-#: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
-msgid "The case folder"
 msgstr ""
 
 #: app/src/commands/keys.ts:140
@@ -598,7 +693,7 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:222 app/src/gui/window.ts:2754
+#: app/src/commands/report.ts:222 app/src/gui/window.ts:2757
 #: app/src/gui/window.blp:166
 msgid "Verdicts"
 msgstr ""
@@ -936,9 +1031,9 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-#: app/src/gui/activity.ts:35 app/src/gui/window.ts:2098
-#: app/src/gui/window.ts:2564 app/src/gui/window.ts:2848
-#: app/src/gui/window.ts:2953
+#: app/src/gui/activity.ts:35 app/src/gui/window.ts:2101
+#: app/src/gui/window.ts:2567 app/src/gui/window.ts:2851
+#: app/src/gui/window.ts:2956
 msgid "Cancel"
 msgstr ""
 
@@ -958,12 +1053,12 @@ msgstr ""
 msgid "Nothing is running in the background."
 msgstr ""
 
-#: app/src/gui/main.ts:101
+#: app/src/gui/main.ts:102
 msgctxt "application name"
 msgid "Stamped"
 msgstr ""
 
-#: app/src/gui/main.ts:110
+#: app/src/gui/main.ts:111
 msgid ""
 "Verifies the DKIM signatures of an email archive and says what each "
 "signature actually covers. It works offline: public keys come from a store "
@@ -1587,11 +1682,11 @@ msgstr ""
 msgid "From"
 msgstr ""
 
-#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:1994
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:1997
 msgid "To"
 msgstr ""
 
-#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:1995
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:1998
 msgid "Cc"
 msgstr ""
 
@@ -2029,61 +2124,61 @@ msgstr ""
 msgid "Bookmark this message"
 msgstr ""
 
-#: app/src/gui/window.ts:1846
+#: app/src/gui/window.ts:1847
 msgid "Add a tag"
 msgstr ""
 
-#: app/src/gui/window.ts:1877
+#: app/src/gui/window.ts:1878
 msgid "Remove the tag {tag}"
 msgstr ""
 
-#: app/src/gui/window.ts:1889
+#: app/src/gui/window.ts:1892
 msgid "Could not save the marks: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:1968
+#: app/src/gui/window.ts:1971
 msgid "Open With…"
 msgstr ""
 
-#: app/src/gui/window.ts:1969
+#: app/src/gui/window.ts:1972
 msgid "Open a read-only copy in the program you choose"
 msgstr ""
 
-#: app/src/gui/window.ts:2002
+#: app/src/gui/window.ts:2005
 msgid "The stored copy could not be read."
 msgstr ""
 
-#: app/src/gui/window.ts:2019
+#: app/src/gui/window.ts:2022
 msgid "(no text)"
 msgstr ""
 
-#: app/src/gui/window.ts:2031
+#: app/src/gui/window.ts:2034
 msgid "Shown as text; the HTML was not rendered."
 msgstr ""
 
-#: app/src/gui/window.ts:2032
+#: app/src/gui/window.ts:2035
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 
-#: app/src/gui/window.ts:2044 app/src/lib/pdf-report.ts:443
+#: app/src/gui/window.ts:2047 app/src/lib/pdf-report.ts:443
 msgid "(unnamed)"
 msgstr ""
 
-#: app/src/gui/window.ts:2080
+#: app/src/gui/window.ts:2083
 msgid "Open in a mail program?"
 msgstr ""
 
-#: app/src/gui/window.ts:2082
+#: app/src/gui/window.ts:2085
 msgid ""
 "A mail program may load remote content. Only the verdict shows whether a "
 "message is unchanged since it was signed."
 msgstr ""
 
-#: app/src/gui/window.ts:2087
+#: app/src/gui/window.ts:2090
 msgid "What does that mean?"
 msgstr ""
 
-#: app/src/gui/window.ts:2092
+#: app/src/gui/window.ts:2095
 msgid ""
 "A mail program that loads remote content tells the sender’s server that "
 "someone is reading this message right now. How a program displays a message "
@@ -2091,235 +2186,235 @@ msgid ""
 "copy outside the case."
 msgstr ""
 
-#: app/src/gui/window.ts:2099 app/src/gui/window.ts:3084
+#: app/src/gui/window.ts:2102 app/src/gui/window.ts:3087
 msgid "Open"
 msgstr ""
 
-#: app/src/gui/window.ts:2108
+#: app/src/gui/window.ts:2111
 msgid "The stored copy of this message is missing."
 msgstr ""
 
-#: app/src/gui/window.ts:2116
+#: app/src/gui/window.ts:2119
 msgid "Could not open the message: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:2153
+#: app/src/gui/window.ts:2156
 msgid "Copy a sentence to quote"
 msgstr ""
 
-#: app/src/gui/window.ts:2171
+#: app/src/gui/window.ts:2174
 msgid "Look Up Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:2189 app/src/gui/window.blp:385
+#: app/src/gui/window.ts:2192 app/src/gui/window.blp:385
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:2241
+#: app/src/gui/window.ts:2244
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:2250
+#: app/src/gui/window.ts:2253
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:2266
+#: app/src/gui/window.ts:2269
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:2341
+#: app/src/gui/window.ts:2344
 msgid "How does DKIM work?"
 msgstr ""
 
-#: app/src/gui/window.ts:2361
+#: app/src/gui/window.ts:2364
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:2366
+#: app/src/gui/window.ts:2369
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:2369
+#: app/src/gui/window.ts:2372
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:2401
+#: app/src/gui/window.ts:2404
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:2413
+#: app/src/gui/window.ts:2416
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:2451
+#: app/src/gui/window.ts:2454
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:2460
+#: app/src/gui/window.ts:2463
 msgid "Copy Request…"
 msgstr ""
 
-#: app/src/gui/window.ts:2461
+#: app/src/gui/window.ts:2464
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 
-#: app/src/gui/window.ts:2465
+#: app/src/gui/window.ts:2468
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr ""
 
-#: app/src/gui/window.ts:2493
+#: app/src/gui/window.ts:2496
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:2543
+#: app/src/gui/window.ts:2546
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:2545
+#: app/src/gui/window.ts:2548
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:2565
+#: app/src/gui/window.ts:2568
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:2680
+#: app/src/gui/window.ts:2683
 msgid "Looking up keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:2713
+#: app/src/gui/window.ts:2716
 msgid "Key lookup failed: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:2747
+#: app/src/gui/window.ts:2750
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:2756
+#: app/src/gui/window.ts:2759
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:2812
+#: app/src/gui/window.ts:2815
 msgid "Folder for the Case"
 msgstr ""
 
-#: app/src/gui/window.ts:2812
+#: app/src/gui/window.ts:2815
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:2833
+#: app/src/gui/window.ts:2836
 msgid "Create the case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:2833
+#: app/src/gui/window.ts:2836
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:2837
+#: app/src/gui/window.ts:2840
 msgid ""
 "Stamped creates the case in {path}. It holds the working copy of the "
 "messages and the search index. The archive stays where it is."
 msgstr ""
 
-#: app/src/gui/window.ts:2843
+#: app/src/gui/window.ts:2846
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:2847
+#: app/src/gui/window.ts:2850
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:2870
+#: app/src/gui/window.ts:2873
 msgid "Imported."
 msgstr ""
 
-#: app/src/gui/window.ts:2938 app/src/gui/window.ts:2992
+#: app/src/gui/window.ts:2941 app/src/gui/window.ts:2995
 msgid "Export PDF Report"
 msgstr ""
 
-#: app/src/gui/window.ts:2940
+#: app/src/gui/window.ts:2943
 msgid ""
 "A report on the case as it stands. Breaking down the unsigned messages and "
 "reading the attachment properties read the case’s messages once and can take "
 "a while."
 msgstr ""
 
-#: app/src/gui/window.ts:2943
+#: app/src/gui/window.ts:2946
 msgid "Break down the unsigned messages"
 msgstr ""
 
-#: app/src/gui/window.ts:2945
+#: app/src/gui/window.ts:2948
 msgid "Read the properties of PDF and Office attachments"
 msgstr ""
 
-#: app/src/gui/window.ts:2947
+#: app/src/gui/window.ts:2950
 msgid "Replace mailbox names by M1, M2, …"
 msgstr ""
 
-#: app/src/gui/window.ts:2954
+#: app/src/gui/window.ts:2957
 msgid "Export…"
 msgstr ""
 
-#: app/src/gui/window.ts:2976
+#: app/src/gui/window.ts:2979
 msgid "Open a case first."
 msgstr ""
 
-#: app/src/gui/window.ts:2980
+#: app/src/gui/window.ts:2983
 msgid "A report is already being written."
 msgstr ""
 
-#: app/src/gui/window.ts:2984
+#: app/src/gui/window.ts:2987
 msgid "Wait until the import has finished."
 msgstr ""
 
-#: app/src/gui/window.ts:3000
+#: app/src/gui/window.ts:3003
 msgid "The report needs the stamped program, which could not be found."
 msgstr ""
 
-#: app/src/gui/window.ts:3079
+#: app/src/gui/window.ts:3082
 msgid "Report written ({pages} page)."
 msgid_plural "Report written ({pages} pages)."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/window.ts:3097
+#: app/src/gui/window.ts:3100
 msgid "The report could not be written."
 msgstr ""
 
-#: app/src/gui/window.ts:3167
+#: app/src/gui/window.ts:3170
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:3167
+#: app/src/gui/window.ts:3170
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:3212
+#: app/src/gui/window.ts:3215
 msgid "The index is busy right now. Try again in a moment."
 msgstr ""
 
-#: app/src/gui/window.ts:3216
+#: app/src/gui/window.ts:3219
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:3216
+#: app/src/gui/window.ts:3219
 msgid "Close"
 msgstr ""
 
-#: app/src/index.ts:46
+#: app/src/index.ts:47
 msgid "stamped <command> [options]"
 msgstr ""
 
-#: app/src/index.ts:58
+#: app/src/index.ts:60
 msgid "Pick a command. Try `stamped verify --help`."
 msgstr ""
 
@@ -2493,6 +2588,12 @@ msgstr ""
 
 #: app/src/lib/body-altered.ts:78
 msgid "Receiving server recorded no dkim=pass"
+msgstr ""
+
+#: app/src/lib/case-busy.ts:35
+msgid ""
+"Something is still working on {path}: an import, a key run or the semantic "
+"index. Wait for it, or stop it, and try again."
 msgstr ""
 
 #: app/src/lib/case.ts:18
@@ -3248,7 +3349,7 @@ msgstr ""
 msgid "The last re-verification was cancelled."
 msgstr ""
 
-#: app/src/lib/vault.ts:25
+#: app/src/lib/vault.ts:26
 msgid "Cannot use {path}: {reason}"
 msgstr ""
 
@@ -4042,7 +4143,124 @@ msgstr ""
 msgid "{path} is not a folder."
 msgstr ""
 
-#: packages/store/src/case.ts:89
+#: packages/store/src/case-file.ts:195
+msgid ""
+"Not enough free space in {path}: about {needed} MiB are needed, {free} MiB "
+"are free."
+msgstr ""
+
+#: packages/store/src/case-file.ts:225
+msgid "{path} is not a case folder."
+msgstr ""
+
+#: packages/store/src/case-file.ts:231
+msgid ""
+"The case file cannot be written inside the case folder it is made from: "
+"{path}"
+msgstr ""
+
+#: packages/store/src/case-file.ts:237
+msgid "{path} already exists. Use --force to replace it."
+msgstr ""
+
+#: packages/store/src/case-file.ts:287
+msgid ""
+"{name} does not match its own hash: the case is already damaged, and sealing "
+"it would hide that."
+msgstr ""
+
+#: packages/store/src/case-file.ts:374
+msgid "The manifest holds a line that is not JSON."
+msgstr ""
+
+#: packages/store/src/case-file.ts:387
+msgid "The manifest holds a line that is not a member entry."
+msgstr ""
+
+#: packages/store/src/case-file.ts:419
+msgid "The file carries no manifest hash in its comment."
+msgstr ""
+
+#: packages/store/src/case-file.ts:425
+msgid ""
+"The manifest does not match the hash sealed in the file: it was changed."
+msgstr ""
+
+#: packages/store/src/case-file.ts:485
+msgid "The manifest is not the last member."
+msgstr ""
+
+#: packages/store/src/case-file.ts:490
+msgid "{name}: {problem}."
+msgstr ""
+
+#: packages/store/src/case-file.ts:492
+msgid "{name} is not a member a case file may hold."
+msgstr ""
+
+#: packages/store/src/case-file.ts:496
+msgid "{name} is listed twice or out of order."
+msgstr ""
+
+#: packages/store/src/case-file.ts:502
+msgid "The case file is empty."
+msgstr ""
+
+#: packages/store/src/case-file.ts:504
+msgid "The case file has no manifest as its last member."
+msgstr ""
+
+#: packages/store/src/case-file.ts:528
+msgid "The manifest has no valid header: this is not a Stamped case file."
+msgstr ""
+
+#: packages/store/src/case-file.ts:536
+msgid "This case file was written by a newer version of Stamped."
+msgstr ""
+
+#: packages/store/src/case-file.ts:564 packages/store/src/case-file.ts:625
+msgid "{name} is in the manifest but missing from the file."
+msgstr ""
+
+#: packages/store/src/case-file.ts:573
+msgid "{name} is in the file but not in the manifest."
+msgstr ""
+
+#: packages/store/src/case-file.ts:606
+msgid "{name} has a different size than the manifest says."
+msgstr ""
+
+#: packages/store/src/case-file.ts:610
+msgid "{name} does not match the manifest: its content was changed."
+msgstr ""
+
+#: packages/store/src/case-file.ts:619
+msgid "{name} does not match its own hash: the message was changed."
+msgstr ""
+
+#: packages/store/src/case-file.ts:628
+msgid "The file holds no {name}: it is not a case."
+msgstr ""
+
+#: packages/store/src/case-file.ts:659
+msgid "{path} is left over from an earlier unpacking. Remove it first."
+msgstr ""
+
+#: packages/store/src/case-file.ts:663
+msgid "{path} already exists and is not empty."
+msgstr ""
+
+#: packages/store/src/case-file.ts:684
+msgid "{file} failed its integrity check and was not unpacked: {problem}"
+msgstr ""
+
+#: packages/store/src/case-file.ts:701
+msgid "{count} member, {mib} MiB"
+msgid_plural "{count} members, {mib} MiB"
+msgstr[0] ""
+msgstr[1] ""
+
+#: packages/store/src/case.ts:97
 msgid "The case folder {path} was written by a newer version of Stamped."
 msgstr ""
 
@@ -4079,7 +4297,7 @@ msgid ""
 "{file} was written by a newer version of Stamped and was left untouched."
 msgstr ""
 
-#: packages/store/src/marks.ts:98
+#: packages/store/src/marks.ts:100
 msgid "{file} is malformed and was left untouched."
 msgstr ""
 
@@ -4159,6 +4377,122 @@ msgstr ""
 
 #: packages/store/src/search-query.ts:458
 msgid "{value} is not a sort order. The orders are: {list}."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:85
+msgid "The file holds a size or offset too large to read."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:100
+msgid "The file ends before it should: it is truncated."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:174
+msgid "{path} changed while it was being read."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:192 packages/store/src/zip-store.ts:248
+msgid "The archive is already finished."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:227
+msgid "A member changed size while it was being written."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:288
+msgid "The archive comment is too long."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:387
+msgid "an empty name"
+msgstr ""
+
+#: packages/store/src/zip-store.ts:388
+msgid "an absolute path"
+msgstr ""
+
+#: packages/store/src/zip-store.ts:389
+msgid "a backslash in the path"
+msgstr ""
+
+#: packages/store/src/zip-store.ts:390
+msgid "a drive letter"
+msgstr ""
+
+#: packages/store/src/zip-store.ts:392
+msgid "a control character in the path"
+msgstr ""
+
+#: packages/store/src/zip-store.ts:393
+msgid "a directory entry"
+msgstr ""
+
+#: packages/store/src/zip-store.ts:395
+msgid "a path that leaves the case folder"
+msgstr ""
+
+#: packages/store/src/zip-store.ts:442
+msgid "This is not a case file: no ZIP end record was found."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:453 packages/store/src/zip-store.ts:456
+msgid "The ZIP64 end record is missing."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:461
+msgid "The ZIP64 end record is damaged."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:469
+msgid "The central directory does not end where the end record says."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:487 packages/store/src/zip-store.ts:498
+msgid "The central directory is shorter than it says."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:490
+msgid "The central directory is damaged."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:503
+msgid "{name} is encrypted."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:505 packages/store/src/zip-store.ts:536
+msgid "{name} is compressed; a case file is only ever stored."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:507
+msgid "{name} sits on another disk."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:511
+msgid "{name} is not a regular file."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:521 packages/store/src/zip-store.ts:525
+msgid "{name} lacks its ZIP64 sizes."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:539
+msgid "The central directory has bytes no member accounts for."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:549
+msgid "The local header of {name} is missing."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:556
+msgid "The local header of {name} disagrees with the directory."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:561
+msgid "{name} runs into the central directory."
+msgstr ""
+
+#: packages/store/src/zip-store.ts:593
+msgid "A line of the manifest is far too long."
 msgstr ""
 
 #: packages/verify/src/mailauth.ts:203

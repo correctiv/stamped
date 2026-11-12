@@ -50,6 +50,8 @@ import pdfReport from './unit/pdf-report.test.ts';
 import bodyExplanations from './unit/body-explanations.test.ts';
 import attachmentMetadata from './unit/attachment-metadata.test.ts';
 import marks from './unit/marks.test.ts';
+import zipStore from './unit/zip-store.test.ts';
+import caseFile from './unit/case-file.test.ts';
 import receiverAnchors from './unit/receiver-anchors.test.ts';
 import unsignedHeaders from './unit/unsigned-headers.test.ts';
 import thread from './unit/thread.test.ts';
@@ -112,6 +114,8 @@ run({
     receiverAnchors,
     attachmentMetadata,
     marks,
+    zipStore,
+    caseFile,
     retry,
     gpuBackend,
     gpuGuard,

@@ -17,6 +17,7 @@ import { _ } from '@stamped/core';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
+import { caseCommand } from './commands/case.ts';
 import { importCommand } from './commands/import.ts';
 import { keysCommand } from './commands/keys.ts';
 import { peopleCommand } from './commands/people.ts';
@@ -55,6 +56,7 @@ function parse(): Promise<unknown> {
             .command(perimeterCommand())
             .command(statusCommand())
             .command(semanticCommand())
+            .command(caseCommand())
             .demandCommand(1, _('Pick a command. Try `stamped verify --help`.'))
             .strict()
             .version(VERSION)
