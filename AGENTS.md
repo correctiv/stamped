@@ -117,6 +117,12 @@ about cannot tell a journalist that the import has reached the interesting one: 
 mailbox, also for a mailbox that held no message at all, and the closing line names the mailbox
 the run ended in.
 
+**A case file is a closed list.** `stamped case pack` packs only the names in `FIXED_MEMBERS`
+(`packages/store/src/case-file.ts`) plus `raw/`; anything else is skipped and reported. A NEW
+file in the case folder must be classified in the same change: packed (add it there, and to
+`docs/case-file.md`) or deliberately left out (derived, or about this machine). It is integrity,
+not a signature: never word it as proof of who wrote it. `index.db` is data, not a cache.
+
 ## People and the timeline — an additive table, never a schema bump
 
 The Personen and Zeitleiste views read the `addresses` table (`hash, address, name, sent,

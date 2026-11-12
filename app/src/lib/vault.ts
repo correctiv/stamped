@@ -10,9 +10,10 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { join } from 'node:path';
 
 import { fmt, KeyVault, _ } from '@stamped/core';
+import { VAULT_NAME } from '@stamped/store';
 
 export function vaultFile(caseDir: string): string {
-    return join(caseDir, 'keys.json');
+    return join(caseDir, VAULT_NAME);
 }
 
 export function loadVault(caseDir: string): KeyVault {
