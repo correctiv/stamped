@@ -56,6 +56,12 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.4.0" date="2026-11-12">
+      <description>
+        <p>A case can now be sealed into one .stamped file, checked and unpacked again. Search understands operators and booleans, messages open with their conversation, archives group by mailbox, and tags and bookmarks mark what matters. Signatures are now reported as unchanged since signing, with a note on the sender perimeter, and the PDF report carries a citation sentence per message. Key eras are measured from the messages, and key bundles can be exported and imported.</p>
+        <p xml:lang="de">Ein Fall lässt sich jetzt in eine einzige .stamped-Datei versiegeln, prüfen und wieder entpacken. Die Suche versteht Operatoren und boolesche Verknüpfungen, Nachrichten öffnen sich mit ihrer Konversation, Archive sind nach Postfach gruppiert, und Tags und Lesezeichen markieren Wichtiges. Signaturen werden jetzt als seit der Signatur unverändert ausgewiesen, mit einem Hinweis zum Absender-Umfeld, und der PDF-Bericht enthält pro Nachricht einen Zitiersatz. Schlüsselzeiträume werden aus den Nachrichten gemessen, Schlüsselbündel lassen sich exportieren und importieren.</p>
+      </description>
+    </release>
     <release version="0.3.5" date="2026-11-11">
       <description>
         <p>Semantic search now runs on the shared embedding layer of gjsify, and the message list stays responsive while a large case is searched. Stamped is still not signed or notarised for macOS; the website explains how to open it.</p>
