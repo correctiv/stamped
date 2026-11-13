@@ -24,6 +24,8 @@ export declare const GTypeName: 'StampedWindow';
 export declare const InternalChildren: [
     'toasts',
     'rootStack',
+    'recentCases',
+    'recentList',
     'outerSplit',
     'verdictList',
     'marksHeading',
@@ -58,6 +60,8 @@ export declare const InternalChildren: [
 export interface Children {
     _toasts: Adw.ToastOverlay;
     _rootStack: Gtk.Stack;
+    _recentCases: Adw.Clamp;
+    _recentList: Adw.PreferencesGroup;
     _outerSplit: Adw.OverlaySplitView;
     _verdictList: Gtk.ListBox;
     _marksHeading: Gtk.Label;
