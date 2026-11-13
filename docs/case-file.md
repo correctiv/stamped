@@ -77,3 +77,24 @@ match the hash in its own name, which holds even against a consistent but forged
 - `unpack` extracts into `<folder>.unpacking` and renames it into place only after every check
   passed. A leftover staging folder is refused, with its path named. A target that exists and is
   not empty is refused.
+
+## In the window, and as a file type
+
+**Open Case File…** and **Save Case File…** are in the main menu. Both run `stamped case unpack`
+or `case pack` with `--progress=jsonl` as a separate process, behind a progress dialog with a
+Cancel button, so the window keeps repainting while a large case is read. The progress lines are
+numbers only (`{"phase":"working","done":…,"total":…}`, then `{"phase":"done","path":…,"members":…,"bytes":…}`).
+
+- Opening asks for the parent folder and unpacks into `<parent>/<file name without .stamped>`.
+  A folder that exists is refused up front. Cancelling removes `<folder>.unpacking`, and nothing
+  else.
+- Saving asks for a file name and appends `.stamped` when it is missing. `--force` is passed only
+  for a name the person chose themselves (the file dialog already asked about replacing it); a
+  name with the extension appended is never forced. Cancelling removes the `.part` files.
+- `stamped <file>.stamped` (a double click in the file manager) opens the unpack dialog once the
+  window is on screen.
+
+On Linux the package registers the type `application/vnd.stamped.case+zip` (`*.stamped`, a
+subclass of `application/zip`) through `gjsify.ship.mimeTypes` in `app/package.json`: a
+shared-mime-info definition plus `MimeType=` in the desktop entry. macOS (a UTI) and Windows
+(registry keys) have no support in `gjsify ship` yet.

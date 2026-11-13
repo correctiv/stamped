@@ -83,6 +83,16 @@
         "Email",
         "Security"
       ],
+      "mimeTypes": [
+        {
+          "type": "application/vnd.stamped.case+zip",
+          "comment": "Stamped case file",
+          "globs": [
+            "*.stamped"
+          ],
+          "subClassOf": "application/zip"
+        }
+      ],
       "screenshots": [
         {
           "url": "https://raw.githubusercontent.com/correctiv/stamped/main/docs/images/01-message.png",

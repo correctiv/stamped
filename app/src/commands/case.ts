@@ -15,6 +15,7 @@ import type { CommandModule } from 'yargs';
 
 import { refuseBusyCase } from '../lib/case-busy.ts';
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
+import { throttledProgress } from '../lib/case-file-progress.ts';
 import { durationLine } from '../lib/duration.ts';
 
 const PROGRESS_SECONDS = 5;
@@ -37,10 +38,21 @@ function progressEvery(label: string): (done: number, total: number) => void {
     };
 }
 
+/** Progress lines on stdout for the window, or the slow human line on stderr for a person. */
+function progressFor(jsonl: boolean, label: string): (done: number, total: number) => void {
+    if (!jsonl) return progressEvery(label);
+    return throttledProgress((line) => process.stdout.write(`${JSON.stringify(line)}\n`));
+}
+
+function emitDone(path: string, members: number, bytes: number): void {
+    process.stdout.write(`${JSON.stringify({ phase: 'done', path, members, bytes })}\n`);
+}
+
 interface PackArgs {
     folder?: string;
     file?: string;
     force?: boolean;
+    progress?: string;
 }
 
 /** `<folder>.stamped` in the working directory; leading dots go, so `.stamped` is not `..stamped`. */
@@ -61,6 +73,13 @@ function packCommand(): CommandModule<unknown, PackArgs> {
                     type: 'string',
                 })
                 .option('force', { describe: _('Replace the file when it exists'), type: 'boolean' })
+                .option('progress', {
+                    describe: _(
+                        'Machine-readable progress: jsonl prints one JSON object per step on stdout, then a final one',
+                    ),
+                    type: 'string',
+                    choices: ['jsonl'],
+                })
                 .epilog(
                     _(
                         'The file carries what the case is made of: the messages, the import log (with the paths of the source files on this machine), the index, the key vault and the settings. Treat it like the case.',
@@ -71,10 +90,15 @@ function packCommand(): CommandModule<unknown, PackArgs> {
             const { root, rest } = caseRoot('case pack', undefined, [args.folder, args.file]);
             const paths = caseOrThrow(root);
             refuseBusyCase(paths);
+            const jsonl = args.progress === 'jsonl';
             const done = packCase(paths, rest[0] ?? defaultFile(root), {
                 force: args.force,
-                onProgress: progressEvery(_('Packing')),
+                onProgress: progressFor(jsonl, _('Packing')),
             });
+            if (jsonl) {
+                emitDone(done.path, done.members, done.bytes);
+                return;
+            }
             console.log(done.path);
             console.log(describeCounts(done.members, done.bytes));
             console.log(fmt(_('Manifest SHA-256: {hash}'), { hash: done.sha256 }));
@@ -99,6 +123,7 @@ function packCommand(): CommandModule<unknown, PackArgs> {
 interface UnpackArgs {
     file: string;
     folder?: string;
+    progress?: string;
 }
 
 /** The file's name without `.stamped`, in the working directory — never the file's own name. */
@@ -121,6 +146,13 @@ function unpackCommand(): CommandModule<unknown, UnpackArgs> {
                     describe: _('The folder to create (default: the file name without .stamped, here)'),
                     type: 'string',
                 })
+                .option('progress', {
+                    describe: _(
+                        'Machine-readable progress: jsonl prints one JSON object per step on stdout, then a final one',
+                    ),
+                    type: 'string',
+                    choices: ['jsonl'],
+                })
                 .epilog(
                     _(
                         'A file that does not match its manifest is not unpacked, and nothing is left behind. Run `stamped case verify` to see every problem.',
@@ -128,9 +160,14 @@ function unpackCommand(): CommandModule<unknown, UnpackArgs> {
                 ),
         handler: (args) => {
             const startedAt = Date.now();
+            const jsonl = args.progress === 'jsonl';
             const done = unpackCaseFile(args.file, args.folder ?? defaultFolder(args.file), {
-                onProgress: progressEvery(_('Unpacking')),
+                onProgress: progressFor(jsonl, _('Unpacking')),
             });
+            if (jsonl) {
+                emitDone(done.path, done.members, done.bytes);
+                return;
+            }
             console.log(done.path);
             console.log(describeCounts(done.members, done.bytes));
             console.log(durationLine(startedAt));

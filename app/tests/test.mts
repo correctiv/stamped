@@ -52,6 +52,7 @@ import bodyExplanations from './unit/body-explanations.test.ts';
 import attachmentMetadata from './unit/attachment-metadata.test.ts';
 import marks from './unit/marks.test.ts';
 import recentCases from './unit/recent-cases.test.ts';
+import caseFileProgress from './unit/case-file-progress.test.ts';
 import zipStore from './unit/zip-store.test.ts';
 import caseFile from './unit/case-file.test.ts';
 import receiverAnchors from './unit/receiver-anchors.test.ts';
@@ -118,6 +119,7 @@ run({
     attachmentMetadata,
     marks,
     recentCases,
+    caseFileProgress,
     zipStore,
     caseFile,
     retry,
