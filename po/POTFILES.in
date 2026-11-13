@@ -162,6 +162,7 @@ packages/store/src/receiver-anchors.ts
 packages/store/src/reindex.ts
 packages/store/src/report.ts
 packages/store/src/reverify.ts
+packages/store/src/search-assist.ts
 packages/store/src/search-query.ts
 packages/store/src/semantic-setting.ts
 packages/store/src/semantic-status.ts

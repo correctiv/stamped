@@ -172,6 +172,16 @@ export {
     type SearchFilters,
     type SearchOrder,
 } from './search-query.ts';
+export {
+    completeSearch,
+    highlightSearch,
+    MAX_COMPLETIONS,
+    type SearchCompletion,
+    type SearchCompletionOption,
+    type SearchContext,
+    type SearchSpan,
+    type SearchSpanKind,
+} from './search-assist.ts';
 export { statementFor } from './statements.ts';
 export {
     indexDocumentSource,

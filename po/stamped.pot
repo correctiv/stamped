@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 17:17+0100\n"
+"POT-Creation-Date: 2026-11-13 23:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4606,73 +4606,73 @@ msgstr ""
 msgid "The message file does not match its name."
 msgstr ""
 
-#: packages/store/src/search-query.ts:149
+#: packages/store/src/search-query.ts:191
 msgid "There is a closing parenthesis without an opening one."
 msgstr ""
 
-#: packages/store/src/search-query.ts:178
-#: packages/store/src/search-query.ts:181
+#: packages/store/src/search-query.ts:226
+#: packages/store/src/search-query.ts:229
 msgid "OR needs a search on both sides."
 msgstr ""
 
-#: packages/store/src/search-query.ts:228
+#: packages/store/src/search-query.ts:287
 msgid "There is an opening parenthesis without a closing one."
 msgstr ""
 
-#: packages/store/src/search-query.ts:230
+#: packages/store/src/search-query.ts:293
 msgid "There is nothing between the parentheses."
 msgstr ""
 
-#: packages/store/src/search-query.ts:239
+#: packages/store/src/search-query.ts:305
 msgid "NOT and - need something to exclude."
 msgstr ""
 
-#: packages/store/src/search-query.ts:264
+#: packages/store/src/search-query.ts:334
 msgid "The search operator {name}: is not supported yet."
 msgstr ""
 
-#: packages/store/src/search-query.ts:271
+#: packages/store/src/search-query.ts:344
 msgid "The search operator {name}: needs a value, as in {example}."
 msgstr ""
 
-#: packages/store/src/search-query.ts:301
-#: packages/store/src/search-query.ts:311
+#: packages/store/src/search-query.ts:386
+#: packages/store/src/search-query.ts:400
 msgid "A search operator needs a value after the colon."
 msgstr ""
 
-#: packages/store/src/search-query.ts:357
+#: packages/store/src/search-query.ts:460
 msgid ""
 "The search operator {name}: cannot be used inside OR, NOT or parentheses."
 msgstr ""
 
-#: packages/store/src/search-query.ts:364
-#: packages/store/src/search-query.ts:395
+#: packages/store/src/search-query.ts:469
+#: packages/store/src/search-query.ts:507
 msgid "A search for exclusions alone cannot be run. Add a word to look for."
 msgstr ""
 
-#: packages/store/src/search-query.ts:371
+#: packages/store/src/search-query.ts:479
 msgid ""
 "NOT and - cannot stand directly inside OR. Put the word to look for beside "
 "it."
 msgstr ""
 
-#: packages/store/src/search-query.ts:434
+#: packages/store/src/search-query.ts:549
 msgid "The search operator {name}: is given twice."
 msgstr ""
 
-#: packages/store/src/search-query.ts:445
+#: packages/store/src/search-query.ts:562
 msgid "{value} is not a verdict. The verdicts are: {list}."
 msgstr ""
 
-#: packages/store/src/search-query.ts:457
+#: packages/store/src/search-query.ts:575
 msgid "{value} is not a date. Write it as 2024, 2024-03 or 2024-03-05."
 msgstr ""
 
-#: packages/store/src/search-query.ts:476
+#: packages/store/src/search-query.ts:596
 msgid "{value} is not something a message can be. The choices are: {list}."
 msgstr ""
 
-#: packages/store/src/search-query.ts:488
+#: packages/store/src/search-query.ts:611
 msgid "{value} is not a sort order. The orders are: {list}."
 msgstr ""
 
