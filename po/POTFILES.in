@@ -8,6 +8,7 @@ app/src/commands/reverify.ts
 app/src/commands/search.ts
 app/src/commands/semantic.ts
 app/src/commands/status.ts
+app/src/commands/tag.ts
 app/src/commands/timeline.ts
 app/src/commands/verify.ts
 app/src/gui/activity.ts

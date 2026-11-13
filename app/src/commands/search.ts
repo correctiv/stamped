@@ -26,6 +26,7 @@ import { openVectorDbForSearch } from '@stamped/semantic';
 import {
     derivedMailboxHashes,
     hashScope,
+    markedHashes,
     messageCount,
     openIndex,
     parseSearch,
@@ -83,7 +84,7 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                 .example(
                     'stamped search ./case "from:ada subject:invoice -draft after:2024-01-01"',
                     _(
-                        'Fields, exclusions and dates: from: to: cc: subject: body: verdict: dkim: mailbox: before: after: sort:',
+                        'Fields, exclusions and dates: from: to: cc: subject: body: verdict: dkim: mailbox: tag: is: before: after: sort:',
                     ),
                 ),
         handler: async (args) => {
@@ -109,9 +110,12 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                           modelId: embedder.modelId,
                           dimensions: embedder.dimensions,
                       });
-            const mailbox = mailboxOf(paths, db, query);
+            let mailbox: HashScope | undefined;
+            let marked: HashScope | undefined;
             try {
-                const hits = await runSearch(db, vectors, embedder, query, args.limit ?? 20, mailbox);
+                mailbox = mailboxOf(paths, db, query);
+                marked = markedOf(paths, db, query);
+                const hits = await runSearch(db, vectors, embedder, query, args.limit ?? 20, mailbox, marked);
 
                 if (args.json) {
                     console.log(JSON.stringify({ query, hits }, undefined, 2));
@@ -147,6 +151,7 @@ export function searchCommand(): CommandModule<unknown, SearchArgs> {
                 );
             } finally {
                 mailbox?.close();
+                marked?.close();
                 vectors?.close();
                 db.close();
             }
@@ -186,6 +191,12 @@ function mailboxOf(paths: CasePaths, db: ReturnType<typeof openIndex>, query: st
     return hashScope(db, hashes);
 }
 
+/** The scope of the messages the query's `tag:` and `is:bookmarked` admit, if it uses either. */
+function markedOf(paths: CasePaths, db: ReturnType<typeof openIndex>, query: string): HashScope | undefined {
+    const hashes = markedHashes(paths, parseSearch(query).filters);
+    return hashes === undefined ? undefined : hashScope(db, hashes);
+}
+
 /**
  * Run the query, turning an FTS5 syntax error into a sentence about the query.
  *
@@ -203,6 +214,7 @@ async function runSearch(
     query: string,
     limit: number,
     mailbox?: HashScope,
+    marked?: HashScope,
 ): Promise<HybridHit[]> {
     try {
         return await hybridSearch({
@@ -210,7 +222,7 @@ async function runSearch(
             vectors,
             embedder,
             query,
-            options: { limit, ...(mailbox ? { mailbox } : {}) },
+            options: { limit, ...(mailbox ? { mailbox } : {}), ...(marked ? { marked } : {}) },
         });
     } catch (error) {
         // A mistake in the search operators says what is wrong; only FTS5's own message is replaced.

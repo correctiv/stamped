@@ -27,6 +27,7 @@ import { reverifyCommand } from './commands/reverify.ts';
 import { searchCommand } from './commands/search.ts';
 import { semanticCommand } from './commands/semantic.ts';
 import { statusCommand } from './commands/status.ts';
+import { tagCommand } from './commands/tag.ts';
 import { timelineCommand } from './commands/timeline.ts';
 import { verifyCommand } from './commands/verify.ts';
 import { initI18n } from './lib/i18n.ts';
@@ -57,6 +58,7 @@ function parse(): Promise<unknown> {
             .command(statusCommand())
             .command(semanticCommand())
             .command(caseCommand())
+            .command(tagCommand())
             .demandCommand(1, _('Pick a command. Try `stamped verify --help`.'))
             .strict()
             .version(VERSION)
