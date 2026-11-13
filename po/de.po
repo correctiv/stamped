@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 17:17+0100\n"
+"POT-Creation-Date: 2026-11-13 23:12+0100\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -854,8 +854,9 @@ msgid ""
 "With --pdf: add what PDF, Office, OpenDocument and image attachments say "
 "about their own history (reads every message once; an indication, not proof)"
 msgstr ""
-"Mit --pdf: ergänzt, was PDF-, Office-, OpenDocument- und Bildanhänge über ihre eigene Geschichte "
-"angeben (liest jede Nachricht einmal; ein Indiz, kein Beweis)"
+"Mit --pdf: ergänzt, was PDF-, Office-, OpenDocument- und Bildanhänge über "
+"ihre eigene Geschichte angeben (liest jede Nachricht einmal; ein Indiz, kein "
+"Beweis)"
 
 #: app/src/commands/report.ts:89
 msgid "With --pdf: replace mailbox names by M1, M2, …"
@@ -3029,12 +3030,12 @@ msgid ""
 "one. Other file types are not examined, and a message is counted once "
 "however many attachments it has."
 msgstr ""
-"Die Eigenschaften in PDF-, Office-, OpenDocument- und Bildanhängen können zeigen, dass eine Datei "
-"nach dem Versand oder lange nach ihrer Erstellung verändert wurde. Sie sind "
-"leicht zu setzen, und viele harmlose Programme schreiben sie um: ein Indiz, "
-"kein Beweis. Das ist von den Signaturbefunden getrennt und ändert keinen "
-"davon. Andere Dateitypen werden nicht untersucht; eine Nachricht wird einmal "
-"gezählt, egal wie viele Anhänge sie hat."
+"Die Eigenschaften in PDF-, Office-, OpenDocument- und Bildanhängen können "
+"zeigen, dass eine Datei nach dem Versand oder lange nach ihrer Erstellung "
+"verändert wurde. Sie sind leicht zu setzen, und viele harmlose Programme "
+"schreiben sie um: ein Indiz, kein Beweis. Das ist von den Signaturbefunden "
+"getrennt und ändert keinen davon. Andere Dateitypen werden nicht untersucht; "
+"eine Nachricht wird einmal gezählt, egal wie viele Anhänge sie hat."
 
 #: app/src/lib/attachment-metadata.ts:30
 msgid "Messages with an examined attachment"
@@ -5294,81 +5295,81 @@ msgstr "Die Nachrichtendatei kann nicht gelesen werden."
 msgid "The message file does not match its name."
 msgstr "Die Nachrichtendatei passt nicht zu ihrem Namen."
 
-#: packages/store/src/search-query.ts:149
+#: packages/store/src/search-query.ts:191
 msgid "There is a closing parenthesis without an opening one."
 msgstr "Es gibt eine schließende Klammer ohne öffnende."
 
-#: packages/store/src/search-query.ts:178
-#: packages/store/src/search-query.ts:181
+#: packages/store/src/search-query.ts:226
+#: packages/store/src/search-query.ts:229
 msgid "OR needs a search on both sides."
 msgstr "OR braucht auf beiden Seiten eine Suche."
 
-#: packages/store/src/search-query.ts:228
+#: packages/store/src/search-query.ts:287
 msgid "There is an opening parenthesis without a closing one."
 msgstr "Es gibt eine öffnende Klammer ohne schließende."
 
-#: packages/store/src/search-query.ts:230
+#: packages/store/src/search-query.ts:293
 msgid "There is nothing between the parentheses."
 msgstr "Zwischen den Klammern steht nichts."
 
-#: packages/store/src/search-query.ts:239
+#: packages/store/src/search-query.ts:305
 msgid "NOT and - need something to exclude."
 msgstr "NOT und - brauchen etwas, das ausgeschlossen werden soll."
 
-#: packages/store/src/search-query.ts:264
+#: packages/store/src/search-query.ts:334
 msgid "The search operator {name}: is not supported yet."
 msgstr "Der Suchoperator {name}: wird noch nicht unterstützt."
 
-#: packages/store/src/search-query.ts:271
+#: packages/store/src/search-query.ts:344
 msgid "The search operator {name}: needs a value, as in {example}."
 msgstr "Der Suchoperator {name}: braucht einen Wert, zum Beispiel {example}."
 
-#: packages/store/src/search-query.ts:301
-#: packages/store/src/search-query.ts:311
+#: packages/store/src/search-query.ts:386
+#: packages/store/src/search-query.ts:400
 msgid "A search operator needs a value after the colon."
 msgstr "Ein Suchoperator braucht nach dem Doppelpunkt einen Wert."
 
-#: packages/store/src/search-query.ts:357
+#: packages/store/src/search-query.ts:460
 msgid ""
 "The search operator {name}: cannot be used inside OR, NOT or parentheses."
 msgstr ""
 "Der Suchoperator {name}: kann nicht innerhalb von OR, NOT oder Klammern "
 "stehen."
 
-#: packages/store/src/search-query.ts:364
-#: packages/store/src/search-query.ts:395
+#: packages/store/src/search-query.ts:469
+#: packages/store/src/search-query.ts:507
 msgid "A search for exclusions alone cannot be run. Add a word to look for."
 msgstr ""
 "Eine Suche nur mit Ausschlüssen lässt sich nicht ausführen. Fügen Sie ein "
 "Suchwort hinzu."
 
-#: packages/store/src/search-query.ts:371
+#: packages/store/src/search-query.ts:479
 msgid ""
 "NOT and - cannot stand directly inside OR. Put the word to look for beside "
 "it."
 msgstr ""
 "NOT und - dürfen nicht direkt in OR stehen. Setzen Sie das Suchwort daneben."
 
-#: packages/store/src/search-query.ts:434
+#: packages/store/src/search-query.ts:549
 msgid "The search operator {name}: is given twice."
 msgstr "Der Suchoperator {name}: ist doppelt angegeben."
 
-#: packages/store/src/search-query.ts:445
+#: packages/store/src/search-query.ts:562
 msgid "{value} is not a verdict. The verdicts are: {list}."
 msgstr "{value} ist kein Befund. Die Befunde sind: {list}."
 
-#: packages/store/src/search-query.ts:457
+#: packages/store/src/search-query.ts:575
 msgid "{value} is not a date. Write it as 2024, 2024-03 or 2024-03-05."
 msgstr ""
 "{value} ist kein Datum. Schreiben Sie es als 2024, 2024-03 oder 2024-03-05."
 
-#: packages/store/src/search-query.ts:476
+#: packages/store/src/search-query.ts:596
 msgid "{value} is not something a message can be. The choices are: {list}."
 msgstr ""
 "{value} ist keine Eigenschaft, nach der gesucht werden kann. Möglich ist: "
 "{list}."
 
-#: packages/store/src/search-query.ts:488
+#: packages/store/src/search-query.ts:611
 msgid "{value} is not a sort order. The orders are: {list}."
 msgstr "{value} ist keine Sortierung. Die Sortierungen sind: {list}."
 

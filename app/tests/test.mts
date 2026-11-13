@@ -62,6 +62,7 @@ import unsignedHeaders from './unit/unsigned-headers.test.ts';
 import thread from './unit/thread.test.ts';
 import searchQuery from './unit/search-query.test.ts';
 import searchOperators from './unit/search-operators.test.ts';
+import searchAssist from './unit/search-assist.test.ts';
 import retry from './unit/retry.test.ts';
 import gpuBackend from './unit/gpu-backend.test.ts';
 import gpuGuard from './unit/gpu-guard.test.ts';
@@ -116,6 +117,7 @@ run({
     thread,
     searchQuery,
     searchOperators,
+    searchAssist,
     bodyExplanations,
     receiverAnchors,
     attachmentMetadata,

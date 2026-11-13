@@ -63,6 +63,30 @@ export interface ParsedSearch {
     readonly errors: readonly string[];
 }
 
+/** What a part of the query is, for colouring it while it is typed. */
+export type SearchSpanKind = 'operator' | 'value' | 'negation' | 'boolean' | 'phrase' | 'paren' | 'error';
+
+/** A stretch of the typed query, `[start, end)` in UTF-16 indices of the input. */
+export interface SearchSpan {
+    readonly start: number;
+    readonly end: number;
+    readonly kind: SearchSpanKind;
+    /** Translated, only on `error`: the same sentence `parseSearch` gives. */
+    readonly message?: string;
+}
+
+/** A stretch of the input. */
+interface Range {
+    readonly start: number;
+    readonly end: number;
+}
+
+/** A problem with the place that causes it; `at` is absent when no single place is to blame. */
+interface Issue {
+    readonly message: string;
+    readonly at?: Range | undefined;
+}
+
 /** The messages a person gets back when the query cannot be run. */
 export class SearchSyntaxError extends Error {
     readonly errors: readonly string[];
@@ -95,6 +119,15 @@ const ORDERS: readonly SearchOrder[] = ['relevance', 'newest', 'oldest'];
 /** Every operator name, for the help text and for a completion list. */
 export const SEARCH_OPERATORS: readonly string[] = [...Object.keys(TEXT_FIELDS), ...FILTER_OPERATORS];
 
+/** The fixed values an operator takes, for completion. `dkim:` says what `verdict:` says. */
+export const SEARCH_VALUES: Readonly<Record<string, readonly string[]>> = {
+    verdict: VERDICTS,
+    dkim: VERDICTS,
+    is: IS_VALUES,
+    sort: ORDERS,
+};
+
+/** `at` is the place to blame: the word, the operator, or the negation. */
 type Node =
     | {
           readonly kind: 'term';
@@ -102,10 +135,17 @@ type Node =
           readonly field?: string;
           readonly prefix: boolean;
           readonly exact: boolean;
+          readonly at: Range;
       }
-    | { readonly kind: 'filter'; readonly name: string; readonly value: string }
+    | {
+          readonly kind: 'filter';
+          readonly name: string;
+          readonly value: string;
+          readonly at: Range;
+          readonly valueAt: Range;
+      }
     | { readonly kind: 'and' | 'or'; readonly children: readonly Node[] }
-    | { readonly kind: 'not'; readonly child: Node };
+    | { readonly kind: 'not'; readonly child: Node; readonly at: Range };
 
 function isOperator(name: string): boolean {
     return name in TEXT_FIELDS || (FILTER_OPERATORS as readonly string[]).includes(name);
@@ -134,7 +174,8 @@ export function parseSearchDate(value: string): number | undefined {
 class Parser {
     private position = 0;
     private readonly input: string;
-    readonly errors: string[] = [];
+    readonly issues: Issue[] = [];
+    readonly spans: SearchSpan[] = [];
     /** Does the query use anything this parser owns: an operator or a negation? */
     structured = false;
 
@@ -146,9 +187,14 @@ class Parser {
         const node = this.parseOr();
         this.skipSpace();
         if (this.position < this.input.length) {
-            this.errors.push(_('There is a closing parenthesis without an opening one.'));
+            const at = { start: this.position, end: this.position + 1 };
+            this.issues.push({ message: _('There is a closing parenthesis without an opening one.'), at });
         }
         return node;
+    }
+
+    private mark(start: number, end: number, kind: SearchSpanKind): void {
+        if (end > start) this.spans.push({ start, end, kind });
     }
 
     private skipSpace(): void {
@@ -173,12 +219,14 @@ class Parser {
         const first = this.parseAnd();
         if (first !== undefined) parts.push(first);
         while (this.peekWord() === 'OR') {
+            const at = { start: this.position, end: this.position + 2 };
+            this.mark(at.start, at.end, 'boolean');
             this.position += 2;
             if (first === undefined && parts.length === 0)
-                this.errors.push(_('OR needs a search on both sides.'));
+                this.issues.push({ message: _('OR needs a search on both sides.'), at });
             const next = this.parseAnd();
             if (next === undefined) {
-                this.errors.push(_('OR needs a search on both sides.'));
+                this.issues.push({ message: _('OR needs a search on both sides.'), at });
             } else {
                 parts.push(next);
             }
@@ -195,6 +243,7 @@ class Parser {
             const word = this.peekWord();
             if (word === 'OR') break;
             if (word === 'AND') {
+                this.mark(this.position, this.position + 3, 'boolean');
                 this.position += 3;
                 continue;
             }
@@ -209,37 +258,54 @@ class Parser {
         const next = this.peek();
         const word = this.peekWord();
         if (word === 'NOT') {
+            const at = { start: this.position, end: this.position + 3 };
+            this.mark(at.start, at.end, 'negation');
             this.position += 3;
             this.structured = true;
-            return this.negated();
+            return this.negated(at);
         }
         // A minus only negates when something follows it: a lone `-` is a word.
         if (next === '-' && /\S/.test(this.input[this.position + 1] ?? '')) {
+            const at = { start: this.position, end: this.position + 1 };
+            this.mark(at.start, at.end, 'negation');
             this.position += 1;
             this.structured = true;
-            return this.negated();
+            return this.negated(at);
         }
         if (next === '(') {
+            const open = this.position;
+            this.mark(open, open + 1, 'paren');
             this.position += 1;
             const inner = this.parseOr();
+            let close: number | undefined;
             if (this.peek() === ')') {
+                close = this.position;
+                this.mark(close, close + 1, 'paren');
                 this.position += 1;
             } else {
-                this.errors.push(_('There is an opening parenthesis without a closing one.'));
+                this.issues.push({
+                    message: _('There is an opening parenthesis without a closing one.'),
+                    at: { start: open, end: open + 1 },
+                });
             }
-            if (inner === undefined) this.errors.push(_('There is nothing between the parentheses.'));
+            if (inner === undefined) {
+                this.issues.push({
+                    message: _('There is nothing between the parentheses.'),
+                    at: { start: open, end: close === undefined ? open + 1 : close + 1 },
+                });
+            }
             return inner;
         }
         return this.parseAtom();
     }
 
-    private negated(): Node | undefined {
+    private negated(at: Range): Node | undefined {
         const child = this.parseUnary();
         if (child === undefined) {
-            this.errors.push(_('NOT and - need something to exclude.'));
+            this.issues.push({ message: _('NOT and - need something to exclude.'), at });
             return undefined;
         }
-        return { kind: 'not', child };
+        return { kind: 'not', child, at };
     }
 
     private parseAtom(): Node | undefined {
@@ -249,58 +315,80 @@ class Parser {
         if (operator !== null) {
             const name = (operator[1] ?? '').toLowerCase();
             if (isOperator(name) || isUnsupported(name)) {
-                this.position += operator[0].length;
+                const at = { start: this.position, end: this.position + operator[0].length };
+                this.mark(at.start, at.end, 'operator');
+                this.position = at.end;
                 this.structured = true;
-                return this.parseOperator(name);
+                return this.parseOperator(name, at);
             }
         }
         return this.parseValue(undefined);
     }
 
-    private parseOperator(name: string): Node | undefined {
+    private parseOperator(name: string, at: Range): Node | undefined {
         if (isUnsupported(name)) {
             // The value is consumed so the error is said once, not once per word of it.
-            this.readValue();
-            this.errors.push(fmt(_('The search operator {name}: is not supported yet.'), { name }));
+            const value = this.readValue();
+            if (value !== undefined) this.mark(value.start, value.end, 'value');
+            this.issues.push({
+                message: fmt(_('The search operator {name}: is not supported yet.'), { name }),
+                at,
+            });
             return undefined;
         }
-        if (name in TEXT_FIELDS) return this.parseValue(TEXT_FIELDS[name]);
+        if (name in TEXT_FIELDS) return this.parseValue(TEXT_FIELDS[name], true);
         const value = this.readValue();
+        if (value !== undefined) this.mark(value.start, value.end, 'value');
         if (value === undefined || value.text === '') {
-            this.errors.push(
-                fmt(_('The search operator {name}: needs a value, as in {example}.'), {
+            this.issues.push({
+                message: fmt(_('The search operator {name}: needs a value, as in {example}.'), {
                     name,
                     example: exampleOf(name),
                 }),
-            );
+                at,
+            });
             return undefined;
         }
-        return { kind: 'filter', name, value: value.text };
+        return {
+            kind: 'filter',
+            name,
+            value: value.text,
+            at,
+            valueAt: { start: value.start, end: value.end },
+        };
     }
 
     /** A quoted phrase, or a word up to the next space or parenthesis. */
-    private readValue(): { text: string; quoted: boolean } | undefined {
+    private readValue(): { text: string; quoted: boolean; start: number; end: number } | undefined {
         this.skipSpace();
-        const rest = this.input.slice(this.position);
+        const start = this.position;
+        const rest = this.input.slice(start);
         if (rest === '') return undefined;
         if (rest.startsWith('"')) {
             const end = rest.indexOf('"', 1);
             const text = end < 0 ? rest.slice(1) : rest.slice(1, end);
             this.position += end < 0 ? rest.length : end + 1;
-            return { text, quoted: true };
+            return { text, quoted: true, start, end: this.position };
         }
         const word = /^[^\s()]+/.exec(rest);
         if (word === null) return undefined;
         this.position += word[0].length;
-        return { text: word[0], quoted: false };
+        return { text: word[0], quoted: false, start, end: this.position };
     }
 
-    private parseValue(field: string | undefined): Node | undefined {
+    /** `operator` is true when a field operator (`from:`) has just been read; else it is a bare word. */
+    private parseValue(field: string | undefined, operator = false): Node | undefined {
         const value = this.readValue();
         if (value === undefined) {
-            this.errors.push(_('A search operator needs a value after the colon.'));
+            // Blame the operator just before: there is no value to point at.
+            const colon = this.position;
+            const at = operator ? this.operatorBefore(colon) : undefined;
+            this.issues.push({ message: _('A search operator needs a value after the colon.'), at });
             return undefined;
         }
+        if (operator) this.mark(value.start, value.end, 'value');
+        else if (value.quoted) this.mark(value.start, value.end, 'phrase');
+        const at = { start: value.start, end: value.end };
         let text = value.text;
         let prefix = false;
         if (!value.quoted && text.length > 1 && text.endsWith('*')) {
@@ -308,7 +396,10 @@ class Parser {
             text = text.slice(0, -1);
         }
         if (text === '') {
-            this.errors.push(_('A search operator needs a value after the colon.'));
+            this.issues.push({
+                message: _('A search operator needs a value after the colon.'),
+                at: operator ? this.operatorBefore(value.start) : at,
+            });
             return undefined;
         }
         return {
@@ -317,7 +408,19 @@ class Parser {
             ...(field === undefined ? {} : { field }),
             prefix,
             exact: value.quoted || prefix,
+            at,
         };
+    }
+
+    /** The operator span that ends at or before `position`, the nearest one. */
+    private operatorBefore(position: number): Range | undefined {
+        for (let index = this.spans.length - 1; index >= 0; index--) {
+            const span = this.spans[index];
+            if (span !== undefined && span.kind === 'operator' && span.end <= position) {
+                return { start: span.start, end: span.end };
+            }
+        }
+        return undefined;
     }
 }
 
@@ -345,7 +448,7 @@ function quote(text: string): string {
 }
 
 /** The FTS5 text of one node, or `undefined` once an error has been recorded for it. */
-function compile(node: Node, errors: string[]): string | undefined {
+function compile(node: Node, errors: Issue[]): string | undefined {
     switch (node.kind) {
         case 'term': {
             const phrase = quote(node.text) + (node.prefix ? '*' : '');
@@ -353,23 +456,30 @@ function compile(node: Node, errors: string[]): string | undefined {
         }
         case 'filter':
             // Filters are lifted out of the top level before compiling; one still here is nested.
-            errors.push(
-                fmt(_('The search operator {name}: cannot be used inside OR, NOT or parentheses.'), {
+            errors.push({
+                message: fmt(_('The search operator {name}: cannot be used inside OR, NOT or parentheses.'), {
                     name: node.name,
                 }),
-            );
+                at: node.at,
+            });
             return undefined;
         case 'not':
             if (node.child.kind === 'filter') return compile(node.child, errors);
-            errors.push(_('A search for exclusions alone cannot be run. Add a word to look for.'));
+            errors.push({
+                message: _('A search for exclusions alone cannot be run. Add a word to look for.'),
+                at: node.at,
+            });
             return undefined;
         case 'or': {
             const parts: string[] = [];
             for (const child of node.children) {
                 if (child.kind === 'not') {
-                    errors.push(
-                        _('NOT and - cannot stand directly inside OR. Put the word to look for beside it.'),
-                    );
+                    errors.push({
+                        message: _(
+                            'NOT and - cannot stand directly inside OR. Put the word to look for beside it.',
+                        ),
+                        at: child.at,
+                    });
                     continue;
                 }
                 const text = compile(child, errors);
@@ -392,7 +502,11 @@ function compile(node: Node, errors: string[]): string | undefined {
             if (positive.length === 0) {
                 // The specific error is already recorded for a failed child; otherwise it is this.
                 if (errors.length === 0) {
-                    errors.push(_('A search for exclusions alone cannot be run. Add a word to look for.'));
+                    const first = node.children.find((child) => child.kind === 'not');
+                    errors.push({
+                        message: _('A search for exclusions alone cannot be run. Add a word to look for.'),
+                        at: first?.kind === 'not' ? first.at : undefined,
+                    });
                 }
                 return undefined;
             }
@@ -417,7 +531,7 @@ function plainWords(node: Node): string[] | undefined {
     return words;
 }
 
-function readFilters(nodes: readonly Node[], errors: string[]): SearchFilters {
+function readFilters(nodes: readonly Node[], errors: Issue[]): SearchFilters {
     const filters: { -readonly [K in keyof SearchFilters]: SearchFilters[K] } = {};
     const seen = new Set<string>();
     const tags: string[] = [];
@@ -431,7 +545,10 @@ function readFilters(nodes: readonly Node[], errors: string[]): SearchFilters {
             continue;
         }
         if (seen.has(group)) {
-            errors.push(fmt(_('The search operator {name}: is given twice.'), { name: node.name }));
+            errors.push({
+                message: fmt(_('The search operator {name}: is given twice.'), { name: node.name }),
+                at: node.at,
+            });
             continue;
         }
         seen.add(group);
@@ -441,23 +558,25 @@ function readFilters(nodes: readonly Node[], errors: string[]): SearchFilters {
                 if ((VERDICTS as readonly string[]).includes(value)) {
                     filters.verdict = value as Verdict;
                 } else {
-                    errors.push(
-                        fmt(_('{value} is not a verdict. The verdicts are: {list}.'), {
+                    errors.push({
+                        message: fmt(_('{value} is not a verdict. The verdicts are: {list}.'), {
                             value: node.value,
                             list: VERDICTS.join(', '),
                         }),
-                    );
+                        at: node.valueAt,
+                    });
                 }
                 break;
             case 'after':
             case 'before': {
                 const instant = parseSearchDate(node.value);
                 if (instant === undefined) {
-                    errors.push(
-                        fmt(_('{value} is not a date. Write it as 2024, 2024-03 or 2024-03-05.'), {
+                    errors.push({
+                        message: fmt(_('{value} is not a date. Write it as 2024, 2024-03 or 2024-03-05.'), {
                             value: node.value,
                         }),
-                    );
+                        at: node.valueAt,
+                    });
                 } else if (group === 'after') {
                     filters.after = instant;
                 } else {
@@ -472,24 +591,29 @@ function readFilters(nodes: readonly Node[], errors: string[]): SearchFilters {
                 if (value === 'bookmarked') {
                     filters.bookmarked = true;
                 } else {
-                    errors.push(
-                        fmt(_('{value} is not something a message can be. The choices are: {list}.'), {
-                            value: node.value,
-                            list: IS_VALUES.join(', '),
-                        }),
-                    );
+                    errors.push({
+                        message: fmt(
+                            _('{value} is not something a message can be. The choices are: {list}.'),
+                            {
+                                value: node.value,
+                                list: IS_VALUES.join(', '),
+                            },
+                        ),
+                        at: node.valueAt,
+                    });
                 }
                 break;
             case 'sort':
                 if ((ORDERS as readonly string[]).includes(value)) {
                     filters.order = value as SearchOrder;
                 } else {
-                    errors.push(
-                        fmt(_('{value} is not a sort order. The orders are: {list}.'), {
+                    errors.push({
+                        message: fmt(_('{value} is not a sort order. The orders are: {list}.'), {
                             value: node.value,
                             list: ORDERS.join(', '),
                         }),
-                    );
+                        at: node.valueAt,
+                    });
                 }
                 break;
         }
@@ -498,26 +622,58 @@ function readFilters(nodes: readonly Node[], errors: string[]): SearchFilters {
     return filters;
 }
 
-/** Read what a person typed into the search box. Never throws: problems come back in `errors`. */
-export function parseSearch(input: string): ParsedSearch {
+/** What a person typed, read once: the parse and where every part of it stands. */
+export interface SearchAnalysis {
+    readonly parsed: ParsedSearch;
+    /** Sorted by position, never overlapping; an `error` span replaces what it covers. */
+    readonly spans: readonly SearchSpan[];
+}
+
+/**
+ * The one reader behind `parseSearch` and the highlighting: the same parse, so a sentence an
+ * error span carries is the sentence `parseSearch` returns. Never throws.
+ */
+export function analyseSearch(input: string): SearchAnalysis {
     const parser = new Parser(input);
     const root = parser.parse();
+    const issues: Issue[] = [...parser.issues];
+    let parsed: ParsedSearch;
     if (!parser.structured) {
-        return { raw: true, fts: '', filters: {}, freeText: input.trim(), errors: [] };
+        parsed = { raw: true, fts: '', filters: {}, freeText: input.trim(), errors: [] };
+    } else {
+        // Filters apply to the whole query, so they are only valid on its top level.
+        const top: readonly Node[] = root === undefined ? [] : root.kind === 'and' ? root.children : [root];
+        const filters = readFilters(top, issues);
+        const rest = top.filter((node) => node.kind !== 'filter');
+        const body: Node | undefined =
+            rest.length === 0 ? undefined : rest.length === 1 ? rest[0] : { kind: 'and', children: rest };
+
+        let fts = '';
+        if (body !== undefined && issues.length === 0) fts = compile(body, issues) ?? '';
+        // A search by meaning can only honour what the filters can also say to it. A field, a
+        // phrase, an exclusion or an OR would be lost on the vectors, so those queries stay text.
+        const freeText = body === undefined ? '' : (plainWords(body)?.join(' ') ?? '');
+        parsed = { raw: false, fts, filters, freeText, errors: issues.map((issue) => issue.message) };
     }
+    return { parsed, spans: placeSpans(parser.spans, issues) };
+}
 
-    const errors = [...parser.errors];
-    // Filters apply to the whole query, so they are only valid on its top level.
-    const top: readonly Node[] = root === undefined ? [] : root.kind === 'and' ? root.children : [root];
-    const filters = readFilters(top, errors);
-    const rest = top.filter((node) => node.kind !== 'filter');
-    const body: Node | undefined =
-        rest.length === 0 ? undefined : rest.length === 1 ? rest[0] : { kind: 'and', children: rest };
+/** Errors first, then every other span that does not overlap one; sorted. */
+function placeSpans(spans: readonly SearchSpan[], issues: readonly Issue[]): SearchSpan[] {
+    const placed: SearchSpan[] = [];
+    const free = (span: Range): boolean =>
+        placed.every((had) => span.end <= had.start || span.start >= had.end);
+    for (const issue of issues) {
+        const at = issue.at;
+        if (at !== undefined && at.end > at.start && free(at)) {
+            placed.push({ start: at.start, end: at.end, kind: 'error', message: issue.message });
+        }
+    }
+    for (const span of spans) if (free(span)) placed.push(span);
+    return placed.sort((a, b) => a.start - b.start);
+}
 
-    let fts = '';
-    if (body !== undefined && errors.length === 0) fts = compile(body, errors) ?? '';
-    // A search by meaning can only honour what the filters can also say to it. A field, a
-    // phrase, an exclusion or an OR would be lost on the vectors, so those queries stay text.
-    const freeText = body === undefined ? '' : (plainWords(body)?.join(' ') ?? '');
-    return { raw: false, fts, filters, freeText, errors };
+/** Read what a person typed into the search box. Never throws: problems come back in `errors`. */
+export function parseSearch(input: string): ParsedSearch {
+    return analyseSearch(input).parsed;
 }
