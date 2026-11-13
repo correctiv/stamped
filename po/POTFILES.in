@@ -91,6 +91,7 @@ app/src/lib/semantic-state.ts
 app/src/lib/semantic-status.ts
 app/src/lib/semantic.ts
 app/src/lib/status.ts
+app/src/lib/time.ts
 app/src/lib/vault.ts
 app/src/lib/version.ts
 packages/core/src/autokeys.ts
