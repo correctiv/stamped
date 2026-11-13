@@ -299,17 +299,30 @@ export function messageCount(db: DatabaseSync): number {
  * identity, so there is nothing to lose by rewriting the row. `options.fresh` skips the removal
  * for a message the caller knows is new.
  */
-export function indexMessage(db: DatabaseSync, entry: IndexEntry, options: { fresh?: boolean } = {}): void {
+export function indexMessage(
+    db: DatabaseSync,
+    entry: IndexEntry,
+    options: {
+        fresh?: boolean;
+        /**
+         * The verdict the message had when it was first indexed, for an index rebuilt from `raw/`:
+         * the old index is the only place that remembers it. Wins over what the index holds, and
+         * `null` stays `null` (a legacy row).
+         */
+        firstVerdict?: string | null;
+    } = {},
+): void {
     // `fresh`: the caller knows the hash is not indexed. The delete from the FTS table is a full
     // scan (`hash` is UNINDEXED), so for a new message it is pure cost.
     // The verdict at the first indexing is kept across re-indexing: it is the "before" of the
     // before/now table in the report. A legacy row (NULL) stays NULL.
-    let firstVerdict: string | null = entry.finding.verdict;
+    let firstVerdict: string | null =
+        options.firstVerdict === undefined ? entry.finding.verdict : options.firstVerdict;
     if (!options.fresh) {
         const previous = statementFor(db, 'SELECT first_verdict FROM messages WHERE hash = ?').get(
             entry.hash,
         ) as { first_verdict?: string | null } | undefined;
-        if (previous) firstVerdict = previous.first_verdict ?? null;
+        if (previous && options.firstVerdict === undefined) firstVerdict = previous.first_verdict ?? null;
         removeMessage(db, entry.hash);
     }
     const summary = entry.summary;

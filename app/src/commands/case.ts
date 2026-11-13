@@ -1,6 +1,6 @@
 /**
- * `stamped case pack|unpack|verify` — a case as one file, and the check that it is the one that
- * was sealed.
+ * `stamped case pack|unpack|verify|reindex` — a case as one file, and the check that it is the one
+ * that was sealed; `reindex` is in `case-reindex.ts`.
  *
  * `pack` is an export: the folder stays the live case. `unpack` refuses a file that does not
  * match its manifest and leaves nothing behind. `verify` lists every problem and exits non-zero.
@@ -17,6 +17,7 @@ import { refuseBusyCase } from '../lib/case-busy.ts';
 import { caseOrThrow, caseRoot } from '../lib/case.ts';
 import { throttledProgress } from '../lib/case-file-progress.ts';
 import { durationLine } from '../lib/duration.ts';
+import { reindexCaseCommand } from './case-reindex.ts';
 
 const PROGRESS_SECONDS = 5;
 
@@ -219,12 +220,13 @@ function verifyFileCommand(): CommandModule<unknown, VerifyArgs> {
 export function caseCommand(): CommandModule<unknown, unknown> {
     return {
         command: 'case',
-        describe: _('Pack a case into one file, unpack it, or check it'),
+        describe: _('Pack a case into one file, unpack it, check it, or rebuild its index'),
         builder: (yargs) =>
             yargs
                 .command(packCommand())
                 .command(unpackCommand())
                 .command(verifyFileCommand())
+                .command(reindexCaseCommand())
                 .demandCommand(1, _('Pick a subcommand. Try `stamped case --help`.')),
         handler: () => undefined,
     };

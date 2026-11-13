@@ -98,3 +98,23 @@ On Linux the package registers the type `application/vnd.stamped.case+zip` (`*.s
 subclass of `application/zip`) through `gjsify.ship.mimeTypes` in `app/package.json`: a
 shared-mime-info definition plus `MimeType=` in the desktop entry. macOS (a UTI) and Windows
 (registry keys) have no support in `gjsify ship` yet.
+
+## Rebuilding the index of a case
+
+`stamped case reindex [folder]` puts the index back from `raw/`, for a case whose index is lost,
+damaged or from a build that cannot read it and whose source archives are gone. The messages are
+the evidence and the index only what was derived from them, so this needs nothing but the folder.
+
+- Every message under `raw/` is verified again with the keys in the case's vault, and the new
+  index is built beside the old one in `index.db.rebuild`, then renamed over it at the end. A
+  run that fails or is killed leaves the old index as it was.
+- `first_verdict` (the "before" of the report's before/now table) is history, not cache: it is
+  read out of the old index and carried over. A message the old index did not have gets the
+  verdict it has now; with no readable old index there is nothing to carry.
+- Where a message came from (archive, mailbox) is in `import-log.jsonl`, not in the index, and
+  the log is not touched. Neither is `raw/`.
+- A file under `raw/` whose SHA-256 is not its name is reported and not indexed. The old index is
+  then kept; `--accept-failures` replaces it without those messages.
+- Not brought back: the ledger of finished import files (a later import reads its files again and
+  finds every message known), the attachment metadata (opt-in, its own command) and `vectors.db`.
+- Close the window on the case first: its open handle points at the old file.

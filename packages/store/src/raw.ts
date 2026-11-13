@@ -24,6 +24,7 @@ import {
     appendFileSync,
     existsSync,
     mkdirSync,
+    readdirSync,
     readFileSync,
     renameSync,
     unlinkSync,
@@ -153,6 +154,31 @@ export function readRaw(paths: CasePaths, hash: string): Uint8Array | undefined 
     } catch {
         return undefined;
     }
+}
+
+/**
+ * Every message the raw store holds, as hashes in a stable order.
+ *
+ * The set a rebuilt index is made of: `raw/` is the evidence, so what it holds IS the case.
+ * Only names that look like a stored message count (`<64 hex>.eml`); a leftover `.part` from a
+ * killed import is inert and not listed.
+ */
+export function listRawHashes(paths: CasePaths): string[] {
+    const hashes: string[] = [];
+    let fanout: string[];
+    try {
+        fanout = readdirSync(paths.raw);
+    } catch {
+        return hashes;
+    }
+    for (const directory of fanout.sort()) {
+        if (!/^[0-9a-f]{2}$/.test(directory)) continue;
+        for (const name of readdirSync(join(paths.raw, directory)).sort()) {
+            if (/^[0-9a-f]{64}\.eml$/.test(name) && name.startsWith(directory))
+                hashes.push(name.slice(0, -4));
+        }
+    }
+    return hashes;
 }
 
 /** One file an import read messages out of, and how much of the case came from it. */

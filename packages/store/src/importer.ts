@@ -28,31 +28,14 @@
 import { statSync } from 'node:fs';
 
 import { classifyMessage, fmt, type KeyStore, _ } from '@stamped/core';
-import {
-    planFolder,
-    readMboxFile,
-    readSource,
-    splitMessage,
-    summarise,
-    type MboxFlavour,
-    type SourceMessage,
-} from '@stamped/import';
+import { planFolder, readMboxFile, readSource, type MboxFlavour, type SourceMessage } from '@stamped/import';
 import { verifyMessage } from '@stamped/verify';
 
 import type { CasePaths } from './case.ts';
-import {
-    beginBatch,
-    commitBatch,
-    indexedHashes,
-    indexMessage,
-    openIndex,
-    rollbackBatch,
-} from './index-db.ts';
+import { beginBatch, commitBatch, indexedHashes, openIndex, rollbackBatch } from './index-db.ts';
 import { readPerimeter } from './perimeter.ts';
 import { settleSiblings } from './siblings.ts';
-import { writeBodyExplanations } from './body-explanations.ts';
-import { writeReceiverAnchors } from './receiver-anchors.ts';
-import { writeUnsignedHeaders } from './unsigned-headers.ts';
+import { indexRaw } from './index-raw.ts';
 import {
     alreadyImported,
     ensureImportedFiles,
@@ -256,7 +239,7 @@ export async function importSources(
                 // so each message is stored and logged in the callback (both synchronous) and
                 // only its HASH is carried out to be verified afterwards. That keeps the memory
                 // ceiling at one message plus a list of hashes.
-                const fresh: { hash: string; bytes: number }[] = [];
+                const fresh: { hash: string }[] = [];
                 // Whether the last failure was a WRITE rather than a read. A full disk or a
                 // read-only case folder is not one damaged file among many — it ends the import
                 // with the message that says what to do about it.
@@ -295,7 +278,7 @@ export async function importSources(
                     // be identical, and re-verifying it costs the same as verifying a new message.
                     if (known.has(result.hash)) return;
                     known.add(result.hash);
-                    fresh.push({ hash: result.hash, bytes: message.raw.length });
+                    fresh.push({ hash: result.hash });
                 };
 
                 const readOptions = {
@@ -364,19 +347,8 @@ export async function importSources(
                                     await verifyMessage(raw, { keys: options.keys }),
                                     classifyOptions,
                                 );
-                                const sm = summarise(raw);
                                 // `fresh`: not in the index (checked via `known`), so no removal scan.
-                                indexMessage(
-                                    db,
-                                    { hash: entry.hash, bytes: entry.bytes, summary: sm, finding },
-                                    { fresh: true },
-                                );
-                                // The header is in hand already: cache it, no re-read later.
-                                if (finding.verdict === 'unsigned') {
-                                    writeUnsignedHeaders(db, entry.hash, splitMessage(raw).header);
-                                }
-                                writeBodyExplanations(db, entry.hash, finding, raw);
-                                writeReceiverAnchors(db, entry.hash, finding, raw);
+                                indexRaw(db, entry.hash, raw, finding, { fresh: true });
                                 indexed++;
                             } catch (error) {
                                 // Stored and logged already, so the evidence is safe; only the verdict
