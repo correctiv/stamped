@@ -72,6 +72,7 @@ import {
     type ReportProgressLine,
 } from '../lib/report-progress.ts';
 import { selfArgv } from '../lib/self-argv.ts';
+import { timeFindingOf } from '../lib/time.ts';
 import { ActivityController } from './activity.ts';
 import { runCaseFileJob } from './case-file-job.ts';
 import { spawnEmbedHelper } from './embed-spawn.ts';
@@ -172,6 +173,7 @@ import {
     type MailHead,
 } from './view/message.ts';
 import { threadGroup, type ThreadGroup } from './view/thread.ts';
+import { timeGroup, type TimeGroup } from './view/time.ts';
 import {
     filterBannerText,
     overviewHeadline,
@@ -1967,6 +1969,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         for (const card of signatureCards(finding)) {
             this._readerBody.append(this.signatureGroup(card));
         }
+        // After the signatures and before the bytes, the order `stamped verify` prints: the time
+        // layer reads the `t=`/`x=` of the signatures above it, and it is not a verdict of its own.
+        this._readerBody.append(this.timeGroupWidget(timeGroup(timeFindingOf(raw, finding))));
         if (raw.length > 0) this._readerBody.append(this.sourceGroup(raw));
         this._readerStack.set_visible_child_name('message');
         if (SHOT_EVIDENCE !== null) this.popEvidenceShot(Number(SHOT_EVIDENCE));
@@ -2409,6 +2414,42 @@ export class StampedWindow extends Adw.ApplicationWindow {
                     row.add_suffix(new Gtk.Image({ iconName: 'go-next-symbolic' }));
                     row.connect('activated', () => this.track(this.showMessage(hash)));
                 }
+            }
+            widget.add(row);
+        }
+        return widget;
+    }
+
+    /**
+     * Whether the time values inside this message agree, one row per check.
+     *
+     * EVERY CHECK IS A ROW, including the ones that could not be made: a check listed with its
+     * reason says the layer looked, where a missing row would read as "nothing to report". The
+     * same rule `timeLines` follows for the printed report.
+     *
+     * The badges are not verdict badges — see the note in `view/time.ts`. The per-row ⓘ carries
+     * what the result is worth, which is the question the row provokes: a comparison between two
+     * values a verified signature covers weighs more than one over `Received` lines anybody in
+     * the delivery path could have written.
+     */
+    private timeGroupWidget(group: TimeGroup): Adw.PreferencesGroup {
+        const widget = new Adw.PreferencesGroup({ title: group.title, description: group.description });
+        widget.set_header_suffix(badge(group.badge, group.cssClass));
+        for (const entry of group.rows) {
+            const row = new Adw.ActionRow({ title: entry.title, subtitle: entry.subtitle });
+            // NOT `.property`, unlike the header and evidence rows: there the subtitle is a value
+            // the label names, and the class makes the value the prominent text. Here it is a
+            // sentence about the title, so the plain title/subtitle weighting is the right one —
+            // a reader scanning the four rows is looking for which check, not for its wording.
+            //
+            // The sentence carries the numbers that were compared and must be readable whole, and
+            // selectable so a deviation can be quoted.
+            row.set_subtitle_lines(0);
+            row.set_subtitle_selectable(true);
+            row.add_suffix(badge(entry.badge, entry.cssClass));
+            if (entry.protection !== undefined) {
+                // Leftwards, like the evidence rows: a row suffix at the right edge of the pane.
+                row.add_suffix(new StampedHelpButton(entry.protection, Gtk.ArrowType.LEFT));
             }
             widget.add(row);
         }
