@@ -143,21 +143,14 @@ function openReadOnlyIndex(paths: CasePaths): DatabaseSync {
         );
     }
     const logged = existsSync(`${paths.database}-wal`) && statSync(`${paths.database}-wal`).size > 0;
-    // gjsify gap (unfixed, gjsify/gjsify#2620): GJS opened `file:` paths without the URI flag until
-    // that fix is released, so `immutable=1` fails there and the plain path below takes over.
-    const targets = logged
-        ? [paths.database]
-        : [`${pathToFileURL(paths.database).href}?immutable=1`, paths.database];
+    const target = logged ? paths.database : `${pathToFileURL(paths.database).href}?immutable=1`;
     let db: DatabaseSync | undefined;
-    for (const target of targets) {
-        try {
-            db = new DatabaseSync(target, { readOnly: true });
-            db.prepare('SELECT 1 FROM sqlite_master LIMIT 1').get();
-            break;
-        } catch {
-            db?.close();
-            db = undefined;
-        }
+    try {
+        db = new DatabaseSync(target, { readOnly: true });
+        db.prepare('SELECT 1 FROM sqlite_master LIMIT 1').get();
+    } catch {
+        db?.close();
+        db = undefined;
     }
     if (db === undefined) {
         throw new Error(fmt(_('Cannot open the index of the case folder {path}.'), { path: paths.root }));
