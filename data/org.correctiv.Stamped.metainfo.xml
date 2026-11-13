@@ -56,6 +56,12 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.4.3" date="2026-11-13">
+      <description>
+        <p>A new "Time" group checks whether a message's Date header fits the time its signature was made, and whether the signature covers the Date. It is shown in the reader and printed by "stamped verify", and it never changes a verdict. The reader also says whether a signature covers the thread links. Attachment metadata now reads OpenDocument files and photos with EXIF data, and no longer counts a PDF embedded in a PDF as an edit. "stamped keys export --tsv" lists domain and selector pairs.</p>
+        <p xml:lang="de">Eine neue Gruppe „Zeit“ prüft, ob das Date-Feld einer Nachricht zum Zeitpunkt der Signatur passt und ob die Signatur das Datum abdeckt. Sie erscheint im Leser und in der Ausgabe von „stamped verify“ und ändert nie ein Ergebnis. Der Leser sagt außerdem, ob eine Signatur die Verweise auf die Unterhaltung abdeckt. Die Anhang-Metadaten lesen jetzt OpenDocument-Dateien und Fotos mit EXIF-Daten und zählen ein in ein PDF eingebettetes PDF nicht mehr als Änderung. „stamped keys export --tsv“ listet Paare aus Domain und Selektor auf.</p>
+      </description>
+    </release>
     <release version="0.4.2" date="2026-11-13">
       <description>
         <p>A case can be opened read-only, for an evidence copy or read-only media, and its index can be rebuilt from the stored messages with "stamped case reindex". Search understands tag: and is: operators and tags can be set from the command line. The start screen lists recently opened cases, and the window opens and saves .stamped case files.</p>
