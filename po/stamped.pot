@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 16:47+0100\n"
+"POT-Creation-Date: 2026-11-13 16:52+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1139,33 +1139,33 @@ msgstr ""
 msgid "No date: {n}"
 msgstr ""
 
-#: app/src/commands/verify.ts:37
+#: app/src/commands/verify.ts:38
 msgid "Check the DKIM signatures of one message and report what they cover"
 msgstr ""
 
-#: app/src/commands/verify.ts:41
+#: app/src/commands/verify.ts:42
 msgid "The message to check, as RFC 5322 bytes (.eml)"
 msgstr ""
 
-#: app/src/commands/verify.ts:47
+#: app/src/commands/verify.ts:48
 msgid ""
 "A public key: <selector>._domainkey.<domain>=<TXT record, or a path to "
 "a .pem or .txt file holding one>. Repeatable."
 msgstr ""
 
-#: app/src/commands/verify.ts:53
+#: app/src/commands/verify.ts:54
 msgid "Print the finding and the full evidence as JSON"
 msgstr ""
 
-#: app/src/commands/verify.ts:58
+#: app/src/commands/verify.ts:59
 msgid "Print only the sentence to quote for this message"
 msgstr ""
 
-#: app/src/commands/verify.ts:64
+#: app/src/commands/verify.ts:65
 msgid "Check one message against a key you have on disk"
 msgstr ""
 
-#: app/src/commands/verify.ts:94 packages/import/src/folder.ts:128
+#: app/src/commands/verify.ts:97 packages/import/src/folder.ts:128
 #: packages/import/src/source.ts:219 packages/store/src/importer.ts:452
 msgid "Cannot read {path}."
 msgstr ""
@@ -3407,7 +3407,7 @@ msgstr ""
 msgid "Writing the PDF"
 msgstr ""
 
-#: app/src/lib/report.ts:65
+#: app/src/lib/report.ts:87
 msgid "  caveat: {text}"
 msgstr ""
 

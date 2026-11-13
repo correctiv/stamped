@@ -15,6 +15,7 @@ import type { CommandModule } from 'yargs';
 import { keyStoreFrom } from '../lib/keys.ts';
 import { citationOf } from '../lib/citation.ts';
 import { reportJson, reportLines } from '../lib/report.ts';
+import { timeFindingOf } from '../lib/time.ts';
 
 interface VerifyArgs {
     file: string;
@@ -72,8 +73,10 @@ export function verifyCommand(): CommandModule<unknown, VerifyArgs> {
 
             const finding = classifyMessage(await verifyMessage(raw, { keys }));
 
+            const time = timeFindingOf(raw, finding);
+
             if (args.json) {
-                console.log(reportJson(finding, args.file, citationOf(finding, raw)));
+                console.log(reportJson(finding, args.file, citationOf(finding, raw), time));
                 return;
             }
             if (args.cite) {
@@ -81,7 +84,7 @@ export function verifyCommand(): CommandModule<unknown, VerifyArgs> {
                 return;
             }
             console.log(args.file);
-            for (const line of reportLines(finding)) console.log(line);
+            for (const line of reportLines(finding, time)) console.log(line);
         },
     };
 }

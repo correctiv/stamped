@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 16:47+0100\n"
+"POT-Creation-Date: 2026-11-13 16:52+0100\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -693,16 +693,16 @@ msgid ""
 "Write only the domain and selector of each key, as the TSV that the upload "
 "page of archive.prove.email reads"
 msgstr ""
-"Nur Domain und Selektor jedes Schlüssels schreiben, als TSV für die "
-"Upload-Seite von archive.prove.email"
+"Nur Domain und Selektor jedes Schlüssels schreiben, als TSV für die Upload-"
+"Seite von archive.prove.email"
 
 #: app/src/commands/keys.ts:694
 msgid ""
 "The TSV names the sender domains and their selectors: uploading the pairs of "
 "a private case to a public archive is an editorial decision, not a default."
 msgstr ""
-"Das TSV nennt die Absenderdomains und ihre Selektoren: Die Paare eines "
-"nicht öffentlichen Falls in ein öffentliches Archiv hochzuladen, ist eine "
+"Das TSV nennt die Absenderdomains und ihre Selektoren: Die Paare eines nicht "
+"öffentlichen Falls in ein öffentliches Archiv hochzuladen, ist eine "
 "redaktionelle Entscheidung und kein Standard."
 
 #: app/src/commands/keys.ts:702
@@ -1310,16 +1310,16 @@ msgstr "Die Zeitleiste als JSON ausgeben"
 msgid "No date: {n}"
 msgstr "Ohne Datum: {n}"
 
-#: app/src/commands/verify.ts:37
+#: app/src/commands/verify.ts:38
 msgid "Check the DKIM signatures of one message and report what they cover"
 msgstr ""
 "Die DKIM-Signaturen einer Nachricht prüfen und berichten, was sie abdecken"
 
-#: app/src/commands/verify.ts:41
+#: app/src/commands/verify.ts:42
 msgid "The message to check, as RFC 5322 bytes (.eml)"
 msgstr "Die zu prüfende Nachricht, als RFC-5322-Bytes (.eml)"
 
-#: app/src/commands/verify.ts:47
+#: app/src/commands/verify.ts:48
 msgid ""
 "A public key: <selector>._domainkey.<domain>=<TXT record, or a path to "
 "a .pem or .txt file holding one>. Repeatable."
@@ -1327,19 +1327,19 @@ msgstr ""
 "Ein öffentlicher Schlüssel: <Selektor>._domainkey.<Domain>=<TXT-Eintrag oder "
 "Pfad zu einer .pem- oder .txt-Datei, die einen enthält>. Mehrfach möglich."
 
-#: app/src/commands/verify.ts:53
+#: app/src/commands/verify.ts:54
 msgid "Print the finding and the full evidence as JSON"
 msgstr "Befund und vollständige Belegkette als JSON ausgeben"
 
-#: app/src/commands/verify.ts:58
+#: app/src/commands/verify.ts:59
 msgid "Print only the sentence to quote for this message"
 msgstr "Nur den Satz ausgeben, den man für diese Nachricht zitieren kann"
 
-#: app/src/commands/verify.ts:64
+#: app/src/commands/verify.ts:65
 msgid "Check one message against a key you have on disk"
 msgstr "Eine Nachricht gegen einen Schlüssel prüfen, der lokal vorliegt"
 
-#: app/src/commands/verify.ts:94 packages/import/src/folder.ts:128
+#: app/src/commands/verify.ts:97 packages/import/src/folder.ts:128
 #: packages/import/src/source.ts:219 packages/store/src/importer.ts:452
 msgid "Cannot read {path}."
 msgstr "{path} kann nicht gelesen werden."
@@ -3871,7 +3871,7 @@ msgstr "Anhangseigenschaften werden gelesen"
 msgid "Writing the PDF"
 msgstr "PDF wird geschrieben"
 
-#: app/src/lib/report.ts:65
+#: app/src/lib/report.ts:87
 msgid "  caveat: {text}"
 msgstr "  Einschränkung: {text}"
 

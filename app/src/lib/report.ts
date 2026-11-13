@@ -14,11 +14,15 @@
 
 import {
     describeCaveat,
+    describeTimeCheck,
+    describeTimeProtection,
+    describeTimeResult,
     describeVerdict,
     explainSignature,
     fmt,
     type MessageFinding,
     type SignatureFinding,
+    type TimeFinding,
     _,
 } from '@stamped/core';
 
@@ -34,7 +38,7 @@ import { caveatTexts, evidenceFields, signatureHeading } from './evidence.ts';
 const MIN_LABEL_WIDTH = 18;
 
 /** The whole report for one message: the verdict, then one block per signature. */
-export function reportLines(finding: MessageFinding): string[] {
+export function reportLines(finding: MessageFinding, time?: TimeFinding): string[] {
     const lines = [describeVerdict(finding.verdict)];
     // The message verdict cannot carry this caveat quietly: it is the one that decides whether
     // the CEO's mail reads as the CEO's.
@@ -44,6 +48,24 @@ export function reportLines(finding: MessageFinding): string[] {
     for (const [index, signature] of finding.signatures.entries()) {
         lines.push('');
         lines.push(...signatureLines(signature, index + 1, finding.signatures.length));
+    }
+    if (time !== undefined) {
+        lines.push('');
+        lines.push(...timeLines(time));
+    }
+    return lines;
+}
+
+/**
+ * The time layer: one sentence for the result, then one line per check that could be made. A
+ * check that could not be made is listed too, with the reason, so silence never reads as "fine".
+ * It never changes the verdict above it, and the first line says so when it matters.
+ */
+export function timeLines(time: TimeFinding): string[] {
+    const lines = [describeTimeResult(time.result)];
+    for (const check of time.checks) {
+        lines.push(`  ${describeTimeCheck(check)}`);
+        if (check.result !== 'not-checkable') lines.push(`    ${describeTimeProtection(check)}`);
     }
     return lines;
 }
@@ -68,13 +90,36 @@ export function signatureLines(finding: SignatureFinding, position: number, tota
 }
 
 /** The same finding as data, for `--json`. Keys are stable; new ones may be added. */
-export function reportJson(finding: MessageFinding, source: string, citation?: string): string {
+export function reportJson(
+    finding: MessageFinding,
+    source: string,
+    citation?: string,
+    time?: TimeFinding,
+): string {
     return JSON.stringify(
         {
             source,
             verdict: finding.verdict,
             caveats: finding.caveats,
             ...(citation !== undefined ? { citation } : {}),
+            ...(time === undefined
+                ? {}
+                : {
+                      time: {
+                          result: time.result,
+                          protectedBySignature: time.protectedBySignature,
+                          checks: time.checks.map((check) => ({
+                              kind: check.kind,
+                              result: check.result,
+                              explanation: describeTimeCheck(check),
+                              deviationSeconds: check.deviationSeconds,
+                              toleranceSeconds: check.toleranceSeconds,
+                              protectedBySignature: check.protectedBySignature,
+                              values: check.values,
+                              unavailable: check.unavailable,
+                          })),
+                      },
+                  }),
             signatures: finding.signatures.map((signature) => ({
                 verdict: signature.verdict,
                 reason: explainSignature(signature)?.code,

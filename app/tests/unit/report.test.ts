@@ -12,9 +12,11 @@
  */
 
 import { classifyMessage, classifySignature, type SignatureEvidence } from '@stamped/core';
+import { encodeLatin1 } from '@stamped/import';
 import { describe, expect, it } from '@gjsify/unit';
 
-import { reportJson, reportLines, signatureLines } from '../../src/lib/report.ts';
+import { reportJson, reportLines, signatureLines, timeLines } from '../../src/lib/report.ts';
+import { timeFindingOf } from '../../src/lib/time.ts';
 
 /** A signature that verified cleanly, as the baseline every case below varies. */
 function good(overrides: Partial<SignatureEvidence> = {}): SignatureEvidence {
@@ -186,6 +188,76 @@ export default async () => {
             };
             expect(parsed.verdict).toBe('unsigned');
             expect(parsed.signatures.length).toBe(0);
+        });
+    });
+
+    await describe('the time layer', async () => {
+        const SIGNED = Date.UTC(2024, 2, 5, 9, 40, 0) / 1000;
+
+        /** A synthetic message: the Date, then Received headers topmost (last hop) first. */
+        function mail(date: string | undefined, received: string[]): Uint8Array {
+            const lines = ['From: Ada Lovelace <ada@example.com>', 'To: Grace Hopper <grace@example.net>'];
+            for (const value of received) lines.push(`Received: ${value}`);
+            if (date !== undefined) lines.push(`Date: ${date}`);
+            lines.push('Subject: Hello', '', 'Body', '');
+            return encodeLatin1(lines.join('\r\n'));
+        }
+
+        const HOP = (time: string) => `from a.example.net by b.example.org; ${time}`;
+
+        await it('reads the Date, the Received headers in file order and the signing time', async () => {
+            const finding = classifyMessage([good({ signedAt: SIGNED })]);
+            const time = timeFindingOf(
+                mail('Tue, 05 Mar 2024 09:39:00 +0000', [
+                    HOP('Tue, 05 Mar 2024 09:40:30 +0000'),
+                    HOP('Tue, 05 Mar 2024 09:39:30 +0000'),
+                ]),
+                finding,
+            );
+            expect(time.result).toBe('consistent');
+            const kinds = time.checks.filter((check) => check.result === 'consistent').map((c) => c.kind);
+            expect(kinds.includes('date-vs-signature')).toBe(true);
+            expect(kinds.includes('received-order')).toBe(true);
+            expect(kinds.includes('date-vs-received')).toBe(true);
+        });
+
+        await it('calls a Date far after the signing time inconsistent', async () => {
+            const finding = classifyMessage([good({ signedAt: SIGNED })]);
+            const time = timeFindingOf(mail('Tue, 05 Mar 2024 14:00:00 +0000', []), finding);
+            expect(time.result).toBe('inconsistent');
+            expect(time.checks.find((check) => check.kind === 'date-vs-signature')?.result).toBe(
+                'inconsistent',
+            );
+        });
+
+        await it('is not checkable without usable values, and says why', async () => {
+            const time = timeFindingOf(mail(undefined, []), classifyMessage([]));
+            expect(time.result).toBe('not-checkable');
+            const text = timeLines(time).join('\n');
+            expect(text.includes('Time: not checkable')).toBe(true);
+            expect(text.includes('The message has no Date header.')).toBe(true);
+        });
+
+        await it('prints the layer after the signatures, and says the verdict is unaffected', async () => {
+            const finding = classifyMessage([good({ signedAt: SIGNED })]);
+            const time = timeFindingOf(mail('Tue, 05 Mar 2024 14:00:00 +0000', []), finding);
+            const lines = reportLines(finding, time);
+            expect(lines[0]?.startsWith('Unchanged since signing:')).toBe(true);
+            const text = lines.join('\n');
+            expect(text.indexOf('Signature 1 of 1') < text.indexOf('Time: inconsistent')).toBe(true);
+            expect(text.includes('The signature verdict is unaffected.')).toBe(true);
+            expect(reportLines(finding).join('\n').includes('Time:')).toBe(false);
+        });
+
+        await it('carries the time layer in --json only when given', async () => {
+            const finding = classifyMessage([good({ signedAt: SIGNED })]);
+            const time = timeFindingOf(mail('Tue, 05 Mar 2024 09:39:00 +0000', []), finding);
+            const parsed = JSON.parse(reportJson(finding, 'm.eml', undefined, time)) as {
+                time: { result: string; checks: { kind: string; explanation: string }[] };
+            };
+            expect(parsed.time.result).toBe('consistent');
+            expect(parsed.time.checks.length).toBe(4);
+            expect('time' in JSON.parse(reportJson(finding, 'm.eml'))).toBe(false);
         });
     });
 };

@@ -61,4 +61,11 @@ without a zone, with an unknown zone name or an impossible calendar day is unrea
 ## Evidence input
 
 `SignatureEvidence` gained `signedAt` and `expiresAt` (seconds since the epoch). `@stamped/verify`
-does not fill them yet; until it does, the signature checks read `not-checkable`.
+fills them from `t=` and `x=` (`packages/verify/src/evidence.ts`); a signature without those tags
+makes the signature checks read `not-checkable`.
+
+## Where it shows
+
+`stamped verify` prints the layer after the signature blocks and adds a `time` object to `--json`
+(`app/src/lib/time.ts` reads the first `Date` and every `Received`, topmost first, and hands them
+to `checkTime`). The layer never changes the verdict printed above it.
