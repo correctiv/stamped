@@ -8,8 +8,9 @@
  * narrow question — does the metadata contradict the message? — and says "indication, not proof".
  * It is NOT a {@link Verdict} and NOT a caveat; nothing here can change what DKIM proved.
  *
- * Two formats, on purpose: PDF (`/Info`, the XMP packet, the revision trail) and ZIP-based Office
- * files (`docProps/core.xml`). Other formats are "not examined", never "clean".
+ * Four kinds of file, on purpose: PDF (`/Info`, the XMP packet, the revision trail), ZIP-based
+ * Office files (`docProps/core.xml`), OpenDocument files (`meta.xml`) and images with EXIF
+ * (JPEG, TIFF). Other formats are "not examined", never "clean".
  *
  * Pure over bytes: the same attachment gives the same finding, so a stored result is a cache.
  */
@@ -24,12 +25,12 @@ import { looksLikeZip, zipEntry } from './zip.ts';
  * The version of the rules in this file. A cache of findings was produced by one version;
  * CHANGING A RULE MEANS BUMPING THIS.
  */
-export const ATTACHMENT_ANALYSER_VERSION = 1;
+export const ATTACHMENT_ANALYSER_VERSION = 2;
 
 /** A file bigger than this is not examined: the scan reads all of it as one string. */
 const MAX_BYTES = 64 * 1024 * 1024;
 
-/** The properties part of an Office file is a few hundred bytes; a megabyte is already odd. */
+/** The properties part of an Office or OpenDocument file is a few hundred bytes; a megabyte is odd. */
 const MAX_PROPERTIES = 1024 * 1024;
 
 /** "Long after creation": a document edited a month later is a different document. */
@@ -41,18 +42,28 @@ const SKEW_MS = 5 * 60 * 1000;
 /** A date that names no time zone could be off by a day either way. */
 const UNZONED_SKEW_MS = 24 * 3600 * 1000;
 
-export type AttachmentFormat = 'pdf' | 'office';
+/** Where EXIF may start in a JPEG: it is written before the image data, never deep inside. */
+const MAX_JPEG_HEAD = 1024 * 1024;
+
+/** Segments walked before giving up: a JPEG segment is at most 64 KiB, so is the EXIF block in one. */
+const MAX_SEGMENTS = 64;
+
+/** Entries read per EXIF directory, and directories visited: a corrupt offset cannot loop. */
+const MAX_EXIF_ENTRIES = 512;
+const MAX_EXIF_DIRECTORIES = 4;
+
+export type AttachmentFormat = 'pdf' | 'office' | 'odf' | 'image';
 
 /** What the metadata of one attachment shows. Dates are epoch milliseconds. */
 export interface AttachmentIndication {
     readonly format: AttachmentFormat;
     readonly createdAt?: number;
     readonly modifiedAt?: number;
-    /** PDF: the program that wrote the file (`/Producer`). */
+    /** PDF: the program that wrote the file (`/Producer`); image: EXIF `Software`. */
     readonly producer?: string;
-    /** PDF: the program the document came from (`/Creator`); Office: the author. */
+    /** PDF: the program the document came from (`/Creator`); Office: the author; ODF: the original author. */
     readonly creator?: string;
-    /** Office: who saved it last. */
+    /** Office: who saved it last; ODF: the last editor (`dc:creator`) when it is not the author. */
     readonly lastModifiedBy?: string;
     /** PDF: saved revisions after the first, counted by `%%EOF` markers. */
     readonly updates: number;
@@ -211,10 +222,34 @@ function judge(
     };
 }
 
+/**
+ * The `%%EOF` markers that belong to this file. A PDF embedded in a PDF (an attached file, left
+ * uncompressed) brings its own markers inside a `stream … endstream` span, so only markers outside
+ * every span count. Spans nest, because the embedded file has streams of its own: a depth counter
+ * tracks them. If the keywords do not balance (a corrupt file, binary data that looks like one),
+ * the rule cannot be trusted and every marker counts, as before.
+ */
+function countEndMarkers(text: string): number {
+    let depth = 0;
+    let outside = 0;
+    let all = 0;
+    for (const match of text.matchAll(/%%EOF|endstream|(?<=>>\s*)stream(?=\r?\n|\r)/g)) {
+        if (match[0] === '%%EOF') {
+            all++;
+            if (depth === 0) outside++;
+        } else if (match[0] === 'endstream') {
+            depth = Math.max(0, depth - 1);
+        } else {
+            depth++;
+        }
+    }
+    return depth === 0 ? outside : all;
+}
+
 function analysePdf(content: Uint8Array, sentAt: number | undefined): AttachmentIndication {
     const text = decodeLatin1(content);
     const encrypted = /\/Encrypt\b/.test(text);
-    const markers = text.match(/%%EOF/g)?.length ?? 0;
+    const markers = countEndMarkers(text);
     // A linearized file carries two end markers by design: the first-page section and the rest.
     const linearized = /\/Linearized\b/.test(text.slice(0, 2048)) ? 1 : 0;
     const info = (key: string) => (encrypted ? undefined : clean(pdfInfo(text, key)));
@@ -254,6 +289,154 @@ function analyseOffice(content: Uint8Array, sentAt: number | undefined): Attachm
     );
 }
 
+function analyseOdf(content: Uint8Array, sentAt: number | undefined): AttachmentIndication | undefined {
+    const properties = zipEntry(content, 'meta.xml', MAX_PROPERTIES);
+    if (!properties) return undefined;
+    const xml = new TextDecoder().decode(properties);
+    const element = (tag: string) =>
+        clean(new RegExp(`<${tag}(?:\\s[^>]*)?>([^<]*)</${tag}>`).exec(xml)?.[1]);
+    const initial = element('meta:initial-creator');
+    const editor = element('dc:creator');
+    const creator = initial ?? editor;
+    const lastModifiedBy = editor !== undefined && editor !== creator ? editor : undefined;
+    return judge('odf', isoDate(element('meta:creation-date')), isoDate(element('dc:date')), sentAt, {
+        ...(creator ? { creator } : {}),
+        ...(lastModifiedBy ? { lastModifiedBy } : {}),
+        updates: 0,
+        historyEvents: 0,
+    });
+}
+
+/** `2024:05:01 10:30:00` — EXIF names no time zone, so the moment is never exact. */
+function exifDate(value: string | undefined): Moment | undefined {
+    const match = /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(value ?? '');
+    if (!match) return undefined;
+    const [year, month, day, hour, minute, second] = match.slice(1).map(Number) as [
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+    ];
+    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 60) {
+        return undefined;
+    }
+    const at = Date.UTC(year, month - 1, day, hour, minute, second);
+    return Number.isNaN(at) ? undefined : { at, exact: false };
+}
+
+interface ExifTags {
+    dateTime?: string;
+    dateTimeOriginal?: string;
+    dateTimeDigitized?: string;
+    software?: string;
+}
+
+/**
+ * The few tags this reads from a TIFF structure (`tiff` starts at the byte-order mark): IFD0 and
+ * the Exif directory it points to. Every read is range-checked, directories are visited once and
+ * counted, entries per directory are capped — a corrupt offset ends the walk, never loops.
+ */
+function readExif(tiff: Uint8Array): ExifTags | undefined {
+    if (tiff.length < 8) return undefined;
+    const little = tiff[0] === 0x49 && tiff[1] === 0x49;
+    if (!little && !(tiff[0] === 0x4d && tiff[1] === 0x4d)) return undefined;
+    const view = new DataView(tiff.buffer, tiff.byteOffset, tiff.byteLength);
+    if (view.getUint16(2, little) !== 42) return undefined;
+
+    const text = (type: number, count: number, valueAt: number): string | undefined => {
+        if (type !== 2 || count === 0) return undefined;
+        const at = count <= 4 ? valueAt : view.getUint32(valueAt, little);
+        const length = Math.min(count, 64);
+        if (at < 0 || at + length > tiff.length) return undefined;
+        const raw = decodeLatin1(tiff.subarray(at, at + length));
+        const end = raw.indexOf('\u0000');
+        return clean(end < 0 ? raw : raw.slice(0, end));
+    };
+
+    const tags: ExifTags = {};
+    const visited = new Set<number>();
+    const queue: [offset: number, main: boolean][] = [[view.getUint32(4, little), true]];
+    while (queue.length > 0 && visited.size < MAX_EXIF_DIRECTORIES) {
+        const [offset, main] = queue.shift() as [number, boolean];
+        if (visited.has(offset) || offset < 8 || offset + 2 > tiff.length) continue;
+        visited.add(offset);
+        const entries = Math.min(view.getUint16(offset, little), MAX_EXIF_ENTRIES);
+        for (let index = 0; index < entries; index++) {
+            const entry = offset + 2 + index * 12;
+            if (entry + 12 > tiff.length) break;
+            const tag = view.getUint16(entry, little);
+            const type = view.getUint16(entry + 2, little);
+            const count = view.getUint32(entry + 4, little);
+            if (main && tag === 0x0132) tags.dateTime = text(type, count, entry + 8);
+            else if (main && tag === 0x0131) tags.software = text(type, count, entry + 8);
+            else if (main && tag === 0x8769) queue.push([view.getUint32(entry + 8, little), false]);
+            else if (!main && tag === 0x9003) tags.dateTimeOriginal = text(type, count, entry + 8);
+            else if (!main && tag === 0x9004) tags.dateTimeDigitized = text(type, count, entry + 8);
+        }
+    }
+    return tags;
+}
+
+/** The TIFF structure of an image: the Exif block of the first APP1 in a JPEG, or a TIFF file itself. */
+function exifBlock(content: Uint8Array): Uint8Array | undefined {
+    const tiffMark =
+        content.length >= 4 &&
+        ((content[0] === 0x49 && content[1] === 0x49 && content[2] === 0x2a && content[3] === 0) ||
+            (content[0] === 0x4d && content[1] === 0x4d && content[2] === 0 && content[3] === 0x2a));
+    if (tiffMark) return content;
+    if (content.length < 4 || content[0] !== 0xff || content[1] !== 0xd8) return undefined;
+    let at = 2;
+    for (
+        let segment = 0;
+        segment < MAX_SEGMENTS && at + 4 <= content.length && at < MAX_JPEG_HEAD;
+        segment++
+    ) {
+        if (content[at] !== 0xff) return undefined;
+        const marker = content[at + 1] as number;
+        if (marker === 0xff) {
+            at++;
+            continue;
+        }
+        // start of scan, end of image: the headers are over
+        if (marker === 0xda || marker === 0xd9) return undefined;
+        // markers without a length
+        if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+            at += 2;
+            continue;
+        }
+        const length = ((content[at + 2] as number) << 8) | (content[at + 3] as number);
+        if (length < 2) return undefined;
+        const start = at + 4;
+        const end = Math.min(at + 2 + length, content.length);
+        if (
+            marker === 0xe1 &&
+            end - start >= 6 &&
+            decodeLatin1(content.subarray(start, start + 6)) === 'Exif\u0000\u0000'
+        ) {
+            return content.subarray(start + 6, end);
+        }
+        at += 2 + length;
+    }
+    return undefined;
+}
+
+function analyseImage(content: Uint8Array, sentAt: number | undefined): AttachmentIndication | undefined {
+    const block = exifBlock(content);
+    if (!block) return undefined;
+    const tags = readExif(block);
+    if (!tags) return undefined;
+    const created = exifDate(tags.dateTimeOriginal) ?? exifDate(tags.dateTimeDigitized);
+    const modified = exifDate(tags.dateTime);
+    if (!created && !modified && !tags.software) return undefined;
+    return judge('image', created, modified, sentAt, {
+        ...(tags.software ? { producer: tags.software } : {}),
+        updates: 0,
+        historyEvents: 0,
+    });
+}
+
 /**
  * The indication for one attachment, or `undefined` when it is not a format this looks at, is
  * too big, or has no readable properties. `sentAt` is the message's `Date:` in epoch ms.
@@ -264,12 +447,17 @@ export function analyseAttachment(content: Uint8Array, sentAt?: number): Attachm
     if (head.includes('%PDF-')) return analysePdf(content, sentAt);
     if (looksLikeZip(content)) {
         try {
-            return analyseOffice(content, sentAt);
+            // the entries tell the families apart, never the file name
+            return analyseOffice(content, sentAt) ?? analyseOdf(content, sentAt);
         } catch {
             return undefined;
         }
     }
-    return undefined;
+    try {
+        return analyseImage(content, sentAt);
+    } catch {
+        return undefined;
+    }
 }
 
 /** One examined attachment of a message. */

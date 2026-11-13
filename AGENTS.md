@@ -158,15 +158,17 @@ sits inside the same leak. Same mechanics (`RECEIVER_ANCHOR_VERSION`; change the
 
 **What attachments say about themselves is a fourth table, and OPT-IN**: `attachment_metadata(hash,
 flags)` (`packages/store/src/attachment-metadata.ts`, analysis in `packages/import/src/attachment-metadata.ts`).
-Only PDF (Info dict, XMP, `%%EOF` revisions) and ZIP-based Office files (`docProps/core.xml`) are
-read; the flags are "dated after the message's `Date:` header" (as stated, not proven signed),
+Only PDF (Info dict, XMP, `%%EOF` revisions outside any `stream … endstream` span, so an embedded
+PDF adds none), ZIP-based Office files (`docProps/core.xml`), OpenDocument files (`meta.xml`; told
+from Office by the entries, not the name) and images with EXIF (JPEG APP1, TIFF; unzoned dates, so
+the one-day skew applies) are read; the flags are "dated after the message's `Date:` header" (as stated, not proven signed),
 "modified more than 30 days after creation" and "saved on top of an earlier version". It is an
 INDICATION, never a verdict or a caveat, always worded "indication, not proof", and only counted
 in the report (`stamped report --pdf --attachment-metadata`); the reader shows the details per
 attachment, computed from the bytes it already holds. Nothing fills it at import: it reads every
 raw file, so the report fills it on request, resumably (`attachment_metadata_cursor` in `meta`);
 a message without a row is simply picked up by the next fill. Rule change → bump
-`ATTACHMENT_ANALYSER_VERSION`. Known limit: a PDF embedded in a PDF can add false `%%EOF` markers.
+`ATTACHMENT_ANALYSER_VERSION`.
 
 - **One address is one person.** Addresses are lower-cased, display names are listed beside them,
   and nothing is merged by guesswork: whether two mailboxes are one human is the journalist's call.
