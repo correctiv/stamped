@@ -160,10 +160,10 @@ export default async () => {
 
         await it('opens a folder that cannot be written to, which a WAL index otherwise refuses', async () => {
             await Promise.resolve();
-            if (typeof process.getuid === 'function' && process.getuid() === 0) return;
             withIndexedCase((root) => {
                 chmodSync(root, 0o555);
-                expect(isWritable(root)).toBe(false);
+                // root, or a filesystem that ignores modes: the folder stays writable, nothing to test
+                if (isWritable(root)) return;
                 const paths = caseAccess(root);
                 expect(paths.readOnly).toBe(true);
                 const db = openIndex(paths);
