@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { join } from 'node:path';
 
 import { fmt, KeyVault, _ } from '@stamped/core';
-import { VAULT_NAME } from '@stamped/store';
+import { assertWritable, type CasePaths, VAULT_NAME } from '@stamped/store';
 
 export function vaultFile(caseDir: string): string {
     return join(caseDir, VAULT_NAME);
@@ -27,9 +27,10 @@ export function loadVault(caseDir: string): KeyVault {
     }
 }
 
-export function saveVault(caseDir: string, vault: KeyVault): void {
-    mkdirSync(caseDir, { recursive: true });
-    const path = vaultFile(caseDir);
+export function saveVault(paths: CasePaths, vault: KeyVault): void {
+    assertWritable(paths);
+    mkdirSync(paths.root, { recursive: true });
+    const path = vaultFile(paths.root);
     const tmp = `${path}.tmp`;
     writeFileSync(tmp, vault.toJson());
     renameSync(tmp, path);

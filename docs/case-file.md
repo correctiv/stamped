@@ -118,3 +118,20 @@ the evidence and the index only what was derived from them, so this needs nothin
 - Not brought back: the ledger of finished import files (a later import reads its files again and
   finds every message known), the attachment metadata (opt-in, its own command) and `vectors.db`.
 - Close the window on the case first: its open handle points at the old file.
+
+## Reading a case without writing to it
+
+A case that must stay as it is (an unpacked evidence copy, a folder on read-only media) opens
+read-only: `--read-only` on any command, and automatically when the folder cannot be written to.
+The window does the same and says so when it opens one.
+
+- The index opens `immutable`, with no `-wal` or `-shm` file beside it, and with `query_only` on.
+  It is never created or migrated: a case without an index, or with another schema version,
+  is refused with a sentence rather than rebuilt.
+- Everything that writes is refused with one message: `import`, tags and bookmarks, the perimeter
+  and the semantic setting, the raw store, the vault, key lookups that store a key. The
+  status files (`import-status.json`, `activity` and `semantic-status.json`) describe a process, not
+  the case, and are skipped silently.
+- The semantic index is not started in the window; searching, reports and the reader work as before.
+- An index with a non-empty `-wal` is read through a normal read-only handle, since `immutable`
+  would ignore what is still in the log.

@@ -553,7 +553,7 @@ export default async () => {
                     origin: 'operator',
                     fetchedAt: '2026-10-20T10:00:00Z',
                 });
-                saveVault(ctx.paths.root, vault);
+                saveVault(ctx.paths, vault);
 
                 const after = await runQueryAsync(ctx, 'verify', { hash: kept.hash });
                 expect(after?.verdict).toBe('confirmed');

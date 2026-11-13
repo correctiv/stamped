@@ -117,6 +117,8 @@ export function readSemanticRunStatus(paths: CasePaths): SemanticRunStatus | und
 
 /** Write the status atomically: a reader sees the old snapshot or the new one, never a torn one. */
 export function writeSemanticRunStatus(paths: CasePaths, status: SemanticRunStatus): void {
+    // A read-only case has no process of ours to describe, and the file is not worth a refusal.
+    if (paths.readOnly) return;
     const target = semanticStatusFile(paths);
     const tmp = `${target}.tmp`;
     writeFileSync(tmp, `${JSON.stringify(status, undefined, 2)}\n`);

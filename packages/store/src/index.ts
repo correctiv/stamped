@@ -14,12 +14,14 @@
 
 export {
     CASE_MARKER_NAME,
+    assertWritable,
     CASE_VERSION,
     casePaths,
     type CasePaths,
     IMPORT_LOG_NAME,
     INDEX_NAME,
     isCase,
+    isWritable,
     openCase,
     VAULT_NAME,
 } from './case.ts';

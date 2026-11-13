@@ -39,6 +39,7 @@ import {
     type IndexerProgress,
 } from '@stamped/semantic';
 import {
+    assertWritable,
     readSemanticRunStatus,
     readSemanticSetting,
     SEMANTIC_SETTING_VERSION,
@@ -271,6 +272,7 @@ export function createSemanticController(options: SemanticControllerOptions): Se
         }
 
         try {
+            assertWritable(options.paths);
             vectors = openVectorDb(options.paths.vectors, {
                 modelId: embedder.modelId,
                 dimensions: embedder.dimensions,

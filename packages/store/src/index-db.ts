@@ -17,7 +17,9 @@
  * to re-verify a hundred thousand messages to count them.
  */
 
+import { existsSync, statSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
+import { pathToFileURL } from 'node:url';
 
 import { type Caveat, type MessageFinding, type Verdict, VERDICTS, fmt, _ } from '@stamped/core';
 import type { MessageSummary } from '@stamped/import';
@@ -84,6 +86,7 @@ export interface SearchHit {
  * table that reads like a broken installation.
  */
 export function openIndex(paths: CasePaths): DatabaseSync {
+    if (paths.readOnly) return openReadOnlyIndex(paths);
     let db: DatabaseSync;
     try {
         db = new DatabaseSync(paths.database);
@@ -116,6 +119,66 @@ export function openIndex(paths: CasePaths): DatabaseSync {
     ensureBodyExplanations(db);
     ensureReceiverAnchors(db);
     ensureAttachmentMetadata(db);
+    return db;
+}
+
+/**
+ * Open the index of a case that must not change, and create or migrate nothing.
+ *
+ * Three things the writable path does are left out on purpose. The schema is not created: a case
+ * without an index, or with one of another version, is refused with a sentence, because "no
+ * results" would be a wrong answer about the evidence. The in-place additions are not run, so an
+ * index from an older build needs one writable open first. And the file is opened `immutable`
+ * when there is no write-ahead log to read: SQLite then touches no `-wal` or `-shm` file, which
+ * is what a read-only connection to a WAL database otherwise creates, and what a read-only
+ * folder refuses. With a log present (a copy taken while the window was open) it opens normally,
+ * so that what was committed is not silently left out.
+ */
+function openReadOnlyIndex(paths: CasePaths): DatabaseSync {
+    if (!existsSync(paths.database)) {
+        throw new Error(
+            fmt(_('The case folder {path} has no index, and a read-only case cannot create one.'), {
+                path: paths.root,
+            }),
+        );
+    }
+    const logged = existsSync(`${paths.database}-wal`) && statSync(`${paths.database}-wal`).size > 0;
+    // gjsify gap (unfixed, gjsify/gjsify#2620): GJS opened `file:` paths without the URI flag until
+    // that fix is released, so `immutable=1` fails there and the plain path below takes over.
+    const targets = logged
+        ? [paths.database]
+        : [`${pathToFileURL(paths.database).href}?immutable=1`, paths.database];
+    let db: DatabaseSync | undefined;
+    for (const target of targets) {
+        try {
+            db = new DatabaseSync(target, { readOnly: true });
+            db.prepare('SELECT 1 FROM sqlite_master LIMIT 1').get();
+            break;
+        } catch {
+            db?.close();
+            db = undefined;
+        }
+    }
+    if (db === undefined) {
+        throw new Error(fmt(_('Cannot open the index of the case folder {path}.'), { path: paths.root }));
+    }
+    try {
+        db.exec('PRAGMA busy_timeout=5000');
+        db.exec('PRAGMA query_only=1');
+    } catch {
+        // an immutable file has no one to wait for; the connection is read-only either way
+    }
+    if (schemaVersion(db) !== SCHEMA_VERSION) {
+        db.close();
+        throw new Error(
+            fmt(
+                _(
+                    'The index of {path} was written by another version of Stamped. Open the case once without read-only mode to bring it up to date.',
+                ),
+                { path: paths.root },
+            ),
+        );
+    }
     return db;
 }
 

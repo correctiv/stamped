@@ -13,6 +13,7 @@ import {
     _n,
 } from '@stamped/core';
 import {
+    assertWritable,
     beginActivityStatus,
     type ActivityKind,
     type ActivityStatusHandle,
@@ -188,6 +189,7 @@ export async function reverifyApplicable(
 
 /** One consent for all missing keys, then fetch, store and re-verify. */
 export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOptions): Promise<void> {
+    assertWritable(paths);
     const vault = loadVault(paths.root);
     const db = openIndex(paths);
     let missing;
@@ -220,7 +222,7 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
             resolveTxt,
             onProgress: (done, total) => activity.update(done, total),
             onStored: (s) => {
-                saveVault(paths.root, vault);
+                saveVault(paths, vault);
                 console.log(
                     fmt(_('  stored  {name} via {origin}{flag}'), {
                         name: pairName(s.pair),
@@ -235,7 +237,7 @@ export async function fetchMissingAndReverify(paths: CasePaths, options: AutoOpt
         console.log(_('Skipped; nothing was sent.'));
         return;
     }
-    if (summary.stored.length > 0) saveVault(paths.root, vault);
+    if (summary.stored.length > 0) saveVault(paths, vault);
     if (options.verbose) {
         for (const error of summary.errors) {
             console.log(

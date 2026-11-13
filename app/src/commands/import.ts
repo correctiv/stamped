@@ -28,12 +28,13 @@ import {
     type ImportProgress,
     type ImportResult,
     importSources,
+    assertWritable,
     openCase,
 } from '@stamped/store';
 import type { CommandModule } from 'yargs';
 
 import { fetchMissingAndReverify } from '../lib/autofetch.ts';
-import { caseRoot } from '../lib/case.ts';
+import { caseAccess, caseRoot } from '../lib/case.ts';
 import { durationLine } from '../lib/duration.ts';
 import { failureHeadline, failureLines, folderSummary } from '../lib/import-summary.ts';
 import { keyStoreFrom } from '../lib/keys.ts';
@@ -122,6 +123,7 @@ export function importCommand(): CommandModule<unknown, ImportArgs> {
             if (sources.length === 0) {
                 throw new Error(_('No source given. Use `stamped import <case> <source…>`.'));
             }
+            assertWritable(caseAccess(root));
             const paths = openCase(root);
             const keys = keyStoreFrom((args.key ?? []).map(String));
 

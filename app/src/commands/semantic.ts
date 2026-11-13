@@ -13,6 +13,7 @@ import { createInterface } from 'node:readline';
 import { fmt, _ } from '@stamped/core';
 import { onBattery, ResidentVectors } from '@stamped/semantic';
 import {
+    assertWritable,
     indexDocumentSource,
     openIndex,
     readSemanticRunStatus,
@@ -80,6 +81,7 @@ function indexCommand(): CommandModule<unknown, IndexArgs> {
         handler: async (args) => {
             const startedAt = Date.now();
             const paths = caseOrThrow(caseRoot('semantic index', args.case, [args.folder]).root);
+            assertWritable(paths);
             refuseLiveRun(paths);
             const db = openIndex(paths);
             try {
@@ -120,6 +122,7 @@ function probeCommand(): CommandModule<unknown, IndexArgs> {
             }),
         handler: async (args) => {
             const paths = caseOrThrow(caseRoot('semantic probe', args.case, [args.folder]).root);
+            assertWritable(paths);
             refuseLiveRun(paths);
             const db = openIndex(paths);
             try {

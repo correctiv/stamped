@@ -9,7 +9,29 @@
  */
 
 import { fmt, _ } from '@stamped/core';
-import { casePaths, type CasePaths, isCase } from '@stamped/store';
+import { casePaths, type CasePaths, isCase, isWritable } from '@stamped/store';
+
+let readOnlyRequested = false;
+
+/** `--read-only` on the command line: every case this process opens is opened for reading only. */
+export function setReadOnly(value: boolean): void {
+    readOnlyRequested = value;
+}
+
+/**
+ * Must this case be left untouched? Asked for with `--read-only`, or implied by a folder the
+ * process cannot write into: an evidence copy on read-only media, or `chmod -R a-w` on a copy
+ * that is not to change. The second is detected rather than left to fail at the first write,
+ * because SQLite in WAL mode cannot even READ such a folder the usual way.
+ */
+export function readOnlyFor(root: string): boolean {
+    return readOnlyRequested || !isWritable(root);
+}
+
+/** The layout of the folder as this process may use it, for the writers that only have a path. */
+export function caseAccess(root: string): CasePaths {
+    return casePaths(root, readOnlyFor(root));
+}
 
 /** The case at `root`, or an error naming it. */
 export function caseOrThrow(root: string): CasePaths {
@@ -20,7 +42,7 @@ export function caseOrThrow(root: string): CasePaths {
             }),
         );
     }
-    return casePaths(root);
+    return caseAccess(root);
 }
 
 /**

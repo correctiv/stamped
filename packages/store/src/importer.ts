@@ -31,7 +31,7 @@ import { classifyMessage, fmt, type KeyStore, _ } from '@stamped/core';
 import { planFolder, readMboxFile, readSource, type MboxFlavour, type SourceMessage } from '@stamped/import';
 import { verifyMessage } from '@stamped/verify';
 
-import type { CasePaths } from './case.ts';
+import { assertWritable, type CasePaths } from './case.ts';
 import { beginBatch, commitBatch, indexedHashes, openIndex, rollbackBatch } from './index-db.ts';
 import { readPerimeter } from './perimeter.ts';
 import { settleSiblings } from './siblings.ts';
@@ -185,6 +185,7 @@ export async function importSources(
     sources: readonly string[],
     options: ImportOptions,
 ): Promise<ImportResult> {
+    assertWritable(paths);
     const db = openIndex(paths);
     let read = 0;
     let stored = 0;

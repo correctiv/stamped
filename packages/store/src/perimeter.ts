@@ -17,7 +17,7 @@ import { join } from 'node:path';
 
 import { fmt, _ } from '@stamped/core';
 
-import type { CasePaths } from './case.ts';
+import { assertWritable, type CasePaths } from './case.ts';
 
 /** Bumped when a build would misread a perimeter an older build wrote. */
 export const PERIMETER_VERSION = 1;
@@ -65,6 +65,7 @@ export function readPerimeter(paths: CasePaths): string[] {
 
 /** Name the perimeter, replacing the one there. An empty list removes it. */
 export function writePerimeter(paths: CasePaths, domains: readonly string[]): string[] {
+    assertWritable(paths);
     const clean = [...new Set(domains.map(normalisePerimeterDomain))].sort();
     const file = perimeterFile(paths);
     const body: PerimeterFile = {

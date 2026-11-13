@@ -22,7 +22,7 @@
 import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { CasePaths } from './case.ts';
+import { assertWritable, type CasePaths } from './case.ts';
 
 /** Bumped when a build would misread a setting an older build wrote. */
 export const SEMANTIC_SETTING_VERSION = 1;
@@ -102,6 +102,7 @@ function isProbeRecord(value: unknown): value is SemanticProbeRecord {
 
 /** Write the setting atomically: a reader sees the old setting or the new one, never a torn one. */
 export function writeSemanticSetting(paths: CasePaths, setting: SemanticSetting): void {
+    assertWritable(paths);
     const target = semanticSettingFile(paths);
     const tmp = `${target}.tmp`;
     writeFileSync(tmp, `${JSON.stringify(setting, undefined, 2)}\n`);

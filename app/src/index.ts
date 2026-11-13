@@ -31,6 +31,7 @@ import { tagCommand } from './commands/tag.ts';
 import { timelineCommand } from './commands/timeline.ts';
 import { verifyCommand } from './commands/verify.ts';
 import { initI18n } from './lib/i18n.ts';
+import { setReadOnly } from './lib/case.ts';
 import { VERSION } from './lib/version.ts';
 
 /** Build the parser and run it. Returns the promise yargs settles when the command is done. */
@@ -59,6 +60,14 @@ function parse(): Promise<unknown> {
             .command(semanticCommand())
             .command(caseCommand())
             .command(tagCommand())
+            .option('read-only', {
+                describe: _(
+                    'Open the case for reading only: nothing in it is created, changed or removed. A folder that cannot be written to is opened this way without the flag',
+                ),
+                type: 'boolean',
+                global: true,
+            })
+            .middleware((args) => setReadOnly(args['read-only'] === true))
             .demandCommand(1, _('Pick a command. Try `stamped verify --help`.'))
             .strict()
             .version(VERSION)

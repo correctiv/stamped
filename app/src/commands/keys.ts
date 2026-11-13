@@ -41,7 +41,7 @@ import {
     trackActivity,
     type FetchTally,
 } from '../lib/autofetch.ts';
-import { caseOrThrow, caseRoot } from '../lib/case.ts';
+import { caseAccess, caseOrThrow, caseRoot } from '../lib/case.ts';
 import { askConsent } from '../lib/consent.ts';
 import { resolveTxt } from '../lib/dns.ts';
 import { durationLine } from '../lib/duration.ts';
@@ -255,7 +255,7 @@ function addCommand(): CommandModule<CaseArgs, AddArgs> {
                 origin: args.recovered ? 'recovered' : 'operator',
                 fetchedAt: new Date().toISOString(),
             });
-            saveVault(dir, vault);
+            saveVault(caseAccess(dir), vault);
             console.log(
                 fmt(_('Stored {name}: {algorithm} {bits} bit.'), {
                     name: args.name,
@@ -395,7 +395,7 @@ function fetchCommand(): CommandModule<CaseArgs, FetchArgs> {
                             }),
                         );
                     }
-                    saveVault(dir, vault);
+                    saveVault(caseAccess(dir), vault);
                     if (args.verbose) printResult(result, added);
                     todo = missingPairs(todo, vault);
                     progress(total - todo.length, total);
@@ -534,7 +534,7 @@ function resolveCommand(): CommandModule<CaseArgs, ResolveArgs> {
                 );
             }
             vault.keepOnly(pair, chosen);
-            saveVault(dir, vault);
+            saveVault(caseAccess(dir), vault);
             console.log(
                 fmt(
                     _(
@@ -646,7 +646,7 @@ function erasCommand(): CommandModule<CaseArgs, ErasArgs> {
             for (const report of measured.pairs) printEras(report, args.apply);
             const rotations = measured.pairs.filter((report) => report.outcome === 'rotation');
             if (!args.apply || rotations.length === 0) return;
-            saveVault(dir, measured.vault);
+            saveVault(caseAccess(dir), measured.vault);
             const result = await reverifyPairs(
                 paths,
                 rotations.map((report) => report.pair),
@@ -718,7 +718,7 @@ function importCommand(): CommandModule<CaseArgs, ImportArgs> {
             const vault = loadVault(dir);
             const before = vault.size;
             for (const key of keys) vault.add(key);
-            saveVault(dir, vault);
+            saveVault(caseAccess(dir), vault);
             const conflicts = vault.conflicts().length;
             console.log(
                 fmt(_('{count} keys imported, {conflicts} conflicts to resolve.'), {

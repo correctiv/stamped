@@ -420,7 +420,7 @@ export function addKey(session: CaseSession, pair: KeyPair, text: string): KeyOu
         origin: 'operator',
         fetchedAt: new Date().toISOString(),
     });
-    saveVault(session.root, session.vault);
+    saveVault(session.paths, session.vault);
     return {
         name: pairName(pair),
         message: addedMessage(outcome.status),
@@ -557,6 +557,6 @@ export async function runLookup(
         if (outcome.status === 'conflict') conflicts++;
         gained.push(found.pair);
     }
-    saveVault(session.root, session.vault);
+    saveVault(session.paths, session.vault);
     return { stored, missed: result.misses.length, errors: result.errors.length, conflicts, pairs: gained };
 }
