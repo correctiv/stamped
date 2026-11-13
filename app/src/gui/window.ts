@@ -1961,7 +1961,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             ),
         );
         this._readerBody.append(this.verdictCardWidget(card, citationOf(finding, raw)));
-        const conversation = threadGroup(thread);
+        const conversation = threadGroup(thread, finding);
         if (conversation !== undefined) this._readerBody.append(this.conversationGroup(conversation));
         this._readerBody.append(this.headerGroup(headerFields(message)));
         for (const card of signatureCards(finding)) {

@@ -9,7 +9,7 @@
  */
 
 import { fmt, _, _n } from '@stamped/core';
-import type { Verdict } from '@stamped/core';
+import type { MessageFinding, Verdict } from '@stamped/core';
 import type { Thread, ThreadEntry } from '@stamped/store';
 
 import { shortDate } from './format.ts';
@@ -72,7 +72,57 @@ export interface ThreadGroup {
     readonly rows: readonly ThreadRow[];
 }
 
-export function threadGroup(thread: Thread | null | undefined): ThreadGroup | undefined {
+/** The two headers that link a message to its parents; `h=` names them in lower case. */
+const LINK_HEADERS = [
+    { name: 'In-Reply-To', key: 'in-reply-to' },
+    { name: 'References', key: 'references' },
+] as const;
+
+/**
+ * Do the signatures that VERIFY cover the headers that link this message to its parents? Without
+ * a verifying signature nothing is said: an unsigned or broken message has no signed link to
+ * report, and the verdict card already says so. Pure, and only about `h=`: a header that is not
+ * in it can be added or changed after signing.
+ */
+export function signedLinksNote(finding: MessageFinding | undefined): string | undefined {
+    if (finding === undefined) return undefined;
+    const verifying = finding.signatures.filter(
+        (signature) => signature.verdict === 'confirmed' || signature.verdict === 'confirmed-with-caveats',
+    );
+    if (verifying.length === 0) return undefined;
+    const covered = LINK_HEADERS.filter((header) =>
+        verifying.some((signature) =>
+            signature.evidence.signedHeaders.some((name) => name.toLowerCase() === header.key),
+        ),
+    ).map((header) => header.name);
+    const [first, second] = LINK_HEADERS;
+    if (covered.length === LINK_HEADERS.length) {
+        return fmt(
+            _(
+                'A verifying signature covers {first} and {second}: the links to the parent messages were signed, not just claimed.',
+            ),
+            { first: first.name, second: second.name },
+        );
+    }
+    if (covered.length === 1) {
+        const other = LINK_HEADERS.find((header) => header.name !== covered[0]);
+        return fmt(
+            _('A verifying signature covers {signed}, but not {unsigned}: only that link was signed.'),
+            { signed: covered[0] ?? '', unsigned: other?.name ?? '' },
+        );
+    }
+    return fmt(
+        _(
+            'No verifying signature covers {first} or {second}: the links to the parent messages are only claimed.',
+        ),
+        { first: first.name, second: second.name },
+    );
+}
+
+export function threadGroup(
+    thread: Thread | null | undefined,
+    finding?: MessageFinding,
+): ThreadGroup | undefined {
     if (thread === null || thread === undefined || thread.entries.length < 2) return undefined;
     const present = thread.entries.filter((entry) => !entry.missing).length;
     const missing = thread.entries.length - present;
@@ -93,6 +143,8 @@ export function threadGroup(thread: Thread | null | undefined): ThreadGroup | un
             ),
         );
     }
+    const signed = signedLinksNote(finding);
+    if (signed !== undefined) parts.push(signed);
     if (thread.truncated) parts.push(_('The conversation is longer than what is shown here.'));
     return {
         title: fmt(_n('Conversation, {count} message', 'Conversation, {count} messages', present), {

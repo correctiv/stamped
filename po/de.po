@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 12:19+0100\n"
+"POT-Creation-Date: 2026-11-13 16:26+0100\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -2435,7 +2435,31 @@ msgstr[1] "{count} Dateien"
 msgid "Replied to, but not in the archive"
 msgstr "Beantwortet, aber nicht im Archiv"
 
-#: app/src/gui/view/thread.ts:81
+#: app/src/gui/view/thread.ts:102
+msgid ""
+"A verifying signature covers {first} and {second}: the links to the parent "
+"messages were signed, not just claimed."
+msgstr ""
+"Eine gültige Signatur deckt {first} und {second} ab: Die Verweise auf die "
+"übergeordneten Nachrichten sind signiert, nicht nur behauptet."
+
+#: app/src/gui/view/thread.ts:110
+msgid ""
+"A verifying signature covers {signed}, but not {unsigned}: only that link "
+"was signed."
+msgstr ""
+"Eine gültige Signatur deckt {signed} ab, aber nicht {unsigned}: Nur dieser "
+"Verweis ist signiert."
+
+#: app/src/gui/view/thread.ts:116
+msgid ""
+"No verifying signature covers {first} or {second}: the links to the parent "
+"messages are only claimed."
+msgstr ""
+"Keine gültige Signatur deckt {first} oder {second} ab: Die Verweise auf die "
+"übergeordneten Nachrichten sind nur behauptet."
+
+#: app/src/gui/view/thread.ts:131
 msgid ""
 "This only orders the messages. The headers that link them are written by the "
 "sender, so a reply here proves nothing about who wrote it: each message "
@@ -2445,17 +2469,17 @@ msgstr ""
 "der Absender; eine Antwort an dieser Stelle beweist also nichts darüber, wer "
 "sie verfasst hat. Jede Nachricht behält den Befund ihrer eigenen Signaturen."
 
-#: app/src/gui/view/thread.ts:88
+#: app/src/gui/view/thread.ts:138
 msgid "{count} message is referred to but not in the archive."
 msgid_plural "{count} messages are referred to but not in the archive."
 msgstr[0] "{count} Nachricht wird erwähnt, ist aber nicht im Archiv."
 msgstr[1] "{count} Nachrichten werden erwähnt, sind aber nicht im Archiv."
 
-#: app/src/gui/view/thread.ts:96
+#: app/src/gui/view/thread.ts:148
 msgid "The conversation is longer than what is shown here."
 msgstr "Die Unterhaltung ist länger als das, was hier gezeigt wird."
 
-#: app/src/gui/view/thread.ts:98
+#: app/src/gui/view/thread.ts:150
 msgid "Conversation, {count} message"
 msgid_plural "Conversation, {count} messages"
 msgstr[0] "Unterhaltung, {count} Nachricht"
@@ -2611,6 +2635,7 @@ msgstr "Aus dieser Liste entfernen"
 #: app/src/gui/window.ts:1155
 msgid "Opened read-only: nothing is written to this case."
 msgstr "Schreibgeschützt geöffnet: In diesen Fall wird nichts geschrieben."
+
 #: app/src/gui/window.ts:1456
 msgid "Show the files of this mailbox"
 msgstr "Dateien dieses Postfachs anzeigen"
@@ -2937,7 +2962,11 @@ msgid ""
 "Open the case for reading only: nothing in it is created, changed or "
 "removed. A folder that cannot be written to is opened this way without the "
 "flag"
-msgstr "Den Fall nur zum Lesen öffnen: Darin wird nichts angelegt, geändert oder entfernt. Ein Ordner, in den nicht geschrieben werden kann, wird auch ohne diese Option so geöffnet"
+msgstr ""
+"Den Fall nur zum Lesen öffnen: Darin wird nichts angelegt, geändert oder "
+"entfernt. Ein Ordner, in den nicht geschrieben werden kann, wird auch ohne "
+"diese Option so geöffnet"
+
 #: app/src/index.ts:71
 msgid "Pick a command. Try `stamped verify --help`."
 msgstr "Bitte einen Befehl wählen, etwa `stamped verify --help`."
@@ -5115,7 +5144,10 @@ msgstr ""
 
 #: packages/store/src/case.ts:145
 msgid "The case {path} is open read-only, so nothing can be written to it."
-msgstr "Der Fall {path} ist schreibgeschützt geöffnet, deshalb kann nichts hineingeschrieben werden."
+msgstr ""
+"Der Fall {path} ist schreibgeschützt geöffnet, deshalb kann nichts "
+"hineingeschrieben werden."
+
 #: packages/store/src/importer.ts:327
 msgid "{path} holds no messages."
 msgstr "{path} enthält keine Nachrichten."
@@ -5124,28 +5156,35 @@ msgstr "{path} enthält keine Nachrichten."
 msgid "{path} holds no mail files."
 msgstr "{path} enthält keine Mail-Dateien."
 
-#: packages/store/src/index-db.ts:94 packages/store/src/index-db.ts:163
+#: packages/store/src/index-db.ts:94 packages/store/src/index-db.ts:156
 msgid "Cannot open the index of the case folder {path}."
 msgstr "Der Index des Fallordners {path} kann nicht geöffnet werden."
 
 #: packages/store/src/index-db.ts:140
 msgid ""
 "The case folder {path} has no index, and a read-only case cannot create one."
-msgstr "Der Fallordner {path} hat keinen Index, und ein schreibgeschützter Fall kann keinen anlegen."
-#: packages/store/src/index-db.ts:176
+msgstr ""
+"Der Fallordner {path} hat keinen Index, und ein schreibgeschützter Fall kann "
+"keinen anlegen."
+
+#: packages/store/src/index-db.ts:169
 msgid ""
 "The index of {path} was written by another version of Stamped. Open the case "
 "once without read-only mode to bring it up to date."
-msgstr "Der Index von {path} wurde von einer anderen Version von Stamped geschrieben. Öffnen Sie den Fall einmal ohne Schreibschutz, um ihn zu aktualisieren."
-#: packages/store/src/index-db.ts:575
+msgstr ""
+"Der Index von {path} wurde von einer anderen Version von Stamped "
+"geschrieben. Öffnen Sie den Fall einmal ohne Schreibschutz, um ihn zu "
+"aktualisieren."
+
+#: packages/store/src/index-db.ts:568
 msgid "This search cannot look in the mailbox {name}."
 msgstr "Diese Suche kann das Postfach {name} nicht durchsuchen."
 
-#: packages/store/src/index-db.ts:579
+#: packages/store/src/index-db.ts:572
 msgid "This search cannot look at tags or bookmarks."
 msgstr "Diese Suche kann Schlagwörter und Lesezeichen nicht berücksichtigen."
 
-#: packages/store/src/index-db.ts:1217
+#: packages/store/src/index-db.ts:1210
 msgid ""
 "{hash} is not a message hash. Give at least six characters of the hash "
 "`stamped search` prints."
@@ -5153,11 +5192,11 @@ msgstr ""
 "{hash} ist kein Nachrichten-Hash. Geben Sie mindestens sechs Zeichen des "
 "Hashs an, den `stamped search` ausgibt."
 
-#: packages/store/src/index-db.ts:1230
+#: packages/store/src/index-db.ts:1223
 msgid "The case has no message {hash}."
 msgstr "Der Fall enthält keine Nachricht {hash}."
 
-#: packages/store/src/index-db.ts:1234
+#: packages/store/src/index-db.ts:1227
 msgid "More than one message starts with {hash}. Type more of it."
 msgstr "Mehr als eine Nachricht beginnt mit {hash}. Geben Sie mehr davon an."
 
@@ -5202,11 +5241,11 @@ msgstr "In den Fallordner {path} kann nicht geschrieben werden ({code})."
 msgid "unknown error"
 msgstr "unbekannter Fehler"
 
-#: packages/store/src/reindex.ts:127
+#: packages/store/src/reindex.ts:128
 msgid "The message file cannot be read."
 msgstr "Die Nachrichtendatei kann nicht gelesen werden."
 
-#: packages/store/src/reindex.ts:131
+#: packages/store/src/reindex.ts:132
 msgid "The message file does not match its name."
 msgstr "Die Nachrichtendatei passt nicht zu ihrem Namen."
 
