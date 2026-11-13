@@ -14,6 +14,7 @@ app/src/commands/verify.ts
 app/src/gui/activity.ts
 app/src/gui/bench.ts
 app/src/gui/blp.d.ts
+app/src/gui/case-file-job.ts
 app/src/gui/embed-spawn.ts
 app/src/gui/help-button.blp
 app/src/gui/help-button.d.blp.ts
@@ -50,6 +51,7 @@ app/src/lib/attachment-metadata.ts
 app/src/lib/autofetch.ts
 app/src/lib/body-altered.ts
 app/src/lib/case-busy.ts
+app/src/lib/case-file-progress.ts
 app/src/lib/case.ts
 app/src/lib/citation.ts
 app/src/lib/consent.ts

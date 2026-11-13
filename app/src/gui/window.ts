@@ -31,7 +31,7 @@ import {
     type Verdict,
 } from '@stamped/core';
 import type { CaseReport, IndexedMessage, Mark, ReverifyResult, SearchHit, Thread } from '@stamped/store';
-import { liveActivity, MAX_TAG_LENGTH, readActivityStatuses } from '@stamped/store';
+import { CASE_FILE_EXTENSION, liveActivity, MAX_TAG_LENGTH, readActivityStatuses } from '@stamped/store';
 import type { ReadableBody } from '@stamped/import';
 import { onBattery, type Embedder } from '@stamped/semantic';
 
@@ -73,6 +73,7 @@ import {
 } from '../lib/report-progress.ts';
 import { selfArgv } from '../lib/self-argv.ts';
 import { ActivityController } from './activity.ts';
+import { runCaseFileJob } from './case-file-job.ts';
 import { spawnEmbedHelper } from './embed-spawn.ts';
 import { presentSemanticSettings } from './semantic-dialog.ts';
 import { StampedHelpButton } from './help-button.ts';
@@ -606,6 +607,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
         this.fillRecent();
         this.addAction('open-case', () => void this.chooseCase());
+        this.addAction('open-case-file', () => void this.openCaseFile());
+        this.addAction('save-case-file', () => void this.saveCaseFile());
         this.addAction('import', () => void this.importFrom('files'));
         this.addAction('import-folder', () => void this.importFrom('folder'));
         this.addAction('export-report', () => void this.exportReport());
@@ -780,6 +783,17 @@ export class StampedWindow extends Adw.ApplicationWindow {
      * mistyped path leaves the reader somewhere they can act.
      */
     private openAtStart(root: string): void {
+        // A case file, as a double click in the file manager passes it. The unpack asks for a
+        // folder in a dialog, and a dialog on a window that is not on screen yet is one nobody
+        // sees — so it waits for the window to be mapped.
+        if (root.endsWith(CASE_FILE_EXTENSION) && GLib.file_test(root, GLib.FileTest.IS_REGULAR)) {
+            const file = GLib.canonicalize_filename(root, null);
+            const handler = this.connect('map', () => {
+                this.disconnect(handler);
+                void this.openCaseFile(file);
+            });
+            return;
+        }
         if (isCaseFolder(root)) {
             this.loadCase(() => openSession(root)).catch((error: unknown) => void this.fail(error));
             return;
@@ -910,6 +924,122 @@ export class StampedWindow extends Adw.ApplicationWindow {
             if (this.session !== session) return;
             void this.fail(error);
         });
+    }
+
+    /** The command line of `stamped <args>` in a child process, or null when there is no program to run. */
+    private caseArgv(...args: string[]): string[] | null {
+        const stamped = GLib.find_program_in_path('stamped');
+        const base = selfArgv(process) ?? (stamped === null ? null : [stamped]);
+        return base === null ? null : [...base, ...args, '--progress=jsonl'];
+    }
+
+    /**
+     * Unpack a `.stamped` file into a case folder of its own and open it.
+     *
+     * The file is checked as it is read, and a mismatch refuses to unpack (see `case-file.ts`), so
+     * what opens here is what was sealed. The folder is asked for, not guessed: an unpacked case is
+     * a working copy that can be as large as the archive, and where it goes is the person's call.
+     *
+     * @param given The file, when the command line named it; otherwise the person picks one.
+     */
+    private async openCaseFile(given?: string): Promise<void> {
+        let file = given;
+        try {
+            if (file === undefined) {
+                const filter = new Gtk.FileFilter({ name: _('Case files') });
+                filter.add_suffix(CASE_FILE_EXTENSION.slice(1));
+                const filters = new Gio.ListStore<Gtk.FileFilter>({ itemType: Gtk.FileFilter.$gtype });
+                filters.append(filter);
+                const dialog = new Gtk.FileDialog({ title: _('Open Case File'), filters });
+                dialog.set_default_filter(filter);
+                file = (await dialog.open(this, null))?.get_path() ?? undefined;
+                if (file === undefined) return;
+            }
+
+            const where = new Gtk.FileDialog({ title: _('Folder for the Case') });
+            where.set_initial_folder(Gio.File.new_for_path(caseStart(file)));
+            const parent = (await where.select_folder(this, null))?.get_path();
+            if (!parent) return;
+
+            const name = GLib.path_get_basename(file);
+            const bare = name.endsWith(CASE_FILE_EXTENSION)
+                ? name.slice(0, -CASE_FILE_EXTENSION.length)
+                : `${name}.case`;
+            const target = GLib.build_filenamev([parent, bare || 'case']);
+            if (GLib.file_test(target, GLib.FileTest.EXISTS)) {
+                throw new Error(
+                    fmt(_('{path} exists already. Pick another folder, or move it away first.'), {
+                        path: target,
+                    }),
+                );
+            }
+
+            const argv = this.caseArgv('case', 'unpack', file, target);
+            if (argv === null)
+                throw new Error(_('Unpacking needs the stamped program, which could not be found.'));
+            const done = await runCaseFileJob(this, {
+                argv,
+                heading: _('Unpacking the case file…'),
+                partial: [`${target}.unpacking`],
+                failed: _('The case file could not be unpacked.'),
+            });
+            if (done === undefined) return;
+            await this.loadCase(() => openSession(done.path));
+        } catch (error) {
+            if (!dismissed(error)) await this.fail(error);
+        }
+    }
+
+    /**
+     * Seal the open case into one `.stamped` file. The case stays open and unchanged.
+     *
+     * Refused while an import runs: a pack reads the index, and sealing a case that is still
+     * changing would seal a state that never existed.
+     */
+    private async saveCaseFile(): Promise<void> {
+        const session = this.session;
+        if (!session) {
+            showToast(_('Open a case first.'), 5);
+            return;
+        }
+        if (importRunning(importStatusOf(session))) {
+            showToast(_('Wait until the import has finished.'), 5);
+            return;
+        }
+        try {
+            const initial = `${GLib.path_get_basename(session.root)}${CASE_FILE_EXTENSION}`;
+            const dialog = new Gtk.FileDialog({ title: _('Save Case File'), initialName: initial });
+            const picked = (await dialog.save(this, null))?.get_path();
+            if (!picked || this.session !== session) return;
+
+            // A name typed without the extension gets it, because a file that does not end in
+            // `.stamped` is not offered by the open dialog and not claimed by the file manager.
+            const named = picked.endsWith(CASE_FILE_EXTENSION);
+            const file = named ? picked : `${picked}${CASE_FILE_EXTENSION}`;
+            // `--force` only for what the person chose: the dialog already asked about replacing
+            // it. A name we altered was never confirmed, so an existing file there stays refused.
+            const argv = this.caseArgv('case', 'pack', session.root, file, ...(named ? ['--force'] : []));
+            if (argv === null)
+                throw new Error(_('Saving needs the stamped program, which could not be found.'));
+            const done = await runCaseFileJob(this, {
+                argv,
+                heading: _('Saving the case file…'),
+                partial: [`${file}.part`, `${file}.index.part`, `${file}.manifest.part`],
+                failed: _('The case file could not be written.'),
+            });
+            if (done === undefined) return;
+            showToast(
+                escapeLine(
+                    fmt(_('Saved {file} ({size}).'), {
+                        file: baseName(done.path),
+                        size: formatBytes(done.bytes),
+                    }),
+                ),
+                5,
+            );
+        } catch (error) {
+            if (!dismissed(error)) await this.fail(error);
+        }
     }
 
     /**
