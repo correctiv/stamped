@@ -3176,7 +3176,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         });
         const unsigned = new Gtk.CheckButton({ label: _('Break down the unsigned messages') });
         const attachments = new Gtk.CheckButton({
-            label: _('Read the properties of PDF and Office attachments'),
+            label: _('Read the properties of PDF, Office, OpenDocument and image attachments'),
         });
         const anonymize = new Gtk.CheckButton({ label: _('Replace mailbox names by M1, M2, …') });
         const box = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 });

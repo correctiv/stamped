@@ -80,7 +80,7 @@ export function reportCommand(): CommandModule<unknown, ReportArgs> {
                 })
                 .option('attachment-metadata', {
                     describe: _(
-                        'With --pdf: add what PDF and Office attachments say about their own history (reads every message once; an indication, not proof)',
+                        'With --pdf: add what PDF, Office, OpenDocument and image attachments say about their own history (reads every message once; an indication, not proof)',
                     ),
                     type: 'boolean',
                     default: false,
