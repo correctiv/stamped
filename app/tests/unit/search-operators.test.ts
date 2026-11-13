@@ -247,6 +247,38 @@ export default async () => {
             });
         });
 
+        await it('narrows to the marked messages the caller resolved', async () => {
+            withIndex((db, put) => {
+                const one = put({ subject: 'Tagged', body: 'harbour' });
+                put({ subject: 'Plain', body: 'harbour' });
+                const marked = hashScope(db, new Set([one]));
+                try {
+                    expect(subjects(db, 'harbour tag:legal', { marked })).toStrictEqual(['Tagged']);
+                    expect(subjects(db, 'harbour is:bookmarked', { marked })).toStrictEqual(['Tagged']);
+                    // filters alone: the marked set is joined in SQL, not found in a newest-rows scan
+                    expect(subjects(db, 'tag:legal', { marked })).toStrictEqual(['Tagged']);
+                    expect(subjects(db, 'tag:legal verdict:confirmed', { marked })).toStrictEqual([]);
+                } finally {
+                    marked.close();
+                }
+            });
+        });
+
+        await it('refuses tag: and is:bookmarked that nobody resolved', async () => {
+            withIndex((db, put) => {
+                put({ subject: 'One', body: 'harbour' });
+                for (const query of ['harbour tag:legal', 'harbour is:bookmarked', 'tag:legal']) {
+                    let thrown: unknown;
+                    try {
+                        searchHits(db, query);
+                    } catch (error) {
+                        thrown = error;
+                    }
+                    expect([query, thrown instanceof SearchSyntaxError]).toStrictEqual([query, true]);
+                }
+            });
+        });
+
         await it('throws a SearchSyntaxError for a mistake in the operators', async () => {
             withIndex((db, put) => {
                 put({ subject: 'One', body: 'harbour' });

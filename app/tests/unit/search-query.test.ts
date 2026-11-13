@@ -158,6 +158,22 @@ export default async () => {
             expect(parseSearch('from:ada AND OR').errors.length > 0).toBe(true);
         });
 
+        await it('reads tag: (repeatable, case kept) and is:bookmarked', async () => {
+            expect(parseSearch('tag:Legal harbour').filters).toStrictEqual({ tags: ['Legal'] });
+            expect(parseSearch('tag:legal tag:"follow  up"').filters).toStrictEqual({
+                tags: ['legal', 'follow up'],
+            });
+            expect(parseSearch('is:bookmarked').filters).toStrictEqual({ bookmarked: true });
+            expect(parseSearch('is:BOOKMARKED tag:x').filters).toStrictEqual({
+                bookmarked: true,
+                tags: ['x'],
+            });
+            expect(parseSearch('is:read').errors.length).toBe(1);
+            expect(parseSearch('tag:').errors.length > 0).toBe(true);
+            expect(parseSearch('-tag:legal harbour').errors.length > 0).toBe(true);
+            expect(parseSearch('is:bookmarked is:bookmarked').errors.length).toBe(1);
+        });
+
         await it('reads the filters', async () => {
             expect(parseSearch('verdict:Body-Altered').filters).toStrictEqual({ verdict: 'body-altered' });
             expect(parseSearch('dkim:confirmed harbour').filters).toStrictEqual({ verdict: 'confirmed' });
@@ -202,6 +218,8 @@ export default async () => {
         await it('lists the operators it knows', async () => {
             expect(SEARCH_OPERATORS.includes('from')).toBe(true);
             expect(SEARCH_OPERATORS.includes('verdict')).toBe(true);
+            expect(SEARCH_OPERATORS.includes('tag')).toBe(true);
+            expect(SEARCH_OPERATORS.includes('is')).toBe(true);
             expect(SEARCH_OPERATORS.includes('filename')).toBe(false);
         });
 

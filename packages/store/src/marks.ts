@@ -19,6 +19,7 @@ import { join } from 'node:path';
 import { fmt, _ } from '@stamped/core';
 
 import type { CasePaths } from './case.ts';
+import { SearchSyntaxError, type SearchFilters } from './search-query.ts';
 
 /** Bumped when a build would misread marks an older build wrote. */
 export const MARKS_VERSION = 1;
@@ -197,6 +198,37 @@ export function hashesWithTag(paths: CasePaths, tag: string): string[] {
     const out: string[] = [];
     for (const [hash, mark] of readMarks(paths)) {
         if (mark.tags.some((t) => t.toLowerCase() === key)) out.push(hash);
+    }
+    return out;
+}
+
+/**
+ * The hashes a query's `tag:` and `is:bookmarked` admit — every one of them has to hold — or
+ * `undefined` when the query asks for none of it.
+ *
+ * A tag no message carries is an ERROR, as an unknown mailbox is: an empty list reads as "nothing
+ * is tagged so", and a misspelt tag would say that about the whole case.
+ */
+export function markedHashes(paths: CasePaths, filters: SearchFilters): Set<string> | undefined {
+    const tags = filters.tags ?? [];
+    if (tags.length === 0 && filters.bookmarked !== true) return undefined;
+    const marks = readMarks(paths);
+    const known = new Set<string>();
+    for (const mark of marks.values()) for (const tag of mark.tags) known.add(tag.toLowerCase());
+    const unknown = tags.filter((tag) => !known.has(tag.toLowerCase()));
+    if (unknown.length > 0) {
+        throw new SearchSyntaxError(
+            unknown.map((tag) =>
+                fmt(_('The case has no tag {name}. The sidebar lists the tags.'), { name: tag }),
+            ),
+        );
+    }
+    const wanted = tags.map((tag) => tag.toLowerCase());
+    const out = new Set<string>();
+    for (const [hash, mark] of marks) {
+        if (filters.bookmarked === true && !mark.bookmark) continue;
+        const have = new Set(mark.tags.map((tag) => tag.toLowerCase()));
+        if (wanted.every((tag) => have.has(tag))) out.add(hash);
     }
     return out;
 }

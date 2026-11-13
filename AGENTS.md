@@ -51,7 +51,9 @@ verdict or a caveat means a fixture and a test for it.
 keyed by raw hash). They are the one thing a person typed, and the index is a cache that a schema bump or
 rebuild throws away. They are a working note, not provenance: not in the import log, not in a report. An
 unreadable file (corrupt, or a newer version) throws and is never overwritten. Anything that packs or
-copies a case must include this file.
+copies a case must include this file. `tag:<name>` and `is:bookmarked` search them: the caller resolves them
+with `markedHashes` into one `SearchOptions.marked` scope (the index never reads the file), and `stamped tag`
+is the CLI for the same file.
 
 ## Package layout — and the one rule that holds it together
 

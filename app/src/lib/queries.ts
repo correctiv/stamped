@@ -29,6 +29,7 @@ import {
     hashesWithTag,
     hashScope,
     logSources,
+    markedHashes,
     marksFile,
     openIndex,
     parseSearch,
@@ -81,6 +82,8 @@ export interface QueryContext {
     /** The mailbox a query's `mailbox:` named last, and the hashes of every mailbox it came from. */
     mailboxFilter?: { name: string; scope: HashScope };
     mailboxes?: Map<string, Set<string>>;
+    /** What a query's `tag:` / `is:bookmarked` admitted last; `key` carries the marks file's version. */
+    markedFilter?: { key: string; scope: HashScope };
 }
 
 /** How many rows one page of the message list holds. */
@@ -279,14 +282,36 @@ function mailboxOf(ctx: QueryContext, text: string): HashScope | undefined {
     return scope;
 }
 
+/**
+ * The scope of the messages a query's `tag:` and `is:bookmarked` admit, if it uses either.
+ *
+ * Resolved here for the same reason as the mailbox: the marks are a case file, not an index
+ * table. The cache key carries the marks file's version, because tagging a message while its
+ * tag is in the search box changes the answer without changing the text.
+ */
+function markedOf(ctx: QueryContext, text: string): HashScope | undefined {
+    const filters = parseSearch(text).filters;
+    if ((filters.tags?.length ?? 0) === 0 && filters.bookmarked !== true) return undefined;
+    const key = `${(filters.tags ?? []).map((tag) => tag.toLowerCase()).join('\u0000')}|${filters.bookmarked === true}|${marksStamp(ctx)}`;
+    if (ctx.markedFilter?.key === key) return ctx.markedFilter.scope;
+    const hashes = markedHashes(ctx.paths, filters);
+    if (hashes === undefined) return undefined;
+    ctx.markedFilter?.scope.close();
+    const scope = hashScope(ctx.db, hashes);
+    ctx.markedFilter = { key, scope };
+    return scope;
+}
+
 /** Everything a search term is narrowed by besides the words: the list's filters and the query's mailbox. */
 function searchOptionsOf(ctx: QueryContext, query: Query, text: string, limit: number): SearchOptions {
     const scope = scopeOf(ctx, query);
     const mailbox = mailboxOf(ctx, text);
+    const marked = markedOf(ctx, text);
     return {
         ...(query.verdict ? { verdict: query.verdict } : {}),
         ...(scope ? { scope } : {}),
         ...(mailbox ? { mailbox } : {}),
+        ...(marked ? { marked } : {}),
         limit,
     };
 }
@@ -300,6 +325,7 @@ export function searchProblems(ctx: QueryContext, text: string): string[] {
     if (parsed.errors.length > 0) return [...parsed.errors];
     try {
         mailboxOf(ctx, text);
+        markedOf(ctx, text);
     } catch (error) {
         if (error instanceof SearchSyntaxError) return [...error.errors];
         throw error;
@@ -466,6 +492,8 @@ export function dropScopes(ctx: QueryContext): void {
     ctx.mailboxFilter?.scope.close();
     ctx.mailboxFilter = undefined;
     ctx.mailboxes = undefined;
+    ctx.markedFilter?.scope.close();
+    ctx.markedFilter = undefined;
 }
 
 /** The parameters each operation takes. One object per op, so the wire format is `{op, params}`. */

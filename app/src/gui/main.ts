@@ -52,6 +52,7 @@ const COMMANDS = [
     'status',
     'semantic',
     'case',
+    'tag',
 ];
 
 /** `stamped --help` and `stamped --version` are the CLI's; `stamped --foo` is not a window either. */

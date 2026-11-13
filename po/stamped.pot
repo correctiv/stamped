@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 17:06+0100\n"
+"POT-Creation-Date: 2026-11-13 10:06+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -34,8 +34,8 @@ msgstr ""
 #: app/src/commands/perimeter.ts:31 app/src/commands/reverify.ts:27
 #: app/src/commands/semantic.ts:76 app/src/commands/semantic.ts:77
 #: app/src/commands/semantic.ts:117 app/src/commands/semantic.ts:118
-#: app/src/commands/semantic.ts:164 app/src/commands/timeline.ts:28
-#: app/src/commands/timeline.ts:29
+#: app/src/commands/semantic.ts:164 app/src/commands/tag.ts:59
+#: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
 msgid "The case folder"
 msgstr ""
 
@@ -593,6 +593,8 @@ msgid "Show or set the domains this case examines"
 msgstr ""
 
 #: app/src/commands/perimeter.ts:33 app/src/commands/reverify.ts:29
+#: app/src/commands/tag.ts:60 app/src/commands/tag.ts:112
+#: app/src/commands/tag.ts:135
 msgid "The case folder (default: .stamped)"
 msgstr ""
 
@@ -818,62 +820,62 @@ msgstr ""
 msgid "No stored key applies to an unverified message."
 msgstr ""
 
-#: app/src/commands/search.ts:55
+#: app/src/commands/search.ts:56
 msgid "Search the messages in a case folder"
 msgstr ""
 
-#: app/src/commands/search.ts:59
+#: app/src/commands/search.ts:60
 msgid "The case folder, or the query when --case is given"
 msgstr ""
 
-#: app/src/commands/search.ts:64
+#: app/src/commands/search.ts:65
 msgid ""
 "What to look for. Full-text syntax: a word, \"a phrase\", a AND b, or "
 "subject : word"
 msgstr ""
 
-#: app/src/commands/search.ts:68
+#: app/src/commands/search.ts:69
 msgid "The case folder to search"
 msgstr ""
 
-#: app/src/commands/search.ts:70
+#: app/src/commands/search.ts:71
 msgid "How many matches to print"
 msgstr ""
 
-#: app/src/commands/search.ts:75
+#: app/src/commands/search.ts:76
 msgid "Print the matches as JSON"
 msgstr ""
 
-#: app/src/commands/search.ts:81
+#: app/src/commands/search.ts:82
 msgid "Find messages with \"invoice\" in the subject"
 msgstr ""
 
-#: app/src/commands/search.ts:86
+#: app/src/commands/search.ts:87
 msgid ""
 "Fields, exclusions and dates: from: to: cc: subject: body: verdict: dkim: "
-"mailbox: before: after: sort:"
+"mailbox: tag: is: before: after: sort:"
 msgstr ""
 
-#: app/src/commands/search.ts:93
+#: app/src/commands/search.ts:94
 msgid "No search query given. Use `stamped search <case> <query>`."
 msgstr ""
 
-#: app/src/commands/search.ts:122
+#: app/src/commands/search.ts:126
 msgid "No match."
 msgstr ""
 
-#: app/src/commands/search.ts:126 app/src/gui/view/message.ts:231
+#: app/src/commands/search.ts:130 app/src/gui/view/message.ts:231
 msgid "The case holds {total} message."
 msgid_plural "The case holds {total} messages."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/search.ts:134
+#: app/src/commands/search.ts:138
 msgid "  from    {from}"
 msgstr ""
 
-#: app/src/commands/search.ts:134 app/src/commands/search.ts:135
-#: app/src/commands/search.ts:136 app/src/gui/view/message.ts:88
+#: app/src/commands/search.ts:138 app/src/commands/search.ts:139
+#: app/src/commands/search.ts:140 app/src/gui/view/message.ts:88
 #: app/src/gui/view/message.ts:89 app/src/gui/view/message.ts:95
 #: app/src/gui/view/message.ts:96 app/src/lib/evidence.ts:101
 #: app/src/lib/evidence.ts:108 app/src/lib/evidence.ts:109
@@ -882,33 +884,33 @@ msgstr ""
 msgid "(none)"
 msgstr ""
 
-#: app/src/commands/search.ts:135
+#: app/src/commands/search.ts:139
 msgid "  date    {date}"
 msgstr ""
 
-#: app/src/commands/search.ts:136
+#: app/src/commands/search.ts:140
 msgid "  subject {subject}"
 msgstr ""
 
-#: app/src/commands/search.ts:144
+#: app/src/commands/search.ts:148
 msgid "{count} match."
 msgid_plural "{count} matches."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/search.ts:169
+#: app/src/commands/search.ts:174
 msgid "  semantic match"
 msgstr ""
 
-#: app/src/commands/search.ts:170
+#: app/src/commands/search.ts:175
 msgid "  text and semantic match"
 msgstr ""
 
-#: app/src/commands/search.ts:184 app/src/lib/queries.ts:273
+#: app/src/commands/search.ts:189 app/src/lib/queries.ts:276
 msgid "The case has no mailbox {name}. The sidebar lists the mailboxes."
 msgstr ""
 
-#: app/src/commands/search.ts:221
+#: app/src/commands/search.ts:233
 msgid ""
 "Cannot read the search {query}. Put a phrase in double quotes, and use "
 "`column : word` to search one field."
@@ -978,6 +980,80 @@ msgstr ""
 
 #: app/src/commands/status.ts:52
 msgid "Watch an import that is running somewhere else, without touching it"
+msgstr ""
+
+#: app/src/commands/tag.ts:49
+msgid "bookmarked"
+msgstr ""
+
+#: app/src/commands/tag.ts:50
+msgid "(no marks)"
+msgstr ""
+
+#: app/src/commands/tag.ts:56
+msgid "List the tags of a case, or the marks of one message"
+msgstr ""
+
+#: app/src/commands/tag.ts:62
+msgid "Show the marks of this message (the start of its hash)"
+msgstr ""
+
+#: app/src/commands/tag.ts:65
+msgid "Print the result as JSON"
+msgstr ""
+
+#: app/src/commands/tag.ts:86
+msgid "Nothing is tagged or bookmarked."
+msgstr ""
+
+#: app/src/commands/tag.ts:91
+msgid "{tag}  {count} message"
+msgid_plural "{tag}  {count} messages"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/commands/tag.ts:95
+msgid "{count} bookmark"
+msgid_plural "{count} bookmarks"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/commands/tag.ts:107
+msgid "Tag a message"
+msgstr ""
+
+#: app/src/commands/tag.ts:107
+msgid "Remove tags from a message"
+msgstr ""
+
+#: app/src/commands/tag.ts:110 app/src/commands/tag.ts:134
+msgid "The message (the start of its hash)"
+msgstr ""
+
+#: app/src/commands/tag.ts:111
+msgid "One or more tags"
+msgstr ""
+
+#: app/src/commands/tag.ts:131
+msgid "Bookmark a message, or with --off remove the bookmark"
+msgstr ""
+
+#: app/src/commands/tag.ts:136
+msgid "Remove the bookmark"
+msgstr ""
+
+#: app/src/commands/tag.ts:150
+msgid "Tags and bookmarks of a case"
+msgstr ""
+
+#: app/src/commands/tag.ts:157
+msgid "Pick a subcommand. Try `stamped tag --help`."
+msgstr ""
+
+#: app/src/commands/tag.ts:160
+msgid ""
+"Search them with tag:<name> and is:bookmarked. They are a working note kept "
+"in marks.json: not provenance, and not in a report."
 msgstr ""
 
 #: app/src/commands/timeline.ts:25
@@ -1053,12 +1129,12 @@ msgstr ""
 msgid "Nothing is running in the background."
 msgstr ""
 
-#: app/src/gui/main.ts:102
+#: app/src/gui/main.ts:103
 msgctxt "application name"
 msgid "Stamped"
 msgstr ""
 
-#: app/src/gui/main.ts:111
+#: app/src/gui/main.ts:112
 msgid ""
 "Verifies the DKIM signatures of an email archive and says what each "
 "signature actually covers. It works offline: public keys come from a store "
@@ -2410,11 +2486,11 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: app/src/index.ts:47
+#: app/src/index.ts:48
 msgid "stamped <command> [options]"
 msgstr ""
 
-#: app/src/index.ts:60
+#: app/src/index.ts:62
 msgid "Pick a command. Try `stamped verify --help`."
 msgstr ""
 
@@ -4276,29 +4352,51 @@ msgstr ""
 msgid "Cannot open the index of the case folder {path}."
 msgstr ""
 
-#: packages/store/src/index-db.ts:494
+#: packages/store/src/index-db.ts:499
 msgid "This search cannot look in the mailbox {name}."
 msgstr ""
 
-#: packages/store/src/marks.ts:60
+#: packages/store/src/index-db.ts:503
+msgid "This search cannot look at tags or bookmarks."
+msgstr ""
+
+#: packages/store/src/index-db.ts:1141
+msgid ""
+"{hash} is not a message hash. Give at least six characters of the hash "
+"`stamped search` prints."
+msgstr ""
+
+#: packages/store/src/index-db.ts:1154
+msgid "The case has no message {hash}."
+msgstr ""
+
+#: packages/store/src/index-db.ts:1158
+msgid "More than one message starts with {hash}. Type more of it."
+msgstr ""
+
+#: packages/store/src/marks.ts:61
 msgid "A tag cannot be empty."
 msgstr ""
 
-#: packages/store/src/marks.ts:62
+#: packages/store/src/marks.ts:63
 msgid "A tag can have at most {max} characters."
 msgstr ""
 
-#: packages/store/src/marks.ts:90
+#: packages/store/src/marks.ts:91
 msgid "{file} is not valid JSON and was left untouched."
 msgstr ""
 
-#: packages/store/src/marks.ts:94
+#: packages/store/src/marks.ts:95
 msgid ""
 "{file} was written by a newer version of Stamped and was left untouched."
 msgstr ""
 
-#: packages/store/src/marks.ts:100
+#: packages/store/src/marks.ts:101
 msgid "{file} is malformed and was left untouched."
+msgstr ""
+
+#: packages/store/src/marks.ts:222
+msgid "The case has no tag {name}. The sidebar lists the tags."
 msgstr ""
 
 #: packages/store/src/perimeter.ts:48
@@ -4313,69 +4411,73 @@ msgstr ""
 msgid "unknown error"
 msgstr ""
 
-#: packages/store/src/search-query.ts:142
+#: packages/store/src/search-query.ts:149
 msgid "There is a closing parenthesis without an opening one."
 msgstr ""
 
-#: packages/store/src/search-query.ts:171
-#: packages/store/src/search-query.ts:174
+#: packages/store/src/search-query.ts:178
+#: packages/store/src/search-query.ts:181
 msgid "OR needs a search on both sides."
 msgstr ""
 
-#: packages/store/src/search-query.ts:221
+#: packages/store/src/search-query.ts:228
 msgid "There is an opening parenthesis without a closing one."
 msgstr ""
 
-#: packages/store/src/search-query.ts:223
+#: packages/store/src/search-query.ts:230
 msgid "There is nothing between the parentheses."
 msgstr ""
 
-#: packages/store/src/search-query.ts:232
+#: packages/store/src/search-query.ts:239
 msgid "NOT and - need something to exclude."
 msgstr ""
 
-#: packages/store/src/search-query.ts:257
+#: packages/store/src/search-query.ts:264
 msgid "The search operator {name}: is not supported yet."
 msgstr ""
 
-#: packages/store/src/search-query.ts:264
+#: packages/store/src/search-query.ts:271
 msgid "The search operator {name}: needs a value, as in {example}."
 msgstr ""
 
-#: packages/store/src/search-query.ts:294
-#: packages/store/src/search-query.ts:304
+#: packages/store/src/search-query.ts:301
+#: packages/store/src/search-query.ts:311
 msgid "A search operator needs a value after the colon."
 msgstr ""
 
-#: packages/store/src/search-query.ts:346
+#: packages/store/src/search-query.ts:357
 msgid ""
 "The search operator {name}: cannot be used inside OR, NOT or parentheses."
 msgstr ""
 
-#: packages/store/src/search-query.ts:353
-#: packages/store/src/search-query.ts:384
+#: packages/store/src/search-query.ts:364
+#: packages/store/src/search-query.ts:395
 msgid "A search for exclusions alone cannot be run. Add a word to look for."
 msgstr ""
 
-#: packages/store/src/search-query.ts:360
+#: packages/store/src/search-query.ts:371
 msgid ""
 "NOT and - cannot stand directly inside OR. Put the word to look for beside "
 "it."
 msgstr ""
 
-#: packages/store/src/search-query.ts:416
+#: packages/store/src/search-query.ts:434
 msgid "The search operator {name}: is given twice."
 msgstr ""
 
-#: packages/store/src/search-query.ts:427
+#: packages/store/src/search-query.ts:445
 msgid "{value} is not a verdict. The verdicts are: {list}."
 msgstr ""
 
-#: packages/store/src/search-query.ts:439
+#: packages/store/src/search-query.ts:457
 msgid "{value} is not a date. Write it as 2024, 2024-03 or 2024-03-05."
 msgstr ""
 
-#: packages/store/src/search-query.ts:458
+#: packages/store/src/search-query.ts:476
+msgid "{value} is not something a message can be. The choices are: {list}."
+msgstr ""
+
+#: packages/store/src/search-query.ts:488
 msgid "{value} is not a sort order. The orders are: {list}."
 msgstr ""
 

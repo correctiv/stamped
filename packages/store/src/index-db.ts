@@ -464,6 +464,11 @@ export interface SearchOptions {
      * resolves the name the query carries; the store does not know the import log.
      */
     readonly mailbox?: HashScope;
+    /**
+     * Only the hashes the query's `tag:` and `is:bookmarked` admit (see `markedHashes`). Resolved
+     * by the caller, who knows the case's `marks.json`; the index never reads it.
+     */
+    readonly marked?: HashScope;
     /** Sent on or after this instant (UTC, milliseconds). */
     readonly after?: number;
     /** Sent before this instant (UTC, milliseconds). */
@@ -493,6 +498,9 @@ export function narrowedBy(filters: SearchFilters, options: SearchOptions): Sear
         throw new SearchSyntaxError([
             fmt(_('This search cannot look in the mailbox {name}.'), { name: filters.mailbox }),
         ]);
+    }
+    if ((filters.tags !== undefined || filters.bookmarked === true) && options.marked === undefined) {
+        throw new SearchSyntaxError([_('This search cannot look at tags or bookmarks.')]);
     }
     return {
         ...options,
@@ -574,6 +582,7 @@ export function searchHits(db: DatabaseSync, query: string, input: SearchOptions
         options.verdict !== undefined ||
         options.scope !== undefined ||
         options.mailbox !== undefined ||
+        options.marked !== undefined ||
         options.after !== undefined ||
         options.before !== undefined;
     // A sorted list has to see every match before it knows which are the first: the window is
@@ -587,6 +596,7 @@ export function searchHits(db: DatabaseSync, query: string, input: SearchOptions
         // The scopes first: one indexed lookup in a temp table is cheaper than reading the row.
         if (options.scope && !options.scope.has(hash)) continue;
         if (options.mailbox && !options.mailbox.has(hash)) continue;
+        if (options.marked && !options.marked.has(hash)) continue;
         const message = row.get(hash) as Record<string, unknown> | undefined;
         if (!message) continue;
         const hit = toHit(message);
@@ -628,6 +638,9 @@ function rankedHashes(
             where.push('verdict = ?');
             params.push(options.verdict);
         }
+        // Marks are sparse: reading the newest rows and dropping the unmarked would miss most of
+        // them, so a query of filters alone joins the marked set in SQL instead.
+        if (options.marked !== undefined) where.push(`hash IN (SELECT hash FROM ${options.marked.table})`);
         const clause = where.length === 0 ? '' : ` WHERE ${where.join(' AND ')}`;
         const rows = db
             .prepare(
@@ -733,6 +746,7 @@ export function hitsForHashes(
         if (!hit) continue;
         if (options.scope && !options.scope.has(hash)) continue;
         if (options.mailbox && !options.mailbox.has(hash)) continue;
+        if (options.marked && !options.marked.has(hash)) continue;
         if (options.verdict !== undefined && hit.verdict !== options.verdict) continue;
         if (!inWindow(hit.sentAt, options)) continue;
         hits.push(hit);
@@ -1111,6 +1125,40 @@ export interface IndexedMessage {
     readonly verdict: Verdict;
     /** The caveats of the signature the message verdict came from. */
     readonly caveats: readonly Caveat[];
+}
+
+/**
+ * The full raw hash a prefix names. `stamped search` prints twelve characters, so that is what a
+ * person has to type back. Throws when the prefix names no message or more than one: guessing
+ * which of two messages gets the tag is exactly the wrong kind of helpful.
+ */
+export function resolveHash(db: DatabaseSync, prefix: string): string {
+    const wanted = prefix.trim().toLowerCase();
+    if (!/^[0-9a-f]{6,64}$/.test(wanted)) {
+        throw new Error(
+            fmt(
+                _(
+                    '{hash} is not a message hash. Give at least six characters of the hash `stamped search` prints.',
+                ),
+                {
+                    hash: prefix,
+                },
+            ),
+        );
+    }
+    // The bounds spell a prefix range without LIKE: a hex string has no wildcard to escape.
+    const rows = db
+        .prepare('SELECT hash FROM messages WHERE hash >= ? AND hash < ? ORDER BY hash LIMIT 2')
+        .all(wanted, `${wanted}g`) as { hash?: string }[];
+    if (rows.length === 0) {
+        throw new Error(fmt(_('The case has no message {hash}.'), { hash: prefix }));
+    }
+    if (rows.length > 1) {
+        throw new Error(
+            fmt(_('More than one message starts with {hash}. Type more of it.'), { hash: prefix }),
+        );
+    }
+    return String(rows[0]?.hash);
 }
 
 /**

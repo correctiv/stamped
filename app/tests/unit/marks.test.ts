@@ -12,6 +12,8 @@ import {
     bookmarkedHashes,
     type CasePaths,
     hashesWithTag,
+    markedHashes,
+    parseSearch,
     MARKS_VERSION,
     marksFile,
     marksOf,
@@ -132,6 +134,34 @@ export default async () => {
                 writeFileSync(marksFile(paths), '{ not json');
                 expect(() => setBookmark(paths, A, true)).toThrow();
                 expect(readFileSync(marksFile(paths), 'utf8')).toBe('{ not json');
+            });
+        });
+
+        await it('resolves tag: and is:bookmarked to the hashes that hold all of them', async () => {
+            withCase((paths) => {
+                setTags(paths, A, ['Legal', 'Follow up']);
+                setTags(paths, B, ['legal']);
+                setBookmark(paths, B, true);
+                setBookmark(paths, C, true);
+                const of = (query: string) => {
+                    const found = markedHashes(paths, parseSearch(query).filters);
+                    return found === undefined ? undefined : [...found].sort();
+                };
+                expect(of('harbour')).toBe(undefined);
+                expect(of('tag:LEGAL')).toStrictEqual([A, B]);
+                expect(of('tag:legal tag:"follow up"')).toStrictEqual([A]);
+                expect(of('tag:legal is:bookmarked')).toStrictEqual([B]);
+                expect(of('is:bookmarked')).toStrictEqual([B, C]);
+            });
+        });
+
+        await it('calls a tag nobody uses an error, and no bookmarks an empty answer', async () => {
+            withCase((paths) => {
+                setTags(paths, A, ['legal']);
+                expect(() => markedHashes(paths, parseSearch('tag:typo').filters)).toThrow();
+                expect([
+                    ...(markedHashes(paths, parseSearch('is:bookmarked').filters) ?? ['x']),
+                ]).toStrictEqual([]);
             });
         });
     });

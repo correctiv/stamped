@@ -37,6 +37,10 @@ export interface SearchFilters {
     readonly before?: number;
     /** The name of a mailbox, as the sidebar lists it. Resolved by whoever knows the case. */
     readonly mailbox?: string;
+    /** Tags the message must carry, all of them. Resolved against `marks.json` by whoever knows the case. */
+    readonly tags?: readonly string[];
+    /** Only bookmarked messages (`is:bookmarked`). */
+    readonly bookmarked?: true;
     readonly order?: SearchOrder;
 }
 
@@ -78,7 +82,10 @@ const TEXT_FIELDS: Readonly<Record<string, string>> = {
     body: 'text',
 };
 
-const FILTER_OPERATORS = ['verdict', 'dkim', 'before', 'after', 'mailbox', 'sort'] as const;
+const FILTER_OPERATORS = ['verdict', 'dkim', 'before', 'after', 'mailbox', 'tag', 'is', 'sort'] as const;
+
+/** What `is:` can say. One value today; a list so a second one is a line and not a rewrite. */
+const IS_VALUES = ['bookmarked'] as const;
 
 /** Operators of the roadmap that do not exist yet. Named so that they fail loudly. */
 const UNSUPPORTED_OPERATORS = ['filename', 'ext', 'size', 'has', 'direction'] as const;
@@ -324,6 +331,10 @@ function exampleOf(name: string): string {
             return `${name}:2024-03-05`;
         case 'sort':
             return 'sort:newest';
+        case 'is':
+            return 'is:bookmarked';
+        case 'tag':
+            return 'tag:legal';
         default:
             return `${name}:name`;
     }
@@ -409,9 +420,16 @@ function plainWords(node: Node): string[] | undefined {
 function readFilters(nodes: readonly Node[], errors: string[]): SearchFilters {
     const filters: { -readonly [K in keyof SearchFilters]: SearchFilters[K] } = {};
     const seen = new Set<string>();
+    const tags: string[] = [];
     for (const node of nodes) {
         if (node.kind !== 'filter') continue;
         const group = node.name === 'dkim' ? 'verdict' : node.name;
+        // `tag:` may repeat: each one narrows further, so two tags mean both.
+        if (group === 'tag') {
+            // Spelled as the marks file spells it (`normaliseTag`): collapsed whitespace.
+            tags.push(node.value.replace(/\s+/g, ' ').trim());
+            continue;
+        }
         if (seen.has(group)) {
             errors.push(fmt(_('The search operator {name}: is given twice.'), { name: node.name }));
             continue;
@@ -450,6 +468,18 @@ function readFilters(nodes: readonly Node[], errors: string[]): SearchFilters {
             case 'mailbox':
                 filters.mailbox = node.value;
                 break;
+            case 'is':
+                if (value === 'bookmarked') {
+                    filters.bookmarked = true;
+                } else {
+                    errors.push(
+                        fmt(_('{value} is not something a message can be. The choices are: {list}.'), {
+                            value: node.value,
+                            list: IS_VALUES.join(', '),
+                        }),
+                    );
+                }
+                break;
             case 'sort':
                 if ((ORDERS as readonly string[]).includes(value)) {
                     filters.order = value as SearchOrder;
@@ -464,6 +494,7 @@ function readFilters(nodes: readonly Node[], errors: string[]): SearchFilters {
                 break;
         }
     }
+    if (tags.length > 0) filters.tags = tags;
     return filters;
 }
 

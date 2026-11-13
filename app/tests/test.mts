@@ -24,6 +24,7 @@ import throughput from './unit/throughput.test.ts';
 import people from './unit/people.test.ts';
 import perimeter from './unit/perimeter.test.ts';
 import status from './unit/status.test.ts';
+import tagCommand from './unit/tag-command.test.ts';
 import activityStatus from './unit/activity-status.test.ts';
 import reportProgress from './unit/report-progress.test.ts';
 import view from './unit/view.test.ts';
@@ -83,6 +84,7 @@ run({
     people,
     perimeter,
     status,
+    tagCommand,
     activityStatus,
     reportProgress,
     view,
