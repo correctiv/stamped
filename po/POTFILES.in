@@ -42,6 +42,7 @@ app/src/gui/view/people.ts
 app/src/gui/view/semantic.ts
 app/src/gui/view/sources.ts
 app/src/gui/view/thread.ts
+app/src/gui/view/time.ts
 app/src/gui/view/verdict.ts
 app/src/gui/window.blp
 app/src/gui/window.d.blp.ts

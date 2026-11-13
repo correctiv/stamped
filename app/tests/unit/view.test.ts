@@ -19,8 +19,13 @@
 
 import { describe, expect, it } from '@gjsify/unit';
 import {
+    checkTime,
     classifyMessage,
+    describeTimeProtection,
+    describeTimeUnavailable,
     describeVerdict,
+    TIME_CHECKS,
+    timeResultLabel,
     VERDICTS,
     type SignatureEvidence,
     type MessageFinding,
@@ -70,6 +75,7 @@ import {
 } from '../../src/gui/view/overview.ts';
 import { allSources, baseName, mailboxRows, shortPath, sourceRows } from '../../src/gui/view/sources.ts';
 import { MAX_INDENT, signedLinksNote, threadGroup, threadRow } from '../../src/gui/view/thread.ts';
+import { timeGroup, timeRow } from '../../src/gui/view/time.ts';
 import {
     explainVerdict,
     verdictFilters,
@@ -1430,6 +1436,100 @@ export default async () => {
             );
             expect(group?.description.includes('No verifying signature covers')).toBe(true);
             expect(group?.description.includes('only orders the messages')).toBe(true);
+        });
+    });
+
+    await describe('the time group', async () => {
+        const DATE = 'Tue, 05 Mar 2024 09:40:00 +0000';
+        const SIGNED_AT = Date.UTC(2024, 2, 5, 9, 40) / 1000;
+        const hop = (date: string): string => `from a.example.com by b.example.org; ${date}`;
+
+        await it('names the layer, badges the result and lists every check', async () => {
+            const group = timeGroup(
+                checkTime({ date: DATE, received: [], signatures: [good({ signedAt: SIGNED_AT })] }),
+            );
+            expect(group.result).toBe('consistent');
+            expect(group.title).toBe('Time');
+            expect(group.badge).toBe(timeResultLabel('consistent'));
+            expect(group.rows.map((row) => row.kind)).toStrictEqual([...TIME_CHECKS]);
+            expect(group.description.includes('Time: consistent')).toBe(true);
+            expect(group.description.includes('never changes it')).toBe(true);
+        });
+
+        await it('never colours a result as a failure', async () => {
+            const consistent = timeGroup(
+                checkTime({ date: DATE, received: [], signatures: [good({ signedAt: SIGNED_AT })] }),
+            );
+            // Not `success`: a green badge under the verdict card reads as a second confirmation.
+            expect(consistent.cssClass).toBe('accent');
+            const inconsistent = timeGroup(
+                checkTime({
+                    date: DATE,
+                    received: [],
+                    signatures: [good({ signedAt: Date.UTC(2024, 2, 5, 0, 0) / 1000 })],
+                }),
+            );
+            expect(inconsistent.result).toBe('inconsistent');
+            expect(inconsistent.cssClass).toBe('warning');
+            expect(inconsistent.rows.some((row) => row.cssClass === 'error')).toBe(false);
+            expect(timeGroup(checkTime({ received: [], signatures: [] })).cssClass).toBe('dimmed');
+        });
+
+        await it('says the signature verdict is unaffected, and says it once', async () => {
+            const inconsistent = timeGroup(
+                checkTime({
+                    date: DATE,
+                    received: [],
+                    signatures: [good({ signedAt: Date.UTC(2024, 2, 5, 0, 0) / 1000 })],
+                }),
+            );
+            expect(inconsistent.description.includes('The signature verdict is unaffected.')).toBe(true);
+            // Core's own sentence already carries it, so the group does not add a second one.
+            expect(inconsistent.description.includes('never changes it')).toBe(false);
+        });
+
+        await it('keeps a check that could not be made, with its reason and no weight', async () => {
+            const group = timeGroup(checkTime({ received: [], signatures: [] }));
+            expect(group.result).toBe('not-checkable');
+            expect(group.rows.length).toBe(TIME_CHECKS.length);
+            const row = group.rows[0];
+            expect(row?.result).toBe('not-checkable');
+            expect(row?.subtitle).toBe(describeTimeUnavailable('no-date'));
+            expect(row?.badge).toBe(timeResultLabel('not-checkable'));
+            expect(row?.cssClass).toBe('dimmed');
+            expect(row?.protection).toBe(undefined);
+            expect(group.description.includes('too few usable time values')).toBe(true);
+        });
+
+        await it('says per check what the result is worth', async () => {
+            const covered = checkTime({
+                date: DATE,
+                received: [],
+                signatures: [good({ signedAt: SIGNED_AT })],
+            }).checks[0]!;
+            expect(timeRow(covered).protection).toBe(describeTimeProtection(covered));
+            expect(timeRow(covered).protection?.includes('weighs more')).toBe(true);
+
+            const hops = checkTime({
+                received: [hop('Tue, 05 Mar 2024 09:41:00 +0000'), hop(DATE)],
+                signatures: [],
+            });
+            const order = hops.checks.find((check) => check.kind === 'received-order')!;
+            expect(order.result).toBe('consistent');
+            expect(order.protectedBySignature).toBe(false);
+            expect(timeRow(order).protection?.includes('could have been written by anyone')).toBe(true);
+        });
+
+        await it('titles a row by the values it compares, not by what it found', async () => {
+            const titles = timeGroup(checkTime({ received: [], signatures: [] })).rows.map(
+                (row) => row.title,
+            );
+            expect(titles).toStrictEqual([
+                'Date against the signing time',
+                'Signing time against the expiry',
+                'Order of the Received headers',
+                'Date against the first Received header',
+            ]);
         });
     });
 };
