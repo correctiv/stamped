@@ -56,6 +56,12 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.4.2" date="2026-11-13">
+      <description>
+        <p>A case can be opened read-only, for an evidence copy or read-only media, and its index can be rebuilt from the stored messages with "stamped case reindex". Search understands tag: and is: operators and tags can be set from the command line. The start screen lists recently opened cases, and the window opens and saves .stamped case files.</p>
+        <p xml:lang="de">Ein Fall lässt sich schreibgeschützt öffnen, etwa als Beweiskopie oder auf schreibgeschützten Medien, und sein Index lässt sich mit „stamped case reindex“ aus den gespeicherten Nachrichten neu aufbauen. Die Suche versteht die Operatoren tag: und is:, und Tags lassen sich auf der Kommandozeile setzen. Die Startseite listet zuletzt geöffnete Fälle, und das Fenster öffnet und speichert .stamped-Falldateien.</p>
+      </description>
+    </release>
     <release version="0.4.1" date="2026-11-13">
       <description>
         <p>The Linux packages now carry the llama.cpp binaries, so semantic search works in an installed Stamped and not only in a checkout.</p>
