@@ -56,6 +56,12 @@
     <keyword>verification</keyword>
   </keywords>
   <releases>
+    <release version="0.4.1" date="2026-11-13">
+      <description>
+        <p>The Linux packages now carry the llama.cpp binaries, so semantic search works in an installed Stamped and not only in a checkout.</p>
+        <p xml:lang="de">Die Linux-Pakete enthalten jetzt die llama.cpp-Binärdateien. Die semantische Suche funktioniert damit auch in einem installierten Stamped und nicht nur in einem Checkout.</p>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-11-12">
       <description>
         <p>A case can now be sealed into one .stamped file, checked and unpacked again. Search understands operators and booleans, messages open with their conversation, archives group by mailbox, and tags and bookmarks mark what matters. Signatures are now reported as unchanged since signing, with a note on the sender perimeter, and the PDF report carries a citation sentence per message. Key eras are measured from the messages, and key bundles can be exported and imported.</p>
