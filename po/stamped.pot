@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 12:19+0100\n"
+"POT-Creation-Date: 2026-11-13 16:26+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2152,24 +2152,42 @@ msgstr[1] ""
 msgid "Replied to, but not in the archive"
 msgstr ""
 
-#: app/src/gui/view/thread.ts:81
+#: app/src/gui/view/thread.ts:102
+msgid ""
+"A verifying signature covers {first} and {second}: the links to the parent "
+"messages were signed, not just claimed."
+msgstr ""
+
+#: app/src/gui/view/thread.ts:110
+msgid ""
+"A verifying signature covers {signed}, but not {unsigned}: only that link "
+"was signed."
+msgstr ""
+
+#: app/src/gui/view/thread.ts:116
+msgid ""
+"No verifying signature covers {first} or {second}: the links to the parent "
+"messages are only claimed."
+msgstr ""
+
+#: app/src/gui/view/thread.ts:131
 msgid ""
 "This only orders the messages. The headers that link them are written by the "
 "sender, so a reply here proves nothing about who wrote it: each message "
 "keeps the verdict of its own signatures."
 msgstr ""
 
-#: app/src/gui/view/thread.ts:88
+#: app/src/gui/view/thread.ts:138
 msgid "{count} message is referred to but not in the archive."
 msgid_plural "{count} messages are referred to but not in the archive."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/thread.ts:96
+#: app/src/gui/view/thread.ts:148
 msgid "The conversation is longer than what is shown here."
 msgstr ""
 
-#: app/src/gui/view/thread.ts:98
+#: app/src/gui/view/thread.ts:150
 msgid "Conversation, {count} message"
 msgid_plural "Conversation, {count} messages"
 msgstr[0] ""
@@ -4466,7 +4484,7 @@ msgstr ""
 msgid "{path} holds no mail files."
 msgstr ""
 
-#: packages/store/src/index-db.ts:94 packages/store/src/index-db.ts:163
+#: packages/store/src/index-db.ts:94 packages/store/src/index-db.ts:156
 msgid "Cannot open the index of the case folder {path}."
 msgstr ""
 
@@ -4475,31 +4493,31 @@ msgid ""
 "The case folder {path} has no index, and a read-only case cannot create one."
 msgstr ""
 
-#: packages/store/src/index-db.ts:176
+#: packages/store/src/index-db.ts:169
 msgid ""
 "The index of {path} was written by another version of Stamped. Open the case "
 "once without read-only mode to bring it up to date."
 msgstr ""
 
-#: packages/store/src/index-db.ts:575
+#: packages/store/src/index-db.ts:568
 msgid "This search cannot look in the mailbox {name}."
 msgstr ""
 
-#: packages/store/src/index-db.ts:579
+#: packages/store/src/index-db.ts:572
 msgid "This search cannot look at tags or bookmarks."
 msgstr ""
 
-#: packages/store/src/index-db.ts:1217
+#: packages/store/src/index-db.ts:1210
 msgid ""
 "{hash} is not a message hash. Give at least six characters of the hash "
 "`stamped search` prints."
 msgstr ""
 
-#: packages/store/src/index-db.ts:1230
+#: packages/store/src/index-db.ts:1223
 msgid "The case has no message {hash}."
 msgstr ""
 
-#: packages/store/src/index-db.ts:1234
+#: packages/store/src/index-db.ts:1227
 msgid "More than one message starts with {hash}. Type more of it."
 msgstr ""
 
@@ -4540,11 +4558,11 @@ msgstr ""
 msgid "unknown error"
 msgstr ""
 
-#: packages/store/src/reindex.ts:127
+#: packages/store/src/reindex.ts:128
 msgid "The message file cannot be read."
 msgstr ""
 
-#: packages/store/src/reindex.ts:131
+#: packages/store/src/reindex.ts:132
 msgid "The message file does not match its name."
 msgstr ""
 

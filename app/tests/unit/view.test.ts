@@ -23,6 +23,7 @@ import {
     describeVerdict,
     VERDICTS,
     type SignatureEvidence,
+    type MessageFinding,
     type Verdict,
 } from '@stamped/core';
 import type {
@@ -68,7 +69,7 @@ import {
     verdictShares,
 } from '../../src/gui/view/overview.ts';
 import { allSources, baseName, mailboxRows, shortPath, sourceRows } from '../../src/gui/view/sources.ts';
-import { MAX_INDENT, threadGroup, threadRow } from '../../src/gui/view/thread.ts';
+import { MAX_INDENT, signedLinksNote, threadGroup, threadRow } from '../../src/gui/view/thread.ts';
 import {
     explainVerdict,
     verdictFilters,
@@ -1386,6 +1387,49 @@ export default async () => {
             );
             expect(group?.description.includes('longer than what is shown')).toBe(true);
             expect(group?.rows.length).toBe(2);
+        });
+
+        await it('says whether a verifying signature covers the links to the parents', async () => {
+            const finding = (verdict: Verdict, signedHeaders: string[]): MessageFinding => ({
+                verdict,
+                caveats: [],
+                signatures: [
+                    {
+                        verdict,
+                        caveats: [],
+                        evidence: {
+                            domain: 'example.com',
+                            aligned: true,
+                            selector: 's1',
+                            algorithm: 'rsa-sha256',
+                            canonicalization: 'relaxed/relaxed',
+                            signedHeaders,
+                            bodyHashOk: true,
+                            signatureOk: verdict !== 'headers-altered',
+                        },
+                    },
+                ],
+            });
+            expect(signedLinksNote(undefined)).toBe(undefined);
+            expect(signedLinksNote({ verdict: 'unsigned', caveats: [], signatures: [] })).toBe(undefined);
+            expect(signedLinksNote(finding('headers-altered', ['in-reply-to', 'references']))).toBe(
+                undefined,
+            );
+            expect(signedLinksNote(finding('confirmed', ['from', 'In-Reply-To', 'References']))).toBe(
+                'A verifying signature covers In-Reply-To and References: the links to the parent messages were signed, not just claimed.',
+            );
+            expect(signedLinksNote(finding('confirmed-with-caveats', ['from', 'references']))).toBe(
+                'A verifying signature covers References, but not In-Reply-To: only that link was signed.',
+            );
+            expect(signedLinksNote(finding('confirmed', ['from', 'subject']))).toBe(
+                'No verifying signature covers In-Reply-To or References: the links to the parent messages are only claimed.',
+            );
+            const group = threadGroup(
+                { entries: [entry({}), entry({ depth: 1 })], truncated: false },
+                finding('confirmed', ['from']),
+            );
+            expect(group?.description.includes('No verifying signature covers')).toBe(true);
+            expect(group?.description.includes('only orders the messages')).toBe(true);
         });
     });
 };
