@@ -67,27 +67,42 @@ template $StampedWindow: Adw.ApplicationWindow {
             description: _("Open a case folder, or import a mail archive to start one. Nothing leaves this machine.");
 
             child: Gtk.Box {
-              orientation: horizontal;
-              spacing: 12;
-              halign: center;
+              orientation: vertical;
+              spacing: 24;
 
-              Gtk.Button {
-                label: _("Open Case…");
-                action-name: "win.open-case";
+              Gtk.Box {
+                orientation: horizontal;
+                spacing: 12;
+                halign: center;
 
-                styles [
-                  "pill",
-                ]
+                Gtk.Button {
+                  label: _("Open Case…");
+                  action-name: "win.open-case";
+
+                  styles [
+                    "pill",
+                  ]
+                }
+
+                Gtk.Button {
+                  label: _("Import Archive…");
+                  action-name: "win.import";
+
+                  styles [
+                    "pill",
+                    "suggested-action",
+                  ]
+                }
               }
 
-              Gtk.Button {
-                label: _("Import Archive…");
-                action-name: "win.import";
+              // Hidden until the list has an entry: a first start shows the two buttons alone.
+              Adw.Clamp recentCases {
+                maximum-size: 440;
+                visible: false;
 
-                styles [
-                  "pill",
-                  "suggested-action",
-                ]
+                child: Adw.PreferencesGroup recentList {
+                  title: _("Recent Cases");
+                };
               }
             };
           };

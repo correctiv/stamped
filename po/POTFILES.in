@@ -74,6 +74,7 @@ app/src/lib/pdf-report.ts
 app/src/lib/progress.ts
 app/src/lib/queries.ts
 app/src/lib/receiver-anchors.ts
+app/src/lib/recent-cases.ts
 app/src/lib/refresh-scheduler.ts
 app/src/lib/report-progress.ts
 app/src/lib/report.ts

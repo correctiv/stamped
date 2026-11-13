@@ -60,8 +60,9 @@ shot() { # <file> <view> <lang> [monitor WxH]
   local file="$1" view="$2" lang="$3" size="${4:-2400x1800}"
   # HOME points at the demo case's parent, so the header bar abbreviates it to `~/Cases/…`
   # instead of printing this run's temporary directory. Only the shot gets it: the import above
-  # runs with the real HOME, where gjsify's caches live.
-  local -a vars=(STAMPED_SHOT_VIEW="$view" HOME="$WORK/home")
+  # runs with the real HOME, where gjsify's caches live. The state directory goes with it, so the
+  # shot neither reads the real list of recent cases nor adds the demo case to it.
+  local -a vars=(STAMPED_SHOT_VIEW="$view" HOME="$WORK/home" XDG_STATE_HOME="$WORK/home/.state")
   if [ "$lang" = de ]; then
     vars+=(LANG=de_DE.UTF-8 LANGUAGE=de LC_ALL=de_DE.UTF-8)
   else

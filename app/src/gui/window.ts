@@ -63,6 +63,7 @@ import {
 import { attachmentLines } from '../lib/attachment-metadata.ts';
 import { citationOf } from '../lib/citation.ts';
 import { openCopy } from '../lib/open-copy.ts';
+import { forgetCase, offeredCases, recentCasesDir, rememberCase } from '../lib/recent-cases.ts';
 import {
     parseReportLine,
     reportPhases,
@@ -584,6 +585,8 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private backfillGeneration = 0;
     /** Whether a key lookup is running. */
     private lookupBusy = false;
+    /** The rows now in the start screen's recent-cases list, kept to take them out again. */
+    private recentRows: Adw.ActionRow[] = [];
 
     static {
         GObject.registerClass({ GTypeName, Template, InternalChildren }, this);
@@ -601,6 +604,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             if (this.reading !== undefined) this.track(this.showMessage(this.reading));
         });
 
+        this.fillRecent();
         this.addAction('open-case', () => void this.chooseCase());
         this.addAction('import', () => void this.importFrom('files'));
         this.addAction('import-folder', () => void this.importFrom('folder'));
@@ -909,6 +913,46 @@ export class StampedWindow extends Adw.ApplicationWindow {
     }
 
     /**
+     * Fill the start screen's list of recently opened cases.
+     *
+     * Rebuilt from the file each time and not patched: the list is six rows, and a rebuild is the
+     * one way a folder that came back, or went away, shows up correctly. The clamp stays hidden
+     * while there is nothing to offer, so a first start shows the two buttons alone.
+     */
+    private fillRecent(): void {
+        for (const row of this.recentRows) this._recentList.remove(row);
+        this.recentRows = [];
+        const dir = recentCasesDir();
+        const home = GLib.get_home_dir();
+        for (const entry of offeredCases(dir, isCaseFolder)) {
+            const row = new Adw.ActionRow({
+                title: escapeLine(baseName(entry.path)),
+                subtitle: escapeLine(shortPath(entry.path, home)),
+                activatable: true,
+            });
+            row.add_prefix(new Gtk.Image({ iconName: 'folder-symbolic' }));
+            const forget = new Gtk.Button({
+                iconName: 'edit-delete-symbolic',
+                valign: Gtk.Align.CENTER,
+                tooltipText: _('Remove from this list'),
+            });
+            forget.add_css_class('flat');
+            forget.connect('clicked', () => {
+                forgetCase(dir, entry.path);
+                this.fillRecent();
+            });
+            row.add_suffix(forget);
+            row.add_suffix(new Gtk.Image({ iconName: 'go-next-symbolic' }));
+            row.connect('activated', () => {
+                this.loadCase(() => openSession(entry.path)).catch((error: unknown) => void this.fail(error));
+            });
+            this._recentList.add(row);
+            this.recentRows.push(row);
+        }
+        this._recentCases.set_visible(this.recentRows.length > 0);
+    }
+
+    /**
      * Open a case with the loading page up, so the window does not sit frozen while it works.
      *
      * Opening one is synchronous disk work: the index handle, then the first report query and the
@@ -971,6 +1015,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
         // appear here as `Mail &amp; Co`.
         this._caseTitle.set_title(baseName(session.root));
         this._caseTitle.set_subtitle(shortPath(session.root, GLib.get_home_dir()));
+        // Recorded here and not in the callers: this one place covers a case opened from the
+        // chooser, from a recent row, from the command line and a freshly created one.
+        rememberCase(recentCasesDir(), session.root);
+        this.fillRecent();
         this._rootStack.set_visible_child_name('case');
         this.startSemantic(session);
         this.track(this.refresh());
