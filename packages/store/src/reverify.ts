@@ -24,7 +24,7 @@ import {
 } from '@stamped/core';
 import { verifyMessage } from '@stamped/verify';
 
-import type { CasePaths } from './case.ts';
+import { assertWritable, type CasePaths } from './case.ts';
 import { beginBatch, commitBatch, openIndex, rollbackBatch, updateFinding } from './index-db.ts';
 import { writeBodyExplanations } from './body-explanations.ts';
 import { writeReceiverAnchors } from './receiver-anchors.ts';
@@ -121,6 +121,7 @@ export async function applyPerimeter(
     yieldTurn?: () => Promise<void>,
     onProgress?: (checked: number, total: number) => void,
 ): Promise<{ perimeter: string[]; result: ReverifyResult }> {
+    assertWritable(paths);
     const before = readPerimeter(paths);
     const perimeter = writePerimeter(paths, domains);
     const bearing = [...before, ...perimeter];
@@ -166,6 +167,7 @@ export async function reverifyPairs(
     yieldTurn?: () => Promise<void>,
     onProgress?: (checked: number, total: number) => void,
 ): Promise<ReverifyResult> {
+    assertWritable(paths);
     const conflicted = new Set(vault.conflicts().map(pairName));
     const skippedConflicts = pairs.filter((pair) => conflicted.has(pairName(pair)));
     const active = pairs.filter((pair) => !conflicted.has(pairName(pair)));

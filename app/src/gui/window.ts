@@ -1150,7 +1150,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
         rememberCase(recentCasesDir(), session.root);
         this.fillRecent();
         this._rootStack.set_visible_child_name('case');
-        this.startSemantic(session);
+        // A read-only case neither indexes nor measures: both write `semantic.json`, and a run that
+        // is refused at its first write would have spent the minutes first.
+        if (session.paths.readOnly) showToast(_('Opened read-only: nothing is written to this case.'), 5);
+        else this.startSemantic(session);
         this.track(this.refresh());
     }
 

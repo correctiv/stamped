@@ -23,7 +23,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { classifyMessage, type KeyStore, _ } from '@stamped/core';
 import { verifyMessage } from '@stamped/verify';
 
-import type { CasePaths } from './case.ts';
+import { assertWritable, type CasePaths } from './case.ts';
 import { beginBatch, commitBatch, openIndex, rollbackBatch } from './index-db.ts';
 import { indexRaw } from './index-raw.ts';
 import { readPerimeter } from './perimeter.ts';
@@ -106,6 +106,7 @@ function removeRebuild(paths: CasePaths): void {
 }
 
 export async function reindexCase(paths: CasePaths, options: ReindexOptions): Promise<ReindexResult> {
+    assertWritable(paths);
     const hashes = listRawHashes(paths);
     const history = oldHistory(paths);
     const classifyOptions = { perimeter: readPerimeter(paths) };

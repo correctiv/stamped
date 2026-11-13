@@ -121,6 +121,8 @@ export function readImportStatus(paths: CasePaths): ImportStatus | undefined {
 
 /** Write the status atomically: a reader sees the old snapshot or the new one, never a torn one. */
 export function writeImportStatus(paths: CasePaths, status: ImportStatus): void {
+    // A read-only case has no process of ours to describe, and the file is not worth a refusal.
+    if (paths.readOnly) return;
     const target = statusFile(paths);
     const tmp = `${target}.tmp`;
     writeFileSync(tmp, `${JSON.stringify(status, undefined, 2)}\n`);

@@ -18,7 +18,7 @@ import { join } from 'node:path';
 
 import { fmt, _ } from '@stamped/core';
 
-import type { CasePaths } from './case.ts';
+import { assertWritable, type CasePaths } from './case.ts';
 import { SearchSyntaxError, type SearchFilters } from './search-query.ts';
 
 /** Bumped when a build would misread marks an older build wrote. */
@@ -118,6 +118,7 @@ export function marksOf(paths: CasePaths, hash: string): Mark {
 
 /** Replace the file with `marks`, atomically. Messages without a mark are left out. */
 function writeMarks(paths: CasePaths, marks: Map<string, Mark>): void {
+    assertWritable(paths);
     const messages: MarksFile['messages'] = {};
     for (const hash of [...marks.keys()].sort()) {
         const mark = marks.get(hash) as Mark;

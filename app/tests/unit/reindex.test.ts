@@ -15,6 +15,7 @@ import { KeyStore, type MessageFinding, type Verdict } from '@stamped/core';
 import { encodeLatin1, summarise } from '@stamped/import';
 import {
     type CasePaths,
+    casePaths,
     indexMessage,
     listRawHashes,
     messageCount,
@@ -129,6 +130,22 @@ export default async () => {
                 expect(result.replaced).toBe(true);
                 expect(rows(paths).map((row) => row.hash)).toStrictEqual([...hashes].sort());
                 expect(existsSync(rebuildPath(paths))).toBe(false);
+            });
+        });
+
+        await it('refuses a case that is open read-only', async () => {
+            await withDir(async (dir) => {
+                const { paths } = makeCase(dir, ['one']);
+                const before = rows(paths).length;
+                let message = '';
+                try {
+                    await reindexCase(casePaths(paths.root, true), { keys });
+                } catch (error) {
+                    message = (error as Error).message;
+                }
+                expect(message).toMatch(/open read-only/);
+                expect(existsSync(rebuildPath(paths))).toBe(false);
+                expect(rows(paths).length).toBe(before);
             });
         });
 

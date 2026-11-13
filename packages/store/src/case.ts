@@ -21,7 +21,7 @@
  * explicit path the operator named.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { accessSync, constants, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { fmt, _ } from '@stamped/core';
@@ -45,6 +45,14 @@ export interface CasePaths {
     readonly marker: string;
     /** The semantic layer's vector database. Absent until semantic search is switched on. */
     readonly vectors: string;
+    /**
+     * The case is opened for reading only: nothing in the folder is created, changed or removed.
+     *
+     * For an evidence copy, a case that failed a check, or a folder on read-only media. Every
+     * function that writes into the case refuses with {@link assertWritable}, and the index opens
+     * with SQLite's own read-only mode, so a write that slipped past a guard still fails.
+     */
+    readonly readOnly: boolean;
 }
 
 /** What `case.json` holds. Deliberately tiny: everything else is derivable. */
@@ -55,8 +63,9 @@ interface CaseMarker {
 }
 
 /** The layout for a case root, without touching the disk. */
-export function casePaths(root: string): CasePaths {
+export function casePaths(root: string, readOnly = false): CasePaths {
     return {
+        readOnly,
         root,
         raw: join(root, 'raw'),
         log: join(root, IMPORT_LOG_NAME),
@@ -109,6 +118,34 @@ function markerVersion(path: string): number {
         return typeof marker.version === 'number' ? marker.version : 0;
     } catch {
         return 0;
+    }
+}
+
+/** Can the process write into this folder? A folder that is not there yet counts as writable. */
+export function isWritable(root: string): boolean {
+    if (!existsSync(root)) return true;
+    try {
+        accessSync(root, constants.W_OK);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Refuse a write into a case that is open read-only.
+ *
+ * Called at the top of every function that changes the case folder, so the refusal comes before
+ * anything was touched and says what the situation is, instead of an `EACCES` or SQLite's
+ * "attempt to write a readonly database" from somewhere deeper.
+ */
+export function assertWritable(paths: CasePaths): void {
+    if (paths.readOnly) {
+        throw new Error(
+            fmt(_('The case {path} is open read-only, so nothing can be written to it.'), {
+                path: paths.root,
+            }),
+        );
     }
 }
 

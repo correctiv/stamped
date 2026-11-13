@@ -89,6 +89,8 @@ export function readActivityStatuses(paths: CasePaths): ActivityStatus[] {
 
 /** Write atomically: a reader sees the old snapshot or the new one, never a torn one. */
 export function writeActivityStatus(paths: CasePaths, status: ActivityStatus): void {
+    // A read-only case has no process of ours to describe, and the file is not worth a refusal.
+    if (paths.readOnly) return;
     const target = activityStatusFile(paths, status.kind);
     const tmp = `${target}.tmp`;
     writeFileSync(tmp, `${JSON.stringify(status, undefined, 2)}\n`);

@@ -34,7 +34,7 @@ import { join } from 'node:path';
 
 import { fmt, _ } from '@stamped/core';
 
-import type { CasePaths } from './case.ts';
+import { assertWritable, type CasePaths } from './case.ts';
 
 /** The SHA-256 of some bytes, lowercase hex. The name a message is stored under. */
 export function digest(bytes: Uint8Array): string {
@@ -62,6 +62,7 @@ export interface StoreResult {
  * Pass the same `madeDirs` set across calls of one import to skip repeated `mkdir`s.
  */
 export function store(paths: CasePaths, raw: Uint8Array, madeDirs: Set<string> = new Set()): StoreResult {
+    assertWritable(paths);
     const hash = digest(raw);
     const path = rawPath(paths, hash);
     if (existsSync(path)) return { hash, stored: false, path };
@@ -134,6 +135,7 @@ export interface ImportLogEntry {
  * archive.
  */
 export function appendLog(paths: CasePaths, entries: readonly ImportLogEntry[]): void {
+    assertWritable(paths);
     if (entries.length === 0) return;
     const text = `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`;
     appendFileSync(paths.log, text);
