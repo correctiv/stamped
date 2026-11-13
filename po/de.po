@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 10:36+0100\n"
+"POT-Creation-Date: 2026-11-13 11:38+0100\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -13,46 +13,85 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: app/src/commands/case.ts:31
+#: app/src/commands/case-reindex.ts:31
+msgid "Rebuild the index of a case from its messages (offline)"
+msgstr "Den Index eines Falls aus seinen Nachrichten neu aufbauen (offline)"
+
+#: app/src/commands/case-reindex.ts:34 app/src/commands/case.ts:71
+#: app/src/commands/keys.ts:137 app/src/commands/keys.ts:234
+#: app/src/commands/keys.ts:292 app/src/commands/keys.ts:492
+#: app/src/commands/keys.ts:630 app/src/commands/keys.ts:679
+#: app/src/commands/keys.ts:709 app/src/commands/people.ts:37
+#: app/src/commands/people.ts:38 app/src/commands/perimeter.ts:31
+#: app/src/commands/reverify.ts:27 app/src/commands/semantic.ts:76
+#: app/src/commands/semantic.ts:77 app/src/commands/semantic.ts:117
+#: app/src/commands/semantic.ts:118 app/src/commands/semantic.ts:164
+#: app/src/commands/tag.ts:59 app/src/commands/timeline.ts:28
+#: app/src/commands/timeline.ts:29
+msgid "The case folder"
+msgstr "Der Fallordner"
+
+#: app/src/commands/case-reindex.ts:36
+msgid "Replace the index even when some messages could not be indexed"
+msgstr "Den Index auch ersetzen, wenn sich einzelne Nachrichten nicht indizieren ließen"
+
+#: app/src/commands/case-reindex.ts:41
+msgid "Reads every message under raw/ and verifies it with the keys in the case, then replaces the index in one step: a run that fails leaves the old index as it was. Close the window on this case first. The import log and the messages are not changed."
+msgstr "Liest jede Nachricht unter raw/, prüft sie mit den Schlüsseln des Falls und ersetzt den Index dann in einem Schritt: Ein fehlgeschlagener Lauf lässt den alten Index unverändert. Schließen Sie vorher das Fenster zu diesem Fall. Das Importprotokoll und die Nachrichten bleiben unverändert."
+
+#: app/src/commands/case-reindex.ts:60
+msgid "Indexing: {done} of {total} messages"
+msgstr "Indizierung: {done} von {total} Nachrichten"
+
+#: app/src/commands/case-reindex.ts:69
+msgid "… and {count} more."
+msgstr "… und {count} weitere."
+
+#: app/src/commands/case-reindex.ts:76
+msgid "{count} message could not be indexed, so the index was left as it is. Run it again with --accept-failures to replace it without that message."
+msgid_plural "{count} messages could not be indexed, so the index was left as it is. Run it again with --accept-failures to replace it without them."
+msgstr[0] "{count} Nachricht ließ sich nicht indizieren, deshalb blieb der Index unverändert. Mit --accept-failures erneut ausführen, um ihn ohne diese Nachricht zu ersetzen."
+msgstr[1] "{count} Nachrichten ließen sich nicht indizieren, deshalb blieb der Index unverändert. Mit --accept-failures erneut ausführen, um ihn ohne sie zu ersetzen."
+
+#: app/src/commands/case-reindex.ts:87
+msgid "Index rebuilt: {count} message indexed."
+msgid_plural "Index rebuilt: {count} messages indexed."
+msgstr[0] "Index neu aufgebaut: {count} Nachricht indiziert."
+msgstr[1] "Index neu aufgebaut: {count} Nachrichten indiziert."
+
+#: app/src/commands/case-reindex.ts:96
+msgid "The old index held {before}."
+msgstr "Der alte Index enthielt {before}."
+
+#: app/src/commands/case.ts:32
 msgid "{label}: {percent} % ({done} of {total} MiB)"
 msgstr "{label}: {percent} % ({done} von {total} MiB)"
 
-#: app/src/commands/case.ts:67
+#: app/src/commands/case.ts:68
 msgid "Seal a case folder into one file (the folder stays as it is)"
 msgstr ""
 "Einen Fallordner in eine einzige Datei versiegeln (der Ordner bleibt "
 "unverändert)"
 
-#: app/src/commands/case.ts:70 app/src/commands/keys.ts:137
-#: app/src/commands/keys.ts:234 app/src/commands/keys.ts:292
-#: app/src/commands/keys.ts:492 app/src/commands/keys.ts:630
-#: app/src/commands/keys.ts:679 app/src/commands/keys.ts:709
-#: app/src/commands/people.ts:37 app/src/commands/people.ts:38
-#: app/src/commands/perimeter.ts:31 app/src/commands/reverify.ts:27
-#: app/src/commands/semantic.ts:76 app/src/commands/semantic.ts:77
-#: app/src/commands/semantic.ts:117 app/src/commands/semantic.ts:118
-#: app/src/commands/semantic.ts:164 app/src/commands/tag.ts:59
-#: app/src/commands/timeline.ts:28 app/src/commands/timeline.ts:29
-msgid "The case folder"
-msgstr "Der Fallordner"
-
-#: app/src/commands/case.ts:72
+#: app/src/commands/case.ts:73
 msgid "The case file to write (default: <folder name>.stamped here)"
 msgstr ""
 "Die zu schreibende Falldatei (Standard: <Ordnername>.stamped im aktuellen "
 "Ordner)"
 
-#: app/src/commands/case.ts:75
+#: app/src/commands/case.ts:76
 msgid "Replace the file when it exists"
 msgstr "Die Datei ersetzen, wenn sie bereits existiert"
 
-#: app/src/commands/case.ts:78 app/src/commands/case.ts:151
+#: app/src/commands/case.ts:79 app/src/commands/case.ts:152
 msgid ""
 "Machine-readable progress: jsonl prints one JSON object per step on stdout, "
 "then a final one"
-msgstr "Maschinenlesbarer Fortschritt: jsonl gibt pro Schritt ein JSON-Objekt auf stdout aus, danach ein abschließendes"
+msgstr ""
+"Maschinenlesbarer Fortschritt: jsonl gibt pro Schritt ein JSON-Objekt auf "
+"stdout aus, danach ein abschließendes"
 
-#: app/src/commands/case.ts:85
+#: app/src/commands/case.ts:86
 msgid ""
 "The file carries what the case is made of: the messages, the import log "
 "(with the paths of the source files on this machine), the index, the key "
@@ -63,15 +102,15 @@ msgstr ""
 "Index, den Schlüsseltresor und die Einstellungen. Behandeln Sie sie wie den "
 "Fall selbst."
 
-#: app/src/commands/case.ts:96
+#: app/src/commands/case.ts:97
 msgid "Packing"
 msgstr "Packen"
 
-#: app/src/commands/case.ts:104 app/src/commands/case.ts:211
+#: app/src/commands/case.ts:105 app/src/commands/case.ts:212
 msgid "Manifest SHA-256: {hash}"
 msgstr "Manifest-SHA-256: {hash}"
 
-#: app/src/commands/case.ts:109
+#: app/src/commands/case.ts:110
 msgid "{count} file was left out, as it is not part of a case file:"
 msgid_plural ""
 "{count} files were left out, as they are not part of a case file:"
@@ -80,21 +119,21 @@ msgstr[0] ""
 msgstr[1] ""
 "{count} Dateien wurden weggelassen, da sie nicht zu einer Falldatei gehören:"
 
-#: app/src/commands/case.ts:141
+#: app/src/commands/case.ts:142
 msgid "Unpack a case file into a case folder, after checking it"
 msgstr "Eine Falldatei prüfen und in einen Fallordner entpacken"
 
-#: app/src/commands/case.ts:144 app/src/commands/case.ts:187
+#: app/src/commands/case.ts:145 app/src/commands/case.ts:188
 msgid "The case file"
 msgstr "Die Falldatei"
 
-#: app/src/commands/case.ts:146
+#: app/src/commands/case.ts:147
 msgid "The folder to create (default: the file name without .stamped, here)"
 msgstr ""
 "Der anzulegende Ordner (Standard: der Dateiname ohne .stamped im aktuellen "
 "Ordner)"
 
-#: app/src/commands/case.ts:158
+#: app/src/commands/case.ts:159
 msgid ""
 "A file that does not match its manifest is not unpacked, and nothing is left "
 "behind. Run `stamped case verify` to see every problem."
@@ -102,42 +141,42 @@ msgstr ""
 "Eine Datei, die nicht zu ihrem Manifest passt, wird nicht entpackt, und es "
 "bleibt nichts zurück. Mit `stamped case verify` sehen Sie jedes Problem."
 
-#: app/src/commands/case.ts:165
+#: app/src/commands/case.ts:166
 msgid "Unpacking"
 msgstr "Entpacken"
 
-#: app/src/commands/case.ts:185
+#: app/src/commands/case.ts:186
 msgid "Check a case file against its manifest"
 msgstr "Eine Falldatei gegen ihr Manifest prüfen"
 
-#: app/src/commands/case.ts:190
+#: app/src/commands/case.ts:191
 msgid "Checking"
 msgstr "Prüfen"
 
-#: app/src/commands/case.ts:197
+#: app/src/commands/case.ts:198
 msgid "… and {count} more problem."
 msgid_plural "… and {count} more problems."
 msgstr[0] "… und {count} weiteres Problem."
 msgstr[1] "… und {count} weitere Probleme."
 
-#: app/src/commands/case.ts:207
+#: app/src/commands/case.ts:208
 msgid "{file} failed its integrity check."
 msgstr "{file} hat die Integritätsprüfung nicht bestanden."
 
-#: app/src/commands/case.ts:209
+#: app/src/commands/case.ts:210
 msgid "{file} matches its manifest."
 msgstr "{file} stimmt mit ihrem Manifest überein."
 
-#: app/src/commands/case.ts:212
+#: app/src/commands/case.ts:213
 msgid "This shows the file is the one that was sealed, not who sealed it."
 msgstr ""
 "Das zeigt, dass die Datei die versiegelte ist, nicht, wer sie versiegelt hat."
 
-#: app/src/commands/case.ts:222
-msgid "Pack a case into one file, unpack it, or check it"
-msgstr "Einen Fall in eine Datei packen, entpacken oder prüfen"
+#: app/src/commands/case.ts:223
+msgid "Pack a case into one file, unpack it, check it, or rebuild its index"
+msgstr "Einen Fall in eine Datei packen, entpacken, prüfen oder seinen Index neu aufbauen"
 
-#: app/src/commands/case.ts:228
+#: app/src/commands/case.ts:230
 msgid "Pick a subcommand. Try `stamped case --help`."
 msgstr "Bitte einen Unterbefehl wählen, etwa `stamped case --help`."
 
@@ -811,7 +850,7 @@ msgstr[1] "{count} Nachrichten, {bytes} Bytes."
 msgid "Dated {earliest} to {latest}."
 msgstr "Datiert von {earliest} bis {latest}."
 
-#: app/src/commands/report.ts:222 app/src/gui/window.ts:2919
+#: app/src/commands/report.ts:222 app/src/gui/window.ts:2935
 #: app/src/gui/window.blp:181
 msgid "Verdicts"
 msgstr "Befunde"
@@ -1102,7 +1141,9 @@ msgstr ""
 
 #: app/src/commands/semantic.ts:165
 msgid "The case folder, whose vectors are then searched from memory"
-msgstr "Der Fallordner, dessen Vektoren anschließend aus dem Speicher durchsucht werden"
+msgstr ""
+"Der Fallordner, dessen Vektoren anschließend aus dem Speicher durchsucht "
+"werden"
 
 #: app/src/commands/semantic.ts:196
 msgid ""
@@ -1256,7 +1297,7 @@ msgid "Check one message against a key you have on disk"
 msgstr "Eine Nachricht gegen einen Schlüssel prüfen, der lokal vorliegt"
 
 #: app/src/commands/verify.ts:94 packages/import/src/folder.ts:128
-#: packages/import/src/source.ts:219 packages/store/src/importer.ts:479
+#: packages/import/src/source.ts:219 packages/store/src/importer.ts:463
 msgid "Cannot read {path}."
 msgstr "{path} kann nicht gelesen werden."
 
@@ -1264,9 +1305,9 @@ msgstr "{path} kann nicht gelesen werden."
 msgid "Details"
 msgstr "Details"
 
-#: app/src/gui/activity.ts:35 app/src/gui/case-file-job.ts:41
-#: app/src/gui/window.ts:2263 app/src/gui/window.ts:2729
-#: app/src/gui/window.ts:3013 app/src/gui/window.ts:3118
+#: app/src/gui/activity.ts:35 app/src/gui/case-file-job.ts:44
+#: app/src/gui/window.ts:2279 app/src/gui/window.ts:2745
+#: app/src/gui/window.ts:3029 app/src/gui/window.ts:3134
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -1286,7 +1327,7 @@ msgstr "Fortsetzen"
 msgid "Nothing is running in the background."
 msgstr "Im Hintergrund läuft nichts."
 
-#: app/src/gui/case-file-job.ts:39
+#: app/src/gui/case-file-job.ts:42
 msgid "This can take a few minutes."
 msgstr "Das kann ein paar Minuten dauern."
 
@@ -2004,11 +2045,11 @@ msgstr "(kein Absender)"
 msgid "From"
 msgstr "Von"
 
-#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:2159
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:2175
 msgid "To"
 msgstr "An"
 
-#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:2160
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:2176
 msgid "Cc"
 msgstr "Kopie"
 
@@ -2489,121 +2530,125 @@ msgstr "Falldateien"
 msgid "Open Case File"
 msgstr "Falldatei öffnen"
 
-#: app/src/gui/window.ts:959 app/src/gui/window.ts:2977
+#: app/src/gui/window.ts:959 app/src/gui/window.ts:2993
 msgid "Folder for the Case"
 msgstr "Ordner für den Fall"
 
-#: app/src/gui/window.ts:968
+#: app/src/gui/window.ts:971
 msgid "{path} exists already. Pick another folder, or move it away first."
-msgstr "{path} existiert bereits. Wählen Sie einen anderen Ordner oder verschieben Sie es zuerst."
+msgstr ""
+"{path} existiert bereits. Wählen Sie einen anderen Ordner oder verschieben "
+"Sie es zuerst."
 
-#: app/src/gui/window.ts:972
+#: app/src/gui/window.ts:979
 msgid "Unpacking needs the stamped program, which could not be found."
-msgstr "Zum Entpacken wird das Programm stamped benötigt, es wurde nicht gefunden."
+msgstr ""
+"Zum Entpacken wird das Programm stamped benötigt, es wurde nicht gefunden."
 
-#: app/src/gui/window.ts:975
+#: app/src/gui/window.ts:982
 msgid "Unpacking the case file…"
 msgstr "Falldatei wird entpackt…"
 
-#: app/src/gui/window.ts:977
+#: app/src/gui/window.ts:984
 msgid "The case file could not be unpacked."
 msgstr "Die Falldatei konnte nicht entpackt werden."
 
-#: app/src/gui/window.ts:995 app/src/gui/window.ts:3141
+#: app/src/gui/window.ts:1002 app/src/gui/window.ts:3157
 msgid "Open a case first."
 msgstr "Öffnen Sie zuerst einen Fall."
 
-#: app/src/gui/window.ts:999 app/src/gui/window.ts:3149
+#: app/src/gui/window.ts:1006 app/src/gui/window.ts:3165
 msgid "Wait until the import has finished."
 msgstr "Warten Sie, bis der Import abgeschlossen ist."
 
-#: app/src/gui/window.ts:1004
+#: app/src/gui/window.ts:1011
 msgid "Save Case File"
 msgstr "Falldatei speichern"
 
-#: app/src/gui/window.ts:1015
+#: app/src/gui/window.ts:1023
 msgid "Saving needs the stamped program, which could not be found."
-msgstr "Zum Speichern wird das Programm stamped benötigt, es wurde nicht gefunden."
+msgstr ""
+"Zum Speichern wird das Programm stamped benötigt, es wurde nicht gefunden."
 
-#: app/src/gui/window.ts:1018
+#: app/src/gui/window.ts:1026
 msgid "Saving the case file…"
 msgstr "Falldatei wird gespeichert…"
 
-#: app/src/gui/window.ts:1020
+#: app/src/gui/window.ts:1028
 msgid "The case file could not be written."
 msgstr "Die Falldatei konnte nicht geschrieben werden."
 
-#: app/src/gui/window.ts:1023
+#: app/src/gui/window.ts:1033
 msgid "Saved {file} ({size})."
 msgstr "{file} gespeichert ({size})."
 
-#: app/src/gui/window.ts:1051
+#: app/src/gui/window.ts:1067
 msgid "Remove from this list"
 msgstr "Aus dieser Liste entfernen"
 
-#: app/src/gui/window.ts:1437
+#: app/src/gui/window.ts:1453
 msgid "Show the files of this mailbox"
 msgstr "Dateien dieses Postfachs anzeigen"
 
-#: app/src/gui/window.ts:1631
+#: app/src/gui/window.ts:1647
 msgid "This search cannot be run"
 msgstr "Diese Suche kann nicht ausgeführt werden"
 
-#: app/src/gui/window.ts:1912
+#: app/src/gui/window.ts:1928
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 "Die gespeicherte Kopie dieser Nachricht fehlt im Datenspeicher des Falls."
 
-#: app/src/gui/window.ts:1992
+#: app/src/gui/window.ts:2008
 msgid "Bookmark this message"
 msgstr "Lesezeichen für diese Nachricht setzen"
 
-#: app/src/gui/window.ts:2009
+#: app/src/gui/window.ts:2025
 msgid "Add a tag"
 msgstr "Schlagwort hinzufügen"
 
-#: app/src/gui/window.ts:2040
+#: app/src/gui/window.ts:2056
 msgid "Remove the tag {tag}"
 msgstr "Das Schlagwort {tag} entfernen"
 
-#: app/src/gui/window.ts:2054
+#: app/src/gui/window.ts:2070
 msgid "Could not save the marks: {reason}"
 msgstr "Die Markierungen konnten nicht gespeichert werden: {reason}"
 
-#: app/src/gui/window.ts:2133
+#: app/src/gui/window.ts:2149
 msgid "Open With…"
 msgstr "Öffnen mit…"
 
-#: app/src/gui/window.ts:2134
+#: app/src/gui/window.ts:2150
 msgid "Open a read-only copy in the program you choose"
 msgstr "Eine schreibgeschützte Kopie im gewählten Programm öffnen"
 
-#: app/src/gui/window.ts:2167
+#: app/src/gui/window.ts:2183
 msgid "The stored copy could not be read."
 msgstr "Die gespeicherte Kopie konnte nicht gelesen werden."
 
-#: app/src/gui/window.ts:2184
+#: app/src/gui/window.ts:2200
 msgid "(no text)"
 msgstr "(kein Text)"
 
-#: app/src/gui/window.ts:2196
+#: app/src/gui/window.ts:2212
 msgid "Shown as text; the HTML was not rendered."
 msgstr "Als Text angezeigt; das HTML wurde nicht dargestellt."
 
-#: app/src/gui/window.ts:2197
+#: app/src/gui/window.ts:2213
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 "Der Text ist hier abgeschnitten; die gespeicherte Nachricht ist länger."
 
-#: app/src/gui/window.ts:2209 app/src/lib/pdf-report.ts:443
+#: app/src/gui/window.ts:2225 app/src/lib/pdf-report.ts:443
 msgid "(unnamed)"
 msgstr "(ohne Namen)"
 
-#: app/src/gui/window.ts:2245
+#: app/src/gui/window.ts:2261
 msgid "Open in a mail program?"
 msgstr "Im Mailprogramm öffnen?"
 
-#: app/src/gui/window.ts:2247
+#: app/src/gui/window.ts:2263
 msgid ""
 "A mail program may load remote content. Only the verdict shows whether a "
 "message is unchanged since it was signed."
@@ -2611,11 +2656,11 @@ msgstr ""
 "Das Mailprogramm kann externe Inhalte nachladen. Nur das Urteil zeigt, ob "
 "eine Nachricht seit der Signatur unverändert ist."
 
-#: app/src/gui/window.ts:2252
+#: app/src/gui/window.ts:2268
 msgid "What does that mean?"
 msgstr "Was bedeutet das?"
 
-#: app/src/gui/window.ts:2257
+#: app/src/gui/window.ts:2273
 msgid ""
 "A mail program that loads remote content tells the sender’s server that "
 "someone is reading this message right now. How a program displays a message "
@@ -2627,59 +2672,59 @@ msgstr ""
 "Nachricht darstellt, beweist nichts über sie; das DKIM-Urteil schon. Das "
 "Programm erhält eine schreibgeschützte Kopie außerhalb des Falls."
 
-#: app/src/gui/window.ts:2264 app/src/gui/window.ts:3249
+#: app/src/gui/window.ts:2280 app/src/gui/window.ts:3265
 msgid "Open"
 msgstr "Öffnen"
 
-#: app/src/gui/window.ts:2273
+#: app/src/gui/window.ts:2289
 msgid "The stored copy of this message is missing."
 msgstr "Die gespeicherte Kopie dieser Nachricht fehlt."
 
-#: app/src/gui/window.ts:2281
+#: app/src/gui/window.ts:2297
 msgid "Could not open the message: {reason}"
 msgstr "Die Nachricht konnte nicht geöffnet werden: {reason}"
 
-#: app/src/gui/window.ts:2318
+#: app/src/gui/window.ts:2334
 msgid "Copy a sentence to quote"
 msgstr "Zitierfähigen Satz kopieren"
 
-#: app/src/gui/window.ts:2336
+#: app/src/gui/window.ts:2352
 msgid "Look Up Key…"
 msgstr "Schlüssel abfragen…"
 
-#: app/src/gui/window.ts:2354 app/src/gui/window.blp:400
+#: app/src/gui/window.ts:2370 app/src/gui/window.blp:400
 msgid "Message"
 msgstr "Nachricht"
 
-#: app/src/gui/window.ts:2406
+#: app/src/gui/window.ts:2422
 msgid "Copy"
 msgstr "Kopieren"
 
-#: app/src/gui/window.ts:2415
+#: app/src/gui/window.ts:2431
 msgid "Copied."
 msgstr "Kopiert."
 
-#: app/src/gui/window.ts:2431
+#: app/src/gui/window.ts:2447
 msgid "Evidence"
 msgstr "Belege"
 
-#: app/src/gui/window.ts:2506
+#: app/src/gui/window.ts:2522
 msgid "How does DKIM work?"
 msgstr "Wie funktioniert DKIM?"
 
-#: app/src/gui/window.ts:2526
+#: app/src/gui/window.ts:2542
 msgid "Raw message"
 msgstr "Rohnachricht"
 
-#: app/src/gui/window.ts:2531
+#: app/src/gui/window.ts:2547
 msgid "Copy the whole message, headers and body, as stored"
 msgstr "Die ganze Nachricht kopieren, Kopfzeilen und Text, wie gespeichert"
 
-#: app/src/gui/window.ts:2534
+#: app/src/gui/window.ts:2550
 msgid "Header block, as stored"
 msgstr "Kopfzeilenblock, wie gespeichert"
 
-#: app/src/gui/window.ts:2566
+#: app/src/gui/window.ts:2582
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
@@ -2687,37 +2732,37 @@ msgstr ""
 "Poststempel bleibt offline, bis Sie etwas anderes sagen, und zeigt Ihnen "
 "genau, was es senden würde."
 
-#: app/src/gui/window.ts:2578
+#: app/src/gui/window.ts:2594
 msgid "Signing keys this case needs"
 msgstr "Signaturschlüssel, die dieser Fall braucht"
 
-#: app/src/gui/window.ts:2616
+#: app/src/gui/window.ts:2632
 msgid "Paste Key…"
 msgstr "Schlüssel einfügen…"
 
-#: app/src/gui/window.ts:2625
+#: app/src/gui/window.ts:2641
 msgid "Copy Request…"
 msgstr "Anfrage kopieren…"
 
-#: app/src/gui/window.ts:2626
+#: app/src/gui/window.ts:2642
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 "Eine Anfrage kopieren, die Sie an den Betreiber der signierenden Domain "
 "schicken können"
 
-#: app/src/gui/window.ts:2630
+#: app/src/gui/window.ts:2646
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr "Anfrage kopiert. Fügen Sie sie in eine Mail an den Betreiber ein."
 
-#: app/src/gui/window.ts:2658
+#: app/src/gui/window.ts:2674
 msgid "Look Up Missing Keys…"
 msgstr "Fehlende Schlüssel abfragen…"
 
-#: app/src/gui/window.ts:2708
+#: app/src/gui/window.ts:2724
 msgid "Paste the key for {name}"
 msgstr "Den Schlüssel für {name} einfügen"
 
-#: app/src/gui/window.ts:2710
+#: app/src/gui/window.ts:2726
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
@@ -2727,23 +2772,23 @@ msgstr ""
 "Wert. Poststempel erkennt selbst, was es ist. Ein leeres p= ist ein "
 "Widerruf, kein Schlüssel, und wird abgelehnt."
 
-#: app/src/gui/window.ts:2730
+#: app/src/gui/window.ts:2746
 msgid "Store Key"
 msgstr "Schlüssel speichern"
 
-#: app/src/gui/window.ts:2845
+#: app/src/gui/window.ts:2861
 msgid "Looking up keys…"
 msgstr "Schlüssel werden abgefragt…"
 
-#: app/src/gui/window.ts:2878
+#: app/src/gui/window.ts:2894
 msgid "Key lookup failed: {reason}"
 msgstr "Schlüsselabfrage fehlgeschlagen: {reason}"
 
-#: app/src/gui/window.ts:2912
+#: app/src/gui/window.ts:2928
 msgid "The case"
 msgstr "Der Fall"
 
-#: app/src/gui/window.ts:2921
+#: app/src/gui/window.ts:2937
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
@@ -2752,19 +2797,19 @@ msgstr ""
 "Ergebnis, und die Zeile, die am häufigsten auf null steht, ist die, die "
 "sagt, dass keine Manipulation gefunden wurde."
 
-#: app/src/gui/window.ts:2977
+#: app/src/gui/window.ts:2993
 msgid "Open Case Folder"
 msgstr "Fallordner öffnen"
 
-#: app/src/gui/window.ts:2998
+#: app/src/gui/window.ts:3014
 msgid "Create the case here?"
 msgstr "Den Fall hier anlegen?"
 
-#: app/src/gui/window.ts:2998
+#: app/src/gui/window.ts:3014
 msgid "Create a new case here?"
 msgstr "Hier einen neuen Fall anlegen?"
 
-#: app/src/gui/window.ts:3002
+#: app/src/gui/window.ts:3018
 msgid ""
 "Stamped creates the case in {path}. It holds the working copy of the "
 "messages and the search index. The archive stays where it is."
@@ -2772,7 +2817,7 @@ msgstr ""
 "Poststempel legt den Fall in {path} an. Dort liegen die Arbeitskopie der "
 "Nachrichten und der Suchindex. Das Archiv bleibt, wo es ist."
 
-#: app/src/gui/window.ts:3008
+#: app/src/gui/window.ts:3024
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
@@ -2781,19 +2826,19 @@ msgstr ""
 "ein Speicher für die Rohnachrichten und ein Suchindex hineingeschrieben. Es "
 "wird nichts irgendwohin gesendet."
 
-#: app/src/gui/window.ts:3012
+#: app/src/gui/window.ts:3028
 msgid "Create Case"
 msgstr "Fall anlegen"
 
-#: app/src/gui/window.ts:3035
+#: app/src/gui/window.ts:3051
 msgid "Imported."
 msgstr "Importiert."
 
-#: app/src/gui/window.ts:3103 app/src/gui/window.ts:3157
+#: app/src/gui/window.ts:3119 app/src/gui/window.ts:3173
 msgid "Export PDF Report"
 msgstr "PDF-Bericht exportieren"
 
-#: app/src/gui/window.ts:3105
+#: app/src/gui/window.ts:3121
 msgid ""
 "A report on the case as it stands. Breaking down the unsigned messages and "
 "reading the attachment properties read the case’s messages once and can take "
@@ -2803,58 +2848,58 @@ msgstr ""
 "unsignierten Nachrichten und das Lesen der Anhangseigenschaften lesen die "
 "Nachrichten des Falls einmal und können dauern."
 
-#: app/src/gui/window.ts:3108
+#: app/src/gui/window.ts:3124
 msgid "Break down the unsigned messages"
 msgstr "Unsignierte Nachrichten aufschlüsseln"
 
-#: app/src/gui/window.ts:3110
+#: app/src/gui/window.ts:3126
 msgid "Read the properties of PDF and Office attachments"
 msgstr "Eigenschaften von PDF- und Office-Anhängen lesen"
 
-#: app/src/gui/window.ts:3112
+#: app/src/gui/window.ts:3128
 msgid "Replace mailbox names by M1, M2, …"
 msgstr "Postfachnamen durch M1, M2, … ersetzen"
 
-#: app/src/gui/window.ts:3119
+#: app/src/gui/window.ts:3135
 msgid "Export…"
 msgstr "Exportieren …"
 
-#: app/src/gui/window.ts:3145
+#: app/src/gui/window.ts:3161
 msgid "A report is already being written."
 msgstr "Es wird bereits ein Bericht erstellt."
 
-#: app/src/gui/window.ts:3165
+#: app/src/gui/window.ts:3181
 msgid "The report needs the stamped program, which could not be found."
 msgstr ""
 "Für den Bericht wird das Programm stamped benötigt, es wurde nicht gefunden."
 
-#: app/src/gui/window.ts:3244
+#: app/src/gui/window.ts:3260
 msgid "Report written ({pages} page)."
 msgid_plural "Report written ({pages} pages)."
 msgstr[0] "Bericht geschrieben ({pages} Seite)."
 msgstr[1] "Bericht geschrieben ({pages} Seiten)."
 
-#: app/src/gui/window.ts:3262
+#: app/src/gui/window.ts:3278
 msgid "The report could not be written."
 msgstr "Der Bericht konnte nicht geschrieben werden."
 
-#: app/src/gui/window.ts:3332
+#: app/src/gui/window.ts:3348
 msgid "Import a Mail Folder"
 msgstr "Einen Mail-Ordner importieren"
 
-#: app/src/gui/window.ts:3332
+#: app/src/gui/window.ts:3348
 msgid "Import Mail Archives"
 msgstr "Mail-Archive importieren"
 
-#: app/src/gui/window.ts:3377
+#: app/src/gui/window.ts:3393
 msgid "The index is busy right now. Try again in a moment."
 msgstr "Der Index ist gerade beschäftigt. Versuchen Sie es gleich noch einmal."
 
-#: app/src/gui/window.ts:3381
+#: app/src/gui/window.ts:3397
 msgid "That did not work"
 msgstr "Das hat nicht geklappt"
 
-#: app/src/gui/window.ts:3381
+#: app/src/gui/window.ts:3397
 msgid "Close"
 msgstr "Schließen"
 
@@ -4897,7 +4942,7 @@ msgid "The signature algorithm or key type is not supported here."
 msgstr ""
 "Der Signaturalgorithmus oder der Schlüsseltyp wird hier nicht unterstützt."
 
-#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:457
+#: packages/import/src/folder.ts:136 packages/store/src/importer.ts:441
 msgid "{path} is not a folder."
 msgstr "{path} ist kein Ordner."
 
@@ -5037,11 +5082,11 @@ msgstr ""
 "Der Fallordner {path} wurde von einer neueren Version von Poststempel "
 "geschrieben."
 
-#: packages/store/src/importer.ts:343
+#: packages/store/src/importer.ts:338
 msgid "{path} holds no messages."
 msgstr "{path} enthält keine Nachrichten."
 
-#: packages/store/src/importer.ts:467
+#: packages/store/src/importer.ts:451
 msgid "{path} holds no mail files."
 msgstr "{path} enthält keine Mail-Dateien."
 
@@ -5049,15 +5094,15 @@ msgstr "{path} enthält keine Mail-Dateien."
 msgid "Cannot open the index of the case folder {path}."
 msgstr "Der Index des Fallordners {path} kann nicht geöffnet werden."
 
-#: packages/store/src/index-db.ts:499
+#: packages/store/src/index-db.ts:512
 msgid "This search cannot look in the mailbox {name}."
 msgstr "Diese Suche kann das Postfach {name} nicht durchsuchen."
 
-#: packages/store/src/index-db.ts:503
+#: packages/store/src/index-db.ts:516
 msgid "This search cannot look at tags or bookmarks."
 msgstr "Diese Suche kann Schlagwörter und Lesezeichen nicht berücksichtigen."
 
-#: packages/store/src/index-db.ts:1141
+#: packages/store/src/index-db.ts:1154
 msgid ""
 "{hash} is not a message hash. Give at least six characters of the hash "
 "`stamped search` prints."
@@ -5065,11 +5110,11 @@ msgstr ""
 "{hash} ist kein Nachrichten-Hash. Geben Sie mindestens sechs Zeichen des "
 "Hashs an, den `stamped search` ausgibt."
 
-#: packages/store/src/index-db.ts:1154
+#: packages/store/src/index-db.ts:1167
 msgid "The case has no message {hash}."
 msgstr "Der Fall enthält keine Nachricht {hash}."
 
-#: packages/store/src/index-db.ts:1158
+#: packages/store/src/index-db.ts:1171
 msgid "More than one message starts with {hash}. Type more of it."
 msgstr "Mehr als eine Nachricht beginnt mit {hash}. Geben Sie mehr davon an."
 
@@ -5106,13 +5151,21 @@ msgstr ""
 msgid "{name} is not a domain name."
 msgstr "{name} ist kein Domainname."
 
-#: packages/store/src/raw.ts:93
+#: packages/store/src/raw.ts:94
 msgid "Cannot write into the case folder {path} ({code})."
 msgstr "In den Fallordner {path} kann nicht geschrieben werden ({code})."
 
-#: packages/store/src/raw.ts:95
+#: packages/store/src/raw.ts:96
 msgid "unknown error"
 msgstr "unbekannter Fehler"
+
+#: packages/store/src/reindex.ts:127
+msgid "The message file cannot be read."
+msgstr "Die Nachrichtendatei kann nicht gelesen werden."
+
+#: packages/store/src/reindex.ts:131
+msgid "The message file does not match its name."
+msgstr "Die Nachrichtendatei passt nicht zu ihrem Namen."
 
 #: packages/store/src/search-query.ts:149
 msgid "There is a closing parenthesis without an opening one."

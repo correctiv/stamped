@@ -163,7 +163,8 @@ them. Synthetic like everything else: reserved example domains, invented bodies.
 - [docs/time-checks.md](docs/time-checks.md) describes the "Zeit" layer beside the six verdicts:
   what it compares, which values a verified signature protects, and the fixed tolerances.
 - [docs/case-file.md](docs/case-file.md) is the `.stamped` case file: what `pack`, `verify` and
-  `unpack` promise (integrity, not a signature), the members, the manifest, what is left out.
+  `unpack` promise (integrity, not a signature), the members, the manifest, what is left out; and
+  `case reindex`, which rebuilds a case's index from its messages.
 - [docs/spikes/dkim-and-fts5.md](docs/spikes/dkim-and-fts5.md) holds what was measured before it
   was decided: why mailauth and not an own verifier, how it is configured and why, FTS5 under
   gjsify.

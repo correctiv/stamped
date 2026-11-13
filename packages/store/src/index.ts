@@ -90,6 +90,13 @@ export {
     writeImportStatus,
 } from './import-status.ts';
 export {
+    type ReindexFailure,
+    type ReindexOptions,
+    type ReindexResult,
+    rebuildPath,
+    reindexCase,
+} from './reindex.ts';
+export {
     importSources,
     type ImportFailure,
     type ImportMode,
@@ -197,6 +204,7 @@ export {
     eachLogEntry,
     type ImportLogEntry,
     type LogSource,
+    listRawHashes,
     logSources,
     rawPath,
     readRaw,
