@@ -290,12 +290,14 @@ const BodyScroller = GObject.registerClass(
  * state worth a picture — the words already answered, the meaning still coming — lasts exactly
  * as long as a model takes to load, which is not a length a screenshot can aim at. The row and
  * its words are the real ones and the results under it are a real search; only the timing is
- * held still. Every one of them is null in a normal run.
+ * held still. `STAMPED_SHOT_TIME` scrolls the reader to its Time group, which sits below the
+ * fold of a window of the size Flathub asks for. Every one of them is null in a normal run.
  */
 const SHOT_VERDICT = GLib.getenv('STAMPED_SHOT_VERDICT');
 const SHOT_EVIDENCE = GLib.getenv('STAMPED_SHOT_EVIDENCE');
 const SHOT_SEARCH = GLib.getenv('STAMPED_SHOT_SEARCH');
 const SHOT_PHASE = GLib.getenv('STAMPED_SHOT_PHASE');
+const SHOT_TIME = GLib.getenv('STAMPED_SHOT_TIME');
 
 /** True when the person closed a portal or chooser dialog rather than it failing. */
 function isDismissed(error: unknown): boolean {
@@ -1971,7 +1973,14 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
         // After the signatures and before the bytes, the order `stamped verify` prints: the time
         // layer reads the `t=`/`x=` of the signatures above it, and it is not a verdict of its own.
-        this._readerBody.append(this.timeGroupWidget(timeGroup(timeFindingOf(raw, finding))));
+        const timeWidget = this.timeGroupWidget(timeGroup(timeFindingOf(raw, finding)));
+        this._readerBody.append(timeWidget);
+        if (SHOT_TIME !== null) {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2500, () => {
+                scrollInto(timeWidget);
+                return GLib.SOURCE_REMOVE;
+            });
+        }
         if (raw.length > 0) this._readerBody.append(this.sourceGroup(raw));
         this._readerStack.set_visible_child_name('message');
         if (SHOT_EVIDENCE !== null) this.popEvidenceShot(Number(SHOT_EVIDENCE));
