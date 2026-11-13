@@ -32,6 +32,18 @@ export function exportKeyBundle(vault: KeyVault): string {
     return `${JSON.stringify({ format: KEY_BUNDLE_FORMAT, version: KEY_BUNDLE_VERSION, entries }, null, 2)}\n`;
 }
 
+/**
+ * The (domain, selector) pairs of the vault as the two-column TSV the upload page of
+ * archive.prove.email reads: one pair per line, no header, no key. A pair that holds several
+ * records appears once. Stable order, like {@link exportKeyBundle}.
+ */
+export function exportPairsTsv(vault: KeyVault): string {
+    const pairs = new Set<string>();
+    for (const entry of vault.all()) pairs.add(`${entry.domain}\t${entry.selector}`);
+    const lines = [...pairs].sort((a, b) => a.localeCompare(b));
+    return lines.map((line) => `${line}\n`).join('');
+}
+
 function text(value: unknown): string | undefined {
     return typeof value === 'string' && value !== '' ? value : undefined;
 }

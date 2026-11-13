@@ -10,6 +10,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import {
     describeConsent,
     exportKeyBundle,
+    exportPairsTsv,
     fmt,
     keyNameFor,
     lookupArchive,
@@ -668,6 +669,7 @@ const BUNDLE_PRIVACY = () =>
 
 interface ExportArgs extends CaseArgs {
     out: string;
+    tsv?: boolean;
 }
 
 function exportCommand(): CommandModule<CaseArgs, ExportArgs> {
@@ -682,9 +684,28 @@ function exportCommand(): CommandModule<CaseArgs, ExportArgs> {
                     type: 'string',
                     demandOption: true,
                 })
-                .epilog(BUNDLE_PRIVACY()),
+                .option('tsv', {
+                    describe: _(
+                        'Write only the domain and selector of each key, as the TSV that the upload page of archive.prove.email reads',
+                    ),
+                    type: 'boolean',
+                })
+                .epilog(
+                    `${BUNDLE_PRIVACY()} ${_('The TSV names the sender domains and their selectors: uploading the pairs of a private case to a public archive is an editorial decision, not a default.')}`,
+                ),
         handler: (args) => {
             const vault = loadVault(caseDir('export', args));
+            if (args.tsv === true) {
+                const tsv = exportPairsTsv(vault);
+                writeFileSync(args.out, tsv);
+                console.log(
+                    fmt(_('Wrote {count} domain and selector pairs to {file}.'), {
+                        count: tsv.split('\n').length - 1,
+                        file: args.out,
+                    }),
+                );
+                return;
+            }
             writeFileSync(args.out, exportKeyBundle(vault));
             console.log(fmt(_('Wrote {count} keys to {file}.'), { count: vault.size, file: args.out }));
         },

@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 16:26+0100\n"
+"POT-Creation-Date: 2026-11-13 16:47+0100\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -18,10 +18,10 @@ msgid "Rebuild the index of a case from its messages (offline)"
 msgstr "Den Index eines Falls aus seinen Nachrichten neu aufbauen (offline)"
 
 #: app/src/commands/case-reindex.ts:34 app/src/commands/case.ts:71
-#: app/src/commands/keys.ts:137 app/src/commands/keys.ts:234
-#: app/src/commands/keys.ts:292 app/src/commands/keys.ts:492
-#: app/src/commands/keys.ts:630 app/src/commands/keys.ts:679
-#: app/src/commands/keys.ts:709 app/src/commands/people.ts:37
+#: app/src/commands/keys.ts:138 app/src/commands/keys.ts:235
+#: app/src/commands/keys.ts:293 app/src/commands/keys.ts:493
+#: app/src/commands/keys.ts:631 app/src/commands/keys.ts:681
+#: app/src/commands/keys.ts:730 app/src/commands/people.ts:37
 #: app/src/commands/people.ts:38 app/src/commands/perimeter.ts:31
 #: app/src/commands/reverify.ts:27 app/src/commands/semantic.ts:77
 #: app/src/commands/semantic.ts:78 app/src/commands/semantic.ts:119
@@ -325,7 +325,7 @@ msgstr[1] ""
 msgid "Case folder: {path}"
 msgstr "Fallordner: {path}"
 
-#: app/src/commands/keys.ts:63
+#: app/src/commands/keys.ts:64
 msgid ""
 "Every DKIM signature names a domain and a selector; the matching public key "
 "is what proves the signature. Without that key a message is “unverifiable”. "
@@ -337,11 +337,11 @@ msgstr ""
 "„nicht prüfbar“. Schlüssel sind öffentlich, doch ihr Abruf kann Ihr "
 "Interesse verraten, deshalb fragt Poststempel vorher."
 
-#: app/src/commands/keys.ts:70
+#: app/src/commands/keys.ts:71
 msgid "Ways to get a missing key, safest first:"
 msgstr "Wege zu einem fehlenden Schlüssel, der sicherste zuerst:"
 
-#: app/src/commands/keys.ts:71
+#: app/src/commands/keys.ts:72
 msgid ""
 "  1. Ask the provider for the old record: stamped keys template <domain> "
 "<selector>"
@@ -349,7 +349,7 @@ msgstr ""
 "  1. Den alten Eintrag beim Anbieter anfragen: stamped keys template "
 "<Domain> <Selektor>"
 
-#: app/src/commands/keys.ts:72
+#: app/src/commands/keys.ts:73
 msgid ""
 "  2. Paste it yourself:                   stamped keys add "
 "<selector>._domainkey.<domain> <key>"
@@ -357,43 +357,43 @@ msgstr ""
 "  2. Selbst einfügen:                     stamped keys add "
 "<Selektor>._domainkey.<Domain> <Schlüssel>"
 
-#: app/src/commands/keys.ts:73
+#: app/src/commands/keys.ts:74
 msgid "  3. archive.prove.email (third party):   stamped keys fetch --archive"
 msgstr "  3. archive.prove.email (Dritter):       stamped keys fetch --archive"
 
-#: app/src/commands/keys.ts:74
+#: app/src/commands/keys.ts:75
 msgid "  4. Live DNS (tells the domain):         stamped keys fetch --dns"
 msgstr "  4. Live-DNS (verrät es der Domain):     stamped keys fetch --dns"
 
-#: app/src/commands/keys.ts:81
+#: app/src/commands/keys.ts:82
 msgid "Expected <selector>._domainkey.<domain>, got: {name}"
 msgstr "Erwartet <Selektor>._domainkey.<Domain>, erhalten: {name}"
 
-#: app/src/commands/keys.ts:94 app/src/lib/autofetch.ts:244
+#: app/src/commands/keys.ts:95 app/src/lib/autofetch.ts:244
 msgid "  error   {name}: {reason}"
 msgstr "  Fehler  {name}: {reason}"
 
-#: app/src/commands/keys.ts:98 app/src/lib/autofetch.ts:249
+#: app/src/commands/keys.ts:99 app/src/lib/autofetch.ts:249
 msgid "  no key  {name}: {reason}"
 msgstr "  kein Schlüssel  {name}: {reason}"
 
-#: app/src/commands/keys.ts:105
+#: app/src/commands/keys.ts:106
 msgid "See which DKIM keys are needed and store them"
 msgstr "Zeigen, welche DKIM-Schlüssel nötig sind, und sie ablegen"
 
-#: app/src/commands/keys.ts:109
+#: app/src/commands/keys.ts:110
 msgid "The case folder holding keys.json (default: .stamped)"
 msgstr "Der Fallordner mit keys.json (Standard: .stamped)"
 
-#: app/src/commands/keys.ts:120
+#: app/src/commands/keys.ts:121
 msgid "Pick a subcommand. Try `stamped keys --help`."
 msgstr "Bitte einen Unterbefehl wählen, etwa `stamped keys --help`."
 
-#: app/src/commands/keys.ts:134
+#: app/src/commands/keys.ts:135
 msgid "List stored keys, and with --pairs the ones still missing"
 msgstr "Gespeicherte Schlüssel auflisten, mit --pairs auch die noch fehlenden"
 
-#: app/src/commands/keys.ts:140
+#: app/src/commands/keys.ts:141
 msgid ""
 "Check for missing keys: a pair list file (domain, selector[, mail count] per "
 "line), or no value for the case’s own missing pairs"
@@ -401,28 +401,28 @@ msgstr ""
 "Fehlende Schlüssel prüfen: eine Paarlisten-Datei (Domain, Selektor[, "
 "Mailanzahl] je Zeile), oder ohne Wert die fehlenden Paare des Falls"
 
-#: app/src/commands/keys.ts:144
+#: app/src/commands/keys.ts:145
 msgid "Print JSON"
 msgstr "JSON ausgeben"
 
-#: app/src/commands/keys.ts:169 app/src/gui/view/keys.ts:217
+#: app/src/commands/keys.ts:170 app/src/gui/view/keys.ts:217
 msgid "{count} key stored"
 msgid_plural "{count} keys stored"
 msgstr[0] "{count} Schlüssel gespeichert"
 msgstr[1] "{count} Schlüssel gespeichert"
 
-#: app/src/commands/keys.ts:181
+#: app/src/commands/keys.ts:182
 msgid ""
 "! {name} holds different keys. A key rotation, or a forgery. Compare them."
 msgstr ""
 "! {name} enthält verschiedene Schlüssel. Eine Schlüsselrotation oder eine "
 "Fälschung. Bitte vergleichen."
 
-#: app/src/commands/keys.ts:190
+#: app/src/commands/keys.ts:191
 msgid "No key is missing."
 msgstr "Es fehlt kein Schlüssel."
 
-#: app/src/commands/keys.ts:193
+#: app/src/commands/keys.ts:194
 msgid "{count} key is missing; messages signed with it stay unverifiable:"
 msgid_plural ""
 "{count} keys are missing; messages signed with them stay unverifiable:"
@@ -431,28 +431,28 @@ msgstr[0] ""
 msgstr[1] ""
 "{count} Schlüssel fehlen; damit signierte Nachrichten bleiben nicht prüfbar:"
 
-#: app/src/commands/keys.ts:221
+#: app/src/commands/keys.ts:222
 msgid ""
 "Store a key you have: a PEM, a bare p= value, or a pasted DNS TXT record"
 msgstr ""
 "Einen vorhandenen Schlüssel ablegen: PEM, reiner p=-Wert oder eingefügter "
 "DNS-TXT-Eintrag"
 
-#: app/src/commands/keys.ts:225 app/src/commands/keys.ts:488
+#: app/src/commands/keys.ts:226 app/src/commands/keys.ts:489
 msgid "<selector>._domainkey.<domain>"
 msgstr "<Selektor>._domainkey.<Domain>"
 
-#: app/src/commands/keys.ts:230
+#: app/src/commands/keys.ts:231
 msgid "The key text, or a path to a file holding it"
 msgstr "Der Schlüsseltext oder der Pfad zu einer Datei damit"
 
-#: app/src/commands/keys.ts:236
+#: app/src/commands/keys.ts:237
 msgid "Mark this key as recovered from DKIM signatures rather than published"
 msgstr ""
 "Diesen Schlüssel als aus DKIM-Signaturen wiederhergestellt markieren, nicht "
 "als veröffentlicht"
 
-#: app/src/commands/keys.ts:246 app/src/gui/session.ts:414
+#: app/src/commands/keys.ts:247 app/src/gui/session.ts:414
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
@@ -460,11 +460,11 @@ msgstr ""
 "Der Eintrag hat ein leeres p=: Die Domain hat diesen Schlüssel "
 "zurückgezogen, es gibt nichts zu speichern."
 
-#: app/src/commands/keys.ts:260
+#: app/src/commands/keys.ts:261
 msgid "Stored {name}: {algorithm} {bits} bit."
 msgstr "{name} gespeichert: {algorithm}, {bits} Bit."
 
-#: app/src/commands/keys.ts:269
+#: app/src/commands/keys.ts:270
 msgid ""
 "! The case already held a different key for this pair. Both are kept: this "
 "is either a key rotation or a forgery."
@@ -473,39 +473,39 @@ msgstr ""
 "bleiben erhalten: Das ist entweder eine Schlüsselrotation oder eine "
 "Fälschung."
 
-#: app/src/commands/keys.ts:289
+#: app/src/commands/keys.ts:290
 msgid ""
 "Look up missing keys over the network, after you confirm exactly what is sent"
 msgstr ""
 "Fehlende Schlüssel über das Netz abrufen, nachdem Sie bestätigt haben, was "
 "genau gesendet wird"
 
-#: app/src/commands/keys.ts:293
+#: app/src/commands/keys.ts:294
 msgid "A pair list (domain, selector per line)"
 msgstr "Eine Paarliste (Domain, Selektor je Zeile)"
 
-#: app/src/commands/keys.ts:295
+#: app/src/commands/keys.ts:296
 msgid "One <selector>._domainkey.<domain>. Repeatable."
 msgstr "Ein <Selektor>._domainkey.<Domain>. Wiederholbar."
 
-#: app/src/commands/keys.ts:300
+#: app/src/commands/keys.ts:301
 msgid "Ask archive.prove.email (a third party; its keys are unsigned)"
 msgstr ""
 "archive.prove.email fragen (ein Dritter; seine Schlüssel sind unsigniert)"
 
-#: app/src/commands/keys.ts:305
+#: app/src/commands/keys.ts:306
 msgid "Query the public DNS (the domain’s operator can see it)"
 msgstr "Das öffentliche DNS abfragen (der Betreiber der Domain kann es sehen)"
 
-#: app/src/commands/keys.ts:310
+#: app/src/commands/keys.ts:311
 msgid "Skip the confirmation prompt"
 msgstr "Die Rückfrage überspringen"
 
-#: app/src/commands/keys.ts:315
+#: app/src/commands/keys.ts:316
 msgid "Print one line per key stored or not found"
 msgstr "Eine Zeile je gespeichertem oder nicht gefundenem Schlüssel ausgeben"
 
-#: app/src/commands/keys.ts:340
+#: app/src/commands/keys.ts:341
 msgid ""
 "Choose where to look: --archive and/or --dns. Stamped never goes online "
 "unasked."
@@ -513,59 +513,59 @@ msgstr ""
 "Wählen Sie, wo gesucht wird: --archive und/oder --dns. Poststempel geht nie "
 "ungefragt online."
 
-#: app/src/commands/keys.ts:354
+#: app/src/commands/keys.ts:355
 msgid "Every listed key is already stored."
 msgstr "Alle genannten Schlüssel sind bereits gespeichert."
 
-#: app/src/commands/keys.ts:368 app/src/lib/autofetch.ts:237
+#: app/src/commands/keys.ts:369 app/src/lib/autofetch.ts:237
 msgid "Skipped; nothing was sent."
 msgstr "Übersprungen; es wurde nichts gesendet."
 
-#: app/src/commands/keys.ts:389
+#: app/src/commands/keys.ts:390
 msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr "  gespeichert  {name}: {algorithm}, {bits} Bit, über {origin}{flag}"
 
-#: app/src/commands/keys.ts:394 app/src/lib/autofetch.ts:230
+#: app/src/commands/keys.ts:395 app/src/lib/autofetch.ts:230
 msgid ", DIFFERS from a stored key"
 msgstr ", WEICHT von einem gespeicherten Schlüssel ab"
 
-#: app/src/commands/keys.ts:431
+#: app/src/commands/keys.ts:432
 msgid "Print a request you can send to the provider for the historical key"
 msgstr ""
 "Eine Anfrage ausgeben, die Sie an den Anbieter nach dem historischen "
 "Schlüssel schicken können"
 
-#: app/src/commands/keys.ts:435
+#: app/src/commands/keys.ts:436
 msgid "The signing domain"
 msgstr "Die signierende Domain"
 
-#: app/src/commands/keys.ts:440
+#: app/src/commands/keys.ts:441
 msgid "One or more selectors"
 msgstr "Ein oder mehrere Selektoren"
 
-#: app/src/commands/keys.ts:446
+#: app/src/commands/keys.ts:447
 msgid "When the messages were sent, e.g. \"March 2019\""
 msgstr "Wann die Nachrichten gesendet wurden, z. B. \"März 2019\""
 
-#: app/src/commands/keys.ts:484
+#: app/src/commands/keys.ts:485
 msgid "Decide which of two conflicting keys for a pair is the real one"
 msgstr ""
 "Entscheiden, welcher von zwei widersprüchlichen Schlüsseln eines Paars der "
 "echte ist"
 
-#: app/src/commands/keys.ts:494
+#: app/src/commands/keys.ts:495
 msgid "Pick candidate N (1-based) without the interactive prompt"
 msgstr "Kandidat N (ab 1) ohne interaktive Abfrage wählen"
 
-#: app/src/commands/keys.ts:503
+#: app/src/commands/keys.ts:504
 msgid "No key stored for {name}."
 msgstr "Kein Schlüssel für {name} gespeichert."
 
-#: app/src/commands/keys.ts:506
+#: app/src/commands/keys.ts:507
 msgid "{name} holds one key already; nothing to resolve."
 msgstr "{name} enthält bereits nur einen Schlüssel; nichts zu klären."
 
-#: app/src/commands/keys.ts:510
+#: app/src/commands/keys.ts:511
 msgid ""
 "{name} holds {count} candidate keys. A key rotation, or a forgery — your "
 "call:"
@@ -573,19 +573,19 @@ msgstr ""
 "{name} enthält {count} mögliche Schlüssel. Eine Schlüsselrotation oder eine "
 "Fälschung — Ihre Entscheidung:"
 
-#: app/src/commands/keys.ts:519
+#: app/src/commands/keys.ts:520
 msgid "Keep which one? [1-{count}, or empty to leave both] "
 msgstr "Welchen behalten? [1–{count}, oder leer lassen, um beide zu belassen] "
 
-#: app/src/commands/keys.ts:525
+#: app/src/commands/keys.ts:526
 msgid "Left as a conflict; nothing was changed."
 msgstr "Als Konflikt belassen; nichts wurde geändert."
 
-#: app/src/commands/keys.ts:533
+#: app/src/commands/keys.ts:534
 msgid "{choice} is not one of the listed candidates."
 msgstr "{choice} ist keiner der aufgeführten Kandidaten."
 
-#: app/src/commands/keys.ts:541
+#: app/src/commands/keys.ts:542
 msgid ""
 "Kept the {algorithm} {bits} bit key from {origin}. Every other record for "
 "{name} was dropped."
@@ -593,51 +593,51 @@ msgstr ""
 "Den {algorithm}-Schlüssel mit {bits} Bit von {origin} behalten. Alle anderen "
 "Einträge für {name} wurden verworfen."
 
-#: app/src/commands/keys.ts:554 app/src/commands/keys.ts:656
+#: app/src/commands/keys.ts:555 app/src/commands/keys.ts:657
 msgid "{count} message re-verified."
 msgid_plural "{count} messages re-verified."
 msgstr[0] "{count} Nachricht erneut geprüft"
 msgstr[1] "{count} Nachrichten erneut geprüft"
 
-#: app/src/commands/keys.ts:566
+#: app/src/commands/keys.ts:567
 msgid "  {index}. {key}: no message verifies under this key alone"
 msgstr ""
 "  {index}. {key}: keine Nachricht wird allein von diesem Schlüssel bestätigt"
 
-#: app/src/commands/keys.ts:572
+#: app/src/commands/keys.ts:573
 msgid ", {count} without a date"
 msgstr ", {count} ohne Datum"
 
-#: app/src/commands/keys.ts:574
+#: app/src/commands/keys.ts:575
 msgid "  {index}. {key}: {count} message"
 msgid_plural "  {index}. {key}: {count} messages"
 msgstr[0] "  {index}. {key}: {count} Nachricht"
 msgstr[1] "  {index}. {key}: {count} Nachrichten"
 
-#: app/src/commands/keys.ts:586
+#: app/src/commands/keys.ts:587
 msgid "{name} holds {count} candidate keys. Measured against the messages:"
 msgstr ""
 "{name} enthält {count} mögliche Schlüssel. An den Nachrichten gemessen:"
 
-#: app/src/commands/keys.ts:596
+#: app/src/commands/keys.ts:597
 msgid "  {count} signed message verifies under none of them."
 msgid_plural "  {count} signed messages verify under none of them."
 msgstr[0] "  {count} signierte Nachricht wird von keinem davon bestätigt."
 msgstr[1] "  {count} signierte Nachrichten werden von keinem davon bestätigt."
 
-#: app/src/commands/keys.ts:607
+#: app/src/commands/keys.ts:608
 msgid "  A rotation: the windows do not overlap. They are stored."
 msgstr ""
 "  Eine Rotation: Die Zeiträume überlappen sich nicht. Sie sind gespeichert."
 
-#: app/src/commands/keys.ts:608
+#: app/src/commands/keys.ts:609
 msgid ""
 "  A rotation: the windows do not overlap. Run with --apply to store them."
 msgstr ""
 "  Eine Rotation: Die Zeiträume überlappen sich nicht. Mit --apply speichern "
 "Sie sie."
 
-#: app/src/commands/keys.ts:613
+#: app/src/commands/keys.ts:614
 msgid ""
 "  Interleaved: both keys signed in the same period. A rotation does not go "
 "back; this is a forgery, or two senders sharing one selector. Compare them: "
@@ -647,28 +647,28 @@ msgstr ""
 "Rotation kehrt nicht zurück; das ist eine Fälschung oder zwei Absender mit "
 "demselben Selector. Vergleichen Sie sie: stamped keys resolve."
 
-#: app/src/commands/keys.ts:617
+#: app/src/commands/keys.ts:618
 msgid "  Not measurable: a key verifies no message with a readable date."
 msgstr ""
 "  Nicht messbar: Ein Schlüssel bestätigt keine Nachricht mit lesbarem Datum."
 
-#: app/src/commands/keys.ts:628
+#: app/src/commands/keys.ts:629
 msgid "Tell a key rotation from a conflict by which messages each key verifies"
 msgstr ""
 "Eine Schlüsselrotation von einem Konflikt unterscheiden, danach welche "
 "Nachrichten jeder Schlüssel bestätigt"
 
-#: app/src/commands/keys.ts:631
+#: app/src/commands/keys.ts:632
 msgid "Store the measured windows of every rotation and re-verify its messages"
 msgstr ""
 "Die gemessenen Zeiträume jeder Rotation speichern und ihre Nachrichten "
 "erneut prüfen"
 
-#: app/src/commands/keys.ts:640
+#: app/src/commands/keys.ts:641
 msgid "No pair holds conflicting keys; nothing to measure."
 msgstr "Kein Paar enthält widersprüchliche Schlüssel; nichts zu messen."
 
-#: app/src/commands/keys.ts:666
+#: app/src/commands/keys.ts:667
 msgid ""
 "A bundle holds no messages, but it names the sender domains of the case. "
 "Passing it on is an editorial decision, not a default."
@@ -676,7 +676,7 @@ msgstr ""
 "Ein Bündel enthält keine Nachrichten, nennt aber die Absenderdomains des "
 "Falls. Es weiterzugeben ist eine redaktionelle Entscheidung, kein Standard."
 
-#: app/src/commands/keys.ts:676
+#: app/src/commands/keys.ts:678
 msgid ""
 "Write the keys of the case, with their origin and time window, to a bundle "
 "file"
@@ -684,25 +684,46 @@ msgstr ""
 "Die Schlüssel des Falls mit Herkunft und Zeitfenster in eine Bündeldatei "
 "schreiben"
 
-#: app/src/commands/keys.ts:681
+#: app/src/commands/keys.ts:683
 msgid "The bundle file to write"
 msgstr "Die zu schreibende Bündeldatei"
 
 #: app/src/commands/keys.ts:689
+msgid ""
+"Write only the domain and selector of each key, as the TSV that the upload "
+"page of archive.prove.email reads"
+msgstr ""
+"Nur Domain und Selektor jedes Schlüssels schreiben, als TSV für die "
+"Upload-Seite von archive.prove.email"
+
+#: app/src/commands/keys.ts:694
+msgid ""
+"The TSV names the sender domains and their selectors: uploading the pairs of "
+"a private case to a public archive is an editorial decision, not a default."
+msgstr ""
+"Das TSV nennt die Absenderdomains und ihre Selektoren: Die Paare eines "
+"nicht öffentlichen Falls in ein öffentliches Archiv hochzuladen, ist eine "
+"redaktionelle Entscheidung und kein Standard."
+
+#: app/src/commands/keys.ts:702
+msgid "Wrote {count} domain and selector pairs to {file}."
+msgstr "{count} Paare aus Domain und Selektor nach {file} geschrieben."
+
+#: app/src/commands/keys.ts:710
 msgid "Wrote {count} keys to {file}."
 msgstr "{count} Schlüssel nach {file} geschrieben."
 
-#: app/src/commands/keys.ts:701
+#: app/src/commands/keys.ts:722
 msgid "Add the keys of a bundle file to the case, keeping their origin"
 msgstr ""
 "Schlüssel aus einer Bündeldatei in den Fall übernehmen und ihre Herkunft "
 "beibehalten"
 
-#: app/src/commands/keys.ts:705
+#: app/src/commands/keys.ts:726
 msgid "The bundle file to read"
 msgstr "Die zu lesende Bündeldatei"
 
-#: app/src/commands/keys.ts:712
+#: app/src/commands/keys.ts:733
 msgid ""
 "Imported keys keep the origin the bundle names and are never trusted more "
 "than that. A key that differs from one the case already holds is kept next "
@@ -712,11 +733,11 @@ msgstr ""
 "nie als vertrauenswürdiger. Ein Schlüssel, der von einem bereits vorhandenen "
 "abweicht, wird daneben behalten: siehe `stamped keys resolve`."
 
-#: app/src/commands/keys.ts:724
+#: app/src/commands/keys.ts:745
 msgid "{count} keys imported, {conflicts} conflicts to resolve."
 msgstr "{count} Schlüssel importiert, {conflicts} Konflikte zu klären."
 
-#: app/src/commands/keys.ts:729 app/src/commands/report.ts:387
+#: app/src/commands/keys.ts:750 app/src/commands/report.ts:387
 msgid "Hint: stamped keys resolve <selector>._domainkey.<domain>"
 msgstr "Hinweis: stamped keys resolve <Selektor>._domainkey.<Domain>"
 
@@ -4438,15 +4459,15 @@ msgstr ""
 "Der Signaturalgorithmus oder Schlüsseltyp wird von diesem Werkzeug nicht "
 "unterstützt. {nothing}"
 
-#: packages/core/src/keybundle.ts:49
+#: packages/core/src/keybundle.ts:61
 msgid "{file} is not valid JSON."
 msgstr "{file} ist kein gültiges JSON."
 
-#: packages/core/src/keybundle.ts:53 packages/core/src/keybundle.ts:65
+#: packages/core/src/keybundle.ts:65 packages/core/src/keybundle.ts:77
 msgid "{file} is not a Stamped key bundle."
 msgstr "{file} ist kein Stamped-Schlüsselbündel."
 
-#: packages/core/src/keybundle.ts:57
+#: packages/core/src/keybundle.ts:69
 msgid ""
 "{file} uses key bundle format {version}; this version of Stamped reads "
 "{supported}."
@@ -4454,7 +4475,7 @@ msgstr ""
 "{file} verwendet das Schlüsselbündel-Format {version}; diese Version von "
 "Stamped liest {supported}."
 
-#: packages/core/src/keybundle.ts:76
+#: packages/core/src/keybundle.ts:88
 msgid "{file} has a malformed entry for {name}."
 msgstr "{file} enthält einen fehlerhaften Eintrag für {name}."
 

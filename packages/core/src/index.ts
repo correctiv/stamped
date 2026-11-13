@@ -99,7 +99,13 @@ export {
     rsaModulusBits,
 } from './keymaterial.ts';
 
-export { exportKeyBundle, KEY_BUNDLE_FORMAT, KEY_BUNDLE_VERSION, parseKeyBundle } from './keybundle.ts';
+export {
+    exportKeyBundle,
+    exportPairsTsv,
+    KEY_BUNDLE_FORMAT,
+    KEY_BUNDLE_VERSION,
+    parseKeyBundle,
+} from './keybundle.ts';
 
 export {
     type AddOutcome,

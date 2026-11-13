@@ -6,6 +6,7 @@
 
 import {
     exportKeyBundle,
+    exportPairsTsv,
     KEY_BUNDLE_FORMAT,
     KeyVault,
     parseKeyBundle,
@@ -137,6 +138,21 @@ export default async () => {
             expect(messageOf(() => parseKeyBundle(JSON.stringify(parsed), 'b.json'))).toBe(
                 'b.json has a malformed entry for bad._domainkey.example.com.',
             );
+        });
+
+        await it('writes each domain and selector once, as two tab-separated columns', async () => {
+            const vault = new KeyVault();
+            expect(exportPairsTsv(vault)).toBe('');
+            vault.add({ ...PAIR, key: A, origin: 'dns', fetchedAt: '2026-10-20T10:00:00.000Z' });
+            vault.add({ ...PAIR, key: B, origin: 'archive', fetchedAt: '2026-10-21T10:00:00.000Z' });
+            vault.add({
+                domain: 'lists.example.org',
+                selector: 'a1',
+                key: A,
+                origin: 'dns',
+                fetchedAt: '2026-10-22T10:00:00.000Z',
+            });
+            expect(exportPairsTsv(vault)).toBe('example.com\trot\nlists.example.org\ta1\n');
         });
     });
 };
