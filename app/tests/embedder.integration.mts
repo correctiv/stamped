@@ -1,6 +1,6 @@
 // Opt-in integration test for the llama embedder, on BOTH runtimes.
 //
-// Runs only when STAMPED_EMBED_MODEL points at a DIRECTORY containing an EmbeddingGemma 2 GGUF;
+// Runs only when STAMPED_EMBED_MODEL points at an EmbeddingGemma 2 GGUF FILE;
 // otherwise it exits 0 without loading anything. It is not part of `gjsify test`, which has to
 // stay a suite anyone can run from a fresh checkout — this one needs a 296 MiB model file on disk.
 //

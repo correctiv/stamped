@@ -35,12 +35,19 @@
       "binaryName": "stamped",
       "bundledTypelibs": {
         "linux": [
-          "../node_modules/@gjsify/http-soup-bridge-linux-x64/prebuilds/linux-x64"
+          "../node_modules/@gjsify/http-soup-bridge-linux-x64/prebuilds/linux-x64",
+          "../node_modules/@gjsify/napi-linux-x64/prebuilds/linux-x64"
         ]
       },
       "kind": "app",
-      "nodeModules": ["node-llama-cpp"],
+      "nodeModules": [
+        "node-llama-cpp"
+      ],
       "nodeModulesExclude": [
+        "@node-llama-cpp/linux-arm64",
+        "@node-llama-cpp/linux-armv7l",
+        "@node-llama-cpp/linux-x64-cuda",
+        "@node-llama-cpp/linux-x64-cuda-ext",
         "@node-llama-cpp/win-x64-cuda",
         "@node-llama-cpp/win-x64-cuda-ext",
         "@node-llama-cpp/win-x64-vulkan"
@@ -124,9 +131,9 @@
     }
   },
   "dependencies": {
-    "@gjsify/embeddings": "0.64.32",
-    "@gjsify/machine-fit": "0.64.32",
-    "@gjsify/model-store": "0.64.32",
+    "@gjsify/embeddings": "0.64.34",
+    "@gjsify/machine-fit": "0.64.34",
+    "@gjsify/model-store": "0.64.34",
     "node-llama-cpp": "3.22.2",
     "@stamped/core": "*",
     "@stamped/import": "*",
@@ -136,15 +143,15 @@
     "yargs": "^18.1.0"
   },
   "devDependencies": {
-    "@gjsify/cli": "0.64.32",
-    "@gjsify/napi": "0.64.32",
-    "@gjsify/node-globals": "0.64.32",
-    "@gjsify/rolldown-native": "0.64.32",
-    "@gjsify/runtime": "0.64.32",
-    "@gjsify/sqlite": "0.64.32",
-    "@gjsify/adwaita-app": "0.64.32",
-    "@gjsify/unit": "0.64.32",
-    "@gjsify/web-worker": "0.64.32",
+    "@gjsify/cli": "0.64.34",
+    "@gjsify/napi": "0.64.34",
+    "@gjsify/node-globals": "0.64.34",
+    "@gjsify/rolldown-native": "0.64.34",
+    "@gjsify/runtime": "0.64.34",
+    "@gjsify/sqlite": "0.64.34",
+    "@gjsify/adwaita-app": "0.64.34",
+    "@gjsify/unit": "0.64.34",
+    "@gjsify/web-worker": "0.64.34",
     "comlink": "^4.4.2",
     "@girs/adw-1": "5.4.0",
     "@girs/gdk-4.0": "5.4.0",
@@ -160,16 +167,16 @@
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "typescript": "^6.0.3",
-    "@gjsify/node-gi": "0.64.32"
+    "@gjsify/node-gi": "0.64.34"
   },
   "optionalDependencies": {
-    "@gjsify/gtk-runtime-darwin-arm64": "0.64.32",
-    "@gjsify/gtk-runtime-darwin-x64": "0.64.32",
-    "@gjsify/gtk-runtime-win32-arm64": "0.64.32",
-    "@gjsify/gtk-runtime-win32-x64": "0.64.32",
-    "@gjsify/node-runtime-darwin-arm64": "0.64.32",
-    "@gjsify/node-runtime-darwin-x64": "0.64.32",
-    "@gjsify/node-runtime-win32-arm64": "0.64.32",
-    "@gjsify/node-runtime-win32-x64": "0.64.32"
+    "@gjsify/gtk-runtime-darwin-arm64": "0.64.34",
+    "@gjsify/gtk-runtime-darwin-x64": "0.64.34",
+    "@gjsify/gtk-runtime-win32-arm64": "0.64.34",
+    "@gjsify/gtk-runtime-win32-x64": "0.64.34",
+    "@gjsify/node-runtime-darwin-arm64": "0.64.34",
+    "@gjsify/node-runtime-darwin-x64": "0.64.34",
+    "@gjsify/node-runtime-win32-arm64": "0.64.34",
+    "@gjsify/node-runtime-win32-x64": "0.64.34"
   }
 }

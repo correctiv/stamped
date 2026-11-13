@@ -21,10 +21,10 @@
     "src"
   ],
   "dependencies": {
-    "@gjsify/embeddings": "0.64.32",
-    "@gjsify/machine-fit": "0.64.32",
-    "@gjsify/model-store": "0.64.32",
-    "@gjsify/napi": "0.64.32",
+    "@gjsify/embeddings": "0.64.34",
+    "@gjsify/machine-fit": "0.64.34",
+    "@gjsify/model-store": "0.64.34",
+    "@gjsify/napi": "0.64.34",
     "node-llama-cpp": "3.22.2"
   }
 }
