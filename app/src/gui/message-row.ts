@@ -12,6 +12,7 @@ import Gtk from '@girs/gtk-4.0';
 import Pango from '@girs/pango-1.0';
 import type { Mark } from '@stamped/store';
 
+import { DEFAULT_DENSITY, rowMetrics, type Density } from '../lib/density.ts';
 import { MAX_CHIPS, tagChips } from './view/marks.ts';
 import { noHyphens } from './view/markup.ts';
 import type { MessageRow } from './view/message.ts';
@@ -70,12 +71,19 @@ export class MessageRowView extends Gtk.Box {
     private readonly verdict: Gtk.Label;
     private verdictClass = '';
 
-    constructor() {
+    /**
+     * `density` decides the row's height and nothing else: a compact row shows every part a
+     * comfortable one does. It is given at SETUP time, which is why changing the setting hands
+     * the list a new factory rather than reaching into the rows that exist (see `applyDensity` in
+     * window.ts) — a `Gtk.ListView` owns its rows and recycles them.
+     */
+    constructor(density: Density = DEFAULT_DENSITY) {
+        const { marginVertical, spacing, chipGap } = rowMetrics(density);
         super({
             orientation: Gtk.Orientation.HORIZONTAL,
-            spacing: 8,
-            marginTop: 8,
-            marginBottom: 8,
+            spacing,
+            marginTop: marginVertical,
+            marginBottom: marginVertical,
             marginStart: 6,
             marginEnd: 6,
         });
@@ -97,7 +105,11 @@ export class MessageRowView extends Gtk.Box {
         this.subtitle.add_css_class('caption');
         // A LINE OF ITS OWN, under the contact line rather than beside it: a chip next to the
         // sender competes with it for the same width, and the sender is what the row is read for.
-        this.chipBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 4, marginTop: 2 });
+        this.chipBox = new Gtk.Box({
+            orientation: Gtk.Orientation.HORIZONTAL,
+            spacing: 4,
+            marginTop: chipGap,
+        });
         this.chips = [];
         for (let index = 0; index < MAX_CHIPS; index++) {
             const chip = this.chip();
