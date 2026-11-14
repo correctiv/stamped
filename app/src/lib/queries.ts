@@ -36,6 +36,7 @@ import {
     peopleList,
     periodScope,
     personScope,
+    readMarks,
     readMessage,
     readPerimeter,
     readRaw,
@@ -52,6 +53,8 @@ import {
     type HashScope,
     type IndexedMessage,
     type LogSource,
+    type Mark,
+    type Marks,
     type Person,
     type SearchHit,
     type SearchOptions,
@@ -431,6 +434,35 @@ export function filteredCount(ctx: QueryContext, query: Query): number {
     return searchHits(ctx.db, text, searchOptionsOf(ctx, query, text, 5000)).length;
 }
 
+/**
+ * What is marked on each of `hashes` — only the ones with a mark appear.
+ *
+ * ON THE WORKER, with the page it decorates. `marks.json` is small next to the index (a line per
+ * marked message, not per message), but the list used to read it on the GTK main thread once per
+ * fill and once per appended page: a synchronous `readFileSync` plus a `JSON.parse` of the whole
+ * file, in the same turn that paints the rows. The page is already a round trip to this thread,
+ * so the marks ride along with it and the main thread does no file I/O to draw a row.
+ *
+ * A `Record`, not a `Map`: see the module's note on what crosses the boundary. An unreadable
+ * marks file answers `{}` rather than throwing — a row without its star is a row the reader can
+ * still open, and the reader is where the file's error is reported (see `marksOfMessage`).
+ */
+export function marksForHashes(ctx: QueryContext, hashes: readonly string[]): Record<string, Mark> {
+    if (hashes.length === 0) return {};
+    let marks: Marks;
+    try {
+        marks = readMarks(ctx.paths);
+    } catch {
+        return {};
+    }
+    const out: Record<string, Mark> = {};
+    for (const hash of hashes) {
+        const mark = marks.get(hash);
+        if (mark !== undefined) out[hash] = mark;
+    }
+    return out;
+}
+
 /** The people of the case, most mail first, narrowed by a name/address search. */
 export function peopleOf(ctx: QueryContext, search: string, limit = 100): Person[] {
     return peopleList(ctx.db, { search, limit });
@@ -508,6 +540,7 @@ export interface QueryRequests {
         readonly semantic?: HybridInput['semantic'];
     };
     readonly count: { readonly query: Query };
+    readonly marks: { readonly hashes: readonly string[] };
     readonly check: { readonly text: string };
     readonly people: { readonly search: string; readonly limit?: number };
     readonly timeline: Record<string, never>;
@@ -527,6 +560,8 @@ export interface QueryResults {
     readonly page: SearchHit[];
     readonly hybrid: HybridHit[] | null;
     readonly count: number;
+    /** Only the hashes that carry a mark; a message without one is simply absent. */
+    readonly marks: Record<string, Mark>;
     readonly check: string[];
     readonly people: Person[];
     readonly timeline: Timeline;
@@ -574,6 +609,7 @@ const handlers: {
     page: (ctx, params) => pageOf(ctx, params.query, params.offset ?? 0),
     hybrid: (ctx, params) => hybridPageOf(ctx, params.query, params),
     count: (ctx, params) => filteredCount(ctx, params.query),
+    marks: (ctx, params) => marksForHashes(ctx, params.hashes),
     check: (ctx, params) => searchProblems(ctx, params.text),
     people: (ctx, params) => peopleOf(ctx, params.search, params.limit ?? 100),
     timeline: (ctx) => timelineOf(ctx),

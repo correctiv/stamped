@@ -20,14 +20,24 @@
  * from the GUI, not from here; this is the part that stays honest on a CI runner.
  */
 
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { describe, expect, it } from '@gjsify/unit';
 import { KeyVault, parseKeyMaterial, type MessageFinding, type Verdict } from '@stamped/core';
 import { encodeLatin1, summarise } from '@stamped/import';
-import { addTag, casePaths, digest, indexMessage, openIndex, setBookmark, store } from '@stamped/store';
+import {
+    addTag,
+    casePaths,
+    digest,
+    indexMessage,
+    marksFile,
+    openIndex,
+    readMarks,
+    setBookmark,
+    store,
+} from '@stamped/store';
 
 import { isRecoverable, QueryClient, type QueryChannel } from '../../src/gui/query-client.ts';
 import { initI18n } from '../../src/lib/i18n.ts';
@@ -517,6 +527,37 @@ export default async () => {
                 setBookmark(ctx.paths, b, true);
                 expect(runQuery(ctx, 'count', { query: { scope: bookmarks } })).toBe(1);
                 expect(runQuery(ctx, 'page', { query: { scope: bookmarks } })[0]?.hash).toBe(b);
+            });
+        });
+
+        await it('answers what one page is marked with, and only for the hashes asked about', async () => {
+            // This is the read the list used to do on the GTK main thread, once per page.
+            await withCase((ctx) => {
+                const a = put(ctx, { id: 'a', from: 'ada@example.com' });
+                const b = put(ctx, { id: 'b', from: 'ada@example.com' });
+                const c = put(ctx, { id: 'c', from: 'ada@example.com' });
+                expect(runQuery(ctx, 'marks', { hashes: [] })).toStrictEqual({});
+                expect(runQuery(ctx, 'marks', { hashes: [a, b] })).toStrictEqual({});
+                addTag(ctx.paths, a, 'Follow up');
+                setBookmark(ctx.paths, b, true);
+                setBookmark(ctx.paths, c, true);
+                // `c` is marked and absent all the same: it is not on this page.
+                expect(runQuery(ctx, 'marks', { hashes: [a, b] })).toStrictEqual({
+                    [a]: { tags: ['Follow up'], bookmark: false },
+                    [b]: { tags: [], bookmark: true },
+                });
+            });
+        });
+
+        await it('answers an unreadable marks file with nothing rather than throwing', async () => {
+            // A star missing is a row the person can still open and read; the error belongs in
+            // the reader, which is the pane that would overwrite the file.
+            await withCase((ctx) => {
+                const a = put(ctx, { id: 'a', from: 'ada@example.com' });
+                addTag(ctx.paths, a, 'Follow up');
+                writeFileSync(marksFile(ctx.paths), '{ not json', 'utf8');
+                expect(() => readMarks(ctx.paths)).toThrow();
+                expect(runQuery(ctx, 'marks', { hashes: [a] })).toStrictEqual({});
             });
         });
 

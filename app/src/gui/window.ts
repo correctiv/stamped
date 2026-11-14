@@ -81,6 +81,7 @@ import {
 } from '../lib/semantic-run.ts';
 import { attachmentLines } from '../lib/attachment-metadata.ts';
 import { citationOf } from '../lib/citation.ts';
+import { readDensity, writeDensity, type Density } from '../lib/density.ts';
 import { openCopy } from '../lib/open-copy.ts';
 import { forgetCase, offeredCases, recentCasesDir, rememberCase } from '../lib/recent-cases.ts';
 import {
@@ -106,6 +107,7 @@ import { timeFindingOf } from '../lib/time.ts';
 import { ActivityController } from './activity.ts';
 import { runCaseFileJob } from './case-file-job.ts';
 import { spawnEmbedHelper } from './embed-spawn.ts';
+import { presentAppearanceSettings } from './appearance-dialog.ts';
 import { presentSemanticSettings } from './semantic-dialog.ts';
 import { StampedHelpButton } from './help-button.ts';
 import {
@@ -120,6 +122,7 @@ import {
     importStatusOf,
     isCaseFolder,
     knownKeyNames,
+    marksForPage,
     marksOfMessage,
     marksSummary,
     markImportCancelled,
@@ -547,6 +550,17 @@ export class StampedWindow extends Adw.ApplicationWindow {
         pageSize: PAGE_SIZE,
         onPage: (page, replace) => this.appendPage(page, replace),
     });
+    /**
+     * What the rows fetched so far are marked with, by hash — only the marked ones are in here.
+     *
+     * Filled by the worker with each page ({@link marksForPage}) and ADDED TO, never replaced: a
+     * reset lets a second fetch start while the first is still out, and a late answer overwriting
+     * this would take the stars off the page that is actually on screen. Cleared in
+     * {@link fillList}, so the most it can hold is the marks of one list's fetched pages.
+     */
+    private rowMarks = new Map<string, Mark>();
+    /** How tall the rows are drawn; the person's setting, read once at startup. */
+    private density: Density = readDensity(recentCasesDir());
     /** Cancellable for an in-flight import subprocess. */
     private importCancellable?: Gio.Cancellable;
     /** The import subprocess this window started, if any; only its Cancel button may kill it. */
@@ -695,6 +709,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.addAction('import', () => void this.importFrom('files'));
         this.addAction('import-folder', () => void this.importFrom('folder'));
         this.addAction('export-report', () => void this.exportReport());
+        this.addAction('appearance', () => {
+            presentAppearanceSettings(this, this.density, (density) => this.applyDensity(density));
+        });
         this.addAction('semantic-settings', () => {
             if (this.semantic) {
                 const marked = markingDecisions(this.semantic, () => {
@@ -726,18 +743,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
             autoselect: false,
             canUnselect: true,
         });
-        const factory = new Gtk.SignalListItemFactory();
-        factory.connect('setup', (_factory, object) => {
-            (object as Gtk.ListItem).set_child(new MessageRowView());
-        });
-        factory.connect('bind', (_factory, object) => {
-            const listItem = object as Gtk.ListItem;
-            (listItem.get_child() as MessageRowView).bind(listItem.get_item() as MessageItem);
-        });
-        factory.connect('unbind', (_factory, object) => {
-            ((object as Gtk.ListItem).get_child() as MessageRowView).unbind();
-        });
-        this._messageList.set_factory(factory);
+        this._messageList.set_factory(this.messageFactory());
         this._messageList.set_model(this.messageSelection);
         this.messageSelection.connect('notify::selected', () => {
             if (this.rebuilding) return;
@@ -897,6 +903,43 @@ export class StampedWindow extends Adw.ApplicationWindow {
             return;
         }
         showToast(escapeLine(fmt(_('{path} is not a Stamped case folder.'), { path: root })));
+    }
+
+    /**
+     * The factory the message list builds its rows with, at the density chosen now.
+     *
+     * The density is read ONCE, here, and baked into the rows this factory makes: a
+     * `Gtk.ListView` builds and recycles its own rows, so there is no list of widgets to walk
+     * when the setting changes. {@link applyDensity} hands it a new factory instead.
+     */
+    private messageFactory(): Gtk.SignalListItemFactory {
+        const density = this.density;
+        const factory = new Gtk.SignalListItemFactory();
+        factory.connect('setup', (_factory, object) => {
+            (object as Gtk.ListItem).set_child(new MessageRowView(density));
+        });
+        factory.connect('bind', (_factory, object) => {
+            const listItem = object as Gtk.ListItem;
+            (listItem.get_child() as MessageRowView).bind(listItem.get_item() as MessageItem);
+        });
+        factory.connect('unbind', (_factory, object) => {
+            ((object as Gtk.ListItem).get_child() as MessageRowView).unbind();
+        });
+        return factory;
+    }
+
+    /**
+     * Draw the list at `density` from now on, and remember the choice.
+     *
+     * The rows are rebuilt, the MODEL is not touched: the store, the selection and the pages
+     * already fetched stay as they are, so the message the person is reading stays selected and
+     * the list does not scroll back to the top.
+     */
+    private applyDensity(density: Density): void {
+        if (density === this.density) return;
+        this.density = density;
+        writeDensity(recentCasesDir(), density);
+        this._messageList.set_factory(this.messageFactory());
     }
 
     private addAction(name: string, activate: () => void): void {
@@ -1943,6 +1986,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.filteredCounted = false;
         // No total yet; the count below fills it in. See `PagedList.reset`.
         this.paged.reset();
+        this.rowMarks = new Map();
         if (query.text !== undefined) this.setSearchPhase('text');
 
         // A half-typed `from:` is not a failure: say what is missing instead of asking the page.
@@ -2106,7 +2150,13 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const session = this.session;
         if (!session) return;
         const run = this.listRuns.token;
-        const landed = await this.paged.loadMore((offset) => pageOf(session, query, offset));
+        // The marks come back BEFORE the page is handed on: `onPage` runs as soon as this
+        // resolves, and a row built without its mark would have to be rebuilt to get a star.
+        const landed = await this.paged.loadMore(async (offset) => {
+            const page = await pageOf(session, query, offset);
+            await this.learnMarks(session, page);
+            return page;
+        });
         if (!landed || this.session !== session || !this.listRuns.isCurrent(run)) return;
         this.showCount(this.paged.loaded);
     }
@@ -2139,8 +2189,55 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private itemsOf(page: readonly SearchHit[]): MessageItem[] {
         return messageRows(page).map((row) => {
             const found = matchBadge(this.matches.get(row.hash) ?? 'text');
-            return new MessageItem(row, found === undefined ? undefined : escapeLine(found));
+            return new MessageItem(
+                row,
+                found === undefined ? undefined : escapeLine(found),
+                this.rowMarks.get(row.hash),
+            );
         });
+    }
+
+    /**
+     * Ask the worker what the messages of `page` are marked with and remember it.
+     *
+     * Never throws: the stars and chips are a decoration on a list that already answered, so a
+     * marks file that cannot be read leaves the rows plain. The reader says why when the person
+     * opens one of them ({@link marksControls}).
+     */
+    private async learnMarks(session: CaseSession, page: readonly SearchHit[]): Promise<void> {
+        try {
+            for (const [hash, mark] of await marksForPage(
+                session,
+                page.map((hit) => hit.hash),
+            )) {
+                this.rowMarks.set(hash, mark);
+            }
+        } catch {
+            // The list stands; see above.
+        }
+    }
+
+    /**
+     * Redraw one row after the reader changed its marks.
+     *
+     * The item's `mark` is replaced and the row re-bound in place: the row is the same message in
+     * the same position, and refilling the list would drop the selection the person is reading
+     * from. `rebuilding` is set for the same reason the other store edits set it — the selection
+     * handler must not read this as a click.
+     */
+    private refreshRowMarks(hash: string, mark: Mark): void {
+        this.rowMarks.set(hash, mark);
+        for (let index = 0; index < this.messageStore.get_n_items(); index++) {
+            const item = this.messageStore.get_item(index);
+            if (item === null || item.row.hash !== hash) continue;
+            item.mark = mark;
+            const selected = this.messageSelection.get_selected();
+            this.rebuilding = true;
+            this.messageStore.items_changed(index, 1, 1);
+            this.messageSelection.set_selected(selected);
+            this.rebuilding = false;
+            return;
+        }
     }
 
     /**
@@ -2197,7 +2294,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.matches = new Map(merged.map((hit) => [hit.hash, hit.match]));
             // The fused page is the whole answer: there is no page two of a ranked search.
             this.paged.finish(total);
-            if (append.length > 0) this.appendPage(append, false);
+            if (append.length > 0) {
+                await this.learnMarks(session, append);
+                if (!current()) return;
+                this.appendPage(append, false);
+            }
             this.showCount(total);
             this.showListOrEmpty(query);
         } catch {
@@ -2418,6 +2519,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 // The toggle has moved but nothing was written: put it back where the file is.
                 show(current);
             }
+            // `current` is what the file holds now, after a failed edit as much as after one that
+            // went through — so the row in the list shows the same thing these controls do.
+            this.refreshRowMarks(hash, current);
             this.refreshMarks();
         };
 

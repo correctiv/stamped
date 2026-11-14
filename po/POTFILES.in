@@ -13,6 +13,7 @@ app/src/commands/tag.ts
 app/src/commands/timeline.ts
 app/src/commands/verify.ts
 app/src/gui/activity.ts
+app/src/gui/appearance-dialog.ts
 app/src/gui/bench.ts
 app/src/gui/blp.d.ts
 app/src/gui/case-file-job.ts
@@ -57,6 +58,7 @@ app/src/lib/case-file-progress.ts
 app/src/lib/case.ts
 app/src/lib/citation.ts
 app/src/lib/consent.ts
+app/src/lib/density.ts
 app/src/lib/dns.ts
 app/src/lib/duration.ts
 app/src/lib/embed-client.ts

@@ -267,6 +267,25 @@ export function marksOfMessage(session: CaseSession, hash: string): Mark {
     return marksOf(session.paths, hash);
 }
 
+/**
+ * What is marked on each message of one page — the stars and chips the rows draw.
+ *
+ * ASYNC, unlike {@link marksOfMessage}, and that is the difference that matters: the reader asks
+ * for ONE message when somebody clicks, where the list asks for two hundred every time a page
+ * lands. Reading and parsing the whole marks file on this thread for each of those was file I/O
+ * in the turn that paints the rows, so the question goes to the worker with the page it belongs
+ * to (`marksForHashes` in `lib/queries.ts`).
+ *
+ * A `Map`, because the worker's `Record` is a wire format and the rows want a lookup.
+ */
+export async function marksForPage(
+    session: CaseSession,
+    hashes: readonly string[],
+): Promise<Map<string, Mark>> {
+    const marks = await session.query.ask('marks', { hashes });
+    return new Map(Object.entries(marks));
+}
+
 /** The tags and the bookmark count the sidebar lists. */
 export function marksSummary(session: CaseSession): MarksSummary {
     return summariseMarks(session.paths);
