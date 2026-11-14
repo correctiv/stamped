@@ -247,10 +247,14 @@ template $StampedWindow: Adw.ApplicationWindow {
             };
           };
 
+          // The message list is the pane the work happens in: it carries the sender, the
+          // subject, the verdict badge and now a star and tag chips, and at 0.33 the subject was
+          // down to a few words with the chips under it cut as well. Wider by default, and the
+          // bounds moved with it so a narrow window still leaves the reader its room.
           content: Adw.NavigationSplitView innerSplit {
-            min-sidebar-width: 280;
-            max-sidebar-width: 440;
-            sidebar-width-fraction: 0.33;
+            min-sidebar-width: 340;
+            max-sidebar-width: 560;
+            sidebar-width-fraction: 0.42;
 
             sidebar: Adw.NavigationPage {
               title: _("Messages");

@@ -82,14 +82,25 @@ if (wantsCli) {
 
     const app = new AdwaitaApp({
         applicationId: 'org.correctiv.Stamped',
-        // The pill shape only — every verdict colour is a libadwaita style class, so this stays
-        // one rule and the badges follow the system accent (see `badge()` in window.ts).
+        // The pill shapes only — every verdict colour is a libadwaita style class, so this stays
+        // two rules and the badges follow the system accent (see `badge()` in window.ts).
+        //
+        // A tag chip is the quieter of the two: a message row carries up to three of them beside
+        // a verdict badge that is the row's actual finding, and a chip drawn as loudly would read
+        // as a second verdict. So it is smaller, unbolded and dimmer.
         css: `.verdict-badge {
     padding: 2px 10px;
     border-radius: 9999px;
     font-size: 0.8em;
     font-weight: bold;
     background-color: alpha(currentColor, 0.12);
+}
+
+.tag-chip {
+    padding: 0px 7px;
+    border-radius: 9999px;
+    font-size: 0.75em;
+    background-color: alpha(currentColor, 0.08);
 }`,
         // Literal fields rather than `aboutAppdata`: the metainfo is staged by `gjsify ship` at a
         // prefix-relative `share/metainfo`, and nothing exports that prefix to a running bundle —

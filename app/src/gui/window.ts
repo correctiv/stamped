@@ -120,6 +120,7 @@ import {
     importStatusOf,
     isCaseFolder,
     knownKeyNames,
+    marksForPage,
     marksOfMessage,
     marksSummary,
     markImportCancelled,
@@ -547,6 +548,15 @@ export class StampedWindow extends Adw.ApplicationWindow {
         pageSize: PAGE_SIZE,
         onPage: (page, replace) => this.appendPage(page, replace),
     });
+    /**
+     * What the rows fetched so far are marked with, by hash — only the marked ones are in here.
+     *
+     * Filled by the worker with each page ({@link marksForPage}) and ADDED TO, never replaced: a
+     * reset lets a second fetch start while the first is still out, and a late answer overwriting
+     * this would take the stars off the page that is actually on screen. Cleared in
+     * {@link fillList}, so the most it can hold is the marks of one list's fetched pages.
+     */
+    private rowMarks = new Map<string, Mark>();
     /** Cancellable for an in-flight import subprocess. */
     private importCancellable?: Gio.Cancellable;
     /** The import subprocess this window started, if any; only its Cancel button may kill it. */
@@ -1943,6 +1953,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.filteredCounted = false;
         // No total yet; the count below fills it in. See `PagedList.reset`.
         this.paged.reset();
+        this.rowMarks = new Map();
         if (query.text !== undefined) this.setSearchPhase('text');
 
         // A half-typed `from:` is not a failure: say what is missing instead of asking the page.
@@ -2106,7 +2117,13 @@ export class StampedWindow extends Adw.ApplicationWindow {
         const session = this.session;
         if (!session) return;
         const run = this.listRuns.token;
-        const landed = await this.paged.loadMore((offset) => pageOf(session, query, offset));
+        // The marks come back BEFORE the page is handed on: `onPage` runs as soon as this
+        // resolves, and a row built without its mark would have to be rebuilt to get a star.
+        const landed = await this.paged.loadMore(async (offset) => {
+            const page = await pageOf(session, query, offset);
+            await this.learnMarks(session, page);
+            return page;
+        });
         if (!landed || this.session !== session || !this.listRuns.isCurrent(run)) return;
         this.showCount(this.paged.loaded);
     }
@@ -2139,8 +2156,55 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private itemsOf(page: readonly SearchHit[]): MessageItem[] {
         return messageRows(page).map((row) => {
             const found = matchBadge(this.matches.get(row.hash) ?? 'text');
-            return new MessageItem(row, found === undefined ? undefined : escapeLine(found));
+            return new MessageItem(
+                row,
+                found === undefined ? undefined : escapeLine(found),
+                this.rowMarks.get(row.hash),
+            );
         });
+    }
+
+    /**
+     * Ask the worker what the messages of `page` are marked with and remember it.
+     *
+     * Never throws: the stars and chips are a decoration on a list that already answered, so a
+     * marks file that cannot be read leaves the rows plain. The reader says why when the person
+     * opens one of them ({@link marksControls}).
+     */
+    private async learnMarks(session: CaseSession, page: readonly SearchHit[]): Promise<void> {
+        try {
+            for (const [hash, mark] of await marksForPage(
+                session,
+                page.map((hit) => hit.hash),
+            )) {
+                this.rowMarks.set(hash, mark);
+            }
+        } catch {
+            // The list stands; see above.
+        }
+    }
+
+    /**
+     * Redraw one row after the reader changed its marks.
+     *
+     * The item's `mark` is replaced and the row re-bound in place: the row is the same message in
+     * the same position, and refilling the list would drop the selection the person is reading
+     * from. `rebuilding` is set for the same reason the other store edits set it — the selection
+     * handler must not read this as a click.
+     */
+    private refreshRowMarks(hash: string, mark: Mark): void {
+        this.rowMarks.set(hash, mark);
+        for (let index = 0; index < this.messageStore.get_n_items(); index++) {
+            const item = this.messageStore.get_item(index);
+            if (item === null || item.row.hash !== hash) continue;
+            item.mark = mark;
+            const selected = this.messageSelection.get_selected();
+            this.rebuilding = true;
+            this.messageStore.items_changed(index, 1, 1);
+            this.messageSelection.set_selected(selected);
+            this.rebuilding = false;
+            return;
+        }
     }
 
     /**
@@ -2197,7 +2261,11 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.matches = new Map(merged.map((hit) => [hit.hash, hit.match]));
             // The fused page is the whole answer: there is no page two of a ranked search.
             this.paged.finish(total);
-            if (append.length > 0) this.appendPage(append, false);
+            if (append.length > 0) {
+                await this.learnMarks(session, append);
+                if (!current()) return;
+                this.appendPage(append, false);
+            }
             this.showCount(total);
             this.showListOrEmpty(query);
         } catch {
@@ -2418,6 +2486,9 @@ export class StampedWindow extends Adw.ApplicationWindow {
                 // The toggle has moved but nothing was written: put it back where the file is.
                 show(current);
             }
+            // `current` is what the file holds now, after a failed edit as much as after one that
+            // went through — so the row in the list shows the same thing these controls do.
+            this.refreshRowMarks(hash, current);
             this.refreshMarks();
         };
 

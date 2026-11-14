@@ -55,7 +55,14 @@ import {
     lookupSummary,
     reverifySummary,
 } from '../../src/gui/view/keys.ts';
-import { markRowIndex, markRows } from '../../src/gui/view/marks.ts';
+import {
+    chipLabel,
+    markRowIndex,
+    markRows,
+    MAX_CHIP_LENGTH,
+    MAX_CHIPS,
+    tagChips,
+} from '../../src/gui/view/marks.ts';
 import { escapeLine, escapeMarkup, noHyphens, plainText } from '../../src/gui/view/markup.ts';
 import {
     emptyList,
@@ -1293,6 +1300,49 @@ export default async () => {
             expect(markRowIndex(rows, { kind: 'tag', tag: 'LEGAL' })).toBe(1);
             expect(markRowIndex(rows, { kind: 'tag', tag: 'other' })).toBe(-1);
             expect(markRowIndex(rows, { kind: 'person', address: 'ada@example.com' })).toBe(-1);
+        });
+    });
+
+    await describe('the tag chips of a message row', async () => {
+        await it('leaves a tag that fits exactly as it was typed', async () => {
+            expect(chipLabel('Legal')).toBe('Legal');
+            const exact = 'x'.repeat(MAX_CHIP_LENGTH);
+            expect(chipLabel(exact)).toBe(exact);
+        });
+
+        await it('cuts a longer tag to the width with an ellipsis as the last character', async () => {
+            // The cut is in the DATA, not in the label: two ellipsizing labels in one box shrink
+            // together, and the prototype for this row drew both chips as "au…".
+            const label = chipLabel('authentication results', 10);
+            expect(label).toBe('authentic…');
+            expect([...label].length).toBe(10);
+        });
+
+        await it('counts code points, so a tag outside the BMP is not cut through a character', async () => {
+            // Cutting UTF-16 units would leave half a surrogate pair and draw as "�".
+            expect(chipLabel('𝄞𝄞𝄞𝄞', 3)).toBe('𝄞𝄞…');
+        });
+
+        await it('shows the first few tags and counts the rest', async () => {
+            expect(tagChips([])).toStrictEqual({ labels: [], hidden: 0 });
+            const three = ['a', 'b', 'c'].slice(0, MAX_CHIPS);
+            expect(tagChips(three)).toStrictEqual({ labels: three, hidden: 0 });
+            expect(tagChips(['a', 'b', 'c', 'd', 'e'], 2)).toStrictEqual({
+                labels: ['a', 'b'],
+                hidden: 3,
+            });
+        });
+
+        await it('shortens the tags it shows and leaves the ones it counts alone', async () => {
+            const { labels, hidden } = tagChips(['waiting for the key', 'short'], 1, 8);
+            expect(labels).toStrictEqual(['waiting…']);
+            expect(hidden).toBe(1);
+        });
+
+        await it('carries no markup: a chip label is the tag as the person typed it', async () => {
+            // The row's other labels go through a Pango parser; this one deliberately does not,
+            // so an `&` in a tag must survive rather than being escaped or dropped here.
+            expect(tagChips(['R&D <internal>']).labels).toStrictEqual(['R&D <internal>']);
         });
     });
 
