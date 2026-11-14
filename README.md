@@ -171,6 +171,8 @@ them. Synthetic like everything else: reserved example domains, invented bodies.
 - [docs/spikes/query-worker.md](docs/spikes/query-worker.md) holds the same for the worker thread
   that answers every index query: what a Worker can and cannot do under gjsify, and how long the
   window stopped repainting before it existed.
+- [docs/signing.md](docs/signing.md) says why the macOS and Windows packages are not signed yet,
+  and what you see because of it.
 - [AGENTS.md](AGENTS.md) holds the conventions, for humans and AI agents both.
 
 ## Licence
