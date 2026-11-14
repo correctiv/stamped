@@ -63,6 +63,7 @@ import thread from './unit/thread.test.ts';
 import searchQuery from './unit/search-query.test.ts';
 import searchOperators from './unit/search-operators.test.ts';
 import searchAssist from './unit/search-assist.test.ts';
+import searchBox from './unit/search-box.test.ts';
 import retry from './unit/retry.test.ts';
 import gpuBackend from './unit/gpu-backend.test.ts';
 import gpuGuard from './unit/gpu-guard.test.ts';
@@ -118,6 +119,7 @@ run({
     searchQuery,
     searchOperators,
     searchAssist,
+    searchBox,
     bodyExplanations,
     receiverAnchors,
     attachmentMetadata,
