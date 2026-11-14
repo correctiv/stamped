@@ -107,6 +107,183 @@ function office(created: string, modified: string, deflate = true): Uint8Array {
     ]);
 }
 
+const CFB_FREE = 0xffffffff;
+const CFB_END = 0xfffffffe;
+const CFB_FAT = 0xfffffffd;
+const FILETIME_EPOCH_MS = 11644473600000;
+const ZEROS_16 = Array.from({ length: 16 }, () => 0);
+
+function words(values: number[]): Uint8Array {
+    return new Uint8Array(values.flatMap((value) => u32(value)));
+}
+
+/** A FILETIME property: 100 ns ticks since 1601, `'zero'` being the "never set" value. */
+function oleTime(ms: number | 'zero'): number[] {
+    const ticks = ms === 'zero' ? BigInt(0) : (BigInt(ms) + BigInt(FILETIME_EPOCH_MS)) * BigInt(10000);
+    return [...u32(0x40), ...u32(Number(ticks & BigInt(0xffffffff))), ...u32(Number(ticks >> BigInt(32)))];
+}
+
+function oleText(text: string, wide: boolean): number[] {
+    const body: number[] = [];
+    for (const char of `${text}\0`) {
+        const code = char.charCodeAt(0);
+        body.push(...(wide ? u16(code) : [code & 0xff]));
+    }
+    while (body.length % 4 !== 0) body.push(0);
+    return [...u32(wide ? 0x1f : 0x1e), ...u32(text.length + 1), ...body];
+}
+
+interface OleProperties {
+    author?: string;
+    lastAuthor?: string;
+    created?: number | 'zero';
+    saved?: number | 'zero';
+    application?: string;
+    wide?: boolean;
+    /** Characters of a property nobody reads, to make the stream span several sectors. */
+    filler?: number;
+}
+
+/** The `SummaryInformation` property set (MS-OLEPS) with the given properties. */
+function summaryStream(parts: OleProperties): Uint8Array {
+    const wide = parts.wide ?? false;
+    const props: [number, number[]][] = [[1, [...u16(2), ...u16(0), ...u16(1252), ...u16(0)]]];
+    if (parts.author !== undefined) props.push([4, oleText(parts.author, wide)]);
+    if (parts.lastAuthor !== undefined) props.push([8, oleText(parts.lastAuthor, wide)]);
+    if (parts.created !== undefined) props.push([12, oleTime(parts.created)]);
+    if (parts.saved !== undefined) props.push([13, oleTime(parts.saved)]);
+    if (parts.application !== undefined) props.push([18, oleText(parts.application, wide)]);
+    if (parts.filler !== undefined) props.push([99, oleText('x'.repeat(parts.filler), false)]);
+    let offset = 8 + props.length * 8;
+    const table: number[] = [];
+    const values: number[] = [];
+    for (const [id, value] of props) {
+        table.push(...u32(id), ...u32(offset));
+        values.push(...value);
+        offset += value.length;
+    }
+    return new Uint8Array([
+        ...u16(0xfffe),
+        ...u16(0),
+        ...u32(2),
+        ...ZEROS_16,
+        ...u32(1),
+        ...ZEROS_16,
+        ...u32(48),
+        ...u32(offset),
+        ...u32(props.length),
+        ...table,
+        ...values,
+    ]);
+}
+
+/**
+ * A compound file (MS-CFB, 512-byte sectors, one FAT sector) holding the given streams: those
+ * under `cutoff` bytes go to the mini stream, the rest to sectors of their own.
+ */
+function cfb(
+    streams: [name: string, data: Uint8Array][],
+    options: { cutoff?: number; loop?: boolean } = {},
+): Uint8Array {
+    const cutoff = options.cutoff ?? 4096;
+    const fat: number[] = [CFB_FAT];
+    const body: Uint8Array[] = [];
+    const chain = (data: Uint8Array): number => {
+        const count = Math.ceil(data.length / 512);
+        if (count === 0) return CFB_END;
+        const first = fat.length;
+        for (let index = 0; index < count; index++) {
+            const sector = new Uint8Array(512);
+            sector.set(data.subarray(index * 512, (index + 1) * 512));
+            body.push(sector);
+            fat.push(index === count - 1 ? CFB_END : fat.length + 1);
+        }
+        return first;
+    };
+
+    const mini: number[] = [];
+    const miniFat: number[] = [];
+    const starts: number[] = [];
+    for (const [, data] of streams) {
+        if (data.length >= cutoff) {
+            starts.push(chain(data));
+            continue;
+        }
+        const pieces = Math.ceil(data.length / 64);
+        starts.push(pieces === 0 ? CFB_END : miniFat.length);
+        for (let piece = 0; piece < pieces; piece++) {
+            miniFat.push(options.loop ? miniFat.length : piece === pieces - 1 ? CFB_END : miniFat.length + 1);
+        }
+        const padded = new Uint8Array(pieces * 64);
+        padded.set(data);
+        mini.push(...padded);
+    }
+    const miniFatStart = miniFat.length > 0 ? chain(words(miniFat)) : CFB_END;
+    const rootStart = chain(new Uint8Array(mini));
+
+    const entry = (name: string, type: number, start: number, size: number): number[] => {
+        const label = Array.from({ length: 64 }, () => 0);
+        [...name].forEach((char, index) => label.splice(index * 2, 2, ...u16(char.charCodeAt(0))));
+        return [
+            ...label,
+            ...u16(name.length * 2 + 2),
+            type,
+            1,
+            ...u32(CFB_FREE),
+            ...u32(CFB_FREE),
+            ...u32(CFB_FREE),
+            ...ZEROS_16,
+            ...u32(0),
+            ...ZEROS_16,
+            ...u32(start),
+            ...u32(size),
+            ...u32(0),
+        ];
+    };
+    const directory = [
+        ...entry('Root Entry', 5, rootStart, mini.length),
+        ...streams.flatMap(([name, data], index) => entry(name, 2, starts[index] as number, data.length)),
+    ];
+    const directoryStart = chain(new Uint8Array(directory));
+
+    const header = new Uint8Array(512);
+    header.set([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+    header.set([...u16(0x3e), ...u16(3), ...u16(0xfffe), ...u16(9), ...u16(6)], 24);
+    header.set(
+        [
+            ...u32(1),
+            ...u32(directoryStart),
+            ...u32(0),
+            ...u32(cutoff),
+            ...u32(miniFatStart),
+            ...u32(Math.ceil(miniFat.length / 128)),
+            ...u32(CFB_END),
+            ...u32(0),
+            ...u32(0),
+        ],
+        44,
+    );
+    header.fill(0xff, 80, 512);
+
+    const out = new Uint8Array(512 * (2 + body.length));
+    out.set(header);
+    out.set(new Uint8Array(512).fill(0xff), 512);
+    out.set(words(fat), 512);
+    body.forEach((sector, index) => out.set(sector, 1024 + index * 512));
+    return out;
+}
+
+/** A legacy Office file: a document stream (sectors) and the summary information. */
+function ole(parts: OleProperties, options?: { cutoff?: number; loop?: boolean }): Uint8Array {
+    return cfb(
+        [
+            ['WordDocument', new Uint8Array(5000)],
+            ['\u0005SummaryInformation', summaryStream(parts)],
+        ],
+        options,
+    );
+}
+
 function odf(
     created: string,
     modified: string,
@@ -412,6 +589,111 @@ export default async () => {
                 SENT,
             );
             expect(finding?.lastModifiedBy).toBe(undefined);
+        });
+    });
+
+    await describe('legacy Office (OLE) indication', async () => {
+        const ALL: OleProperties = {
+            author: 'Ada Example',
+            lastAuthor: 'Grace Example',
+            application: 'Example Word',
+            created: Date.UTC(2024, 2, 1, 10),
+            saved: Date.UTC(2024, 2, 2, 10),
+        };
+
+        await it('reads the summary information from the mini stream', async () => {
+            const finding = analyseAttachment(ole({ ...ALL, filler: 700 }), SENT);
+            expect(finding?.format).toBe('ole');
+            expect(finding?.creator).toBe('Ada Example');
+            expect(finding?.lastModifiedBy).toBe('Grace Example');
+            expect(finding?.producer).toBe('Example Word');
+            expect(finding?.createdAt).toBe(Date.UTC(2024, 2, 1, 10));
+            expect(finding?.modifiedAt).toBe(Date.UTC(2024, 2, 2, 10));
+            expect(finding?.modifiedAfterSent).toBe(false);
+            expect(finding?.modifiedLongAfterCreation).toBe(false);
+            expect(finding?.incrementalUpdates).toBe(false);
+        });
+
+        await it('reads the same from regular sectors, with narrow or wide strings', async () => {
+            for (const wide of [false, true]) {
+                const finding = analyseAttachment(ole({ ...ALL, wide, filler: 700 }, { cutoff: 32 }), SENT);
+                expect(finding?.format).toBe('ole');
+                expect(finding?.creator).toBe('Ada Example');
+                expect(finding?.producer).toBe('Example Word');
+                expect(finding?.modifiedAt).toBe(Date.UTC(2024, 2, 2, 10));
+            }
+        });
+
+        await it('flags a file saved after the message was sent, and long after creation', async () => {
+            const finding = analyseAttachment(ole({ ...ALL, saved: Date.UTC(2024, 5, 1, 10) }), SENT);
+            expect(finding?.modifiedAfterSent).toBe(true);
+            expect(finding?.modifiedLongAfterCreation).toBe(true);
+            expect(finding?.incrementalUpdates).toBe(false);
+        });
+
+        await it('treats the dates as exact: five minutes of clock skew, no more', async () => {
+            const near = analyseAttachment(ole({ author: 'Ada Example', saved: SENT + 4 * 60 * 1000 }), SENT);
+            expect(near?.modifiedAfterSent).toBe(false);
+            const past = analyseAttachment(ole({ author: 'Ada Example', saved: SENT + 6 * 60 * 1000 }), SENT);
+            expect(past?.modifiedAfterSent).toBe(true);
+        });
+
+        await it('reads a FILETIME of 0 or before 1980 as no date', async () => {
+            const zero = analyseAttachment(
+                ole({ author: 'Ada Example', created: 'zero', saved: 'zero' }),
+                SENT,
+            );
+            expect(zero?.format).toBe('ole');
+            expect(zero?.createdAt).toBe(undefined);
+            expect(zero?.modifiedAt).toBe(undefined);
+            expect(zero?.modifiedAfterSent).toBe(false);
+            expect(zero?.modifiedLongAfterCreation).toBe(false);
+            const old = analyseAttachment(
+                ole({ author: 'Ada Example', created: Date.UTC(1970, 0, 1), saved: Date.UTC(2024, 2, 2) }),
+                SENT,
+            );
+            expect(old?.createdAt).toBe(undefined);
+            expect(old?.modifiedLongAfterCreation).toBe(false);
+            expect(analyseAttachment(ole({ created: 'zero', saved: 'zero' }), SENT)).toBe(undefined);
+        });
+
+        await it('answers undefined for a file that is broken in any of its parts', async () => {
+            const good = ole(ALL);
+            const patched = (at: number, value: number[]): Uint8Array => {
+                const copy = good.slice();
+                copy.set(value, at);
+                return copy;
+            };
+            const cyclic = good.slice();
+            for (let sector = 1; sector < 128; sector++) cyclic.set(u32(sector), 512 + sector * 4);
+
+            expect(analyseAttachment(good, SENT)?.format).toBe('ole');
+            expect(analyseAttachment(patched(0, [0]), SENT)).toBe(undefined);
+            expect(analyseAttachment(patched(28, u16(0xfeff)), SENT)).toBe(undefined);
+            expect(analyseAttachment(patched(30, u16(10)), SENT)).toBe(undefined);
+            expect(analyseAttachment(patched(44, u32(0x7fffffff)), SENT)).toBe(undefined);
+            expect(analyseAttachment(patched(48, u32(0x7fff)), SENT)).toBe(undefined);
+            expect(analyseAttachment(cyclic, SENT)).toBe(undefined);
+            expect(analyseAttachment(ole(ALL, { loop: true }), SENT)).toBe(undefined);
+        });
+
+        await it('answers undefined for a truncated file', async () => {
+            const good = ole(ALL);
+            expect(analyseAttachment(good.subarray(0, 100), SENT)).toBe(undefined);
+            expect(analyseAttachment(good.subarray(0, 600), SENT)).toBe(undefined);
+            expect(analyseAttachment(good.subarray(0, 1100), SENT)).toBe(undefined);
+            expect(analyseAttachment(good.subarray(0, good.length - 512), SENT)).toBe(undefined);
+        });
+
+        await it('answers undefined when the stream is missing or unreadable', async () => {
+            const other = cfb([['WordDocument', new Uint8Array(100)]]);
+            expect(analyseAttachment(other, SENT)).toBe(undefined);
+            const noise = cfb([['\u0005SummaryInformation', new Uint8Array(60).fill(0xff)]]);
+            expect(analyseAttachment(noise, SENT)).toBe(undefined);
+            const cut = cfb([['\u0005SummaryInformation', summaryStream(ALL).subarray(0, 60)]]);
+            expect(analyseAttachment(cut, SENT)).toBe(undefined);
+            const empty = cfb([['\u0005SummaryInformation', new Uint8Array(0)]]);
+            expect(analyseAttachment(empty, SENT)).toBe(undefined);
         });
     });
 

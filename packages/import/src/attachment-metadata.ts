@@ -8,8 +8,9 @@
  * narrow question — does the metadata contradict the message? — and says "indication, not proof".
  * It is NOT a {@link Verdict} and NOT a caveat; nothing here can change what DKIM proved.
  *
- * Four kinds of file, on purpose: PDF (`/Info`, the XMP packet, the revision trail), ZIP-based
- * Office files (`docProps/core.xml`), OpenDocument files (`meta.xml`) and images with EXIF
+ * Five kinds of file, on purpose: PDF (`/Info`, the XMP packet, the revision trail), ZIP-based
+ * Office files (`docProps/core.xml`), OpenDocument files (`meta.xml`), legacy Office files
+ * (OLE: `.doc`, `.xls`, `.ppt`; the `SummaryInformation` stream) and images with EXIF
  * (JPEG, TIFF). Other formats are "not examined", never "clean".
  *
  * Pure over bytes: the same attachment gives the same finding, so a stored result is a cache.
@@ -18,6 +19,7 @@
 import { decodeLatin1, splitMessage } from './bytes.ts';
 import { headerValue, parseHeaderFields } from './headers.ts';
 import { parseDate } from './message.ts';
+import { looksLikeCfb, summaryInformation } from './cfb.ts';
 import { type AttachmentContent, readAttachments } from './reading.ts';
 import { looksLikeZip, zipEntry } from './zip.ts';
 
@@ -25,7 +27,7 @@ import { looksLikeZip, zipEntry } from './zip.ts';
  * The version of the rules in this file. A cache of findings was produced by one version;
  * CHANGING A RULE MEANS BUMPING THIS.
  */
-export const ATTACHMENT_ANALYSER_VERSION = 2;
+export const ATTACHMENT_ANALYSER_VERSION = 3;
 
 /** A file bigger than this is not examined: the scan reads all of it as one string. */
 const MAX_BYTES = 64 * 1024 * 1024;
@@ -52,16 +54,16 @@ const MAX_SEGMENTS = 64;
 const MAX_EXIF_ENTRIES = 512;
 const MAX_EXIF_DIRECTORIES = 4;
 
-export type AttachmentFormat = 'pdf' | 'office' | 'odf' | 'image';
+export type AttachmentFormat = 'pdf' | 'office' | 'odf' | 'ole' | 'image';
 
 /** What the metadata of one attachment shows. Dates are epoch milliseconds. */
 export interface AttachmentIndication {
     readonly format: AttachmentFormat;
     readonly createdAt?: number;
     readonly modifiedAt?: number;
-    /** PDF: the program that wrote the file (`/Producer`); image: EXIF `Software`. */
+    /** PDF: the program that wrote the file (`/Producer`); image: EXIF `Software`; OLE: the application. */
     readonly producer?: string;
-    /** PDF: the program the document came from (`/Creator`); Office: the author; ODF: the original author. */
+    /** PDF: the program the document came from (`/Creator`); Office and OLE: the author; ODF: the original author. */
     readonly creator?: string;
     /** Office: who saved it last; ODF: the last editor (`dc:creator`) when it is not the author. */
     readonly lastModifiedBy?: string;
@@ -289,6 +291,25 @@ function analyseOffice(content: Uint8Array, sentAt: number | undefined): Attachm
     );
 }
 
+/** Legacy Office: FILETIMEs are UTC, so the dates are exact. */
+function analyseOle(content: Uint8Array, sentAt: number | undefined): AttachmentIndication | undefined {
+    const info = summaryInformation(content);
+    if (!info) return undefined;
+    const creator = clean(info.author);
+    const lastModifiedBy = clean(info.lastAuthor);
+    const producer = clean(info.application);
+    const created = info.createdAt === undefined ? undefined : { at: info.createdAt, exact: true };
+    const modified = info.savedAt === undefined ? undefined : { at: info.savedAt, exact: true };
+    if (!created && !modified && !creator && !lastModifiedBy && !producer) return undefined;
+    return judge('ole', created, modified, sentAt, {
+        ...(producer ? { producer } : {}),
+        ...(creator ? { creator } : {}),
+        ...(lastModifiedBy ? { lastModifiedBy } : {}),
+        updates: 0,
+        historyEvents: 0,
+    });
+}
+
 function analyseOdf(content: Uint8Array, sentAt: number | undefined): AttachmentIndication | undefined {
     const properties = zipEntry(content, 'meta.xml', MAX_PROPERTIES);
     if (!properties) return undefined;
@@ -454,6 +475,7 @@ export function analyseAttachment(content: Uint8Array, sentAt?: number): Attachm
         }
     }
     try {
+        if (looksLikeCfb(content)) return analyseOle(content, sentAt);
         return analyseImage(content, sentAt);
     } catch {
         return undefined;

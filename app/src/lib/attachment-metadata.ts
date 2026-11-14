@@ -24,7 +24,7 @@ export function attachmentSection(totals: AttachmentTotals): AttachmentSection |
     return {
         heading: _('Attachment metadata'),
         note: _(
-            'The properties inside PDF, Office, OpenDocument and image attachments can show that a file was changed after it was sent, or long after it was made. They are easy to set and many harmless tools rewrite them: an indication, not proof. This is separate from the signature verdicts and never changes one. Other file types are not examined, and a message is counted once however many attachments it has.',
+            'The properties inside PDF, Office (including .doc, .xls and .ppt), OpenDocument and image attachments can show that a file was changed after it was sent, or long after it was made. They are easy to set and many harmless tools rewrite them: an indication, not proof. This is separate from the signature verdicts and never changes one. Other file types are not examined, and a message is counted once however many attachments it has.',
         ),
         rows: [
             [_('Messages with an examined attachment'), totals.examined],
