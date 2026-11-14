@@ -114,6 +114,7 @@ packages/core/src/verdict.ts
 packages/import/src/addresses.ts
 packages/import/src/attachment-metadata.ts
 packages/import/src/bytes.ts
+packages/import/src/cfb.ts
 packages/import/src/codec.ts
 packages/import/src/folder.ts
 packages/import/src/headers.ts

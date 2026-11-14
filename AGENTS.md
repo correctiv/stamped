@@ -160,7 +160,9 @@ sits inside the same leak. Same mechanics (`RECEIVER_ANCHOR_VERSION`; change the
 flags)` (`packages/store/src/attachment-metadata.ts`, analysis in `packages/import/src/attachment-metadata.ts`).
 Only PDF (Info dict, XMP, `%%EOF` revisions outside any `stream … endstream` span, so an embedded
 PDF adds none), ZIP-based Office files (`docProps/core.xml`), OpenDocument files (`meta.xml`; told
-from Office by the entries, not the name) and images with EXIF (JPEG APP1, TIFF; unzoned dates, so
+from Office by the entries, not the name), legacy Office files (OLE/CFB: `.doc`, `.xls`, `.ppt`;
+the `SummaryInformation` stream via `packages/import/src/cfb.ts`, FILETIMEs are UTC, 0 means "no
+date") and images with EXIF (JPEG APP1, TIFF; unzoned dates, so
 the one-day skew applies) are read; the flags are "dated after the message's `Date:` header" (as stated, not proven signed),
 "modified more than 30 days after creation" and "saved on top of an earlier version". It is an
 INDICATION, never a verdict or a caveat, always worded "indication, not proof", and only counted
