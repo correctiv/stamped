@@ -15,10 +15,12 @@
  */
 
 import Adw from '@girs/adw-1';
+import Gdk from '@girs/gdk-4.0';
 import Gio from '@girs/gio-2.0';
 import GLib from '@girs/glib-2.0';
 import GObject from '@girs/gobject-2.0';
 import Gtk from '@girs/gtk-4.0';
+import Pango from '@girs/pango-1.0';
 import { confirmDialog, errorDialog, registerToastOverlay, showToast } from '@gjsify/adwaita-app';
 import {
     fmt,
@@ -30,8 +32,25 @@ import {
     type MessageFinding,
     type Verdict,
 } from '@stamped/core';
-import type { CaseReport, IndexedMessage, Mark, ReverifyResult, SearchHit, Thread } from '@stamped/store';
-import { CASE_FILE_EXTENSION, liveActivity, MAX_TAG_LENGTH, readActivityStatuses } from '@stamped/store';
+import type {
+    CaseReport,
+    IndexedMessage,
+    Mark,
+    ReverifyResult,
+    SearchCompletion,
+    SearchContext,
+    SearchHit,
+    SearchSpan,
+    Thread,
+} from '@stamped/store';
+import {
+    CASE_FILE_EXTENSION,
+    completeSearch,
+    highlightSearch,
+    liveActivity,
+    MAX_TAG_LENGTH,
+    readActivityStatuses,
+} from '@stamped/store';
 import type { ReadableBody } from '@stamped/import';
 import { onBattery, type Embedder } from '@stamped/semantic';
 
@@ -71,6 +90,17 @@ import {
     type ReportDoneLine,
     type ReportProgressLine,
 } from '../lib/report-progress.ts';
+import {
+    applyCompletion,
+    characterAt,
+    firstSpanError,
+    searchBoxKey,
+    spanAttributes,
+    unitAt,
+    type SearchBoxKey,
+    type SpanAttribute,
+    type SpanColour,
+} from '../lib/search-box.ts';
 import { selfArgv } from '../lib/self-argv.ts';
 import { timeFindingOf } from '../lib/time.ts';
 import { ActivityController } from './activity.ts';
@@ -238,6 +268,24 @@ function nextTurn(priority = GLib.PRIORITY_DEFAULT_IDLE): Promise<void> {
 const SEARCH_DELAY_MS = 180;
 
 /**
+ * The keys the suggestion list may claim, by keyval.
+ *
+ * A map and not a `switch`: what is NOT in it is the point. Every other key — including the
+ * entry's own Escape once the list is shut, and Home and End — reaches the box untouched,
+ * because a search box that swallows keys while a list it opened by itself is up is a box that
+ * eats the query being typed into it.
+ */
+const SEARCH_KEYS: Readonly<Record<number, SearchBoxKey>> = {
+    [Gdk.KEY_Up]: 'up',
+    [Gdk.KEY_Down]: 'down',
+    [Gdk.KEY_Tab]: 'tab',
+    [Gdk.KEY_ISO_Left_Tab]: 'tab',
+    [Gdk.KEY_Return]: 'enter',
+    [Gdk.KEY_KP_Enter]: 'enter',
+    [Gdk.KEY_Escape]: 'escape',
+};
+
+/**
  * How tall the mail body may grow before it scrolls on its own.
  *
  * A mail thread quoted twenty times is thousands of pixels of text, and shown whole it pushes
@@ -292,12 +340,18 @@ const BodyScroller = GObject.registerClass(
  * its words are the real ones and the results under it are a real search; only the timing is
  * held still. `STAMPED_SHOT_TIME` scrolls the reader to its Time group, which sits below the
  * fold of a window of the size Flathub asks for. Every one of them is null in a normal run.
+ *
+ * `STAMPED_SHOT_COMPLETE` pops the suggestion list of the typed query open. It is its own hook
+ * and not a change to `STAMPED_SHOT_SEARCH`, which several existing pictures already use for a
+ * query with the list shut — a list that appeared in all of them would be a feature added to
+ * three screenshots nobody re-reviewed.
  */
 const SHOT_VERDICT = GLib.getenv('STAMPED_SHOT_VERDICT');
 const SHOT_EVIDENCE = GLib.getenv('STAMPED_SHOT_EVIDENCE');
 const SHOT_SEARCH = GLib.getenv('STAMPED_SHOT_SEARCH');
 const SHOT_PHASE = GLib.getenv('STAMPED_SHOT_PHASE');
 const SHOT_TIME = GLib.getenv('STAMPED_SHOT_TIME');
+const SHOT_COMPLETE = GLib.getenv('STAMPED_SHOT_COMPLETE');
 
 /** True when the person closed a portal or chooser dialog rather than it failing. */
 function isDismissed(error: unknown): boolean {
@@ -553,6 +607,31 @@ export class StampedWindow extends Adw.ApplicationWindow {
     private shotEvidence?: { expander: Adw.ExpanderRow; help: readonly Gtk.MenuButton[] };
     /** The pending search debounce, or 0. */
     private searchTimer = 0;
+    /** The suggestion list under the search box, built once in the constructor. */
+    private searchPopover?: Gtk.Popover;
+    private searchList?: Gtk.ListBox;
+    /** What the list is offering, and which of it the keyboard has chosen (`-1`: nothing). */
+    private searchOffer?: SearchCompletion;
+    private searchChosen = -1;
+    /**
+     * Set while a taken suggestion is written back into the box.
+     *
+     * Writing the text raises `changed` exactly as typing does, and the handler would compute
+     * suggestions against the half-written state — caret still before the insert — and put a
+     * stale list back up over the one just accepted. The guard makes the write silent; the
+     * handler is then called once by hand, with the caret where it belongs.
+     */
+    private writingCompletion = false;
+    /**
+     * Unparented labels the theme's colours are read out of, made on first use.
+     *
+     * A colour is read at every repaint rather than cached as a number: the accent is the
+     * person's own setting and dark mode is a switch, and a value kept from startup is a blue
+     * operator on a dark background from the moment either changes.
+     */
+    private readonly colourProbes = new Map<SpanColour, Gtk.Label>();
+    /** The mailbox names the sidebar lists — one half of what the box completes. */
+    private mailboxNames: string[] = [];
     /** The pending people-search debounce. */
     private peopleTimer = 0;
     /**
@@ -626,6 +705,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         });
 
         this._searchEntry.connect('search-changed', () => this.onSearchChanged());
+        this.buildSearchAssist();
         this._contentStack.connect('notify::visible-child-name', () => {
             const view = this._contentStack.get_visible_child_name();
             if ((view === 'people' || view === 'timeline') && this.staleViews.has(view)) {
@@ -719,6 +799,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.connect('close-request', () => {
             if (this.searchTimer !== 0) GLib.source_remove(this.searchTimer);
             this.searchTimer = 0;
+            // A popover that set the entry as its parent outlives the entry otherwise, and GTK
+            // ends the run with a warning about a widget finalized with a child still on it.
+            this.searchPopover?.unparent();
+            this.searchPopover = undefined;
             if (this.peopleTimer !== 0) GLib.source_remove(this.peopleTimer);
             this.peopleTimer = 0;
             this.cancelQueries();
@@ -765,6 +849,16 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.verdict = SHOT_VERDICT as Verdict;
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
                 this.messageSelection.set_selected(0);
+                return GLib.SOURCE_REMOVE;
+            });
+        }
+        // Types a query into the box and leaves its suggestions up. The list is the real one —
+        // the completion runs against the case that was opened — and only the typing is faked.
+        if (SHOT_COMPLETE !== null) {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1600, () => {
+                this._searchEntry.set_text(SHOT_COMPLETE);
+                this._searchEntry.set_position(SHOT_COMPLETE.length);
+                this.updateSearchAssist();
                 return GLib.SOURCE_REMOVE;
             });
         }
@@ -829,6 +923,238 @@ export class StampedWindow extends Adw.ApplicationWindow {
             this.track(this.fillList());
             return GLib.SOURCE_REMOVE;
         });
+    }
+
+    /**
+     * Build the suggestion list and the keys that drive it.
+     *
+     * The popover deliberately does not take focus: `autohide: false` and `canFocus: false` with
+     * the rows not focusable either, so the caret stays in the box and typing goes on under an
+     * open list. The usual `autohide` popover grabs the input and the next letter is lost — a
+     * completion that interrupts the typing it is meant to help.
+     */
+    private buildSearchAssist(): void {
+        const entry = this._searchEntry;
+        const list = new Gtk.ListBox({ selectionMode: Gtk.SelectionMode.SINGLE, canFocus: false });
+        const popover = new Gtk.Popover({ autohide: false, canFocus: false, hasArrow: false });
+        popover.add_css_class('menu');
+        popover.set_child(list);
+        popover.set_parent(entry);
+        popover.set_position(Gtk.PositionType.BOTTOM);
+        this.searchPopover = popover;
+        this.searchList = list;
+
+        // A click takes the suggestion: the list is a list, and a reader who reaches for the
+        // mouse must not find the only way out of it is the keyboard.
+        list.connect('row-activated', (_list, row) => this.takeCompletion(row.get_index()));
+
+        // `changed` and not `search-changed`: the latter is the debounced one the query runs on,
+        // and colouring that arrives 250 ms after the letter reads as the box lagging behind.
+        entry.connect('changed', () => {
+            if (!this.writingCompletion) this.updateSearchAssist();
+        });
+
+        // An `autohide: false` popover is not dismissed by anything GTK does, so the one thing
+        // that would otherwise leave it on screen — clicking away from the box — closes it here.
+        const focus = new Gtk.EventControllerFocus();
+        focus.connect('leave', () => this.closeCompletions());
+        entry.add_controller(focus);
+
+        const keys = new Gtk.EventControllerKey();
+        keys.set_propagation_phase(Gtk.PropagationPhase.CAPTURE);
+        keys.connect('key-pressed', (_controller, keyval) => this.onSearchKey(keyval));
+        entry.add_controller(keys);
+
+        // What a screen reader needs to be told: the box completes, a list may be under it, and
+        // how many things are in it right now (kept current by `showCompletions`).
+        entry.update_property(
+            [Gtk.AccessibleProperty.AUTOCOMPLETE, Gtk.AccessibleProperty.HAS_POPUP],
+            [Gtk.AccessibleAutocomplete.LIST, true],
+        );
+    }
+
+    /** What the box can complete against: the mailboxes of the sidebar and the case's own tags. */
+    private searchContext(): SearchContext {
+        return {
+            mailboxes: this.mailboxNames,
+            tags: this.marksRows
+                .map((row) => (row.scope.kind === 'tag' ? row.scope.tag : undefined))
+                .filter((tag): tag is string => tag !== undefined),
+        };
+    }
+
+    /** Colour the query, mark what cannot be parsed, and offer what fits where the caret is. */
+    private updateSearchAssist(): void {
+        const entry = this._searchEntry;
+        const text = entry.get_text();
+        const spans = highlightSearch(text);
+        this.paintSearch(text, spans);
+
+        // The whole sentence goes on the empty page (`showSearchProblems`); here it is a tooltip,
+        // because a hint widget under the box would push the list down by its own height every
+        // time a half-typed operator is briefly wrong.
+        const problem = firstSpanError(spans);
+        entry.set_tooltip_text(problem ?? null);
+
+        const caret = unitAt(text, entry.get_position());
+        this.showCompletions(text === '' ? undefined : completeSearch(text, caret, this.searchContext()));
+    }
+
+    /** Put the drawing rules of `search-box.ts` on the entry's own `Gtk.Text`. */
+    private paintSearch(text: string, spans: readonly SearchSpan[]): void {
+        // The `Gtk.Text` inside the `Gtk.SearchEntry`: the attributes belong to the widget that
+        // draws the text, and `Gtk.Editable` — all the entry itself promises — cannot take them.
+        const delegate = this._searchEntry.get_delegate();
+        if (!(delegate instanceof Gtk.Text)) return;
+        const attributes = new Pango.AttrList();
+        for (const span of spanAttributes(text, spans)) {
+            for (const attribute of this.pangoAttributes(span)) {
+                attribute.start_index = span.startByte;
+                attribute.end_index = span.endByte;
+                attributes.insert(attribute);
+            }
+        }
+        delegate.set_attributes(attributes);
+    }
+
+    /** One styled span as the Pango attributes that draw it. */
+    private pangoAttributes(span: SpanAttribute): Pango.Attribute[] {
+        const attributes: Pango.Attribute[] = [];
+        if (span.bold === true) attributes.push(Pango.attr_weight_new(Pango.Weight.BOLD));
+        if (span.italic === true) attributes.push(Pango.attr_style_new(Pango.Style.ITALIC));
+        if (span.alpha !== undefined) {
+            attributes.push(Pango.attr_foreground_alpha_new(Math.round(span.alpha * 65535)));
+        }
+        if (span.colour !== undefined) {
+            const colour = this.themeColour(span.colour);
+            attributes.push(Pango.attr_foreground_new(colour[0], colour[1], colour[2]));
+        }
+        if (span.squiggle === true) {
+            const colour = this.themeColour('error');
+            attributes.push(Pango.attr_underline_new(Pango.Underline.ERROR));
+            attributes.push(Pango.attr_underline_color_new(colour[0], colour[1], colour[2]));
+        }
+        return attributes;
+    }
+
+    /**
+     * What the running theme means by a colour name, as the 16-bit channels Pango takes.
+     *
+     * Read off a label that carries the style class and is in no window: measured, it answers
+     * `get_color()` with the theme's own value and follows a switch to dark — `.accent` goes from
+     * `rgb(4,97,190)` to `rgb(129,208,255)`. That is the only way the accent the person chose in
+     * their settings reaches the text in the search box; a hex value here would be the one part
+     * of the window that ignores both their accent and their colour scheme.
+     */
+    private themeColour(name: SpanColour): [number, number, number] {
+        let probe = this.colourProbes.get(name);
+        if (probe === undefined) {
+            probe = new Gtk.Label({ label: '' });
+            probe.add_css_class(name);
+            this.colourProbes.set(name, probe);
+        }
+        const rgba = probe.get_color();
+        const channel = (value: number): number => Math.max(0, Math.min(65535, Math.round(value * 65535)));
+        return [channel(rgba.red), channel(rgba.green), channel(rgba.blue)];
+    }
+
+    /** Show `offer` under the box, or put the list away when there is nothing to offer. */
+    private showCompletions(offer: SearchCompletion | undefined): void {
+        const popover = this.searchPopover;
+        const list = this.searchList;
+        if (popover === undefined || list === undefined) return;
+        this.searchOffer = offer;
+        this.searchChosen = -1;
+        clearList(list);
+        if (offer === undefined || offer.options.length === 0) {
+            this.searchOffer = undefined;
+            popover.popdown();
+            this._searchEntry.update_property([Gtk.AccessibleProperty.DESCRIPTION], ['']);
+            return;
+        }
+        for (const option of offer.options) {
+            const label = new Gtk.Label({ label: option.label, xalign: 0 });
+            label.set_margin_start(6);
+            label.set_margin_end(6);
+            list.append(new Gtk.ListBoxRow({ child: label, canFocus: false }));
+        }
+        list.unselect_all();
+        this._searchEntry.update_property(
+            [Gtk.AccessibleProperty.DESCRIPTION],
+            [
+                fmt(
+                    _n(
+                        '{count} suggestion. Choose with the arrow keys, take it with Tab.',
+                        '{count} suggestions. Choose with the arrow keys, take one with Tab.',
+                        offer.options.length,
+                    ),
+                    { count: String(offer.options.length) },
+                ),
+            ],
+        );
+        const width = this._searchEntry.get_width();
+        if (width > 0) popover.set_size_request(width, -1);
+        popover.popup();
+    }
+
+    /** Put the list away, leaving the typed text exactly as it is. */
+    private closeCompletions(): void {
+        this.searchOffer = undefined;
+        this.searchChosen = -1;
+        this.searchPopover?.popdown();
+    }
+
+    /**
+     * One key while the list is up, decided by {@link searchBoxKey} and carried out here.
+     *
+     * Returns `true` only when the list used the key. Anything else — every letter, and Enter
+     * with nothing chosen — falls through to the entry, so the search box still behaves like a
+     * search box for someone who never looks at the suggestions.
+     */
+    private onSearchKey(keyval: number): boolean {
+        const key = SEARCH_KEYS[keyval];
+        if (key === undefined) return false;
+        const action = searchBoxKey(key, this.searchOffer?.options.length ?? 0, this.searchChosen);
+        if (!action.handled) return false;
+        if (action.close === true) this.closeCompletions();
+        if (action.select !== undefined) this.chooseCompletion(action.select);
+        if (action.accept !== undefined) this.takeCompletion(action.accept);
+        return true;
+    }
+
+    /** Move the highlight; `-1` is "nothing chosen", which Enter runs the search on again. */
+    private chooseCompletion(index: number): void {
+        const list = this.searchList;
+        if (list === undefined) return;
+        this.searchChosen = index;
+        const row = index < 0 ? null : list.get_row_at_index(index);
+        if (row === null) list.unselect_all();
+        else list.select_row(row);
+    }
+
+    /**
+     * Put suggestion `index` in the box, then look at the result again.
+     *
+     * The second look is what makes `from:` useful: accepting the operator leaves the caret just
+     * past the colon, where the senders of the case are what fits — so the value list appears at
+     * once instead of after one more keystroke that the reader has to guess at.
+     */
+    private takeCompletion(index: number): void {
+        const offer = this.searchOffer;
+        if (offer === undefined) return;
+        const entry = this._searchEntry;
+        const edit = applyCompletion(entry.get_text(), offer, index);
+        if (edit === undefined) return;
+        this.closeCompletions();
+        this.writingCompletion = true;
+        entry.set_text(edit.text);
+        entry.set_position(characterAt(edit.text, edit.caret));
+        this.writingCompletion = false;
+        this.updateSearchAssist();
+        // The text changed without `changed` reaching the debounce, so the search is asked for
+        // here: a taken suggestion that leaves the old list underneath it is a completion that
+        // did nothing.
+        this.onSearchChanged();
     }
 
     /** Say what the list is narrowed to — or nothing: a banner without a scope is noise. */
@@ -1439,6 +1765,10 @@ export class StampedWindow extends Adw.ApplicationWindow {
         this.mailboxParts.clear();
         this.mailboxToggles.clear();
         const grouped = mailboxRows(sources);
+        // The same names the search box completes `mailbox:` with: what the sidebar lists and
+        // nothing else, so an offered mailbox is always one this case actually holds. The empty
+        // name is the group of imports that named none, and `mailbox:""` matches nothing.
+        this.mailboxNames = (grouped ?? []).map((row) => row.mailbox).filter((name) => name !== '');
         const archiveRow = (row: ReturnType<typeof sourceRows>[number]): Adw.ActionRow => {
             const item = navRow(row.title, row.subtitle, row.icon);
             item.set_tooltip_markup(row.tooltip);

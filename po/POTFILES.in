@@ -82,6 +82,7 @@ app/src/lib/recent-cases.ts
 app/src/lib/refresh-scheduler.ts
 app/src/lib/report-progress.ts
 app/src/lib/report.ts
+app/src/lib/search-box.ts
 app/src/lib/search-progress.ts
 app/src/lib/self-argv.ts
 app/src/lib/semantic-auto.ts
