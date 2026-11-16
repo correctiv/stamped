@@ -1,0 +1,168 @@
+{
+  "format": "stamped-key-bundle",
+  "version": 1,
+  "notice": "Stamped seed keys. Public DKIM keys of large mailbox providers, copied from the public DNS on 2026-11-16 by tools/make-seed-keys.mjs. Each key is published by its domain owner for anyone to read. This file proves what the DNS said on that day, not what it said when any message was signed: Stamped uses it only where a case holds no key of its own and labels the result accordingly.",
+  "retrievedAt": "2026-11-16T11:30:40.848Z",
+  "entries": [
+    {
+      "domain": "aol.com",
+      "selector": "a2048",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugjjoWOWXaAXZh5iWdX9a27P6q0EZnjQQdFCplsFnxL85ppilMPGKZc1OA/aQK6bUFTuf4MJKr8JF3mp+O/Eo022W98Yc2JKPFY6PYxb81GWwpXNaQnug6bPVrLaQVJmxC7izdK6F0VmM6oLIiTNGMUVCwVndmDauFb3jFrf2Dgvgy/d9pjGKYEHKkSeYebWcxrGfOEkBAPcHfr0PUqe/hmp7Id6gO6EvMQ1kzyZHVmuJ3TZmpkQA5xY9CyD9f10lZ9MiFv89wM/u/m7ocAmmsk49aPi4DBwXSO8VSpbI5/oulw2SI41CYFgTdDByTvSr4hRjcyc4B3feYdhZ9egdQIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "aol.com",
+      "selector": "sable",
+      "record": "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDlWzPzho1WzuIS/rWoMmZrCNmNFVegxYaNWk4o+sRd1Ym9nTD6wxEoBEr62nfwg73sCaN1sYQppdpfH2+U9hxWDm4YWQ+GhBc3e66j3JSLPEK4iAxFik/WomiMkLGiPjUsjze/FVR35zrJr52OhSuQMHFCf7DSr1Ypor9qJkb6rwIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "gmail.com",
+      "selector": "20251104",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtOzIjTYVUYZDbm03lsL4MGxSUVJWALTSueNRnCvCdM5d0i26EVUH7jprqIFdBSnMXQDHCkwcH1bFjtbfHCzFfWlpzOWducPPU0E+ut0rRqIy4NKY8CJlW39Q+AHJ70h+k2VadmQt0A1Yijg/Dk73NuJAz8KDNgz2x14nDVkINRlynAU7EosarRRhVGKqlNrYdp/os6QYaetfYNdQRJDecOARNObGRET/sW0m5Ya5SBGsaw8VSGluCwSZh+zShTXaOyA1WnpHNtAoCQClFPn9vmm6Cb0Z2gYF0g/+qZ1FCnaj1+aaJGzhqVOXGtHGWM3dLpwC7Rul6STfFD521JeqpQIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "gmail.com",
+      "selector": "20260707",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA061G9pLPCQuYim/y++0CCA6U87HzN60s8RKshaWEyTARno2qg3icHult2JsUvs+BgvXsmf1w2I5TWPtfR+fZzjh6f7MZ4ClQFdedi3xJMwikE2iDN7AZLfLAsUEG+a8zw8frHi0sT2nQLV/1s5zg6OF9/ICTq9Rj7IdSq9y+grRcPyaLFcozip/LH5xMlDS1tZhLojJ80PjmOuzjr6OMMyuQ5LuiYM9CnCjV5lvB4V9rM5KjSY/xobTxR9Y9gLzHZLMboJEz4GleOWjBbpT9jJ/9CQoIyEVAGBfA1BppR/+3WNAVjJRWwr1RxvOobdvOkIfNx6u3jP1BmbH+MxQfYQIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "hotmail.com",
+      "selector": "selector1",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvWyktrIL8DO/+UGvMbv7cPd/Xogpbs7pgVw8y9ldO6AAMmg8+ijENl/c7Fb1MfKM7uG3LMwAr0dVVKyM+mbkoX2k5L7lsROQr0Z9gGSpu7xrnZOa58+/pIhd2Xk/DFPpa5+TKbWodbsSZPRN8z0RY5x59jdzSclXlEyN9mEZdmOiKTsOP6A7vQxfSya9jg5N81dfNNvP7HnWejMMsKyIMrXptxOhIBuEYH67JDe98QgX14oHvGM2Uz53if/SW8MF09rYh9sp4ZsaWLIg6T343JzlbtrsGRGCDJ9JPpxRWZimtz+Up/BlKzT6sCCrBihb/Bi3pZiEBB4Ui/vruL5RCQIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "icloud.com",
+      "selector": "1a1hai",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1ZEfbkf4TbO2TDZI67WhJ6G8Dwk3SJyAbBlE/QKdyXFZB4HfEU7AcuZBzcXSJFE03DlmyOkUAmaaR8yFlwooHyaKRLIaT3epGlL5YGowyfItLly2k0Jj0IOICRxWrB378b7qMeimE8KlH1UNaVpRTTi0XIYjIKAOpTlBmkM9a/3Rl4NWy8pLYApXD+WCkYxPcxoAAgaN8osqGTCJ5r+VHFU7Wm9xqq3MZmnfo0bzInF4UajCKjJAQa+HNuh95DWIYP/wV77/PxkEakOtzkbJMlFJiK/hMJ+HQUvTbtKW2s+t4uDK8DI16Rotsn6e0hS8xuXPmVte9ZzplD0fQgm2qwIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "icloud.com",
+      "selector": "alpha",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAopNdDV5bxtjTDVfU22DYKEmXV1ebW5kqOIhMvzmrXg5zfdWgaYwJ/EnGfJ568D3F92NABYRTfO8BX3dNSWlM5PYSvVa33KF936XzoqeZb2pzVBtGf4W3DEla8DsrcLtP6WFyZepz4ez+CAfEqjuBEdvy5m2GFRBGteG19pc3q3epVJuRQ9Ox82XQ+LefgGxy50H6yoLZ55dAmBg8wfpzK9P7adFz9sH7oBEa5/lahATLlX7bBQnJAQGjK1e4b+dPw724n+VUNwQ4Dgf28ceIiqBlv2wUkU1LHr2qfgI+1TdVCeEe9hdd6p7pZgzrC9dRMCFC7z1oSxm5PVVkoHuqEQIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "me.com",
+      "selector": "1a1hai",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2Cen4tG6TVvtJQWRLyg9JJHYfonYqjTNAFnwSaAlASI3APEFo1On0iPQq2YQRV7+UOiIZKdiUq50pb18JoHmX8YMv4rYv2oFZndoDysL0Hp23EQvIHsol1m/MvHkd07Q9pxTuyVWXgDKORTdHK3Qxwk/pqQeGmulJDFePJgKMlqdVAhrudiWpbVcUhq8rRtW+Vqv2vHnuMyhI54hV/1nFtXrmGObyTp6JEE46TA18EW+Fh8vndrhNDIXU7rzZ7XTic8wUzRb/iAplBp8E4mXwLsweUEo7Q4OykhDRRD/gMtR+/RLslettQV3F3+ViSi5GtZyJvZs3BeQH8IbUS6FEwIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "me.com",
+      "selector": "alpha",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtugXqwEjkoaRJF81va23lh8caPjExjL09Qan2aLExmRKMV8vnMylu0atgSx58umYJY8s7Z66F/lflU1hjBQFJJqnPVsraz9yS22jgXG2krGRGRCzNXBkYNPXqqdN1++rwmcymlIC3xiHMaXAlFTO1X4Tzxh5hSEsF9eoqA9dS3TR727azoqsiAqSkBsYcyZAQuotLBPc2HQ/FUM8w3QyCiOVQ/q2BPQJBZA0SemQ2gnkBv525MdbGp9R7NNicmMtmA+Iv/O9bbTYcOyhqEzqv2uXMySfMQGZZT0jMVjS+9nG824TEsbJ1AmwcmkMn/e9lLc8/UQmwBL9h2xCCN4KSQIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "outlook.com",
+      "selector": "selector1",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvWyktrIL8DO/+UGvMbv7cPd/Xogpbs7pgVw8y9ldO6AAMmg8+ijENl/c7Fb1MfKM7uG3LMwAr0dVVKyM+mbkoX2k5L7lsROQr0Z9gGSpu7xrnZOa58+/pIhd2Xk/DFPpa5+TKbWodbsSZPRN8z0RY5x59jdzSclXlEyN9mEZdmOiKTsOP6A7vQxfSya9jg5N81dfNNvP7HnWejMMsKyIMrXptxOhIBuEYH67JDe98QgX14oHvGM2Uz53if/SW8MF09rYh9sp4ZsaWLIg6T343JzlbtrsGRGCDJ9JPpxRWZimtz+Up/BlKzT6sCCrBihb/Bi3pZiEBB4Ui/vruL5RCQIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "outlook.com",
+      "selector": "selector2",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv4FtIHuwq9952OTOwVZEofzUo9nZJZV7Hn3zOXBHaEOP71nMs+uCheSeYRH34PLvo9MngvAFxXG4X8dpL35onCZq2uivZrSBid1ZPDiDqTsK8y26vCV/RpVSWeJEO0SWejooFY7RJ1sbSIxj3Yj4n95oysVoNk3OIJcLryIgjPwzoxFyFQKfpfzAuBf0xvAs29JW9whxe1A7J9Z+wJVhVs37o2ua+sMb7ypEhVjoGHJnGpHh3qq8ukHMw6XAiSD1bG5jndbWNXEf93E1UAAmIYZvxGqwFU0cpCu9YwmwEXYQtAXORinEYAIQKpIlCtH0hW6XKnsbxnbmUmRs/a1bJQIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "proton.me",
+      "selector": "protonmail",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn46zCm3zHBmS1zePKxA+RIXw41Nu6l91NpLLBnWnrcZ35H/843XNWPZEQ0OgGwx/yqTXETMLXIDjGEWlK1E1mpdguqu+3s7SuIHoo5+i6mgyxJguljkwc3dk8ojnJ6VVUPnDh5GJArkAhXxEb1aOK1BVGM0yDlmYdmaOfd48qcx5iODP/MFc8pivfxEXTIL+aUz7+X69lMiwUSHpWYL3/a5X3nLD0zEntxv08xs8J/rpuRg4v+OXEOhcNvhkeiRZqJBdpJTkoEZfGvdTct+U0YYC69NW0ClUcKio2uDPmxU1xvfvHbSTW2gHYk8RpYZaxLACULdMo+Vt4Na/oIR+swIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "proton.me",
+      "selector": "protonmail2",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzyzKjxw9soyR/PtOaHGV2qeOR63FVUMlRr2ssw6yZQGea4O3DzioVtwQMjXhqkLSnthca9zIyInBEcWXbC2LwRWX0vXJrULQpFtY1anvBebUJgbX9W2TJUW8seVoVVcKk0DF4iENEtsWNPBpuGKdx1BPpN4OujjWFs7RN4oIMHnJpSIlxzX9hT8mwdlUuKA4GsOOBg8zpXQIeJy8jDWj2xrmd6GxGsSCBD4mRrqwscSWU+RN6vyUon8wT2b3HujvCCRUhIrd40tMeT9clyl7IZSTJu5M7q0+s/favDSKiyIMBG4Walzr5OuFMl2eEGwDp45s3jQZfjHlczjCeyjmEwIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "protonmail.com",
+      "selector": "protonmail3",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzmFrmvkaVOE10ueeoEOMjotpj67tM+bNAAb/XEDbh/fPoWjbkyzsxR/HbcEh7lfJyrTl4Z+4zsJptSf7P5+d1puFiLsCP8W+Ln5f4lJNdp7cEEss4v0uM8h2cez89PZSuoD26h5cfFnnRdy7d05Ag0XbE/vYLv1kdWHHwK/UxL26GrsKJcTKcNo+Ukx3GnXqhsJJNLy/UUYAIy4w3mRQnxjdE0KC74fQBR/7WwiQb47JbQTDiJaFtihiB3CNd6/hZfi5fsGsoypWXR/uL/LiQcTGgC8gSM4YuSAzwIuUE4P+/23dOA8l81WmLTjKRdh4NWX1dGOPQ6a93nInUkfTmwIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "yahoo.com",
+      "selector": "s1024",
+      "record": "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDrEee0Ri4Juz+QfiWYui/E9UGSXau/2P8LjnTD8V4Unn+2FAZVGE3kL23bzeoULYv4PeleB3gfmJiDJOKU3Ns5L4KJAUUHjFwDebt0NP+sBK0VKeTATL2Yr/S3bT/xhy+1xtj4RkdV7fVxTn56Lb4udUnwuxK4V5b5PdOKj/+XcwIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    },
+    {
+      "domain": "yahoo.com",
+      "selector": "s2048",
+      "record": "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuoWufgbWw58MczUGbMv176RaxdZGOMkQmn8OOJ/HGoQ6dalSMWiLaj8IMcHC1cubJx2gziAPQHVPtFYayyLA4ayJUSNk10/uqfByiU8qiPCE4JSFrpxflhMIKV4bt+g1uHw7wLzguCf4YAoR6XxUKRsAoHuoF7M+v6bMZ/X1G+viWHkBl4UfgJQ6O8F1ckKKoZ5KqUkJH5pDaqbgs+F3PpyiAUQfB6EEzOA1KMPRWJGpzgPtKoukDcQuKUw9GAul7kSIyEcizqrbaUKNLGAmz0elkqRnzIsVpz6jdT1/YV5Ri6YUOQ5sN5bqNzZ8TxoQlkbVRy6eKOjUnoSSTmSAhwIDAQAB",
+      "algorithm": "rsa",
+      "bits": 0,
+      "origin": "seed",
+      "fetchedAt": "2026-11-16T11:30:40.848Z",
+      "source": "public DNS record, retrieved 2026-11-16"
+    }
+  ]
+}

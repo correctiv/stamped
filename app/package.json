@@ -39,6 +39,9 @@
           "../node_modules/@gjsify/napi-linux-x64/prebuilds/linux-x64"
         ]
       },
+      "extraFiles": {
+        "share/stamped/seed-keys.json": "../data/seed-keys.json"
+      },
       "kind": "app",
       "nodeModules": [
         "node-llama-cpp"
