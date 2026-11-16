@@ -88,6 +88,8 @@ function timeCheckTitle(kind: TimeCheckKind): string {
             return _('Order of the Received headers');
         case 'date-vs-received':
             return _('Date against the first Received header');
+        case 'date-vs-parent':
+            return _('Date against the message this one answers');
     }
 }
 

@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: stamped\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 13:12+0100\n"
+"POT-Creation-Date: 2026-11-16 13:26+0100\n"
 "PO-Revision-Date: 2026-10-20 18:30+0200\n"
 "Last-Translator: Stamped contributors <https://github.com/correctiv/stamped/"
 "issues>\n"
@@ -2027,9 +2027,9 @@ msgid ""
 "message was signed. Look the key up to replace it."
 msgstr ""
 "{signed}; geprüft mit dem Seed-Schlüssel, der mit Stamped ausgeliefert wird: "
-"ein öffentlicher Eintrag, der am Abrufdatum kopiert wurde und nicht "
-"zwingend der ist, der bei der Signatur der Nachricht veröffentlicht war. "
-"Rufen Sie den Schlüssel ab, um ihn zu ersetzen."
+"ein öffentlicher Eintrag, der am Abrufdatum kopiert wurde und nicht zwingend "
+"der ist, der bei der Signatur der Nachricht veröffentlicht war. Rufen Sie "
+"den Schlüssel ab, um ihn zu ersetzen."
 
 #: app/src/gui/view/keys.ts:132
 msgid "{signed}; the key is in this case’s store."
@@ -2582,11 +2582,15 @@ msgstr "Reihenfolge der Received-Header"
 msgid "Date against the first Received header"
 msgstr "Date-Header gegen den ersten Received-Header"
 
-#: app/src/gui/view/time.ts:114
+#: app/src/gui/view/time.ts:92
+msgid "Date against the message this one answers"
+msgstr "Date-Header gegen die beantwortete Nachricht"
+
+#: app/src/gui/view/time.ts:116
 msgid "This layer sits beside the signature verdict and never changes it."
 msgstr "Diese Ebene steht neben dem Signaturergebnis und ändert es nie."
 
-#: app/src/gui/view/time.ts:118
+#: app/src/gui/view/time.ts:120
 msgid "Time"
 msgstr "Zeit"
 
@@ -4744,19 +4748,19 @@ msgstr "Die Schlüsseldatei enthält einen fehlerhaften Eintrag für {name}."
 msgid "Pair list line {line}: expected domain and selector."
 msgstr "Paarliste, Zeile {line}: Domain und Selektor erwartet."
 
-#: packages/core/src/timecheck.ts:468
+#: packages/core/src/timecheck.ts:620
 msgid "Consistent"
 msgstr "Stimmig"
 
-#: packages/core/src/timecheck.ts:470
+#: packages/core/src/timecheck.ts:622
 msgid "Inconsistent"
 msgstr "Unstimmig"
 
-#: packages/core/src/timecheck.ts:472
+#: packages/core/src/timecheck.ts:624
 msgid "Not checkable"
 msgstr "Nicht prüfbar"
 
-#: packages/core/src/timecheck.ts:480
+#: packages/core/src/timecheck.ts:632
 msgid ""
 "Time: consistent. The time values of this message agree within the "
 "tolerances."
@@ -4764,7 +4768,7 @@ msgstr ""
 "Zeit: stimmig. Die Zeitangaben dieser Nachricht passen im Rahmen der "
 "Toleranzen zusammen."
 
-#: packages/core/src/timecheck.ts:483
+#: packages/core/src/timecheck.ts:635
 msgid ""
 "Time: inconsistent. Time values of this message disagree beyond the "
 "tolerances. The signature verdict is unaffected."
@@ -4772,39 +4776,62 @@ msgstr ""
 "Zeit: unstimmig. Zeitangaben dieser Nachricht weichen über die Toleranzen "
 "hinaus voneinander ab. Das Signaturergebnis bleibt unberührt."
 
-#: packages/core/src/timecheck.ts:486
+#: packages/core/src/timecheck.ts:638
 msgid "Time: not checkable. This message has too few usable time values."
 msgstr ""
 "Zeit: nicht prüfbar. Diese Nachricht enthält zu wenige verwertbare "
 "Zeitangaben."
 
-#: packages/core/src/timecheck.ts:505
+#: packages/core/src/timecheck.ts:657
 msgid "The message has no Date header."
 msgstr "Die Nachricht hat keinen Date-Header."
 
-#: packages/core/src/timecheck.ts:507
+#: packages/core/src/timecheck.ts:659
 msgid "The Date header cannot be read as a date."
 msgstr "Der Date-Header lässt sich nicht als Datum lesen."
 
-#: packages/core/src/timecheck.ts:509
+#: packages/core/src/timecheck.ts:661
 msgid "No verified signature carries a signing time (t=)."
 msgstr "Keine geprüfte Signatur enthält einen Signaturzeitpunkt (t=)."
 
-#: packages/core/src/timecheck.ts:511
+#: packages/core/src/timecheck.ts:663
 msgid ""
 "No verified signature carries both a signing time (t=) and an expiry (x=)."
 msgstr ""
 "Keine geprüfte Signatur enthält Signaturzeitpunkt (t=) und Ablauf (x=)."
 
-#: packages/core/src/timecheck.ts:513
+#: packages/core/src/timecheck.ts:665
 msgid "There are too few Received headers to compare."
 msgstr "Es gibt zu wenige Received-Header zum Vergleichen."
 
-#: packages/core/src/timecheck.ts:515
+#: packages/core/src/timecheck.ts:667
 msgid "The Received headers carry too few readable timestamps."
 msgstr "Die Received-Header enthalten zu wenige lesbare Zeitstempel."
 
-#: packages/core/src/timecheck.ts:534
+#: packages/core/src/timecheck.ts:669
+msgid "This message names no earlier message that the archive holds."
+msgstr ""
+"Diese Nachricht nennt keine frühere Nachricht, die das Archiv enthält."
+
+#: packages/core/src/timecheck.ts:671
+msgid "The message this one answers has no Date header."
+msgstr "Die beantwortete Nachricht hat keinen Date-Header."
+
+#: packages/core/src/timecheck.ts:673
+msgid ""
+"The Date header of the message this one answers cannot be read as a date."
+msgstr ""
+"Der Date-Header der beantworteten Nachricht lässt sich nicht als Datum lesen."
+
+#: packages/core/src/timecheck.ts:676
+msgid ""
+"Several held messages could be the one this answers, and they are not dated "
+"alike, so which one was answered cannot be told."
+msgstr ""
+"Mehrere vorhandene Nachrichten können die beantwortete sein, und sie sind "
+"nicht gleich datiert; welche beantwortet wurde, lässt sich nicht sagen."
+
+#: packages/core/src/timecheck.ts:696
 msgid ""
 "The Date header agrees with the signing time (t=) of a verified signature "
 "(difference {deviation}, tolerance {tolerance})."
@@ -4812,7 +4839,7 @@ msgstr ""
 "Der Date-Header passt zum Signaturzeitpunkt (t=) einer geprüften Signatur "
 "(Abweichung {deviation}, Toleranz {tolerance})."
 
-#: packages/core/src/timecheck.ts:537
+#: packages/core/src/timecheck.ts:699
 msgid ""
 "The Date header differs from the signing time (t=) of a verified signature "
 "by {deviation}, beyond the tolerance of {tolerance}."
@@ -4820,15 +4847,15 @@ msgstr ""
 "Der Date-Header weicht um {deviation} vom Signaturzeitpunkt (t=) einer "
 "geprüften Signatur ab, mehr als die Toleranz von {tolerance}."
 
-#: packages/core/src/timecheck.ts:544
+#: packages/core/src/timecheck.ts:706
 msgid "The signature expires (x=) after it was made (t=), by {deviation}."
 msgstr "Die Signatur läuft (x=) {deviation} nach ihrer Erstellung (t=) ab."
 
-#: packages/core/src/timecheck.ts:545
+#: packages/core/src/timecheck.ts:707
 msgid "The signature expires (x=) before it was made (t=): {deviation}."
 msgstr "Die Signatur läuft (x=) vor ihrer Erstellung (t=) ab: {deviation}."
 
-#: packages/core/src/timecheck.ts:552
+#: packages/core/src/timecheck.ts:714
 msgid ""
 "The Received headers run in time order (largest step backwards {deviation}, "
 "tolerance {tolerance})."
@@ -4836,7 +4863,7 @@ msgstr ""
 "Die Received-Header laufen in zeitlicher Reihenfolge (größter Rückschritt "
 "{deviation}, Toleranz {tolerance})."
 
-#: packages/core/src/timecheck.ts:555
+#: packages/core/src/timecheck.ts:717
 msgid ""
 "A lower Received header is dated {deviation} after the one above it, beyond "
 "the tolerance of {tolerance}."
@@ -4844,7 +4871,7 @@ msgstr ""
 "Ein weiter unten stehender Received-Header ist um {deviation} später datiert "
 "als der darüber, mehr als die Toleranz von {tolerance}."
 
-#: packages/core/src/timecheck.ts:563
+#: packages/core/src/timecheck.ts:725
 msgid ""
 "The Date header is not later than the first Received header (difference "
 "{deviation}, tolerance {tolerance})."
@@ -4852,7 +4879,7 @@ msgstr ""
 "Der Date-Header liegt nicht nach dem ersten Received-Header (Abweichung "
 "{deviation}, Toleranz {tolerance})."
 
-#: packages/core/src/timecheck.ts:566
+#: packages/core/src/timecheck.ts:728
 msgid ""
 "The Date header is {deviation} later than the first Received header, beyond "
 "the tolerance of {tolerance}."
@@ -4860,7 +4887,26 @@ msgstr ""
 "Der Date-Header liegt {deviation} nach dem ersten Received-Header, mehr als "
 "die Toleranz von {tolerance}."
 
-#: packages/core/src/timecheck.ts:576
+#: packages/core/src/timecheck.ts:736
+msgid ""
+"This message is not dated before the message it answers (difference "
+"{deviation}, tolerance {tolerance})."
+msgstr ""
+"Diese Nachricht ist nicht vor der beantworteten Nachricht datiert "
+"(Abweichung {deviation}, Toleranz {tolerance})."
+
+#: packages/core/src/timecheck.ts:739
+msgid ""
+"This message is dated before the message it answers ({deviation}, tolerance "
+"{tolerance}). An indication only: the link to that message is a header the "
+"sender wrote, and no signature covers it."
+msgstr ""
+"Diese Nachricht ist vor der beantworteten Nachricht datiert ({deviation}, "
+"Toleranz {tolerance}). Nur ein Hinweis: Die Verbindung zu jener Nachricht "
+"ist ein Header, den der Absender geschrieben hat, und keine Signatur deckt "
+"ihn ab."
+
+#: packages/core/src/timecheck.ts:749
 msgid ""
 "Every compared value is covered by a verified signature, so this result "
 "weighs more."
@@ -4868,7 +4914,7 @@ msgstr ""
 "Jeder verglichene Wert ist durch eine geprüfte Signatur abgedeckt, das "
 "Ergebnis wiegt daher schwerer."
 
-#: packages/core/src/timecheck.ts:578
+#: packages/core/src/timecheck.ts:751
 msgid ""
 "At least one compared value is not covered by a verified signature and could "
 "have been written by anyone."

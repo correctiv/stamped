@@ -17,8 +17,13 @@ import {
     TIME_TOLERANCES,
     type TimeCheck,
     type TimeInput,
+    type TimeParent,
 } from '@stamped/core';
+import { encodeLatin1 } from '@stamped/import';
+import type { Thread, ThreadEntry } from '@stamped/store';
 import { describe, expect, it } from '@gjsify/unit';
+
+import { timeFindingOf } from '../../src/lib/time.ts';
 
 const BASE = Date.UTC(2024, 2, 10, 12, 0, 0);
 const seconds = (ms: number) => Math.floor(ms / 1000);
@@ -279,6 +284,311 @@ export default async () => {
             const allBad = checkTime(input({ received: ['x', 'y'] }));
             expect(check(allBad, 'received-order').unavailable).toBe('bad-received');
             expect(check(allBad, 'date-vs-received').unavailable).toBe('bad-received');
+        });
+    });
+
+    await describe('a reply against the message it answers', async () => {
+        /** A held parent with the `Date` it was written with. */
+        const held = (date: string): TimeParent => ({ candidates: [{ held: true, date }] });
+        const parent = (finding: ReturnType<typeof checkTime>) => check(finding, 'date-vs-parent');
+
+        await it('is consistent for a reply dated after what it answers', async () => {
+            const finding = checkTime(input({ parent: held('Sun, 10 Mar 2024 11:00:00 +0000') }));
+            const c = parent(finding);
+            expect(c.result).toBe('consistent');
+            expect(c.deviationSeconds).toBe(3600);
+            expect(c.toleranceSeconds).toBe(TIME_TOLERANCES.replyBeforeParent);
+            expect(c.values.map((v) => v.kind)).toStrictEqual(['date', 'parent-date']);
+        });
+
+        await it('is consistent for a reply a month later: a late answer is ordinary', async () => {
+            const c = parent(checkTime(input({ parent: held('Sat, 10 Feb 2024 12:00:00 +0000') })));
+            expect(c.result).toBe('consistent');
+        });
+
+        await it('flags a reply dated well before what it answers', async () => {
+            const finding = checkTime(input({ parent: held('Sun, 10 Mar 2024 15:00:00 +0000') }));
+            const c = parent(finding);
+            expect(c.result).toBe('inconsistent');
+            expect(c.deviationSeconds).toBe(-10800);
+            expect(finding.result).toBe('inconsistent');
+        });
+
+        await it('tolerates two hours of inversion: two client clocks and a DST slip', async () => {
+            const inside = parent(checkTime(input({ parent: held('Sun, 10 Mar 2024 13:30:00 +0000') })));
+            expect(inside.result).toBe('consistent');
+            const edge = parent(checkTime(input({ parent: held('Sun, 10 Mar 2024 14:00:00 +0000') })));
+            expect(edge.result).toBe('consistent');
+            expect(edge.deviationSeconds).toBe(-7200);
+        });
+
+        await it('reads the zone of the other message rather than its clock face', async () => {
+            const c = parent(checkTime(input({ parent: held('Sun, 10 Mar 2024 20:00:00 +0900') })));
+            expect(c.result).toBe('consistent');
+            expect(c.deviationSeconds).toBe(3600);
+        });
+
+        await it('is NEVER protected, whatever the signatures cover', async () => {
+            const finding = checkTime(
+                input({
+                    date: 'Sun, 10 Mar 2024 09:00:00 +0000',
+                    signatures: [signature({ signedAt: seconds(Date.UTC(2024, 2, 10, 9, 0, 0)) })],
+                    parent: held('Sun, 10 Mar 2024 15:00:00 +0000'),
+                }),
+            );
+            const c = parent(finding);
+            expect(c.result).toBe('inconsistent');
+            // `Date` sits in `h=` and the signature verified, so the value is covered — the check
+            // is not, because the link to the other message is an unsigned header.
+            expect(c.values[0]!.protectedBySignature).toBe(true);
+            expect(c.values[1]!.protectedBySignature).toBe(false);
+            expect(c.protectedBySignature).toBe(false);
+            expect(finding.protectedBySignature).toBe(false);
+        });
+
+        await it('is not checkable when the caller looked up no conversation', async () => {
+            expect(parent(checkTime(input())).unavailable).toBe('no-parent');
+        });
+
+        await it('is not checkable when the archive holds no message this one names', async () => {
+            const none = checkTime(input({ parent: { candidates: [] } }));
+            expect(parent(none).unavailable).toBe('no-parent');
+            const gap = checkTime(input({ parent: { candidates: [{ held: false }] } }));
+            expect(parent(gap).unavailable).toBe('no-parent');
+            expect(parent(gap).values).toStrictEqual([]);
+        });
+
+        await it('is not checkable when the message it answers has no readable Date', async () => {
+            const undated = checkTime(input({ parent: { candidates: [{ held: true }] } }));
+            expect(parent(undated).unavailable).toBe('no-parent-date');
+            const blank = checkTime(input({ parent: held('  ') }));
+            expect(parent(blank).unavailable).toBe('no-parent-date');
+            // No zone, so unreadable rather than guessed — the same rule as the message's own Date.
+            const unzoned = checkTime(input({ parent: held('Sun, 10 Mar 2024 11:00:00') }));
+            expect(parent(unzoned).unavailable).toBe('bad-parent-date');
+        });
+
+        await it('needs the reply to have a readable Date of its own', async () => {
+            const missing = checkTime({
+                received: [],
+                signatures: [],
+                parent: held('Sun, 10 Mar 2024 11:00:00 +0000'),
+            });
+            expect(parent(missing).unavailable).toBe('no-date');
+        });
+
+        await it('refuses to pick when the reply names two messages that disagree', async () => {
+            const disagree = checkTime(
+                input({
+                    parent: {
+                        candidates: [
+                            { held: true, date: 'Sun, 10 Mar 2024 11:00:00 +0000' },
+                            { held: true, date: 'Sun, 10 Mar 2024 15:00:00 +0000' },
+                        ],
+                    },
+                }),
+            );
+            // The later one would be a finding, the earlier one would not. Which was answered is
+            // unknown, so neither is reported.
+            expect(parent(disagree).unavailable).toBe('ambiguous-parent');
+            expect(disagree.result).toBe('not-checkable');
+        });
+
+        await it('compares two messages that agree on the instant', async () => {
+            const agree = checkTime(
+                input({
+                    parent: {
+                        candidates: [
+                            { held: true, date: 'Sun, 10 Mar 2024 11:00:00 +0000' },
+                            { held: true, date: 'Sun, 10 Mar 2024 12:00:00 +0100' },
+                        ],
+                    },
+                }),
+            );
+            expect(parent(agree).result).toBe('consistent');
+            expect(parent(agree).deviationSeconds).toBe(3600);
+        });
+
+        await it('stops rather than comparing against the one candidate it can date', async () => {
+            const halfHeld = checkTime(
+                input({
+                    parent: {
+                        candidates: [
+                            { held: true, date: 'Sun, 10 Mar 2024 11:00:00 +0000' },
+                            { held: false },
+                        ],
+                    },
+                }),
+            );
+            // The id nobody holds could be the later one, which is the case that would be a finding.
+            expect(parent(halfHeld).unavailable).toBe('ambiguous-parent');
+            const halfDated = checkTime(
+                input({
+                    parent: {
+                        candidates: [{ held: true, date: 'Sun, 10 Mar 2024 11:00:00 +0000' }, { held: true }],
+                    },
+                }),
+            );
+            expect(parent(halfDated).unavailable).toBe('ambiguous-parent');
+            const halfReadable = checkTime(
+                input({
+                    parent: {
+                        candidates: [
+                            { held: true, date: 'Sun, 10 Mar 2024 11:00:00 +0000' },
+                            { held: true, date: 'whenever' },
+                        ],
+                    },
+                }),
+            );
+            expect(parent(halfReadable).unavailable).toBe('ambiguous-parent');
+        });
+    });
+
+    await describe('the seam that finds the other message', async () => {
+        /** A reply, built from headers: the ids it names and the Date it carries. */
+        function reply(headers: { replyTo?: string; references?: string; date?: string }): Uint8Array {
+            const lines = ['From: Ada Lovelace <ada@example.com>', 'To: Grace Hopper <grace@example.net>'];
+            lines.push('Message-ID: <reply@example.com>');
+            if (headers.replyTo !== undefined) lines.push(`In-Reply-To: ${headers.replyTo}`);
+            if (headers.references !== undefined) lines.push(`References: ${headers.references}`);
+            lines.push(`Date: ${headers.date ?? 'Sun, 10 Mar 2024 12:00:00 +0000'}`);
+            lines.push('Subject: Re: Hello', '', 'Body', '');
+            return encodeLatin1(lines.join('\r\n'));
+        }
+
+        /** One line of a conversation, named by id and dated, as `threadOf` hands it over. */
+        function entry(overrides: Partial<ThreadEntry> & { messageId: string }): ThreadEntry {
+            return {
+                hash: `h-${overrides.messageId}`,
+                depth: 0,
+                missing: false,
+                focus: false,
+                subject: 'Hello',
+                sender: 'grace@example.net',
+                date: 'Sun, 10 Mar 2024 11:00:00 +0000',
+                verdict: 'unsigned',
+                ...overrides,
+            };
+        }
+
+        const thread = (entries: readonly ThreadEntry[]): Thread => ({ entries, truncated: false });
+        const unsigned = { verdict: 'unsigned', caveats: [], signatures: [] } as const;
+        const seam = (raw: Uint8Array, conversation?: Thread): TimeCheck =>
+            check(timeFindingOf(raw, unsigned, conversation), 'date-vs-parent');
+
+        await it('reads In-Reply-To and dates the reply against that message', async () => {
+            const c = seam(
+                reply({ replyTo: '<first@example.com>' }),
+                thread([
+                    entry({ messageId: '<first@example.com>' }),
+                    entry({ messageId: '<reply@example.com>', focus: true }),
+                ]),
+            );
+            expect(c.result).toBe('consistent');
+            expect(c.deviationSeconds).toBe(3600);
+        });
+
+        await it('flags a reply the headers place before what it answers', async () => {
+            const c = seam(
+                reply({ replyTo: '<first@example.com>', date: 'Sun, 10 Mar 2024 08:00:00 +0000' }),
+                thread([entry({ messageId: '<first@example.com>' })]),
+            );
+            expect(c.result).toBe('inconsistent');
+            expect(c.protectedBySignature).toBe(false);
+        });
+
+        await it('falls back to the last References id when there is no In-Reply-To', async () => {
+            const c = seam(
+                reply({ references: '<older@example.com> <first@example.com>' }),
+                thread([
+                    entry({ messageId: '<older@example.com>', date: 'Sun, 10 Mar 2024 15:00:00 +0000' }),
+                    entry({ messageId: '<first@example.com>' }),
+                ]),
+            );
+            // The one it answers is the last of the chain; the earlier ancestor is not compared,
+            // or this would flag every reply to a long thread whose top is dated oddly.
+            expect(c.result).toBe('consistent');
+            expect(c.deviationSeconds).toBe(3600);
+        });
+
+        await it('is not checkable without a conversation: the CLI on one file', async () => {
+            expect(seam(reply({ replyTo: '<first@example.com>' })).unavailable).toBe('no-parent');
+        });
+
+        await it('is not checkable when the named message is only a gap in the archive', async () => {
+            const missing = seam(
+                reply({ replyTo: '<first@example.com>' }),
+                thread([entry({ messageId: '<first@example.com>', missing: true, date: '' })]),
+            );
+            expect(missing.unavailable).toBe('no-parent');
+            const absent = seam(reply({ replyTo: '<first@example.com>' }), thread([]));
+            expect(absent.unavailable).toBe('no-parent');
+            const none = seam(reply({}), thread([entry({ messageId: '<first@example.com>' })]));
+            expect(none.unavailable).toBe('no-parent');
+        });
+
+        await it('never answers a message against itself', async () => {
+            // A self-referencing In-Reply-To would otherwise compare the Date with itself and
+            // come out `consistent` by arithmetic — a check reported as made when none was.
+            const c = seam(
+                reply({ replyTo: '<reply@example.com>' }),
+                thread([
+                    entry({
+                        messageId: '<reply@example.com>',
+                        focus: true,
+                        date: 'Sun, 10 Mar 2024 12:00:00 +0000',
+                    }),
+                ]),
+            );
+            expect(c.unavailable).toBe('no-parent');
+        });
+
+        await it('stops when two messages in the archive carry the named id', async () => {
+            const c = seam(
+                reply({ replyTo: '<first@example.com>' }),
+                thread([
+                    entry({ messageId: '<first@example.com>', hash: 'h-a' }),
+                    entry({
+                        messageId: '<first@example.com>',
+                        hash: 'h-b',
+                        date: 'Sun, 10 Mar 2024 15:00:00 +0000',
+                    }),
+                ]),
+            );
+            expect(c.unavailable).toBe('ambiguous-parent');
+        });
+
+        await it('stops when the reply names two different messages', async () => {
+            const c = seam(
+                reply({ replyTo: '<first@example.com> <other@example.org>' }),
+                thread([
+                    entry({ messageId: '<first@example.com>' }),
+                    entry({ messageId: '<other@example.org>', date: 'Sun, 10 Mar 2024 15:00:00 +0000' }),
+                ]),
+            );
+            expect(c.unavailable).toBe('ambiguous-parent');
+        });
+
+        await it('does not throw on a conversation that loops back on itself', async () => {
+            // `buildThread` drops a link that would close a loop, so a cycle reaches here as two
+            // entries naming each other. The seam reads ids, never walks, so there is nothing to
+            // loop in — the assertion is that it answers at all.
+            const c = seam(
+                reply({ replyTo: '<first@example.com>' }),
+                thread([
+                    entry({ messageId: '<first@example.com>', depth: 0 }),
+                    entry({ messageId: '<reply@example.com>', depth: 1, focus: true }),
+                ]),
+            );
+            expect(TIME_RESULTS.includes(c.result)).toBe(true);
+        });
+
+        await it('is not checkable when the message it answers carries no Date', async () => {
+            const c = seam(
+                reply({ replyTo: '<first@example.com>' }),
+                thread([entry({ messageId: '<first@example.com>', date: '' })]),
+            );
+            expect(c.unavailable).toBe('no-parent-date');
         });
     });
 
