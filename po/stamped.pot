@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 13:12+0100\n"
+"POT-Creation-Date: 2026-11-16 13:26+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2272,11 +2272,15 @@ msgstr ""
 msgid "Date against the first Received header"
 msgstr ""
 
-#: app/src/gui/view/time.ts:114
+#: app/src/gui/view/time.ts:92
+msgid "Date against the message this one answers"
+msgstr ""
+
+#: app/src/gui/view/time.ts:116
 msgid "This layer sits beside the signature verdict and never changes it."
 msgstr ""
 
-#: app/src/gui/view/time.ts:118
+#: app/src/gui/view/time.ts:120
 msgid "Time"
 msgstr ""
 
@@ -4148,110 +4152,142 @@ msgstr ""
 msgid "Pair list line {line}: expected domain and selector."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:468
+#: packages/core/src/timecheck.ts:620
 msgid "Consistent"
 msgstr ""
 
-#: packages/core/src/timecheck.ts:470
+#: packages/core/src/timecheck.ts:622
 msgid "Inconsistent"
 msgstr ""
 
-#: packages/core/src/timecheck.ts:472
+#: packages/core/src/timecheck.ts:624
 msgid "Not checkable"
 msgstr ""
 
-#: packages/core/src/timecheck.ts:480
+#: packages/core/src/timecheck.ts:632
 msgid ""
 "Time: consistent. The time values of this message agree within the "
 "tolerances."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:483
+#: packages/core/src/timecheck.ts:635
 msgid ""
 "Time: inconsistent. Time values of this message disagree beyond the "
 "tolerances. The signature verdict is unaffected."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:486
+#: packages/core/src/timecheck.ts:638
 msgid "Time: not checkable. This message has too few usable time values."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:505
+#: packages/core/src/timecheck.ts:657
 msgid "The message has no Date header."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:507
+#: packages/core/src/timecheck.ts:659
 msgid "The Date header cannot be read as a date."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:509
+#: packages/core/src/timecheck.ts:661
 msgid "No verified signature carries a signing time (t=)."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:511
+#: packages/core/src/timecheck.ts:663
 msgid ""
 "No verified signature carries both a signing time (t=) and an expiry (x=)."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:513
+#: packages/core/src/timecheck.ts:665
 msgid "There are too few Received headers to compare."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:515
+#: packages/core/src/timecheck.ts:667
 msgid "The Received headers carry too few readable timestamps."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:534
+#: packages/core/src/timecheck.ts:669
+msgid "This message names no earlier message that the archive holds."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:671
+msgid "The message this one answers has no Date header."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:673
+msgid ""
+"The Date header of the message this one answers cannot be read as a date."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:676
+msgid ""
+"Several held messages could be the one this answers, and they are not dated "
+"alike, so which one was answered cannot be told."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:696
 msgid ""
 "The Date header agrees with the signing time (t=) of a verified signature "
 "(difference {deviation}, tolerance {tolerance})."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:537
+#: packages/core/src/timecheck.ts:699
 msgid ""
 "The Date header differs from the signing time (t=) of a verified signature "
 "by {deviation}, beyond the tolerance of {tolerance}."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:544
+#: packages/core/src/timecheck.ts:706
 msgid "The signature expires (x=) after it was made (t=), by {deviation}."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:545
+#: packages/core/src/timecheck.ts:707
 msgid "The signature expires (x=) before it was made (t=): {deviation}."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:552
+#: packages/core/src/timecheck.ts:714
 msgid ""
 "The Received headers run in time order (largest step backwards {deviation}, "
 "tolerance {tolerance})."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:555
+#: packages/core/src/timecheck.ts:717
 msgid ""
 "A lower Received header is dated {deviation} after the one above it, beyond "
 "the tolerance of {tolerance}."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:563
+#: packages/core/src/timecheck.ts:725
 msgid ""
 "The Date header is not later than the first Received header (difference "
 "{deviation}, tolerance {tolerance})."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:566
+#: packages/core/src/timecheck.ts:728
 msgid ""
 "The Date header is {deviation} later than the first Received header, beyond "
 "the tolerance of {tolerance}."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:576
+#: packages/core/src/timecheck.ts:736
+msgid ""
+"This message is not dated before the message it answers (difference "
+"{deviation}, tolerance {tolerance})."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:739
+msgid ""
+"This message is dated before the message it answers ({deviation}, tolerance "
+"{tolerance}). An indication only: the link to that message is a header the "
+"sender wrote, and no signature covers it."
+msgstr ""
+
+#: packages/core/src/timecheck.ts:749
 msgid ""
 "Every compared value is covered by a verified signature, so this result "
 "weighs more."
 msgstr ""
 
-#: packages/core/src/timecheck.ts:578
+#: packages/core/src/timecheck.ts:751
 msgid ""
 "At least one compared value is not covered by a verified signature and could "
 "have been written by anyone."

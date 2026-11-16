@@ -2405,7 +2405,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
         }
         // After the signatures and before the bytes, the order `stamped verify` prints: the time
         // layer reads the `t=`/`x=` of the signatures above it, and it is not a verdict of its own.
-        const timeWidget = this.timeGroupWidget(timeGroup(timeFindingOf(raw, finding)));
+        const timeWidget = this.timeGroupWidget(timeGroup(timeFindingOf(raw, finding, thread)));
         this._readerBody.append(timeWidget);
         if (SHOT_TIME !== null) {
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2500, () => {

@@ -58,6 +58,8 @@ export {
     type TimeCheckKind,
     type TimeFinding,
     type TimeInput,
+    type TimeParent,
+    type TimeParentCandidate,
     type TimeResult,
     timeResultLabel,
     type TimeUnavailableReason,

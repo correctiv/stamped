@@ -256,7 +256,7 @@ export default async () => {
                 time: { result: string; checks: { kind: string; explanation: string }[] };
             };
             expect(parsed.time.result).toBe('consistent');
-            expect(parsed.time.checks.length).toBe(4);
+            expect(parsed.time.checks.length).toBe(5);
             expect('time' in JSON.parse(reportJson(finding, 'm.eml'))).toBe(false);
         });
     });

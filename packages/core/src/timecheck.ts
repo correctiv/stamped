@@ -9,8 +9,12 @@
  * whole of what the word means.
  *
  * Pure and deterministic, like the classifier: no clock is read, every input is passed in.
- * Stufe 1 is PER MESSAGE: it uses nothing but what one message carries. Anything that needs
- * other mails (a sender's rhythm, a thread's order) belongs to a later stage.
+ * MOST checks are per message: they use nothing but what one message carries. One looks at TWO —
+ * a reply and the message it answers — and it is folded in here rather than given a layer of its
+ * own because it asks the same question with one more message in view: do the clocks hang
+ * together? It stays weaker than the others and says so, because the link between the two
+ * messages is a header the SENDER wrote. Anything that needs many mails (a sender's rhythm, a
+ * whole thread's order) still belongs to a later stage.
  *
  * What a value is worth depends on who could have written it. A `Date` listed in `h=` of a
  * verified signature, and that signature's `t=`/`x=`, are covered by cryptography; `Received`
@@ -27,12 +31,18 @@ export const TIME_RESULTS = ['consistent', 'inconsistent', 'not-checkable'] as c
 /** One of the three things the time layer may say. */
 export type TimeResult = (typeof TIME_RESULTS)[number];
 
-/** The checks of Stufe 1, in the order they are reported. */
+/**
+ * The checks of Stufe 1, in the order they are reported.
+ *
+ * The first four read one message. The last reads two — a reply and the message it answers — and
+ * is the weakest of them, because the link between the two is a header the sender wrote.
+ */
 export const TIME_CHECKS = [
     'date-vs-signature',
     'signature-lifetime',
     'received-order',
     'date-vs-received',
+    'date-vs-parent',
 ] as const;
 
 /** One kind of check. */
@@ -51,7 +61,21 @@ export type TimeUnavailableReason =
     /** Fewer than two `Received` headers: a single hop has no order. */
     | 'too-few-received'
     /** `Received` headers exist, but fewer than the check needs have a readable timestamp. */
-    | 'bad-received';
+    | 'bad-received'
+    /**
+     * The message names no earlier message that the archive holds: no `In-Reply-To`, no
+     * `References`, or the ids name mails nobody has. A gap in an archive, not a finding.
+     */
+    | 'no-parent'
+    /** The named earlier message is held, but carries no `Date` header. */
+    | 'no-parent-date'
+    /** The named earlier message carries a `Date` that does not parse. */
+    | 'bad-parent-date'
+    /**
+     * Several messages carry the named id with different dates, so which one was answered cannot
+     * be told. Picking one would be a guess, and a guess here produces a finding.
+     */
+    | 'ambiguous-parent';
 
 /** Every unavailable reason, in the order they are documented. */
 export const TIME_UNAVAILABLE_REASONS: readonly TimeUnavailableReason[] = [
@@ -61,6 +85,10 @@ export const TIME_UNAVAILABLE_REASONS: readonly TimeUnavailableReason[] = [
     'no-expiry',
     'too-few-received',
     'bad-received',
+    'no-parent',
+    'no-parent-date',
+    'bad-parent-date',
+    'ambiguous-parent',
 ];
 
 /*
@@ -117,6 +145,19 @@ export const TOLERANCE_RECEIVED_STEP_BACK = 900;
  */
 export const TOLERANCE_DATE_AFTER_FIRST_RECEIVED = 3600;
 
+/**
+ * A reply dated EARLIER than the message it answers: two hours.
+ *
+ * Twice {@link TOLERANCE_DATE_AFTER_SIGNATURE}, because both values are of the same bad kind. In
+ * the single-message checks one side is a server clock, usually kept; here both `Date` headers
+ * come from mail clients on unmanaged devices, so the noise of that case applies on both sides at
+ * once. Two hours also clears an hour of daylight-saving slip on each device, the common cause of
+ * a whole-hour inversion. Beyond it the usual cause is a timezone labelled wrongly by hours,
+ * which is what should be shown. A reply dated LATER than what it answers is the ordinary case at
+ * any distance — people answer a mail a month on — and is not checked.
+ */
+export const TOLERANCE_REPLY_BEFORE_PARENT = 7200;
+
 /** All tolerances in one table, for documentation and for a reader who wants to quote them. */
 export const TIME_TOLERANCES = {
     dateAfterSignature: TOLERANCE_DATE_AFTER_SIGNATURE,
@@ -124,10 +165,17 @@ export const TIME_TOLERANCES = {
     expiryBeforeSignature: TOLERANCE_EXPIRY_BEFORE_SIGNATURE,
     receivedStepBack: TOLERANCE_RECEIVED_STEP_BACK,
     dateAfterFirstReceived: TOLERANCE_DATE_AFTER_FIRST_RECEIVED,
+    replyBeforeParent: TOLERANCE_REPLY_BEFORE_PARENT,
 } as const;
 
 /** Which header or tag a compared instant came from. */
-export type TimeValueKind = 'date' | 'signature-time' | 'signature-expiry' | 'received';
+export type TimeValueKind =
+    | 'date'
+    | 'signature-time'
+    | 'signature-expiry'
+    | 'received'
+    /** The `Date` header of the OTHER message: the one this reply names as what it answers. */
+    | 'parent-date';
 
 /** One instant that was compared, and whether a verified signature covers it. */
 export interface TimeValue {
@@ -168,6 +216,35 @@ export interface TimeFinding {
     readonly checks: readonly TimeCheck[];
 }
 
+/**
+ * One message a reply names as the one it answers, and what the archive has of it.
+ *
+ * `held: false` is an id the reply names that nobody holds — the ordinary gap in an archive, and
+ * the reason this type is not just a date: an id that cannot be dated must be able to STOP the
+ * comparison rather than drop out of it. A reply naming two parents of which only one is held
+ * would otherwise be compared against that one, and the one missing could be the later.
+ */
+export type TimeParentCandidate =
+    | { readonly held: false }
+    | {
+          readonly held: true;
+          /** Its raw `Date` header; absent when the held message has none. */
+          readonly date?: string;
+      };
+
+/**
+ * The message a reply names as the one it answers, as the archive holds it.
+ *
+ * The caller decides which ids those are — core reads no `In-Reply-To`, so that rule lives with
+ * the code that has the conversation in front of it. One candidate per message the reply could be
+ * answering: an archive can hold two mails under one id, and a malformed `In-Reply-To` can name
+ * two ids. Candidates that disagree about the instant, or that cannot all be dated, make the
+ * comparison unanswerable rather than answerable twice.
+ */
+export interface TimeParent {
+    readonly candidates: readonly TimeParentCandidate[];
+}
+
 /** What the time layer reads from one message. */
 export interface TimeInput {
     /** The raw value of the `Date` header, if the message has one. */
@@ -176,6 +253,11 @@ export interface TimeInput {
     readonly received: readonly string[];
     /** Every signature of the message, as the verifier produced it. */
     readonly signatures: readonly SignatureEvidence[];
+    /**
+     * The message this one answers, when the caller could look one up. Absent means "not looked
+     * up" and reads exactly like "not in the archive": `not-checkable`, never a finding.
+     */
+    readonly parent?: TimeParent;
 }
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -436,6 +518,75 @@ function checkDateVsReceived(input: TimeInput): TimeCheck {
 }
 
 /**
+ * The one instant every candidate parent agrees on, or why there is none.
+ *
+ * Conservative by construction: an answer is only given when EVERY candidate yields a readable
+ * instant and all of them are the same instant. One candidate the archive cannot date is one
+ * message this reply might be answering whose time nobody knows, and comparing against the other
+ * one would be a guess about which — so it is `ambiguous-parent`, not a finding.
+ */
+function parentInstant(parent: TimeParent): { at: number } | { unavailable: TimeUnavailableReason } {
+    const candidates = parent.candidates;
+    if (candidates.length === 0) return { unavailable: 'no-parent' };
+    const held = candidates.filter((candidate) => candidate.held);
+    if (held.length === 0) return { unavailable: 'no-parent' };
+    // One named message the archive does not hold is one instant nobody knows, and it could be
+    // the later of the two: comparing against the other would be a guess about which was answered.
+    if (held.length < candidates.length) return { unavailable: 'ambiguous-parent' };
+
+    const written = held
+        .map((candidate) => candidate.date)
+        .filter((date): date is string => date !== undefined && date.trim() !== '');
+    if (written.length === 0) return { unavailable: 'no-parent-date' };
+    const instants = written.map(parseMailDate).filter(isInstant);
+    if (instants.length === 0) {
+        return { unavailable: written.length < held.length ? 'no-parent-date' : 'bad-parent-date' };
+    }
+    // Same reasoning as above, one level down: a candidate without a date or with an unreadable
+    // one leaves the comparison undecidable rather than decidable on the rest.
+    if (instants.length < candidates.length) return { unavailable: 'ambiguous-parent' };
+    if (instants.some((at) => at !== instants[0])) return { unavailable: 'ambiguous-parent' };
+    return { at: instants[0]! };
+}
+
+/**
+ * A reply against the message it answers: the one check that looks at two messages.
+ *
+ * NEVER PROTECTED, whatever the signatures say. Both instants could be covered by verified
+ * signatures and the result would still rest on the reply's `In-Reply-To`/`References` — a header
+ * the sender wrote, which a forged message can point wherever it likes. So the check reports
+ * `protectedBySignature: false` and its sentences read as an indication, not a proof.
+ *
+ * Only one direction is a finding: a reply dated BEFORE what it answers. The other direction is
+ * ordinary — a mail answered a month later — and a parent that is not in the archive, or not
+ * datable, is a gap in the archive and reads `not-checkable`.
+ */
+function checkDateVsParent(input: TimeInput): TimeCheck {
+    const kind = 'date-vs-parent';
+    const date = readDate(input);
+    if ('unavailable' in date) return notCheckable(kind, date.unavailable);
+    if (input.parent === undefined) return notCheckable(kind, 'no-parent');
+    const parent = parentInstant(input.parent);
+    if ('unavailable' in parent) return notCheckable(kind, parent.unavailable);
+
+    const deviation = (date.at - parent.at) / 1000;
+    const dateProtected = verifiedSignatures(input).some((signature) =>
+        signature.signedHeaders.includes('date'),
+    );
+    return {
+        kind,
+        result: deviation < -TOLERANCE_REPLY_BEFORE_PARENT ? 'inconsistent' : 'consistent',
+        values: [
+            { kind: 'date', at: date.at, protectedBySignature: dateProtected },
+            { kind: 'parent-date', at: parent.at, protectedBySignature: false },
+        ],
+        deviationSeconds: deviation,
+        toleranceSeconds: TOLERANCE_REPLY_BEFORE_PARENT,
+        protectedBySignature: false,
+    };
+}
+
+/**
  * Run every Stufe 1 check on one message.
  *
  * The overall result is the worst of the checks that could be made: one `inconsistent` check
@@ -449,6 +600,7 @@ export function checkTime(input: TimeInput): TimeFinding {
         checkSignatureLifetime(input),
         checkReceivedOrder(input),
         checkDateVsReceived(input),
+        checkDateVsParent(input),
     ];
     const inconsistent = checks.filter((check) => check.result === 'inconsistent');
     const consistent = checks.filter((check) => check.result === 'consistent');
@@ -513,6 +665,16 @@ export function describeTimeUnavailable(reason: TimeUnavailableReason): string {
             return _('There are too few Received headers to compare.');
         case 'bad-received':
             return _('The Received headers carry too few readable timestamps.');
+        case 'no-parent':
+            return _('This message names no earlier message that the archive holds.');
+        case 'no-parent-date':
+            return _('The message this one answers has no Date header.');
+        case 'bad-parent-date':
+            return _('The Date header of the message this one answers cannot be read as a date.');
+        case 'ambiguous-parent':
+            return _(
+                'Several held messages could be the one this answers, and they are not dated alike, so which one was answered cannot be told.',
+            );
     }
 }
 
@@ -564,6 +726,17 @@ export function describeTimeCheck(check: TimeCheck): string {
                       )
                     : _(
                           'The Date header is {deviation} later than the first Received header, beyond the tolerance of {tolerance}.',
+                      ),
+                values,
+            );
+        case 'date-vs-parent':
+            return fmt(
+                ok
+                    ? _(
+                          'This message is not dated before the message it answers (difference {deviation}, tolerance {tolerance}).',
+                      )
+                    : _(
+                          'This message is dated before the message it answers ({deviation}, tolerance {tolerance}). An indication only: the link to that message is a header the sender wrote, and no signature covers it.',
                       ),
                 values,
             );
