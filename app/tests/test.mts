@@ -15,6 +15,7 @@ import keyBundle from './unit/key-bundle.test.ts';
 import keyEras from './unit/key-eras.test.ts';
 import keys from './unit/keys.test.ts';
 import keyvault from './unit/keyvault.test.ts';
+import seed from './unit/seed.test.ts';
 import verify from './unit/verify.test.ts';
 import report from './unit/report.test.ts';
 import fts5 from './unit/fts5.test.ts';
@@ -82,6 +83,7 @@ run({
     keyBundle,
     keyEras,
     keyvault,
+    seed,
     verify,
     report,
     fts5,

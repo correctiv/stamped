@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 18:26+0100\n"
+"POT-Creation-Date: 2026-11-16 13:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,10 +23,10 @@ msgid "Rebuild the index of a case from its messages (offline)"
 msgstr ""
 
 #: app/src/commands/case-reindex.ts:34 app/src/commands/case.ts:71
-#: app/src/commands/keys.ts:138 app/src/commands/keys.ts:235
-#: app/src/commands/keys.ts:293 app/src/commands/keys.ts:493
-#: app/src/commands/keys.ts:631 app/src/commands/keys.ts:681
-#: app/src/commands/keys.ts:730 app/src/commands/people.ts:37
+#: app/src/commands/keys.ts:138 app/src/commands/keys.ts:263
+#: app/src/commands/keys.ts:321 app/src/commands/keys.ts:521
+#: app/src/commands/keys.ts:659 app/src/commands/keys.ts:709
+#: app/src/commands/keys.ts:758 app/src/commands/people.ts:37
 #: app/src/commands/people.ts:38 app/src/commands/perimeter.ts:31
 #: app/src/commands/reverify.ts:27 app/src/commands/semantic.ts:77
 #: app/src/commands/semantic.ts:78 app/src/commands/semantic.ts:119
@@ -345,286 +345,300 @@ msgstr ""
 msgid "Print JSON"
 msgstr ""
 
-#: app/src/commands/keys.ts:170 app/src/gui/view/keys.ts:217
+#: app/src/commands/keys.ts:179 app/src/gui/view/keys.ts:230
 msgid "{count} key stored"
 msgid_plural "{count} keys stored"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/keys.ts:182
+#: app/src/commands/keys.ts:199
+msgid ""
+"Seed bundle: {count} key from the public DNS, retrieved {date}. It is used "
+"only where the case holds no key of its own, and is never exported."
+msgid_plural ""
+"Seed bundle: {count} keys from the public DNS, retrieved {date}. It is used "
+"only where the case holds no key of its own, and is never exported."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/src/commands/keys.ts:209
 msgid ""
 "! {name} holds different keys. A key rotation, or a forgery. Compare them."
 msgstr ""
 
-#: app/src/commands/keys.ts:191
+#: app/src/commands/keys.ts:218
 msgid "No key is missing."
 msgstr ""
 
-#: app/src/commands/keys.ts:194
+#: app/src/commands/keys.ts:221
 msgid "{count} key is missing; messages signed with it stay unverifiable:"
 msgid_plural ""
 "{count} keys are missing; messages signed with them stay unverifiable:"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/keys.ts:222
+#: app/src/commands/keys.ts:229
+msgid "seed key available"
+msgstr ""
+
+#: app/src/commands/keys.ts:250
 msgid ""
 "Store a key you have: a PEM, a bare p= value, or a pasted DNS TXT record"
 msgstr ""
 
-#: app/src/commands/keys.ts:226 app/src/commands/keys.ts:489
+#: app/src/commands/keys.ts:254 app/src/commands/keys.ts:517
 msgid "<selector>._domainkey.<domain>"
 msgstr ""
 
-#: app/src/commands/keys.ts:231
+#: app/src/commands/keys.ts:259
 msgid "The key text, or a path to a file holding it"
 msgstr ""
 
-#: app/src/commands/keys.ts:237
+#: app/src/commands/keys.ts:265
 msgid "Mark this key as recovered from DKIM signatures rather than published"
 msgstr ""
 
-#: app/src/commands/keys.ts:247 app/src/gui/session.ts:433
+#: app/src/commands/keys.ts:275 app/src/gui/session.ts:438
 msgid ""
 "That record has an empty p=: the domain withdrew this key, so there is "
 "nothing to store."
 msgstr ""
 
-#: app/src/commands/keys.ts:261
+#: app/src/commands/keys.ts:289
 msgid "Stored {name}: {algorithm} {bits} bit."
 msgstr ""
 
-#: app/src/commands/keys.ts:270
+#: app/src/commands/keys.ts:298
 msgid ""
 "! The case already held a different key for this pair. Both are kept: this "
 "is either a key rotation or a forgery."
 msgstr ""
 
-#: app/src/commands/keys.ts:290
+#: app/src/commands/keys.ts:318
 msgid ""
 "Look up missing keys over the network, after you confirm exactly what is sent"
 msgstr ""
 
-#: app/src/commands/keys.ts:294
+#: app/src/commands/keys.ts:322
 msgid "A pair list (domain, selector per line)"
 msgstr ""
 
-#: app/src/commands/keys.ts:296
+#: app/src/commands/keys.ts:324
 msgid "One <selector>._domainkey.<domain>. Repeatable."
 msgstr ""
 
-#: app/src/commands/keys.ts:301
+#: app/src/commands/keys.ts:329
 msgid "Ask archive.prove.email (a third party; its keys are unsigned)"
 msgstr ""
 
-#: app/src/commands/keys.ts:306
+#: app/src/commands/keys.ts:334
 msgid "Query the public DNS (the domain’s operator can see it)"
 msgstr ""
 
-#: app/src/commands/keys.ts:311
+#: app/src/commands/keys.ts:339
 msgid "Skip the confirmation prompt"
 msgstr ""
 
-#: app/src/commands/keys.ts:316
+#: app/src/commands/keys.ts:344
 msgid "Print one line per key stored or not found"
 msgstr ""
 
-#: app/src/commands/keys.ts:341
+#: app/src/commands/keys.ts:369
 msgid ""
 "Choose where to look: --archive and/or --dns. Stamped never goes online "
 "unasked."
 msgstr ""
 
-#: app/src/commands/keys.ts:355
+#: app/src/commands/keys.ts:383
 msgid "Every listed key is already stored."
 msgstr ""
 
-#: app/src/commands/keys.ts:369 app/src/lib/autofetch.ts:237
+#: app/src/commands/keys.ts:397 app/src/lib/autofetch.ts:237
 msgid "Skipped; nothing was sent."
 msgstr ""
 
-#: app/src/commands/keys.ts:390
+#: app/src/commands/keys.ts:418
 msgid "  stored  {name}: {algorithm} {bits} bit, via {origin}{flag}"
 msgstr ""
 
-#: app/src/commands/keys.ts:395 app/src/lib/autofetch.ts:230
+#: app/src/commands/keys.ts:423 app/src/lib/autofetch.ts:230
 msgid ", DIFFERS from a stored key"
 msgstr ""
 
-#: app/src/commands/keys.ts:432
+#: app/src/commands/keys.ts:460
 msgid "Print a request you can send to the provider for the historical key"
 msgstr ""
 
-#: app/src/commands/keys.ts:436
+#: app/src/commands/keys.ts:464
 msgid "The signing domain"
 msgstr ""
 
-#: app/src/commands/keys.ts:441
+#: app/src/commands/keys.ts:469
 msgid "One or more selectors"
 msgstr ""
 
-#: app/src/commands/keys.ts:447
+#: app/src/commands/keys.ts:475
 msgid "When the messages were sent, e.g. \"March 2019\""
 msgstr ""
 
-#: app/src/commands/keys.ts:485
+#: app/src/commands/keys.ts:513
 msgid "Decide which of two conflicting keys for a pair is the real one"
 msgstr ""
 
-#: app/src/commands/keys.ts:495
+#: app/src/commands/keys.ts:523
 msgid "Pick candidate N (1-based) without the interactive prompt"
 msgstr ""
 
-#: app/src/commands/keys.ts:504
+#: app/src/commands/keys.ts:532
 msgid "No key stored for {name}."
 msgstr ""
 
-#: app/src/commands/keys.ts:507
+#: app/src/commands/keys.ts:535
 msgid "{name} holds one key already; nothing to resolve."
 msgstr ""
 
-#: app/src/commands/keys.ts:511
+#: app/src/commands/keys.ts:539
 msgid ""
 "{name} holds {count} candidate keys. A key rotation, or a forgery — your "
 "call:"
 msgstr ""
 
-#: app/src/commands/keys.ts:520
+#: app/src/commands/keys.ts:548
 msgid "Keep which one? [1-{count}, or empty to leave both] "
 msgstr ""
 
-#: app/src/commands/keys.ts:526
+#: app/src/commands/keys.ts:554
 msgid "Left as a conflict; nothing was changed."
 msgstr ""
 
-#: app/src/commands/keys.ts:534
+#: app/src/commands/keys.ts:562
 msgid "{choice} is not one of the listed candidates."
 msgstr ""
 
-#: app/src/commands/keys.ts:542
+#: app/src/commands/keys.ts:570
 msgid ""
 "Kept the {algorithm} {bits} bit key from {origin}. Every other record for "
 "{name} was dropped."
 msgstr ""
 
-#: app/src/commands/keys.ts:555 app/src/commands/keys.ts:657
+#: app/src/commands/keys.ts:583 app/src/commands/keys.ts:685
 msgid "{count} message re-verified."
 msgid_plural "{count} messages re-verified."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/keys.ts:567
+#: app/src/commands/keys.ts:595
 msgid "  {index}. {key}: no message verifies under this key alone"
 msgstr ""
 
-#: app/src/commands/keys.ts:573
+#: app/src/commands/keys.ts:601
 msgid ", {count} without a date"
 msgstr ""
 
-#: app/src/commands/keys.ts:575
+#: app/src/commands/keys.ts:603
 msgid "  {index}. {key}: {count} message"
 msgid_plural "  {index}. {key}: {count} messages"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/keys.ts:587
+#: app/src/commands/keys.ts:615
 msgid "{name} holds {count} candidate keys. Measured against the messages:"
 msgstr ""
 
-#: app/src/commands/keys.ts:597
+#: app/src/commands/keys.ts:625
 msgid "  {count} signed message verifies under none of them."
 msgid_plural "  {count} signed messages verify under none of them."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/commands/keys.ts:608
+#: app/src/commands/keys.ts:636
 msgid "  A rotation: the windows do not overlap. They are stored."
 msgstr ""
 
-#: app/src/commands/keys.ts:609
+#: app/src/commands/keys.ts:637
 msgid ""
 "  A rotation: the windows do not overlap. Run with --apply to store them."
 msgstr ""
 
-#: app/src/commands/keys.ts:614
+#: app/src/commands/keys.ts:642
 msgid ""
 "  Interleaved: both keys signed in the same period. A rotation does not go "
 "back; this is a forgery, or two senders sharing one selector. Compare them: "
 "stamped keys resolve."
 msgstr ""
 
-#: app/src/commands/keys.ts:618
+#: app/src/commands/keys.ts:646
 msgid "  Not measurable: a key verifies no message with a readable date."
 msgstr ""
 
-#: app/src/commands/keys.ts:629
+#: app/src/commands/keys.ts:657
 msgid "Tell a key rotation from a conflict by which messages each key verifies"
 msgstr ""
 
-#: app/src/commands/keys.ts:632
+#: app/src/commands/keys.ts:660
 msgid "Store the measured windows of every rotation and re-verify its messages"
 msgstr ""
 
-#: app/src/commands/keys.ts:641
+#: app/src/commands/keys.ts:669
 msgid "No pair holds conflicting keys; nothing to measure."
 msgstr ""
 
-#: app/src/commands/keys.ts:667
+#: app/src/commands/keys.ts:695
 msgid ""
 "A bundle holds no messages, but it names the sender domains of the case. "
 "Passing it on is an editorial decision, not a default."
 msgstr ""
 
-#: app/src/commands/keys.ts:678
+#: app/src/commands/keys.ts:706
 msgid ""
 "Write the keys of the case, with their origin and time window, to a bundle "
 "file"
 msgstr ""
 
-#: app/src/commands/keys.ts:683
+#: app/src/commands/keys.ts:711
 msgid "The bundle file to write"
 msgstr ""
 
-#: app/src/commands/keys.ts:689
+#: app/src/commands/keys.ts:717
 msgid ""
 "Write only the domain and selector of each key, as the TSV that the upload "
 "page of archive.prove.email reads"
 msgstr ""
 
-#: app/src/commands/keys.ts:694
+#: app/src/commands/keys.ts:722
 msgid ""
 "The TSV names the sender domains and their selectors: uploading the pairs of "
 "a private case to a public archive is an editorial decision, not a default."
 msgstr ""
 
-#: app/src/commands/keys.ts:702
+#: app/src/commands/keys.ts:730
 msgid "Wrote {count} domain and selector pairs to {file}."
 msgstr ""
 
-#: app/src/commands/keys.ts:710
+#: app/src/commands/keys.ts:738
 msgid "Wrote {count} keys to {file}."
 msgstr ""
 
-#: app/src/commands/keys.ts:722
+#: app/src/commands/keys.ts:750
 msgid "Add the keys of a bundle file to the case, keeping their origin"
 msgstr ""
 
-#: app/src/commands/keys.ts:726
+#: app/src/commands/keys.ts:754
 msgid "The bundle file to read"
 msgstr ""
 
-#: app/src/commands/keys.ts:733
+#: app/src/commands/keys.ts:761
 msgid ""
 "Imported keys keep the origin the bundle names and are never trusted more "
 "than that. A key that differs from one the case already holds is kept next "
 "to it: see `stamped keys resolve`."
 msgstr ""
 
-#: app/src/commands/keys.ts:745
+#: app/src/commands/keys.ts:773
 msgid "{count} keys imported, {conflicts} conflicts to resolve."
 msgstr ""
 
-#: app/src/commands/keys.ts:750 app/src/commands/report.ts:387
+#: app/src/commands/keys.ts:778 app/src/commands/report.ts:387
 msgid "Hint: stamped keys resolve <selector>._domainkey.<domain>"
 msgstr ""
 
@@ -762,7 +776,7 @@ msgstr[1] ""
 msgid "Dated {earliest} to {latest}."
 msgstr ""
 
-#: app/src/commands/report.ts:222 app/src/gui/window.ts:3422
+#: app/src/commands/report.ts:222 app/src/gui/window.ts:3423
 #: app/src/gui/window.blp:181
 msgid "Verdicts"
 msgstr ""
@@ -1175,8 +1189,8 @@ msgid "Details"
 msgstr ""
 
 #: app/src/gui/activity.ts:35 app/src/gui/case-file-job.ts:44
-#: app/src/gui/window.ts:2730 app/src/gui/window.ts:3232
-#: app/src/gui/window.ts:3516 app/src/gui/window.ts:3621
+#: app/src/gui/window.ts:2731 app/src/gui/window.ts:3233
+#: app/src/gui/window.ts:3517 app/src/gui/window.ts:3622
 msgid "Cancel"
 msgstr ""
 
@@ -1270,18 +1284,18 @@ msgstr ""
 msgid "Use the graphics card again"
 msgstr ""
 
-#: app/src/gui/session.ts:462
+#: app/src/gui/session.ts:467
 msgid "That key was already stored."
 msgstr ""
 
-#: app/src/gui/session.ts:465
+#: app/src/gui/session.ts:470
 msgid ""
 "Stored, but this case already held a DIFFERENT key for that selector. Either "
 "the domain rotated it, or one of the two is not theirs. Check both before "
 "you rely on the new verdicts."
 msgstr ""
 
-#: app/src/gui/session.ts:468
+#: app/src/gui/session.ts:473
 msgid "Key stored."
 msgstr ""
 
@@ -1727,61 +1741,72 @@ msgstr ""
 msgid "Import running."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:104
+#: app/src/gui/view/keys.ts:108
 msgid "{count} message waiting"
 msgid_plural "{count} messages waiting"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:108
+#: app/src/gui/view/keys.ts:112
 msgid "Key stored"
 msgstr ""
 
-#: app/src/gui/view/keys.ts:108
+#: app/src/gui/view/keys.ts:113
+msgid "Seed key in use"
+msgstr ""
+
+#: app/src/gui/view/keys.ts:113
 msgid "Nothing waiting"
 msgstr ""
 
-#: app/src/gui/view/keys.ts:114
+#: app/src/gui/view/keys.ts:119
 msgid "{messages} message signed with it"
 msgid_plural "{messages} messages signed with it"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:119
+#: app/src/gui/view/keys.ts:126
+msgid ""
+"{signed}; checked with the seed key shipped with Stamped, a public record "
+"copied on its retrieval date and not necessarily the one published when the "
+"message was signed. Look the key up to replace it."
+msgstr ""
+
+#: app/src/gui/view/keys.ts:132
 msgid "{signed}; the key is in this case’s store."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:120
+#: app/src/gui/view/keys.ts:133
 msgid "{signed}; none of them are waiting for this key."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:123
+#: app/src/gui/view/keys.ts:136
 msgid "{count} has no verdict without it"
 msgid_plural "{count} have no verdict without it"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:139
+#: app/src/gui/view/keys.ts:152
 msgid "No signatures in this case, so no keys are needed."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:142
+#: app/src/gui/view/keys.ts:155
 msgid "Every signature in this case has the key it needs."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:148
+#: app/src/gui/view/keys.ts:161
 msgid "{missing} of {total} signing key is missing."
 msgid_plural "{missing} of {total} signing keys are missing."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:156
+#: app/src/gui/view/keys.ts:169
 msgid "{waiting} message has no verdict without a key."
 msgid_plural "{waiting} messages have no verdict without a key."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:179
+#: app/src/gui/view/keys.ts:192
 msgid ""
 "A DKIM public key, published by the signing domain as the DNS TXT record "
 "{name}. Anyone may read it. It is the public half, and it only ever lets you "
@@ -1792,27 +1817,27 @@ msgid ""
 "under examination, and where it came from is part of the verdict."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:224
+#: app/src/gui/view/keys.ts:237
 msgid "{count} had no published record"
 msgid_plural "{count} had no published record"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:233
+#: app/src/gui/view/keys.ts:246
 msgid "{count} could not be asked. Retry later."
 msgid_plural "{count} could not be asked. Retry later."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:241
+#: app/src/gui/view/keys.ts:254
 msgid "nothing was found"
 msgstr ""
 
-#: app/src/gui/view/keys.ts:242
+#: app/src/gui/view/keys.ts:255
 msgid "Lookup done: {results}."
 msgstr ""
 
-#: app/src/gui/view/keys.ts:247
+#: app/src/gui/view/keys.ts:260
 msgid ""
 "{count} key differs from one this case already held. Check which is the real "
 "one."
@@ -1822,13 +1847,13 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:272
+#: app/src/gui/view/keys.ts:285
 msgid "{count} message re-verified; its verdict is unchanged."
 msgid_plural "{count} messages re-verified; no verdict changed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/view/keys.ts:281
+#: app/src/gui/view/keys.ts:294
 msgid "{count} verdict changed."
 msgid_plural "{count} verdicts changed."
 msgstr[0] ""
@@ -1851,11 +1876,11 @@ msgstr ""
 msgid "From"
 msgstr ""
 
-#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:2626
+#: app/src/gui/view/message.ts:89 app/src/gui/window.ts:2627
 msgid "To"
 msgstr ""
 
-#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:2627
+#: app/src/gui/view/message.ts:92 app/src/gui/window.ts:2628
 msgid "Cc"
 msgstr ""
 
@@ -2307,160 +2332,160 @@ msgstr ""
 msgid "{shown} shown"
 msgstr ""
 
-#: app/src/gui/window.ts:463
+#: app/src/gui/window.ts:464
 msgid "All files"
 msgstr ""
 
-#: app/src/gui/window.ts:465
+#: app/src/gui/window.ts:466
 msgid "Mail archives"
 msgstr ""
 
-#: app/src/gui/window.ts:905
+#: app/src/gui/window.ts:906
 msgid "{path} is not a Stamped case folder."
 msgstr ""
 
-#: app/src/gui/window.ts:1130
+#: app/src/gui/window.ts:1131
 msgid "{count} suggestion. Choose with the arrow keys, take it with Tab."
 msgid_plural ""
 "{count} suggestions. Choose with the arrow keys, take one with Tab."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/window.ts:1322
+#: app/src/gui/window.ts:1323
 msgid "Case files"
 msgstr ""
 
-#: app/src/gui/window.ts:1326
+#: app/src/gui/window.ts:1327
 msgid "Open Case File"
 msgstr ""
 
-#: app/src/gui/window.ts:1332 app/src/gui/window.ts:3480
+#: app/src/gui/window.ts:1333 app/src/gui/window.ts:3481
 msgid "Folder for the Case"
 msgstr ""
 
-#: app/src/gui/window.ts:1344
+#: app/src/gui/window.ts:1345
 msgid "{path} exists already. Pick another folder, or move it away first."
 msgstr ""
 
-#: app/src/gui/window.ts:1352
+#: app/src/gui/window.ts:1353
 msgid "Unpacking needs the stamped program, which could not be found."
 msgstr ""
 
-#: app/src/gui/window.ts:1355
+#: app/src/gui/window.ts:1356
 msgid "Unpacking the case file…"
 msgstr ""
 
-#: app/src/gui/window.ts:1357
+#: app/src/gui/window.ts:1358
 msgid "The case file could not be unpacked."
 msgstr ""
 
-#: app/src/gui/window.ts:1375 app/src/gui/window.ts:3644
+#: app/src/gui/window.ts:1376 app/src/gui/window.ts:3645
 msgid "Open a case first."
 msgstr ""
 
-#: app/src/gui/window.ts:1379 app/src/gui/window.ts:3652
+#: app/src/gui/window.ts:1380 app/src/gui/window.ts:3653
 msgid "Wait until the import has finished."
 msgstr ""
 
-#: app/src/gui/window.ts:1384
+#: app/src/gui/window.ts:1385
 msgid "Save Case File"
 msgstr ""
 
-#: app/src/gui/window.ts:1396
+#: app/src/gui/window.ts:1397
 msgid "Saving needs the stamped program, which could not be found."
 msgstr ""
 
-#: app/src/gui/window.ts:1399
+#: app/src/gui/window.ts:1400
 msgid "Saving the case file…"
 msgstr ""
 
-#: app/src/gui/window.ts:1401
+#: app/src/gui/window.ts:1402
 msgid "The case file could not be written."
 msgstr ""
 
-#: app/src/gui/window.ts:1406
+#: app/src/gui/window.ts:1407
 msgid "Saved {file} ({size})."
 msgstr ""
 
-#: app/src/gui/window.ts:1440
+#: app/src/gui/window.ts:1441
 msgid "Remove from this list"
 msgstr ""
 
-#: app/src/gui/window.ts:1528
+#: app/src/gui/window.ts:1529
 msgid "Opened read-only: nothing is written to this case."
 msgstr ""
 
-#: app/src/gui/window.ts:1833
+#: app/src/gui/window.ts:1834
 msgid "Show the files of this mailbox"
 msgstr ""
 
-#: app/src/gui/window.ts:2028
+#: app/src/gui/window.ts:2029
 msgid "This search cannot be run"
 msgstr ""
 
-#: app/src/gui/window.ts:2366
+#: app/src/gui/window.ts:2367
 msgid "The stored copy of this message is missing from the case’s blob store."
 msgstr ""
 
-#: app/src/gui/window.ts:2456
+#: app/src/gui/window.ts:2457
 msgid "Bookmark this message"
 msgstr ""
 
-#: app/src/gui/window.ts:2473
+#: app/src/gui/window.ts:2474
 msgid "Add a tag"
 msgstr ""
 
-#: app/src/gui/window.ts:2504
+#: app/src/gui/window.ts:2505
 msgid "Remove the tag {tag}"
 msgstr ""
 
-#: app/src/gui/window.ts:2518
+#: app/src/gui/window.ts:2519
 msgid "Could not save the marks: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:2600
+#: app/src/gui/window.ts:2601
 msgid "Open With…"
 msgstr ""
 
-#: app/src/gui/window.ts:2601
+#: app/src/gui/window.ts:2602
 msgid "Open a read-only copy in the program you choose"
 msgstr ""
 
-#: app/src/gui/window.ts:2634
+#: app/src/gui/window.ts:2635
 msgid "The stored copy could not be read."
 msgstr ""
 
-#: app/src/gui/window.ts:2651
+#: app/src/gui/window.ts:2652
 msgid "(no text)"
 msgstr ""
 
-#: app/src/gui/window.ts:2663
+#: app/src/gui/window.ts:2664
 msgid "Shown as text; the HTML was not rendered."
 msgstr ""
 
-#: app/src/gui/window.ts:2664
+#: app/src/gui/window.ts:2665
 msgid "The text is cut here; the stored message is longer."
 msgstr ""
 
-#: app/src/gui/window.ts:2676 app/src/lib/pdf-report.ts:443
+#: app/src/gui/window.ts:2677 app/src/lib/pdf-report.ts:443
 msgid "(unnamed)"
 msgstr ""
 
-#: app/src/gui/window.ts:2712
+#: app/src/gui/window.ts:2713
 msgid "Open in a mail program?"
 msgstr ""
 
-#: app/src/gui/window.ts:2714
+#: app/src/gui/window.ts:2715
 msgid ""
 "A mail program may load remote content. Only the verdict shows whether a "
 "message is unchanged since it was signed."
 msgstr ""
 
-#: app/src/gui/window.ts:2719
+#: app/src/gui/window.ts:2720
 msgid "What does that mean?"
 msgstr ""
 
-#: app/src/gui/window.ts:2724
+#: app/src/gui/window.ts:2725
 msgid ""
 "A mail program that loads remote content tells the sender’s server that "
 "someone is reading this message right now. How a program displays a message "
@@ -2468,215 +2493,215 @@ msgid ""
 "copy outside the case."
 msgstr ""
 
-#: app/src/gui/window.ts:2731 app/src/gui/window.ts:3752
+#: app/src/gui/window.ts:2732 app/src/gui/window.ts:3753
 msgid "Open"
 msgstr ""
 
-#: app/src/gui/window.ts:2740
+#: app/src/gui/window.ts:2741
 msgid "The stored copy of this message is missing."
 msgstr ""
 
-#: app/src/gui/window.ts:2748
+#: app/src/gui/window.ts:2749
 msgid "Could not open the message: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:2785
+#: app/src/gui/window.ts:2786
 msgid "Copy a sentence to quote"
 msgstr ""
 
-#: app/src/gui/window.ts:2803
+#: app/src/gui/window.ts:2804
 msgid "Look Up Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:2821 app/src/gui/window.blp:404
+#: app/src/gui/window.ts:2822 app/src/gui/window.blp:404
 msgid "Message"
 msgstr ""
 
-#: app/src/gui/window.ts:2909
+#: app/src/gui/window.ts:2910
 msgid "Copy"
 msgstr ""
 
-#: app/src/gui/window.ts:2918
+#: app/src/gui/window.ts:2919
 msgid "Copied."
 msgstr ""
 
-#: app/src/gui/window.ts:2934
+#: app/src/gui/window.ts:2935
 msgid "Evidence"
 msgstr ""
 
-#: app/src/gui/window.ts:3009
+#: app/src/gui/window.ts:3010
 msgid "How does DKIM work?"
 msgstr ""
 
-#: app/src/gui/window.ts:3029
+#: app/src/gui/window.ts:3030
 msgid "Raw message"
 msgstr ""
 
-#: app/src/gui/window.ts:3034
+#: app/src/gui/window.ts:3035
 msgid "Copy the whole message, headers and body, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:3037
+#: app/src/gui/window.ts:3038
 msgid "Header block, as stored"
 msgstr ""
 
-#: app/src/gui/window.ts:3069
+#: app/src/gui/window.ts:3070
 msgid ""
 "Stamped stays offline until you say otherwise, and will show you exactly "
 "what it would send."
 msgstr ""
 
-#: app/src/gui/window.ts:3081
+#: app/src/gui/window.ts:3082
 msgid "Signing keys this case needs"
 msgstr ""
 
-#: app/src/gui/window.ts:3119
+#: app/src/gui/window.ts:3120
 msgid "Paste Key…"
 msgstr ""
 
-#: app/src/gui/window.ts:3128
+#: app/src/gui/window.ts:3129
 msgid "Copy Request…"
 msgstr ""
 
-#: app/src/gui/window.ts:3129
+#: app/src/gui/window.ts:3130
 msgid "Copy a request to send to the signing domain’s operator"
 msgstr ""
 
-#: app/src/gui/window.ts:3133
+#: app/src/gui/window.ts:3134
 msgid "Request copied. Paste it into a mail to the operator."
 msgstr ""
 
-#: app/src/gui/window.ts:3161
+#: app/src/gui/window.ts:3162
 msgid "Look Up Missing Keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:3211
+#: app/src/gui/window.ts:3212
 msgid "Paste the key for {name}"
 msgstr ""
 
-#: app/src/gui/window.ts:3213
+#: app/src/gui/window.ts:3214
 msgid ""
 "A PEM block, a DNS TXT record as dig prints it, or just the p= value. "
 "Stamped works out which it is. An empty p= is a withdrawal, not a key, and "
 "will be refused."
 msgstr ""
 
-#: app/src/gui/window.ts:3233
+#: app/src/gui/window.ts:3234
 msgid "Store Key"
 msgstr ""
 
-#: app/src/gui/window.ts:3348
+#: app/src/gui/window.ts:3349
 msgid "Looking up keys…"
 msgstr ""
 
-#: app/src/gui/window.ts:3381
+#: app/src/gui/window.ts:3382
 msgid "Key lookup failed: {reason}"
 msgstr ""
 
-#: app/src/gui/window.ts:3415
+#: app/src/gui/window.ts:3416
 msgid "The case"
 msgstr ""
 
-#: app/src/gui/window.ts:3424
+#: app/src/gui/window.ts:3425
 msgid ""
 "All six are listed, including the ones at zero: a measured zero is a result, "
 "and the line most often at zero is the one that says no tampering was found."
 msgstr ""
 
-#: app/src/gui/window.ts:3480
+#: app/src/gui/window.ts:3481
 msgid "Open Case Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:3501
+#: app/src/gui/window.ts:3502
 msgid "Create the case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:3501
+#: app/src/gui/window.ts:3502
 msgid "Create a new case here?"
 msgstr ""
 
-#: app/src/gui/window.ts:3505
+#: app/src/gui/window.ts:3506
 msgid ""
 "Stamped creates the case in {path}. It holds the working copy of the "
 "messages and the search index. The archive stays where it is."
 msgstr ""
 
-#: app/src/gui/window.ts:3511
+#: app/src/gui/window.ts:3512
 msgid ""
 "{path} is not a Stamped case yet. Creating one writes a case file, a store "
 "for the raw messages and a search index into it. Nothing is sent anywhere."
 msgstr ""
 
-#: app/src/gui/window.ts:3515
+#: app/src/gui/window.ts:3516
 msgid "Create Case"
 msgstr ""
 
-#: app/src/gui/window.ts:3538
+#: app/src/gui/window.ts:3539
 msgid "Imported."
 msgstr ""
 
-#: app/src/gui/window.ts:3606 app/src/gui/window.ts:3660
+#: app/src/gui/window.ts:3607 app/src/gui/window.ts:3661
 msgid "Export PDF Report"
 msgstr ""
 
-#: app/src/gui/window.ts:3608
+#: app/src/gui/window.ts:3609
 msgid ""
 "A report on the case as it stands. Breaking down the unsigned messages and "
 "reading the attachment properties read the case’s messages once and can take "
 "a while."
 msgstr ""
 
-#: app/src/gui/window.ts:3611
+#: app/src/gui/window.ts:3612
 msgid "Break down the unsigned messages"
 msgstr ""
 
-#: app/src/gui/window.ts:3613
+#: app/src/gui/window.ts:3614
 msgid "Read the properties of PDF, Office, OpenDocument and image attachments"
 msgstr ""
 
-#: app/src/gui/window.ts:3615
+#: app/src/gui/window.ts:3616
 msgid "Replace mailbox names by M1, M2, …"
 msgstr ""
 
-#: app/src/gui/window.ts:3622
+#: app/src/gui/window.ts:3623
 msgid "Export…"
 msgstr ""
 
-#: app/src/gui/window.ts:3648
+#: app/src/gui/window.ts:3649
 msgid "A report is already being written."
 msgstr ""
 
-#: app/src/gui/window.ts:3668
+#: app/src/gui/window.ts:3669
 msgid "The report needs the stamped program, which could not be found."
 msgstr ""
 
-#: app/src/gui/window.ts:3747
+#: app/src/gui/window.ts:3748
 msgid "Report written ({pages} page)."
 msgid_plural "Report written ({pages} pages)."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/gui/window.ts:3765
+#: app/src/gui/window.ts:3766
 msgid "The report could not be written."
 msgstr ""
 
-#: app/src/gui/window.ts:3835
+#: app/src/gui/window.ts:3836
 msgid "Import a Mail Folder"
 msgstr ""
 
-#: app/src/gui/window.ts:3835
+#: app/src/gui/window.ts:3836
 msgid "Import Mail Archives"
 msgstr ""
 
-#: app/src/gui/window.ts:3880
+#: app/src/gui/window.ts:3881
 msgid "The index is busy right now. Try again in a moment."
 msgstr ""
 
-#: app/src/gui/window.ts:3884
+#: app/src/gui/window.ts:3885
 msgid "That did not work"
 msgstr ""
 
-#: app/src/gui/window.ts:3884
+#: app/src/gui/window.ts:3885
 msgid "Close"
 msgstr ""
 
@@ -3054,11 +3079,11 @@ msgid_plural "{count} files could not be read; the import is incomplete."
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/src/lib/keys.ts:50
+#: app/src/lib/keys.ts:55
 msgid "{path} is neither a DKIM TXT record nor a PEM public key."
 msgstr ""
 
-#: app/src/lib/keys.ts:59
+#: app/src/lib/keys.ts:64
 msgid "Cannot read the key file {path}."
 msgstr ""
 
@@ -3626,7 +3651,7 @@ msgstr ""
 msgid "The last re-verification was cancelled."
 msgstr ""
 
-#: app/src/lib/vault.ts:26
+#: app/src/lib/vault.ts:29
 msgid "Cannot use {path}: {reason}"
 msgstr ""
 
@@ -4107,19 +4132,19 @@ msgstr ""
 msgid "Thank you,"
 msgstr ""
 
-#: packages/core/src/keyvault.ts:360
+#: packages/core/src/keyvault.ts:411
 msgid "The key store file is not valid JSON."
 msgstr ""
 
-#: packages/core/src/keyvault.ts:364
+#: packages/core/src/keyvault.ts:415
 msgid "The key store file has an unknown format."
 msgstr ""
 
-#: packages/core/src/keyvault.ts:379
+#: packages/core/src/keyvault.ts:430
 msgid "The key store file has a malformed entry for {name}."
 msgstr ""
 
-#: packages/core/src/keyvault.ts:440
+#: packages/core/src/keyvault.ts:491
 msgid "Pair list line {line}: expected domain and selector."
 msgstr ""
 

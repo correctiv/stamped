@@ -63,7 +63,11 @@ export interface KeyRow {
  * Pairs whose key is already in the store stay in the list rather than disappearing: seeing that
  * a domain is done is the other half of knowing what is left.
  */
-export function keyRows(demands: readonly KeyDemand[], known: ReadonlySet<string>): KeyRow[] {
+export function keyRows(
+    demands: readonly KeyDemand[],
+    known: ReadonlySet<string>,
+    seeded: ReadonlySet<string> = new Set(),
+): KeyRow[] {
     const rows = demands.map((demand) => {
         const name = pairName({ domain: demand.domain, selector: demand.selector });
         const have = known.has(name);
@@ -72,8 +76,8 @@ export function keyRows(demands: readonly KeyDemand[], known: ReadonlySet<string
             domain: demand.domain,
             selector: demand.selector,
             name: escapeLine(name),
-            status: escapeLine(statusLine(demand, have, wanted)),
-            subtitle: escapeLine(demandLine(demand, have)),
+            status: escapeLine(statusLine(demand, have, wanted, seeded.has(name))),
+            subtitle: escapeLine(demandLine(demand, have, seeded.has(name))),
             have,
             wanted,
             cssClass: wanted ? 'warning' : have ? 'success' : 'dimmed',
@@ -99,22 +103,31 @@ export function keyRows(demands: readonly KeyDemand[], known: ReadonlySet<string
  * says that instead of a number nobody has to act on. The full sentence, both counts and where
  * the key came from, is one expander away in {@link KeyRow.subtitle}.
  */
-function statusLine(demand: KeyDemand, have: boolean, wanted: boolean): string {
+function statusLine(demand: KeyDemand, have: boolean, wanted: boolean, seeded: boolean): string {
     if (wanted) {
         return fmt(_n('{count} message waiting', '{count} messages waiting', demand.unverifiable), {
             count: groupDigits(demand.unverifiable),
         });
     }
-    return have ? _('Key stored') : _('Nothing waiting');
+    if (have) return _('Key stored');
+    return seeded ? _('Seed key in use') : _('Nothing waiting');
 }
 
 /** What this pair is worth, in messages. */
-function demandLine(demand: KeyDemand, have: boolean): string {
+function demandLine(demand: KeyDemand, have: boolean, seeded: boolean): string {
     const signed = fmt(
         _n('{messages} message signed with it', '{messages} messages signed with it', demand.messages),
         { messages: groupDigits(demand.messages) },
     );
     if (demand.unverifiable === 0) {
+        if (!have && seeded) {
+            return fmt(
+                _(
+                    '{signed}; checked with the seed key shipped with Stamped, a public record copied on its retrieval date and not necessarily the one published when the message was signed. Look the key up to replace it.',
+                ),
+                { signed },
+            );
+        }
         return have
             ? fmt(_('{signed}; the key is in this case’s store.'), { signed })
             : fmt(_('{signed}; none of them are waiting for this key.'), { signed });

@@ -12,15 +12,18 @@ import { join } from 'node:path';
 import { fmt, KeyVault, _ } from '@stamped/core';
 import { assertWritable, type CasePaths, VAULT_NAME } from '@stamped/store';
 
+import { loadSeed } from './seed.ts';
+
 export function vaultFile(caseDir: string): string {
     return join(caseDir, VAULT_NAME);
 }
 
-export function loadVault(caseDir: string): KeyVault {
+/** The case's vault with the shipped seed attached underneath it (never saved with it). */
+export function loadVault(caseDir: string, seed: KeyVault | undefined = loadSeed()): KeyVault {
     const path = vaultFile(caseDir);
-    if (!existsSync(path)) return new KeyVault();
+    if (!existsSync(path)) return new KeyVault().attachSeed(seed);
     try {
-        return KeyVault.fromJson(readFileSync(path, 'utf8'));
+        return KeyVault.fromJson(readFileSync(path, 'utf8')).attachSeed(seed);
     } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
         throw new Error(fmt(_('Cannot use {path}: {reason}'), { path, reason }));

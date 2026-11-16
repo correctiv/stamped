@@ -146,6 +146,11 @@ export function knownKeyNames(vault: KeyVault): Set<string> {
     return new Set(vault.all().map((entry) => pairName(entry)));
 }
 
+/** The names the shipped seed bundle covers; the case's own keys take precedence over them. */
+export function seedKeyNames(vault: KeyVault): Set<string> {
+    return vault.seedNames();
+}
+
 /**
  * One page of the message list.
  *
