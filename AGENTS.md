@@ -387,6 +387,24 @@ Yahoo/Epstein archives — the app has to be shown doing a real DKIM verificatio
 - This repo is a **submodule of werkstatt**: commit here, push, *then* bump the pointer in the
   parent. NEVER stage across that boundary in one commit, and never commit a werkstatt file here.
 
+## Seed keys (`data/seed-keys.json`)
+
+A small, curated bundle of public DKIM keys of the large mailbox providers, shipped with releases
+and used as the LOWEST-priority key source.
+
+- **Criterion** (also the header of `tools/make-seed-keys.mjs`): public DNS only, big providers,
+  universal selectors, no tenant-specific selectors, never derived from any case. Regenerate by
+  hand with `node tools/make-seed-keys.mjs` (needs `dig`); it never runs at runtime or in CI.
+- **Semantics:** the seed is a read-only layer attached to the case vault (`KeyVault.attachSeed`).
+  It answers only a pair the case holds nothing for, is never written to `keys.json`, and is
+  invisible to `all()`, `missingPairs` and `keys export`, so a seed-covered pair stays fetchable
+  and is never exported as the case's own. Its keys map to the `archive` key source, so the
+  conservative `archive-key` caveat stays. It never claims "published and valid at message date".
+- **Visibility:** `stamped keys` prints the bundle's date and marks seed-covered missing rows; the
+  GUI key list says "Seed key in use".
+- **Location:** `XDG_DATA_DIRS` (`stamped/seed-keys.json`) or `STAMPED_SEED_KEYS`. No file means no
+  seed. Packaged via `gjsify.ship.extraFiles` in `app/package.json`.
+
 ## Fix gjsify gaps at the core
 
 gjsify is a first-party dependency, not vendored third-party code. If a capability is missing or

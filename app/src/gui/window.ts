@@ -122,6 +122,7 @@ import {
     importStatusOf,
     isCaseFolder,
     knownKeyNames,
+    seedKeyNames,
     marksForPage,
     marksOfMessage,
     marksSummary,
@@ -3047,7 +3048,7 @@ export class StampedWindow extends Adw.ApplicationWindow {
 
     /** The key pane: the work list, and the two ways to do the work. */
     private fillKeys(session: CaseSession, report: CaseReport): void {
-        const rows = keyRows(report.keys, knownKeyNames(session.vault));
+        const rows = keyRows(report.keys, knownKeyNames(session.vault), seedKeyNames(session.vault));
         const wanted = rows.filter((row) => row.wanted);
 
         clearBox(this._keysBody);

@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 import {
     fmt,
     KeyStore,
+    KeyVault,
     looksLikeKeyRecord,
     looksLikePem,
     parseKeyArgument,
@@ -18,9 +19,13 @@ import {
     _,
 } from '@stamped/core';
 
+import { loadSeed } from './seed.ts';
+
 /** Build a store from the `--key` arguments, in order: a later one overrides an earlier one. */
 export function keyStoreFrom(args: readonly string[]): KeyStore {
-    const keys = new KeyStore();
+    // The shipped seed underneath: `--key` replaces it per name, and with no seed file this is
+    // an empty store, exactly as before.
+    const keys = new KeyVault().attachSeed(loadSeed()).toKeyStore();
     for (const arg of args) {
         const { name, value } = parseKeyArgument(arg);
         // 'operator' and not 'archive': a key the operator typed is one they vouch for, which is

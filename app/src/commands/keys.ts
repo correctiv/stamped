@@ -162,7 +162,16 @@ function listCommand(): CommandModule<CaseArgs, ListArgs> {
             }
             if (args.json) {
                 console.log(
-                    JSON.stringify({ keys: vault.all(), missing, conflicts: vault.conflicts() }, null, 2),
+                    JSON.stringify(
+                        {
+                            keys: vault.all(),
+                            seed: vault.seedLayer()?.all() ?? [],
+                            missing,
+                            conflicts: vault.conflicts(),
+                        },
+                        null,
+                        2,
+                    ),
                 );
                 return;
             }
@@ -175,6 +184,24 @@ function listCommand(): CommandModule<CaseArgs, ListArgs> {
                     : '';
                 console.log(
                     `  ${keyNameFor(e.domain, e.selector)}  ${e.algorithm} ${e.bits} bit  ${e.origin}  ${e.fetchedAt.slice(0, 10)}${range}`,
+                );
+            }
+            const seed = vault.seedLayer();
+            if (seed !== undefined && seed.size > 0) {
+                const retrieved = seed
+                    .all()
+                    .map((e) => e.fetchedAt.slice(0, 10))
+                    .sort()
+                    .pop();
+                console.log(
+                    fmt(
+                        _n(
+                            'Seed bundle: {count} key from the public DNS, retrieved {date}. It is used only where the case holds no key of its own, and is never exported.',
+                            'Seed bundle: {count} keys from the public DNS, retrieved {date}. It is used only where the case holds no key of its own, and is never exported.',
+                            seed.size,
+                        ),
+                        { count: seed.size, date: retrieved ?? '' },
+                    ),
                 );
             }
             for (const pair of vault.conflicts()) {
@@ -199,7 +226,8 @@ function listCommand(): CommandModule<CaseArgs, ListArgs> {
                           ),
                 );
                 for (const m of missing) {
-                    console.log(`  ${pairName(m)}${m.mails !== undefined ? `  (${m.mails})` : ''}`);
+                    const seeded = vault.seedCovers(m) ? `  [${_('seed key available')}]` : '';
+                    console.log(`  ${pairName(m)}${m.mails !== undefined ? `  (${m.mails})` : ''}${seeded}`);
                 }
                 if (missing.length > 0) {
                     console.log('');
