@@ -35,7 +35,9 @@ export type KeyOrigin =
     /** Shipped with the leak itself. */
     | 'archive'
     /** Recovered mathematically from DKIM signatures of this sender. */
-    | 'recovered';
+    | 'recovered'
+    /** The seed bundle shipped with Stamped: public DNS records copied on a maintainer's date. */
+    | 'seed';
 
 export const KEY_ORIGINS: readonly KeyOrigin[] = [
     'operator',
@@ -43,6 +45,7 @@ export const KEY_ORIGINS: readonly KeyOrigin[] = [
     'archive.prove.email',
     'archive',
     'recovered',
+    'seed',
 ];
 
 /** A (domain, selector) pair a message was signed with. */
@@ -92,9 +95,17 @@ const PRECEDENCE: Record<KeyOrigin, number> = {
     'archive.prove.email': 1,
     archive: 0,
     recovered: 0,
+    seed: -1,
 };
 
-/** The verifier's provenance for a vault origin — what the `archive-key` caveat reads. */
+/**
+ * The verifier's provenance for a vault origin — what the `archive-key` caveat reads.
+ *
+ * `seed` maps to `archive` ON PURPOSE and without a new source: a seed key is a record read from
+ * the DNS on the day the seed was built, not one published when a message was signed, so the
+ * conservative `archive-key` caveat ("proves consistency rather than authenticity") stays. It is
+ * NEVER `dns`, which would claim a lookup made with the examiner's consent for this case.
+ */
 export function keySourceOf(origin: KeyOrigin): KeySource {
     if (origin === 'operator' || origin === 'dns') return origin;
     if (origin === 'recovered') return 'recovered';
@@ -192,6 +203,36 @@ function eraResolvable(groups: readonly (readonly VaultEntry[])[]): boolean {
 
 export class KeyVault {
     private entries: VaultEntry[] = [];
+    private seed: KeyVault | undefined;
+
+    /**
+     * Put the shipped seed bundle underneath this vault as a READ-ONLY, lowest-priority layer.
+     *
+     * The layer feeds {@link toKeyStore} for a pair this vault holds NOTHING for, and is
+     * invisible everywhere else: not in {@link all}, {@link size}, {@link recordsFor},
+     * {@link conflicts}, {@link missingPairs} or {@link toJson}. So a seed-covered pair still
+     * counts as missing and can still be looked up, the case's `keys.json` never contains a
+     * seed key, and `keys export` never passes one off as the case's own.
+     */
+    attachSeed(seed: KeyVault | undefined): this {
+        this.seed = seed;
+        return this;
+    }
+
+    /** The attached seed layer, if any. */
+    seedLayer(): KeyVault | undefined {
+        return this.seed;
+    }
+
+    /** Does the seed layer hold a key for this pair? Says nothing about the case's own keys. */
+    seedCovers(pair: KeyPair): boolean {
+        return this.seed !== undefined && this.seed.recordsFor(pair).length > 0;
+    }
+
+    /** The `<selector>._domainkey.<domain>` names the seed layer holds a key for. */
+    seedNames(): Set<string> {
+        return new Set((this.seed?.all() ?? []).map((e) => pairName(e)));
+    }
 
     get size(): number {
         return this.entries.length;
@@ -301,6 +342,16 @@ export class KeyVault {
                 continue;
             }
             const best = entries[0] ?? e;
+            store.add(name, best.record, keySourceOf(best.origin), best.seenFrom ?? best.fetchedAt);
+        }
+        // The seed fills only names the case holds nothing for, whatever the case's own state
+        // (a conflicted pair is the case's question, never answered by the seed).
+        const own = new Set(this.entries.map(pairName));
+        for (const e of this.seed?.all() ?? []) {
+            const name = pairName(e);
+            if (own.has(name) || seen.has(name)) continue;
+            seen.add(name);
+            const best = this.seed?.recordsFor(e)[0] ?? e;
             store.add(name, best.record, keySourceOf(best.origin), best.seenFrom ?? best.fetchedAt);
         }
         return store;
